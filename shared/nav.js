@@ -10,7 +10,16 @@
     if(embedded){try{window.top.location.hash=target;return;}catch(e){}}
     location.href=home+'modules/'+target+'/';
   }};
-  if(embedded)return;
+  // W aplikacji (ramka strony głównej) plik projektu obsługuje wspólny pasek u góry – chowamy przyciski plików modułu.
+  if(embedded){
+    document.documentElement.classList.add('hs-embedded');
+    var st=document.createElement('style');
+    st.textContent='html.hs-embedded label:has(> input[type=file][accept*="json"]),'+
+      'html.hs-embedded :is(#export,#exportDef,#exportProj,#newDef,#resetProject,#reset,#loadDefinitionBtn,#downloadDefinitionBtn,#saveProjectBtn,#loadProjectBtn){display:none!important}'+
+      'html.hs-embedded .section:has(> .row > label > input[type=file][accept*="json"]):not(:has(#fit)){display:none!important}';
+    document.head.appendChild(st);
+    return;
+  }
   var id=location.pathname.replace(/\/(index\.html)?$/,'').split('/').pop();
   var a=document.createElement('a');
   a.href=home+(id?'#'+id:'');

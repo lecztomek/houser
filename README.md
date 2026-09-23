@@ -1,6 +1,6 @@
 # Houser – projektowanie domu w przeglądarce
 
-Statyczna strona WWW: bez kont i bez serwera. Wczytujesz pliki JSON, pracujesz w przeglądarce, eksportujesz wynik na swój dysk.
+Statyczna strona WWW: bez kont i bez serwera. Pracujesz w przeglądarce, a cały projekt zapisujesz na dysk jednym plikiem JSON (pasek projektu u góry strony).
 
 ## Struktura
 
@@ -36,7 +36,7 @@ examples/                   przykładowa definicja domu i gotowy układ
 ```
 
 Każdy moduł to samodzielny plik HTML – można go otworzyć bezpośrednio, a strona główna ładuje go w ramce.
-Moduły wymieniają dane przez wspólny bieżący projekt w pamięci przeglądarki (`shared/project-store.js`, format jak eksport JSON). Każdy moduł może też wczytać i wyeksportować plik JSON.
+Moduły wymieniają dane przez wspólny bieżący projekt w pamięci przeglądarki (`shared/project-store.js`). Plik obsługuje wyłącznie pasek projektu na stronie głównej (`index.html`): **Zapisz do pliku / Otwórz plik / Nowy / Przykład**. Jeden plik JSON zawiera wszystko – definicję pomieszczeń i warunki, rzut, otwory i ich warianty, schody, dach, tarasy, meble, grubość ścian i punkty widokowe 3D oraz (opcjonalnie, pole `visualizations`) zdjęcia z podglądów i wizualizacje AI. Klucze API nie trafiają do pliku. Moduł otwarty samodzielnie (poza stroną główną) nadal pokazuje własne przyciski wczytania/eksportu.
 
 Zasada: każda funkcja to osobny, prosty moduł – lepiej dodać nowy moduł niż komplikować istniejący.
 

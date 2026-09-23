@@ -17,6 +17,9 @@
   function ping(id){try{localStorage.setItem('houser:last-snapshot',id+'|'+Date.now())}catch(_){}}
   async function add(image,source,meta){const rec={id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),createdAt:new Date().toISOString(),source,meta:meta||{},image,results:[]};await put(rec);ping(rec.id);return rec}
   async function remove(id){await tx('readwrite',st=>st.delete(id));changed()}
+  async function clear(){await tx('readwrite',st=>st.clear());changed()}
+  // zastąpienie wszystkich zdjęć (wczytanie pliku projektu)
+  async function replaceAll(list){await tx('readwrite',st=>{st.clear();for(const r of list||[])if(r&&r.id&&r.image)st.put(r)});changed()}
   function onChange(cb){if(bc)bc.addEventListener('message',()=>cb())}
 
   // Zdjęcie z płótna WebGL: tło (niebo z CSS) + scena, JPEG, maks. 1600 px szerokości.
@@ -27,5 +30,5 @@
     const g=x.createLinearGradient(0,0,0,h);g.addColorStop(0,skyTop||'#b9d4e7');g.addColorStop(1,skyBottom||'#edf2f5');x.fillStyle=g;x.fillRect(0,0,w,h);
     x.drawImage(canvas,0,0,w,h);return c.toDataURL('image/jpeg',.9);
   }
-  global.HouserSnapshots={list,get,put,add,remove,onChange,capture};
+  global.HouserSnapshots={list,get,put,add,remove,clear,replaceAll,onChange,capture};
 })(window);

@@ -412,6 +412,8 @@ let curOpInfo=null; // wariant bieżącego otworu z modułu Okna i drzwi (shared
 // Ściany mają grubość: działowe 12 cm po osi siatki, zewnętrzne 30 cm na zewnątrz od linii (wnętrze bez zmian, głębokie ościeża okien).
 // Renderer nie cieniuje, więc czoła, wierzch/spód i ościeża mają ciemniejszy kolor – dzięki temu widać grubość.
 let WALL_IN=.18,WALL_EXT=.40;
+// grubość ścian zapisana w projekcie (wallSettings) – ma pierwszeństwo przed ustawieniem przeglądarki
+function applyProjectWalls(){const w=project?.wallSettings;if(w){WALL_IN=+w.interior||WALL_IN;WALL_EXT=+w.exterior||WALL_EXT}const i=els('wallIn'),e=els('wallExt');if(i&&e){i.value=Math.round(WALL_IN*100);e.value=Math.round(WALL_EXT*100)}}
 try{const w=JSON.parse(localStorage.getItem('houser:wall-t')||'null');if(w){WALL_IN=+w.i||WALL_IN;WALL_EXT=+w.e||WALL_EXT}}catch(_){}let curOut=0,wallNodes=null;
 function wallSlab(orient,x,z,len,base,y0,y1,color,exterior){
   if(y1<=y0+.001)return;const t=exterior?WALL_EXT:WALL_IN,o0=exterior&&curOut?Math.min(0,curOut*t):-t/2,o1=exterior&&curOut?Math.max(0,curOut*t):t/2;
@@ -635,7 +637,7 @@ els('snap').addEventListener('click',async()=>{ if(!three.ready){showTab('three'
 (()=>{const cb=els('snapCoded');if(!cb)return;try{const v=localStorage.getItem('houser:snap-coded');if(v!==null&&cb.checked!==(v==='1')){cb.checked=v==='1';if(three.ready)build3D()}}catch(_){}
   cb.addEventListener('change',()=>{try{localStorage.setItem('houser:snap-coded',cb.checked?'1':'0')}catch(_){}_legendKey='x';build3D()})})();
 (()=>{const i=els('wallIn'),e=els('wallExt');if(!i||!e)return;i.value=Math.round(WALL_IN*100);e.value=Math.round(WALL_EXT*100);
-  const upd=()=>{const vi=Math.max(6,Math.min(40,+i.value||18))/100,ve=Math.max(10,Math.min(70,+e.value||40))/100;WALL_IN=vi;WALL_EXT=ve;try{localStorage.setItem('houser:wall-t',JSON.stringify({i:vi,e:ve}))}catch(_){}build3D()};
+  const upd=()=>{const vi=Math.max(6,Math.min(40,+i.value||18))/100,ve=Math.max(10,Math.min(70,+e.value||40))/100;WALL_IN=vi;WALL_EXT=ve;try{localStorage.setItem('houser:wall-t',JSON.stringify({i:vi,e:ve}))}catch(_){}if(project){project.wallSettings={interior:vi,exterior:ve};HouserStore.update(p=>{p.wallSettings={interior:vi,exterior:ve}},'wnetrze-3d')}build3D()};
   i.addEventListener('change',upd);e.addEventListener('change',upd)})();
 (()=>{const row=els('doorModeRow');if(!row)return;const paint=()=>{for(const b of row.children)b.classList.toggle('primary',b.dataset.m===settings.doorMode)};paint();
   for(const b of row.children)b.onclick=()=>{settings.doorMode=b.dataset.m;try{localStorage.setItem('houser:door-mode',settings.doorMode)}catch(_){}paint();build3D()}})();
@@ -667,13 +669,14 @@ els('go3d').addEventListener('click',()=>showTab('three'));els('rebuild').addEve
 ui.floor.addEventListener('change',()=>{readObserverUi();roomLegend();refreshFurnitureInfo()});ui.eye.addEventListener('change',readObserverUi);ui.angle.addEventListener('change',readObserverUi);ui.fov.addEventListener('change',readObserverUi);
 els('rotL').onclick=()=>{observer.angle=normAngle(observer.angle-15);syncUi()};els('rotR').onclick=()=>{observer.angle=normAngle(observer.angle+15);syncUi()};for(const b of document.querySelectorAll('.dir'))b.onclick=()=>{observer.angle=+b.dataset.a;syncUi()};
 
-function loadProject(p,label='projekt',keepView=false){if(!p?.state||!p?.grid)throw new Error('Brak state/grid w JSON');project=p;ensureFurniture();const g=grid();if(!keepView||observer.x>g.width*g.cellMeters||observer.z>g.height*g.cellMeters){observer.floor='ground';observer.x=g.width*g.cellMeters*.5;observer.z=g.height*g.cellMeters*.82;observer.angle=0;}ui.name.textContent=(p.definitionName||p.definitionSnapshot?.name||label);roomLegend();refreshFurnitureInfo();drawPlan();if(three.ready){build3D();syncCameraFromObserver()}setStatus('Wczytano '+label)}
+function loadProject(p,label='projekt',keepView=false){if(!p?.state||!p?.grid)throw new Error('Brak state/grid w JSON');project=p;applyProjectWalls();ensureFurniture();const g=grid();if(!keepView||observer.x>g.width*g.cellMeters||observer.z>g.height*g.cellMeters){observer.floor='ground';observer.x=g.width*g.cellMeters*.5;observer.z=g.height*g.cellMeters*.82;observer.angle=0;}ui.name.textContent=(p.definitionName||p.definitionSnapshot?.name||label);roomLegend();refreshFurnitureInfo();drawPlan();if(three.ready){build3D();syncCameraFromObserver()}setStatus('Wczytano '+label)}
 els('fileInput').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{const p=JSON.parse(await f.text());loadProject(p,f.name);HouserStore.save(p,'wnetrze-3d')}catch(err){setStatus('Błąd JSON: '+err.message)}e.target.value=''});
 els('resetProject').onclick=()=>loadProject(structuredClone(BUILTIN_PROJECT),'projekt wbudowany');
 
+// punkty widokowe są częścią projektu (trafiają do pliku); starsze zapisy z przeglądarki są wczytywane, dopóki projekt nie ma własnych
 function vpKey(){return 'dom3d_viewpoints_v1'}
-function getVps(){try{return JSON.parse(localStorage.getItem(vpKey())||'[]')}catch{return []}}
-function saveVps(v){localStorage.setItem(vpKey(),JSON.stringify(v));renderVps()}
+function getVps(){if(Array.isArray(project?.viewpoints))return project.viewpoints;try{return JSON.parse(localStorage.getItem(vpKey())||'[]')}catch{return []}}
+function saveVps(v){project.viewpoints=v;HouserStore.update(p=>{p.viewpoints=v},'wnetrze-3d');renderVps()}
 function renderVps(){const host=els('vpList'),v=getVps();host.innerHTML='';if(!v.length){host.innerHTML='<div class="hint">Brak zapisanych punktów.</div>';return}v.forEach((p,i)=>{const d=document.createElement('div');d.className='viewpoint';d.innerHTML='<span title="'+escapeHtml(p.name)+'">'+escapeHtml(p.name)+'</span><button class="btn small">Pokaż</button><button class="btn small danger">×</button>';d.children[1].onclick=()=>{observer={...observer,...p.obs};syncUi();roomLegend();showTab('three')};d.children[2].onclick=()=>{const a=getVps();a.splice(i,1);saveVps(a)};host.appendChild(d)})}
 els('saveVp').onclick=()=>{const name=els('vpName').value.trim()||('Punkt '+(getVps().length+1));const v=getVps();v.push({name,obs:{floor:observer.floor,x:observer.x,z:observer.z,angle:observer.angle,eye:observer.eye,fov:observer.fov}});saveVps(v);els('vpName').value='';setStatus('Zapisano punkt widokowy: '+name)};
 
@@ -681,7 +684,7 @@ els('applySettings').onclick=()=>{settings.wallT=parseFloat(els('wallT').value)|
 
 {const rec=HouserStore.load();let ok=false;if(rec){try{loadProject(rec.project,'bieżący projekt');ok=true}catch(_){}}if(!ok)loadProject(structuredClone(BUILTIN_PROJECT),'projekt wbudowany');}
 // zmiany z innych modułów (Projektowanie, Kondygnacje i dach, Meblowanie) – odśwież bez resetu widoku
-HouserStore.subscribe(rec=>{try{loadProject(rec.project,'bieżący projekt (zaktualizowany)',true);syncUi();roomLegend();refreshFurnitureInfo()}catch(_){}});
+HouserStore.subscribe(rec=>{try{loadProject(rec.project,'bieżący projekt (zaktualizowany)',true);syncUi();roomLegend();refreshFurnitureInfo();renderVps()}catch(_){}});
 syncUi();renderVps();roomLegend();refreshFurnitureInfo();
 </script>
 <script src="../../shared/nav.js"></script>
