@@ -59,7 +59,7 @@ textarea{min-height:150px;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,mo
 
   <div class="section">
     <h3>Dostawca AI</h3>
-    <div class="row" id="provRow"><button class="btn" data-p="gemini">Google Gemini</button><button class="btn" data-p="hf">Hugging Face</button></div>
+    <div class="row" id="provRow"><button class="btn" data-p="gemini">Google Gemini</button><button class="btn" data-p="hf">Hugging Face</button><button class="btn" data-p="manual">Ręcznie (za darmo)</button></div>
     <p class="hint" id="provHint"></p>
   </div>
 
@@ -223,9 +223,9 @@ $('forget').onclick=()=>{try{localStorage.removeItem(KEY_LS)}catch(_){}$('key').
 
 // ---------- dostawca
 function renderProvider(){for(const b of $('provRow').children)b.classList.toggle('primary',b.dataset.p===provider);$('hfBox').hidden=provider!=='hf';
-  $('provHint').innerHTML=provider==='hf'?'Obraz generuje Hugging Face (model FLUX Kontext). Dopracowanie promptu nadal korzysta z Gemini, jeśli masz klucz.':'Obraz i dopracowanie promptu przez Google Gemini.';
+  $('provHint').innerHTML=provider==='hf'?'Obraz generuje Hugging Face (model FLUX Kontext). Dopracowanie promptu nadal korzysta z Gemini, jeśli masz klucz.':provider==='manual'?'Bez klucza i bez limitów API: kopiujesz prompt, pobierasz zdjęcie, wklejasz oba w darmowej aplikacji <a href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini</a> (albo innym czacie, który edytuje zdjęcia) i wgrywasz gotowy obraz z powrotem.':'Obraz i dopracowanie promptu przez Google Gemini.';
   const t=ls.get(HF_LS);$('hfKey').placeholder=t?'token zapisany ('+t.slice(0,6)+'…)':'wklej token (hf_…)';$('hfStatus').innerHTML=t?'<span class="ok">✓ Token zapisany.</span>':'Brak tokenu.';$('hfModel').value=ls.get(HFM_LS)||$('hfModel').value}
-for(const b of $('provRow').children)b.onclick=()=>{provider=b.dataset.p;ls.set(PROV_LS,provider);renderProvider()};
+for(const b of $('provRow').children)b.onclick=()=>{provider=b.dataset.p;ls.set(PROV_LS,provider);renderProvider();renderMain(true)};
 $('hfSave').onclick=()=>{const t=$('hfKey').value.trim();if(!t)return;ls.set(HF_LS,t);$('hfKey').value='';renderProvider()};
 $('hfForget').onclick=()=>{ls.del(HF_LS);renderProvider()};
 $('hfModel').onchange=()=>ls.set(HFM_LS,$('hfModel').value.trim());
@@ -239,7 +239,7 @@ async function hfGenerate(prompt,imageUrl){
   let out;try{out=await client.imageToImage({provider:'auto',model,inputs:blob,parameters:{prompt}})}
   catch(err){const m=String(err?.message||err);
     if(/401|unauthor|invalid.*token/i.test(m))throw new Error('Token Hugging Face jest nieprawidłowy albo nie ma uprawnienia „Make calls to Inference Providers”.\n'+m);
-    if(/402|payment|credit|quota|exceeded/i.test(m))throw new Error('Wyczerpany darmowy limit Hugging Face w tym miesiącu (albo wymagane doładowanie).\n'+m);
+    if(/402|payment|credit|quota|exceeded/i.test(m))throw new Error('Wyczerpany darmowy limit Hugging Face w tym miesiącu (odnowi się w przyszłym miesiącu albo po doładowaniu).\nMożesz od razu użyć trybu „Ręcznie (za darmo)” po lewej: kopiujesz prompt i zdjęcie do darmowej aplikacji Gemini i wgrywasz wynik tutaj.\n'+m);
     if(/not supported|no provider|not found/i.test(m))throw new Error('Model „'+model+'” nie jest dostępny do edycji obrazu u dostawców Hugging Face. Spróbuj innego modelu image-to-image.\n'+m);
     throw err}
   const b=out instanceof Blob?out:new Blob([out]);return await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(b)});
@@ -298,7 +298,7 @@ function renderMain(keepPrompt){
   const kind=kindOf(cur),res=cur.results?.[resultIdx];
   M.innerHTML='<div class="pair"><div class="pane"><h4>Zdjęcie z modelu 3D <span class="hint" style="margin:0">'+new Date(cur.createdAt).toLocaleString('pl-PL')+'</span></h4><img id="orig" alt=""></div><div class="pane"><h4>Wizualizacja AI <span id="resActs"></span></h4><div id="resBox"></div></div></div>'+
     '<div class="card"><h3>Ustawienia wizualizacji</h3><div class="opts" id="opts"></div><div class="field" style="margin-top:10px"><label>Dodatkowe życzenia (możesz pisać po polsku)</label><input type="text" id="extra" placeholder="np. czerwony rower przy wejściu, zima ze śniegiem, duży fikus w rogu"></div></div>'+
-    '<div class="card"><h3>Prompt (tworzy się sam – możesz go poprawić)</h3><textarea id="prompt"></textarea><div class="row" style="margin-top:8px"><button class="btn" id="rebuild">↻ Odtwórz z projektu i opcji</button><button class="btn" id="refine">🪄 Dopracuj prompt przez AI</button><div style="flex:1"></div><button class="btn primary big" id="gen">✨ Generuj wizualizację</button></div>'+(lastError?'<div class="err">'+esc(lastError)+(lastAlt.length?'<div class="row" style="margin-top:8px" id="alt"></div>':'')+'</div>':'')+'</div>'+
+    '<div class="card"><h3>Prompt (tworzy się sam – możesz go poprawić)</h3><textarea id="prompt"></textarea><div class="row" style="margin-top:8px"><button class="btn" id="rebuild">↻ Odtwórz z projektu i opcji</button><button class="btn" id="refine">🪄 Dopracuj prompt przez AI</button><div style="flex:1"></div>'+(provider==='manual'?'<button class="btn" id="mCopy">📋 1. Kopiuj prompt</button><button class="btn" id="mDown">⬇ 2. Pobierz zdjęcie</button><a class="btn" href="https://gemini.google.com/app" target="_blank" rel="noopener">↗ 3. Otwórz Gemini</a><button class="btn primary big" id="mUp">⬆ 4. Wgraj wynik</button>':'<button class="btn" id="mUp" title="Dodaj obraz wygenerowany gdzie indziej">⬆ Wgraj wynik</button><button class="btn primary big" id="gen">✨ Generuj wizualizację</button>')+'</div>'+(provider==='manual'?'<p class="hint">W Gemini: wklej zdjęcie (lub przeciągnij plik) i prompt, wyślij, pobierz gotowy obraz i wgraj go przyciskiem 4. Prompt jest po angielsku – modele lepiej go rozumieją.</p>':'')+(lastError?'<div class="err">'+esc(lastError)+(lastAlt.length?'<div class="row" style="margin-top:8px" id="alt"></div>':'')+'</div>':'')+'</div>'+
     (cur.results?.length>1?'<div class="card"><h3>Poprzednie wersje</h3><div class="hist" id="hist"></div></div>':'');
   $('orig').src=cur.image;
   $('resBox').innerHTML=res?'<img alt="">':'<div class="ph">Tu pojawi się wizualizacja.<br>Ustaw opcje i kliknij „Generuj”.</div>';if(res)$('resBox').querySelector('img').src=res.image;
@@ -307,7 +307,10 @@ function renderMain(keepPrompt){
   $('extra').value=keepPrompt?(prevExtra||''):(cur.extra||'');$('extra').oninput=()=>{cur.extra=$('extra').value;$('prompt').value=buildPrompt()};$('extra').onchange=()=>S.put(cur);
   $('prompt').value=keepPrompt&&prevPrompt?prevPrompt:(res?.prompt&&resultIdx===0&&keepPrompt?res.prompt:buildPrompt());
   if($('alt'))for(const m of lastAlt){const b=document.createElement('button');b.className='btn';b.textContent='Spróbuj: '+m;b.onclick=()=>{$('imgModel').value=m;lastError='';lastAlt=[];generate()};$('alt').appendChild(b)}
-  $('rebuild').onclick=()=>{$('prompt').value=buildPrompt()};$('refine').onclick=refinePrompt;$('gen').onclick=generate;
+  $('rebuild').onclick=()=>{$('prompt').value=buildPrompt()};$('refine').onclick=refinePrompt;if($('gen'))$('gen').onclick=generate;
+  if($('mCopy'))$('mCopy').onclick=async()=>{const t=$('prompt').value;try{await navigator.clipboard.writeText(t)}catch(_){$('prompt').select();document.execCommand('copy')}$('mCopy').textContent='✓ Skopiowano'};
+  if($('mDown'))$('mDown').onclick=()=>{const a=document.createElement('a');a.href=cur.image;a.download='zdjecie-3d-'+cur.id+'.jpg';document.body.appendChild(a);a.click();a.remove()};
+  $('mUp').onclick=()=>{const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=()=>{const f=i.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{cur.results=[{id:'r'+Date.now().toString(36),createdAt:new Date().toISOString(),prompt:$('prompt').value,model:'wgrany plik',image:r.result},...(cur.results||[])];resultIdx=0;lastError='';await S.put(cur);renderAll(true)};r.readAsDataURL(f)};i.click()};
   if($('hist'))cur.results.forEach((r,i)=>{const im=document.createElement('img');im.src=r.image;im.className=i===resultIdx?'sel':'';im.title=r.model+' · '+new Date(r.createdAt).toLocaleString('pl-PL');im.onclick=()=>{resultIdx=i;renderMain(true)};$('hist').appendChild(im)});
   if(busy)setBusy(busy);
 }
