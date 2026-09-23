@@ -211,6 +211,17 @@ function isExteriorVoid(f,id){return kindOf(f,id)==='exteriorVoid'}
 function isHole(f,id){return f==='upper' && (id==='pustka'||id==='schody')}
 function isGalleryRoom(f,id){return f==='upper' && (id==='hol_gora' || id==='antresola')}
 function holeNeedsRailing(f,roomId,opening){return isGalleryRoom(f,roomId) && (!opening || opening==='opening')}
+// Wyjście ze schodów na górze: krawędzie otworu w stropie, przez które schodzi się z ostatniego stopnia na piętro – bez balustrady i ściany.
+// Kierunek z dwóch ostatnich stopni, kilka równoległych linii na całą szerokość biegu.
+let stairExitEdges=new Set();
+function computeStairExits(){stairExitEdges=new Set();const f='upper',c=grid().cellMeters,H=floorHeight('ground');
+  for(const s of modelStairs()){let g;try{g=HouserStairs.geometry(s,c,H)}catch(_){continue}if(!g.steps||g.steps.length<2)continue;
+    const cen=p=>{let x=0,z=0;for(const q of p){x+=q[0];z+=q[1]}return [x/p.length,z/p.length]},a=cen(g.steps[g.steps.length-2].poly),b=cen(g.steps[g.steps.length-1].poly);
+    let dx=b[0]-a[0],dz=b[1]-a[1];const L=Math.hypot(dx,dz);if(L<1e-6)continue;dx/=L;dz/=L;const px=-dz,pz=dx,w=Math.max(.6,+s.width||.9);
+    for(let o=-w/2+.08;o<=w/2-.08+1e-9;o+=.1){let x=b[0]+px*o,z=b[1]+pz*o,cx=Math.floor(x/c),cy=Math.floor(z/c);
+      for(let t=0;t<1.6;t+=.03){const nx=Math.floor((x+dx*t)/c),ny=Math.floor((z+dz*t)/c);if(nx===cx&&ny===cy)continue;
+        const cross=(ax,ay,bx,by)=>{const A=roomAt(f,ax,ay),B=roomAt(f,bx,by);if(cellClass(f,A)==='hole'&&cellClass(f,B)==='room'){stairExitEdges.add(ax!==bx?openKeyV(Math.max(ax,bx),ay):openKeyH(ax,Math.max(ay,by)));return true}return cellClass(f,B)!=='hole'};
+        let stop=false;if(nx!==cx){stop=cross(cx,cy,nx,cy)||stop;cx=nx}if(!stop&&ny!==cy){stop=cross(cx,cy,cx,ny)||stop;cy=ny}if(stop)break}}}}
 function canStand(f,id){return !!id && !isExteriorVoid(f,id) && !isHole(f,id)}
 function openKeyH(x,y){return 'h:'+x+':'+y} function openKeyV(x,y){return 'v:'+x+':'+y}
 function openingAt(f,key){return project.openings?.[f]?.[key]||null}
@@ -559,7 +570,7 @@ function addStraightStairs(){
 }
 function cellClass(f,id){if(!id||isExteriorVoid(f,id))return 'outside';if(isHole(f,id))return 'hole';return 'room'}
 function build3D(){
-  three.scenePolys=[];wallNodes={};const g=grid(),c=g.cellMeters;
+  three.scenePolys=[];wallNodes={};computeStairExits();const g=grid(),c=g.cellMeters;
   for(const f of ['ground','upper']){
     const base=floorBase(f),h=floorHeight(f);
     for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){
@@ -584,6 +595,7 @@ function build3D(){
       const edgeH=f==='upper'?upperEdgeHeight('h',x,y,c):h;
       if((holeA&&roomB)||(holeB&&roomA)){
         const roomId=roomA?a:b;
+        if(f==='upper'&&stairExitEdges.has(opKey))continue; // wyjście ze schodów
         if(holeNeedsRailing(f,roomId,op)){addRailing2D('h',(x+.5)*c,y*c,c,base)}
         else{addWall2D('h',(x+.5)*c,y*c,c,edgeH,base,null,false)}
         continue
@@ -597,6 +609,7 @@ function build3D(){
       const edgeH=f==='upper'?upperEdgeHeight('v',x,y,c):h;
       if((holeA&&roomB)||(holeB&&roomA)){
         const roomId=roomA?a:b;
+        if(f==='upper'&&stairExitEdges.has(opKey))continue; // wyjście ze schodów
         if(holeNeedsRailing(f,roomId,op)){addRailing2D('v',x*c,(y+.5)*c,c,base)}
         else{addWall2D('v',x*c,(y+.5)*c,c,edgeH,base,null,false)}
         continue
