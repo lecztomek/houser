@@ -113,16 +113,34 @@ const OPTS={
   exterior:{
     facade:{label:'Elewacja',items:{white:['Biały tynk','smooth white render facade'],grey:['Szary tynk','light grey render facade'],wood:['Drewno (modrzew)','vertical larch wood cladding'],mix:['Tynk + drewno','white render with warm wood cladding accents'],brick:['Cegła','red-brown clinker brick facade']}},
     roof:{label:'Dach',items:{graphite:['Dachówka grafitowa','matte graphite ceramic roof tiles'],seam:['Blacha na rąbek','black standing seam metal roof'],red:['Dachówka czerwona','traditional red clay roof tiles']}},
-    garden:{label:'Otoczenie',items:{lawn:['Trawnik','neat green lawn, low ornamental grasses'],garden:['Ogród z drzewami','lush garden with mature trees and shrubs'],drive:['Podjazd z kostki','paved driveway and path, simple landscaping']}}
+    garden:{label:'Otoczenie',items:{garden:['Ogród z drzewami','lush landscaped garden: green lawn, mature deciduous trees, shrubs, flower beds, paved path to the entrance'],lawn:['Trawnik i trawy','neat green lawn, ornamental grasses and low shrubs, gravel strip around the house, young trees'],drive:['Podjazd i płot','paved driveway with a car, garden path, low fence and hedge, lawn and trees'],country:['Wieś, pola','rural countryside plot: meadow and fields, birch and pine trees, distant forest line']}}
   },
   interior:{
     floor:{label:'Podłoga',items:{oak:['Jasny dąb','light oak wooden floor'],dark:['Ciemne drewno','dark walnut wooden floor'],concrete:['Beton','polished concrete floor'],tiles:['Duże płytki','large format light stone tiles']}},
     walls:{label:'Ściany',items:{white:['Białe','white painted walls'],warm:['Ciepła biel','warm off-white walls'],grey:['Szarości','soft grey walls'],wood:['Akcent drewna','white walls with wooden slat accent wall']}},
-    furnish:{label:'Wyposażenie',items:{as:['Jak w projekcie','furnish according to the room function'],light:['Oszczędne','sparse, minimal furnishing'],cozy:['Przytulne','cozy furnishing with textiles, plants and decor']}}
+    furnish:{label:'Wystrój',items:{rich:['Pełny, zamieszkany','fully furnished and lived-in: rugs, cushions and throws, indoor plants, framed art, shelves with books and decor, lamps, curtains'],cozy:['Przytulny, dużo roślin','very cozy, many large potted plants, warm textiles, layered lighting, books and personal decor'],light:['Oszczędny','minimalist but finished: few carefully chosen decor pieces, one or two plants, one artwork']}}
   }
 };
+const FURN_EN={k_dolne:'kitchen base cabinets with worktop',k_narozne:'corner kitchen worktop',k_zlew:'kitchen sink cabinet',k_plyta:'cooktop with built-in oven',k_wysokie:'tall kitchen units with built-in appliances',k_lodowka:'fridge',k_wyspa:'kitchen island',k_stol:'dining table for six with chairs',k_stol_ok:'round dining table',k_krzeslo:'dining chair',
+ s_sofa3:'three-seat upholstered sofa with cushions',s_naroznik:'large upholstered corner sofa with cushions',s_fotel:'armchair',s_stolik:'coffee table',s_rtv:'low TV cabinet with a TV',s_regal:'bookcase full of books',s_kominek:'fireplace / wood stove',
+ b_160:'double bed 160 cm with headboard and bedding',b_180:'king bed with upholstered headboard and bedding',b_140:'double bed with bedding',b_90:'single bed with bedding',b_szafa:'wardrobe',b_komoda:'chest of drawers',b_nocna:'bedside table with lamp',b_toaletka:'dressing table',
+ l_wanna:'bathtub',l_prysznic:'glass shower enclosure',l_walkin:'walk-in shower with glass screen',l_umywalka:'vanity unit with washbasin and mirror',l_wc:'wall-hung toilet',l_pralka:'washing machine',l_szafka:'tall bathroom cabinet',
+ g_biurko:'desk with office chair',g_biurko_l:'corner desk',g_krzeslo:'office chair',g_regal:'bookshelf',g_szafa:'wardrobe',p_szafa:'built-in hallway wardrobe',p_buty:'shoe cabinet',p_lawka:'hallway bench',p_lustro:'mirror with coat hooks',
+ t_kociol:'boiler / heat pump indoor unit',t_cwu:'hot water cylinder',t_bufor:'buffer tank',t_pralka:'washing machine',t_suszarka:'tumble dryer',t_rekuperator:'heat recovery ventilation unit',t_regal:'metal shelving'};
+const TYPE_EN={storage:'cabinet / wardrobe',surface:'table',bed:'bed',seating:'sofa',other:'furniture piece'};
+// wystrój zależny od funkcji pomieszczenia (nazwa po polsku z projektu)
+function roomDecor(name){const n=(name||'').toLowerCase();
+  if(/kuch|aneks/.test(n))return 'Kitchen details: handleless or shaker fronts, stone worktop, tiled or glass backsplash, built-in appliances, a few utensils, fruit bowl, herbs on the counter, pendant lamps, bar stools if there is an island.';
+  if(/łaz|lazien|wc|toalet/.test(n))return 'Bathroom details: large format wall tiles, mirror with LED backlight, towels on a heated rail, black or brushed fittings, glass shower screen, small plant, toiletries.';
+  if(/sypial|pok[oó]j|dzieci|goś|gosc/.test(n))return 'Bedroom details: made bed with linen bedding and cushions, upholstered headboard, bedside lamps, rug under the bed, curtains, framed artwork above the bed, a plant.';
+  if(/salon|dzienn|jadal/.test(n))return 'Living room details: large rug, sofa with cushions and a throw, coffee table with books, floor lamp, TV wall or fireplace, shelves with decor, framed art, several large potted plants (monstera, fiddle leaf fig), curtains.';
+  if(/hol|korytarz|przedpok|wiatro|komunik/.test(n))return 'Hall details: console or bench, mirror, coat hooks, runner rug, wall lights, a plant, framed pictures.';
+  if(/gabinet|biur/.test(n))return 'Study details: desk with lamp and laptop, ergonomic chair, bookshelves with books and decor, pinboard or artwork, a plant.';
+  if(/garder/.test(n))return 'Walk-in wardrobe details: open shelving and hanging rails with clothes, shoe racks, full-length mirror, soft lighting.';
+  return 'Add appropriate furniture and decor for the room function.'}
 function kindOf(s){return s?.meta?.kind==='interior'?'interior':'exterior'}
 function groupsFor(kind){return {...OPTS.common,...OPTS[kind]}}
+function normOpts(sn){const k=kindOf(sn),d=defaults(k),o={...d,...(sn.opts||{})};for(const [key,g] of Object.entries(groupsFor(k)))if(!g.items[o[key]])o[key]=d[key];return o}
 function defaults(kind){const o={};for(const [k,g] of Object.entries(groupsFor(kind)))o[k]=Object.keys(g.items)[0];return o}
 
 // ---------- opis projektu do promptu
@@ -146,24 +164,36 @@ function projectFacts(s){
     const m=s.meta||{},f=m.floor||floors[0],room=m.roomName||'room',st=p.state?.[f]||[],flat=Array.isArray(st[0])?st.flat():st,area=m.roomId?flat.filter(v=>v===m.roomId).length*c*c:0;
     out.push('Interior of a '+room.toLowerCase()+(area?' (about '+area.toFixed(0)+' m²)':'')+' in a single-family house.');
     if(f!==floors[0]&&G.upperType==='attic')out.push('Attic room with sloped ceiling following the '+G.roofPitch+' degree roof.');
-    const fur=(p.furniture?.[f]||[]).map(i=>({storage:'wardrobe / built-in storage',surface:'table / kitchen counter',bed:'bed',seating:'sofa',other:'furniture'}[i.type])).filter(Boolean);
-    if(fur.length)out.push('Furniture in the plan includes: '+[...new Set(fur)].join(', ')+'.');
+    const inRoom=i=>{if(!m.roomId)return true;const cx=Math.floor((+i.x+ +i.w/2)/c),cy=Math.floor((+i.y+ +i.h/2)/c);return flat[cy*g.width+cx]===m.roomId};
+    const fur=(p.furniture?.[f]||[]).filter(inRoom).map(i=>FURN_EN[i.item]||TYPE_EN[i.type]).filter(Boolean);
+    if(fur.length)out.push('The grey box placeholders in the render stand for: '+[...new Set(fur)].join(', ')+'.');
     if((p.stairs||[]).length&&f===floors[0])out.push('Open wooden staircase may be visible ('+({straight:'straight',L:'L-shaped',U:'U-shaped with landing',spiral:'spiral'}[p.stairs[0].type]||'straight')+').');
   }
   return {text:out.join(' ')};
 }
 function buildPrompt(){
   if(!cur)return '';const kind=kindOf(cur),G=groupsFor(kind),o=opts,pick=k=>G[k]?.items[o[k]]?.[1]||'';
-  const base=kind==='exterior'
-    ?'Turn this simple untextured 3D massing render of a house into a photorealistic architectural exterior visualization.'
-    :'Turn this simple untextured 3D render of a room into a photorealistic interior design visualization.';
-  const keep='Keep EXACTLY the same camera position, perspective and composition. Keep the geometry unchanged: all walls, roof lines, window and door openings, stairs and room proportions must stay where they are. Do not add or remove windows or doors. Replace flat grey surfaces with realistic materials and add realistic lighting, shadows and details.';
-  const style=kind==='exterior'
-    ?'Style: '+pick('style')+'. Facade: '+pick('facade')+'. Roof: '+pick('roof')+'. Surroundings: '+pick('garden')+'. Lighting: '+pick('light')+'.'
-    :'Style: '+pick('style')+'. Floor: '+pick('floor')+'. Walls: '+pick('walls')+'. '+pick('furnish')+'. Lighting: '+pick('light')+'.';
-  const facts=projectFacts(cur).text;
-  const extra=($('extra')?.value||'').trim();
-  return [base,keep,facts?'Project facts: '+facts:'',style,extra?'Additional wishes (may be in Polish): '+extra:'','High quality, realistic, sharp, professional architectural photography.'].filter(Boolean).join('\n');
+  const facts=projectFacts(cur).text,extra=($('extra')?.value||'').trim(),L=[];
+  if(kind==='exterior'){
+    L.push('Turn this simple untextured 3D massing model of a house into a photorealistic architectural exterior photograph.');
+    L.push('Keep EXACTLY the same camera position, perspective and framing. Keep the building geometry: footprint, roof shape and pitch, wall heights, and the position and size of every window and door opening. Do not add or remove windows or doors.');
+    L.push('How to read the render: flat light-blue or dark rectangles in the walls and roof are WINDOWS and glass doors, not holes. Render them as real windows: slim anthracite aluminium or PVC frames, mullions where they are wide, glass with realistic sky and tree reflections, window sills, some with curtains visible inside. Solid door rectangles are real entrance/terrace doors with frames and handles.');
+    L.push('The empty plain background MUST become a real place: blue sky with soft clouds, and a realistic landscape all around the house reaching to the horizon. '+pick('garden')+'. Neighbouring trees in the distance, Central European (Polish) suburban setting. Nothing may stay empty, flat or grey.');
+    L.push('Add architectural details: roof tiles or seams with ridge and edge flashing, eaves and soffits, gutters and downpipes, visible plinth, outdoor wall lights, house number, terrace furniture and potted plants on terraces.');
+    L.push('Style: '+pick('style')+'. Facade: '+pick('facade')+'. Roof: '+pick('roof')+'. Lighting: '+pick('light')+'.');
+  }else{
+    const room=cur.meta?.roomName||'';
+    L.push('Turn this simple untextured 3D render of a room into a photorealistic, professionally styled interior design photograph.');
+    L.push('Keep EXACTLY the same camera position, perspective and framing. Keep the room geometry: walls, sloped ceilings, window and door openings and stairs stay where they are and keep their size. Do not add or remove windows or doors.');
+    L.push('How to read the render: simple grey or coloured boxes are only PLACEHOLDERS marking where furniture stands. Do NOT copy their blocky shapes – replace each one with a real, well-designed piece of furniture of that type at the same place and similar footprint (a sofa gets soft upholstery, seat and back cushions, armrests and legs; beds get bedding and a headboard; cabinets get fronts, handles and plinths; tables get legs and a proper top).');
+    L.push('Light-blue or sky-coloured rectangles in the walls or ceiling are WINDOWS, not holes: render them as real windows with frames, mullions, glass, deep window reveals and sills, sheer curtains or linen drapes, and a realistic garden view outside with daylight coming in. Door openings get real doors or door frames with architraves and handles.');
+    L.push('The walls must NOT stay bare: add framed artwork and photos, wall shelves with books, vases and small decor, wall or pendant lamps, a mirror where it fits, skirting boards and light switches. Add several indoor plants in pots, a rug, textiles and a finished ceiling with recessed spotlights or a pendant light. '+roomDecor(room));
+    L.push('Style: '+pick('style')+'. Floor: '+pick('floor')+'. Walls: '+pick('walls')+'. Decor: '+pick('furnish')+'. Lighting: '+pick('light')+'.');
+  }
+  if(facts)L.push('Project facts: '+facts);
+  if(extra)L.push('Additional wishes (may be in Polish, follow them): '+extra);
+  L.push('Photorealistic, rich in detail, realistic materials and soft shadows, sharp focus, magazine-quality architectural photography. Avoid: blocky or boxy furniture, empty walls, empty background, flat grey surfaces, cartoon look.');
+  return L.join('\n');
 }
 
 // ---------- klucz i modele
@@ -232,8 +262,9 @@ async function refinePrompt(){
   const model=$('txtModel').value;if(!getKey()){alert('Dopracowanie promptu korzysta z Gemini – zapisz klucz Gemini (sekcja poniżej).');return}if(!model){alert('Wybierz model tekstowy po lewej.');return}
   setBusy(true,'refine');lastError='';
   try{
-    const inst='You write prompts for an AI image editing model that turns a plain grey 3D render into a photorealistic architectural visualization. Improve the prompt below: make it vivid and specific about materials, lighting and atmosphere, but KEEP all constraints about preserving camera, geometry, windows and doors. Keep it under 180 words. Answer with the prompt only, in English.\n\nPROMPT:\n'+$('prompt').value;
-    const j=await gemini(model,[{text:inst}],false);const t=partsOf(j).map(p=>p.text||'').join('').trim();if(t)$('prompt').value=t;
+    const inst='You write prompts for an AI image editing model that turns the attached plain 3D render (grey boxes = furniture placeholders, light-blue rectangles = windows) into a photorealistic architectural visualization. Look at the image and improve the prompt below: name concretely what each placeholder should become, describe materials, window frames and the view outside, wall decor (art, shelves, lamps), plants, textiles, and for exteriors the landscape and sky that must fill the empty background. Be vivid and specific, but KEEP all constraints about preserving camera, geometry, windows and doors. Keep it under 250 words. Answer with the prompt only, in English.\n\nPROMPT:\n'+$('prompt').value;
+    const b64=(cur.image||'').split(',')[1]||'';
+    const j=await gemini(model,b64?[{text:inst},{inline_data:{mime_type:'image/jpeg',data:b64}}]:[{text:inst}],false);const t=partsOf(j).map(p=>p.text||'').join('').trim();if(t)$('prompt').value=t;
   }catch(err){lastError=err.message}
   setBusy(false);renderMain(true);
 }
@@ -260,7 +291,7 @@ function renderGallery(){
   if(!snaps.length)G.innerHTML='<div class="hint" style="grid-column:1/-1">Brak zdjęć. Zrób zdjęcie w Wnętrzu 3D albo Zewnątrz 3D.</div>';
   for(const s of snaps){const d=document.createElement('div');d.className='thumb'+(cur&&s.id===cur.id?' sel':'');d.innerHTML='<img alt=""><span>'+(kindOf(s)==='interior'?'Wnętrze'+(s.meta?.roomName?' · '+esc(s.meta.roomName):''):'Zewnątrz')+'</span>'+(s.results?.length?'<b>'+s.results.length+'</b>':'');d.querySelector('img').src=s.results?.[0]?.image||s.image;d.onclick=()=>{select(s.id)};G.appendChild(d)}
 }
-function select(id){cur=snaps.find(s=>s.id===id)||null;resultIdx=0;opts=cur?(cur.opts||defaults(kindOf(cur))):{};renderAll()}
+function select(id){cur=snaps.find(s=>s.id===id)||null;resultIdx=0;opts=cur?(normOpts(cur)):{};renderAll()}
 function renderMain(keepPrompt){
   const M=$('main');const prevPrompt=$('prompt')?.value,prevExtra=$('extra')?.value;
   if(!cur){M.innerHTML='<div class="empty">Wybierz zdjęcie po lewej (albo zrób je przyciskiem „📷” w Wnętrzu 3D lub Zewnątrz 3D).</div>';return}
@@ -281,14 +312,18 @@ function renderMain(keepPrompt){
   if(busy)setBusy(busy);
 }
 function renderAll(keepPrompt){renderGallery();renderMain(keepPrompt)}
-async function reload(){snaps=await S.list();if(cur)cur=snaps.find(s=>s.id===cur.id)||null;if(!cur&&snaps.length){cur=snaps[0];opts=cur.opts||defaults(kindOf(cur))}renderAll(true)}
+let knownIds=null;
+async function reload(){const prev=knownIds;snaps=await S.list();knownIds=new Set(snaps.map(s=>s.id));
+  const fresh=prev?snaps.filter(s=>!prev.has(s.id)):[];
+  if(fresh.length&&!busy){cur=fresh[0];resultIdx=0;opts=normOpts(cur);renderAll();return}
+  if(cur)cur=snaps.find(s=>s.id===cur.id)||null;if(!cur&&snaps.length){cur=snaps[0];opts=normOpts(cur)}renderAll(true)}
 $('delSnap').onclick=async()=>{if(!cur||!confirm('Usunąć to zdjęcie razem z jego wizualizacjami?'))return;await S.remove(cur.id);cur=null;reload()};
 $('upload').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;const url=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(f)});
   const img=new Image();img.src=url;await img.decode();const sc=Math.min(1,1600/img.width),c=document.createElement('canvas');c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);c.getContext('2d').drawImage(img,0,0,c.width,c.height);
   const kind=confirm('To zdjęcie wnętrza? (OK = wnętrze, Anuluj = widok z zewnątrz)')?'interior':'exterior';const rec=await S.add(c.toDataURL('image/jpeg',.9),'plik',{kind});cur=rec;opts=defaults(kind);e.target.value='';reload()});
 function esc(s){return String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]))}
 
-S.onChange(reload);HouserStore.subscribe(()=>{if(cur&&!busy&&document.activeElement?.id!=='prompt'){$('prompt').value=buildPrompt()}});
+S.onChange(reload);addEventListener('storage',e=>{if(e.key==='houser:last-snapshot')reload()});addEventListener('focus',reload);document.addEventListener('visibilitychange',()=>{if(!document.hidden)reload()});try{window.top.addEventListener('hashchange',()=>{if(window.top.location.hash==='#wizualizacje')reload()})}catch(_){}HouserStore.subscribe(()=>{if(cur&&!busy&&document.activeElement?.id!=='prompt'){$('prompt').value=buildPrompt()}});
 if(getKey()){$('key').placeholder='klucz zapisany ('+getKey().slice(0,6)+'…)';loadModels()}else{setKeyStatus('Wklej klucz i kliknij „Zapisz i sprawdź”.');fillModels([],[])}
 renderProvider();
 reload();

@@ -14,7 +14,8 @@
   async function list(){const all=await tx('readonly',st=>st.getAll());return (all||[]).sort((a,b)=>b.createdAt.localeCompare(a.createdAt))}
   async function get(id){return tx('readonly',st=>st.get(id))}
   async function put(rec){await tx('readwrite',st=>st.put(rec));changed();return rec}
-  async function add(image,source,meta){const rec={id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),createdAt:new Date().toISOString(),source,meta:meta||{},image,results:[]};return put(rec)}
+  function ping(id){try{localStorage.setItem('houser:last-snapshot',id+'|'+Date.now())}catch(_){}}
+  async function add(image,source,meta){const rec={id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),createdAt:new Date().toISOString(),source,meta:meta||{},image,results:[]};await put(rec);ping(rec.id);return rec}
   async function remove(id){await tx('readwrite',st=>st.delete(id));changed()}
   function onChange(cb){if(bc)bc.addEventListener('message',()=>cb())}
 
