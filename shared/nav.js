@@ -12,10 +12,10 @@
   a.href=home+(id?'#'+id:'');
   a.textContent='⌂ Moduły';
   a.title='Wróć do strony głównej z listą modułów';
-  a.style.cssText='position:fixed;left:10px;bottom:10px;z-index:99999;background:#0f172a;color:#fff;'+
+  a.style.cssText='position:fixed;left:10px;bottom:10px;z-index:99999;background:#fff;color:#0f172a;border:1px solid #cbd5e1;'+
     'font:600 12px system-ui,Segoe UI,Arial,sans-serif;padding:7px 11px;border-radius:999px;'+
-    'text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.25);opacity:.85';
+    'text-decoration:none;box-shadow:0 2px 8px rgba(15,23,42,.15);opacity:.9';
   a.onmouseenter=function(){a.style.opacity='1';};
-  a.onmouseleave=function(){a.style.opacity='.85';};
+  a.onmouseleave=function(){a.style.opacity='.9';};
   document.body.appendChild(a);
 })();

@@ -4,19 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Houser – projektowanie domu</title>
+<link rel="stylesheet" href="shared/theme.css">
 <style>
-:root{--bg:#f1f5f9;--panel:#fff;--line:#e2e8f0;--text:#0f172a;--muted:#64748b;--accent:#2563eb;--bar:#0f172a;--barText:#e2e8f0}
+:root{--bg:var(--hs-bg);--panel:var(--hs-panel);--line:var(--hs-line);--text:var(--hs-text);--muted:var(--hs-muted);--accent:var(--hs-accent)}
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
 body{display:grid;grid-template-rows:auto 1fr}
-header{display:flex;align-items:center;gap:6px;background:var(--bar);color:var(--barText);padding:0 10px;min-height:44px;overflow-x:auto}
-.brand{font-weight:800;letter-spacing:.3px;margin-right:12px;white-space:nowrap;color:#fff;text-decoration:none}
-.tab{border:0;background:transparent;color:var(--barText);padding:12px 12px;cursor:pointer;font:inherit;font-size:14px;white-space:nowrap;border-bottom:3px solid transparent}
-.tab:hover{background:#1e293b}
-.tab.active{border-bottom-color:#60a5fa;color:#fff;font-weight:650}
-.tab .soon{font-size:10px;background:#334155;border-radius:999px;padding:2px 6px;margin-left:5px;vertical-align:middle}
+header{display:flex;align-items:center;gap:4px;background:var(--hs-panel);border-bottom:1px solid var(--hs-line);padding:0 12px;min-height:46px;overflow-x:auto}
+.brand{font-weight:800;font-size:15px;margin-right:14px;white-space:nowrap;color:var(--hs-text);text-decoration:none}
+.tab{border:0;background:transparent;color:var(--hs-muted);padding:13px 12px 11px;cursor:pointer;font:600 14px var(--hs-font);white-space:nowrap;border-bottom:2px solid transparent}
+.tab:hover{color:var(--hs-text)}
+.tab.active{border-bottom-color:var(--hs-accent);color:var(--hs-accent)}
+.tab .soon{font-size:10px;font-weight:600;background:var(--hs-bg);color:var(--hs-muted);border:1px solid var(--hs-line);border-radius:999px;padding:1px 6px;margin-left:5px;vertical-align:middle}
 .spacer{flex:1}
-.ext{color:#93c5fd;font-size:12px;text-decoration:none;white-space:nowrap;padding:0 6px}
+.ext{color:var(--hs-accent);font-size:12px;text-decoration:none;white-space:nowrap;padding:0 6px}
 main{position:relative;min-height:0}
 .view{position:absolute;inset:0;display:none}
 .view.active{display:block}
@@ -26,13 +27,13 @@ iframe{width:100%;height:100%;border:0;display:block;background:#fff}
 h1{margin:0 0 6px;font-size:26px}
 .lead{color:var(--muted);margin:0 0 22px;line-height:1.5}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;cursor:pointer;text-align:left;font:inherit;color:inherit;display:flex;flex-direction:column;gap:8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--hs-radius-lg);box-shadow:var(--hs-shadow);padding:16px;cursor:pointer;text-align:left;font:inherit;color:inherit;display:flex;flex-direction:column;gap:8px}
 .card:hover{border-color:var(--accent);box-shadow:0 4px 14px rgba(37,99,235,.12)}
 .card h2{margin:0;font-size:17px}
 .card p{margin:0;color:var(--muted);font-size:14px;line-height:1.45}
 .card .num{font-size:12px;font-weight:700;color:var(--accent)}
 .card.disabled{opacity:.6}
-.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-top:22px;line-height:1.55;font-size:14px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:var(--hs-radius-lg);box-shadow:var(--hs-shadow);padding:16px 18px;margin-top:22px;line-height:1.55;font-size:14px}
 .box h3{margin:0 0 8px;font-size:15px}
 .box ol,.box ul{margin:0;padding-left:20px}
 code{background:#f1f5f9;border-radius:4px;padding:1px 5px;font-size:13px}

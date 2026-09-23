@@ -1,0 +1,36 @@
+/* Wspólny jasny motyw wszystkich modułów Houser.
+   Moduły mapują swoje zmienne na te tokeny i używają klas .hs-* dla nagłówka. */
+:root{
+  --hs-bg:#f1f5f9;
+  --hs-panel:#ffffff;
+  --hs-panel-2:#f8fafc;
+  --hs-line:#e2e8f0;
+  --hs-line-strong:#cbd5e1;
+  --hs-text:#0f172a;
+  --hs-muted:#64748b;
+  --hs-accent:#2563eb;
+  --hs-accent-hover:#1d4ed8;
+  --hs-accent-soft:#eff6ff;
+  --hs-accent-line:#bfdbfe;
+  --hs-ok:#166534;
+  --hs-bad:#b91c1c;
+  --hs-bad-soft:#fef2f2;
+  --hs-warn:#b45309;
+  --hs-radius:8px;
+  --hs-radius-lg:12px;
+  --hs-shadow:0 1px 2px rgba(15,23,42,.06);
+  --hs-font:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  color-scheme:light;
+}
+html,body{font-family:var(--hs-font);font-size:14px;background:var(--hs-bg);color:var(--hs-text)}
+
+/* Nagłówek modułu: tytuł + krótki opis */
+.hs-title{font-size:18px;font-weight:750;margin:0;line-height:1.25;color:var(--hs-text)}
+.hs-sub{font-size:13px;color:var(--hs-muted);line-height:1.45;margin:4px 0 0}
+
+/* Wspólne przyciski (moduły mapują na to swoje .btn / button) */
+.hs-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--hs-line-strong);background:var(--hs-panel);color:var(--hs-text);
+  border-radius:var(--hs-radius);padding:7px 11px;font:600 13px/1.2 var(--hs-font);cursor:pointer;text-decoration:none}
+.hs-btn:hover{background:var(--hs-panel-2);border-color:#94a3b8}
+.hs-btn.primary{background:var(--hs-accent);border-color:var(--hs-accent);color:#fff}
+.hs-btn.primary:hover{background:var(--hs-accent-hover)}

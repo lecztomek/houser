@@ -4,22 +4,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Meblowanie</title>
+<link rel="stylesheet" href="../../shared/theme.css">
 <style>
-html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;background:#f8fafc;color:#0f172a}
+html,body{height:100%;margin:0}
 .wrap{max-width:640px;margin:0 auto;padding:48px 16px;line-height:1.55}
-h1{font-size:24px;margin:0 0 10px}
-p,li{color:#475569}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:18px 20px;box-shadow:var(--hs-shadow);margin-top:14px}
+.card p,.card li{color:var(--hs-muted)}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Meblowanie – w przygotowaniu</h1>
+  <h1 class="hs-title">Meblowanie</h1>
+  <p class="hs-sub">Moduł w przygotowaniu.</p>
+  <div class="card">
   <p>To będzie osobny moduł do rozmieszczania mebli na wczytanym układzie domu (JSON z modułu Projektowanie), z eksportem wyniku do pliku.</p>
   <p>Na razie:</p>
   <ul>
     <li>proste meble (warstwa „Meble”) można dodawać w module <b>Projektowanie</b>,</li>
     <li>meble zapisane w układzie JSON wyświetla moduł <b>Wnętrze 3D</b>.</li>
   </ul>
+  </div>
 </div>
 <script src="../../shared/nav.js"></script>
 </body>

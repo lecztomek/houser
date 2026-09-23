@@ -11,6 +11,8 @@ modules/
   wnetrze-3d/index.html     podgląd 3D wnętrza z punktu obserwatora (meble z JSON)
   zewnatrz-3d/index.html    podgląd 3D bryły z zewnątrz (dach, okna, tarasy, pergole)
   meblowanie/index.html     osobny moduł meblowania – w przygotowaniu
+shared/theme.css            wspólny jasny motyw (kolory, przyciski, nagłówki modułów)
+shared/gl-renderer.js       wspólny renderer WebGL modułów 3D (bufor głębokości, bez bibliotek)
 shared/nav.js               przycisk powrotu do strony głównej, gdy moduł otwarto samodzielnie
 examples/                   przykładowa definicja domu i gotowy układ
 .github/workflows/pages.yml automatyczna publikacja na GitHub Pages
@@ -21,7 +23,7 @@ Moduły wymieniają dane wyłącznie przez pliki JSON (eksport z Projektowania �
 
 ### Dodanie nowego modułu
 
-1. Utwórz `modules/<nazwa>/index.html` i przed `</body>` dodaj `<script src="../../shared/nav.js"></script>`.
+1. Utwórz `modules/<nazwa>/index.html`: w `<head>` dodaj `<link rel="stylesheet" href="../../shared/theme.css">`, a przed `</body>` `<script src="../../shared/nav.js"></script>`.
 2. Dopisz moduł do tablicy `MODULES` w `index.html`.
 
 ## Publikacja
