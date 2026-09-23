@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tarasy i pergole</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+.wrap{height:100vh;display:grid;grid-template-columns:340px 1fr}
+.side{padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{position:relative;min-width:0;overflow:auto;background:#e2e8f0;display:flex;align-items:flex-start;justify-content:center;padding:18px}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--hs-line-strong);background:var(--hs-panel);color:var(--hs-text);padding:5px 8px;border-radius:var(--hs-radius);font:600 12px var(--hs-font);cursor:pointer}
+.btn:hover{background:var(--hs-panel-2);border-color:#94a3b8}
+.btn.primary{background:var(--hs-accent);border-color:var(--hs-accent);color:#fff}
+.btn.danger{color:var(--hs-bad);border-color:#fecaca}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.status{font-size:12px;line-height:1.45;color:var(--hs-muted);margin-top:8px}
+.status b{color:var(--hs-text)}
+.types{display:grid;gap:6px}
+.type{display:flex;align-items:center;gap:8px;border:1px solid var(--hs-line-strong);background:#fff;border-radius:var(--hs-radius);padding:7px 8px;font:600 13px var(--hs-font);cursor:pointer;text-align:left;color:var(--hs-text)}
+.type:hover{border-color:#94a3b8}
+.type.active{outline:2px solid var(--hs-accent);outline-offset:1px}
+.type:disabled{opacity:.45;cursor:not-allowed}
+.sw{width:16px;height:16px;border-radius:4px;border:1px solid rgba(0,0,0,.25);flex:0 0 auto}
+.sw.erase{background:repeating-linear-gradient(45deg,#fff 0 3px,#cbd5e1 3px 6px)}
+.hint{font-size:12px;color:var(--hs-muted);line-height:1.45;margin:8px 0 0}
+.list{display:grid;gap:6px}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;border:1px solid var(--hs-line);border-radius:var(--hs-radius);padding:6px 8px;background:#fff;font-size:12px}
+.item input{border:1px solid var(--hs-line-strong);border-radius:6px;padding:4px 6px;font:inherit;width:100%}
+.item small{color:var(--hs-muted);display:block;margin-top:2px}
+.planCard{background:#fff;border-radius:var(--hs-radius-lg);padding:14px;box-shadow:0 6px 20px rgba(15,23,42,.12)}
+.planTitle{font-weight:700;font-size:14px;margin-bottom:8px;display:flex;justify-content:space-between;gap:12px}
+.planTitle span{color:var(--hs-muted);font-weight:500;font-size:12px}
+#plan{display:block;touch-action:none;user-select:none}
+.empty{padding:40px 24px;text-align:center;color:var(--hs-muted);max-width:420px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr;height:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1 class="hs-title">Tarasy i pergole</h1>
+  <p class="hs-sub">Malujesz kratka po kratce tarasy, zadaszenia i pergole wokół domu – jak pomieszczenia. Rzut domu jest tu tylko do podglądu.</p>
+
+  <div class="section">
+    <h3>Projekt</h3>
+    <div class="row">
+      <label class="btn primary">Wczytaj projekt JSON<input id="file" type="file" accept="application/json,.json" hidden></label>
+      <button id="export" class="btn" disabled>Eksportuj JSON</button>
+    </div>
+    <div id="status" class="status"></div>
+  </div>
+
+  <div class="section">
+    <h3>Pędzel</h3>
+    <div class="types" id="types"></div>
+    <p class="hint">Klikaj lub przeciągaj po kratkach wokół domu. <b>Prawy przycisk</b> myszy zawsze usuwa. Stykające się kratki jednego typu tworzą jeden element (w 3D: słupki w narożnikach, belki po obwodzie).</p>
+  </div>
+
+  <div class="section">
+    <h3>Elementy</h3>
+    <div class="list" id="list"></div>
+    <div class="row" style="margin-top:10px"><button id="clearAll" class="btn danger" disabled>Usuń wszystkie</button></div>
+  </div>
+</aside>
+<main class="main"><div class="planCard" id="card"></div></main>
+</div>
+
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script>
+const $=id=>document.getElementById(id), NS='http://www.w3.org/2000/svg';
+// te same typy co w Zewnątrz 3D
+const TYPES={
+  terrace:{name:'Taras bez dachu',fill:'#d1d5db',stroke:'#6b7280'},
+  coveredTerrace:{name:'Zadaszony taras',fill:'#93c5fd',stroke:'#2563eb'},
+  pergola:{name:'Pergola',fill:'#fde68a',stroke:'#a16207'}
+};
+const MARGIN=8, PX=34; // kratki wokół domu, px na kratkę
+let project=null, source='', brush='terrace', painting=null;
+
+const grid=()=>project?.grid||project?.definitionSnapshot?.grid;
+const rooms=f=>project?.definitionSnapshot?.floors?.[f]?.rooms||[];
+const groundFloor=()=>{const fo=project?.definitionSnapshot?.floorOrder;return Array.isArray(fo)&&fo.length?fo[0]:'ground'};
+function cellAt(f,x,y){const g=grid(),s=project?.state?.[f];if(!g||!s||x<0||y<0||x>=g.width||y>=g.height)return null;return (Array.isArray(s[0])?s[y]?.[x]:s[y*g.width+x])||null}
+function list(){return Array.isArray(project?.outdoorStructures)?project.outdoorStructures:[]}
+const cellM=()=>grid().cellMeters;
+
+function setProject(p,src){project=p&&(p.grid||p.definitionSnapshot?.grid)?p:null;source=src||'';if(project){project.outdoorStructures=HouserModel.outdoorFromMap(HouserModel.outdoorMap(list(),cellM()),cellM(),list());}renderAll()}
+function save(){if(!project)return;const out=JSON.parse(JSON.stringify(list()));if(!HouserStore.update(p=>{p.outdoorStructures=out;return p},'tarasy'))HouserStore.save(project,'tarasy')}
+
+// kratka poza obrysem domu i w granicach marginesu?
+function paintable(cx,cy){const g=grid();if(cx<-MARGIN||cy<-MARGIN||cx>=g.width+MARGIN||cy>=g.height+MARGIN)return false;if(cx>=0&&cy>=0&&cx<g.width&&cy<g.height){const id=cellAt(groundFloor(),cx,cy);const r=rooms(groundFloor()).find(q=>q.id===id);return !id||r?.kind==='exteriorVoid'}return true}
+function paint(cx,cy,type){if(!paintable(cx,cy))return false;const map=HouserModel.outdoorMap(list(),cellM()),k=cx+','+cy;if(type){if(map.get(k)===type)return false;map.set(k,type)}else{if(!map.has(k))return false;map.delete(k)}project.outdoorStructures=HouserModel.outdoorFromMap(map,cellM(),list());return true}
+
+// ---------- panel boczny
+function renderSide(){
+  $('export').disabled=!project;$('clearAll').disabled=!project||!list().length;
+  $('status').innerHTML=project?'<b>'+(source==='plik'?'Wczytany plik':'Bieżący projekt')+'</b>'+(project.definitionName?' – '+esc(project.definitionName):'')+'<br>Zmiany zapisują się automatycznie.'
+    :'Brak bieżącego projektu. Najpierw narysuj rzut w module <b>Układ pomieszczeń</b> albo wczytaj plik JSON.';
+  $('types').innerHTML='';
+  for(const [id,t] of [...Object.entries(TYPES),['erase',{name:'Gumka'}]]){const b=document.createElement('button');b.className='type'+(brush===id?' active':'');b.disabled=!project;b.innerHTML='<span class="sw'+(id==='erase'?' erase':'')+'" style="'+(t.fill?'background:'+t.fill:'')+'"></span>'+t.name;b.onclick=()=>{brush=id;renderAll()};$('types').appendChild(b)}
+  const L=$('list');L.innerHTML='';
+  if(!project||!list().length)L.innerHTML='<div class="hint" style="margin:0">Brak tarasów i pergoli.</div>';
+  for(const it of list()){const t=TYPES[it.type]||TYPES.terrace,n=HouserModel.outdoorCells(it,cellM()).length,row=document.createElement('div');row.className='item';
+    row.innerHTML='<span class="sw" style="background:'+t.fill+'"></span><div><input value="'+esc(it.label||'')+'" placeholder="'+t.name+'"><small>'+t.name+' · '+(n*cellM()*cellM()).toFixed(1)+' m² · '+it.w.toFixed(1)+' × '+it.h.toFixed(1)+' m</small></div><button class="btn danger">Usuń</button>';
+    row.querySelector('input').addEventListener('change',e=>{it.label=e.target.value.trim();renderPlan();save()});
+    row.querySelector('button').onclick=()=>{project.outdoorStructures=list().filter(x=>x!==it);renderAll();save()};
+    L.appendChild(row)}
+}
+$('clearAll').onclick=()=>{if(!list().length||!confirm('Usunąć wszystkie tarasy i pergole?'))return;project.outdoorStructures=[];renderAll();save()};
+
+// ---------- rzut
+function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
+function renderPlan(){
+  const card=$('card');
+  if(!project){card.innerHTML='<div class="empty">Brak projektu.<br><br>Narysuj rzut w module <b>Układ pomieszczeń</b> – pojawi się tu automatycznie – albo wczytaj plik JSON z lewej.</div>';return}
+  if(!$('plan'))card.innerHTML='<div class="planTitle"><div id="planTitle"></div><span id="planInfo"></span></div><svg id="plan"></svg>';
+  const svg=$('plan');svg.innerHTML='';const g=grid(),gf=groundFloor(),W=g.width,H=g.height,TW=(W+2*MARGIN)*PX,TH=(H+2*MARGIN)*PX;
+  svg.setAttribute('viewBox',[-MARGIN*PX,-MARGIN*PX,TW,TH].join(' '));
+  const main=document.querySelector('.main'),avail=Math.max(320,Math.min(main.clientWidth-70,(main.clientHeight-90)*TW/TH));svg.setAttribute('width',Math.round(avail));const k=TW/Math.round(avail);
+  $('planTitle').textContent='Otoczenie domu · kratka '+cellM().toFixed(2)+' m';
+  $('planInfo').textContent=brush==='erase'?'Gumka: klikaj kratki, aby usunąć':'Pędzel: '+TYPES[brush].name;
+  svg.style.cursor='crosshair';
+  const P=v=>v*PX;
+  // tło: trawa + siatka
+  el('rect',{x:-MARGIN*PX,y:-MARGIN*PX,width:TW,height:TH,fill:'#eef5e9'},svg);
+  for(let x=-MARGIN;x<=W+MARGIN;x++)el('line',{x1:P(x),y1:P(-MARGIN),x2:P(x),y2:P(H+MARGIN),stroke:'rgba(15,23,42,.08)','stroke-width':1},svg);
+  for(let y=-MARGIN;y<=H+MARGIN;y++)el('line',{x1:P(-MARGIN),y1:P(y),x2:P(W+MARGIN),y2:P(y),stroke:'rgba(15,23,42,.08)','stroke-width':1},svg);
+  // dom (parter) – tylko podgląd
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const id=cellAt(gf,x,y);if(!id)continue;const r=rooms(gf).find(q=>q.id===id);if(r?.kind==='exteriorVoid')continue;el('rect',{x:P(x),y:P(y),width:PX+.5,height:PX+.5,fill:r?.color||'#cbd5e1','fill-opacity':.28},svg)}
+  const ops=project.openings?.[gf]||{},OPC={door:'#ffffff',opening:'#ffffff',window:'#60a5fa',hst:'#22d3ee'};
+  const isHouse=(x,y)=>{const id=cellAt(gf,x,y);if(!id)return false;return rooms(gf).find(q=>q.id===id)?.kind!=='exteriorVoid'};
+  const edge=(key,a,b,x1,y1,x2,y2)=>{if(a===b)return;el('line',{x1:P(x1),y1:P(y1),x2:P(x2),y2:P(y2),stroke:'#0f172a','stroke-width':6,'stroke-linecap':'square'},svg);const op=ops[key];if(op)el('line',{x1:P(x1),y1:P(y1),x2:P(x2),y2:P(y2),stroke:OPC[op]||'#fff','stroke-width':3},svg)};
+  for(let y=0;y<=H;y++)for(let x=0;x<W;x++)edge('h:'+x+':'+y,isHouse(x,y-1),isHouse(x,y),x,y,x+1,y);
+  for(let y=0;y<H;y++)for(let x=0;x<=W;x++)edge('v:'+x+':'+y,isHouse(x-1,y),isHouse(x,y),x,y,x,y+1);
+  el('text',{x:P(W/2),y:P(H/2),'text-anchor':'middle','dominant-baseline':'middle','font-size':16*k,'font-weight':700,fill:'rgba(15,23,42,.35)','pointer-events':'none'},svg,'DOM');
+  // kierunki świata
+  const top=project.orientation?.top||'north',ORD=['north','east','south','west'],i=ORD.indexOf(top),PL={north:'N',east:'E',south:'S',west:'W'};
+  const side={top:ORD[i],right:ORD[(i+1)%4],bottom:ORD[(i+2)%4],left:ORD[(i+3)%4]};
+  for(const [s,x,y] of [['top',W/2,-MARGIN+.6],['bottom',W/2,H+MARGIN-.6],['left',-MARGIN+.6,H/2],['right',W+MARGIN-.6,H/2]])el('text',{x:P(x),y:P(y),'text-anchor':'middle','dominant-baseline':'middle','font-size':14*k,'font-weight':800,fill:'#475569'},svg,PL[side[s]]);
+  // tarasy / pergole
+  for(const it of list()){const t=TYPES[it.type]||TYPES.terrace,cells=HouserModel.outdoorCells(it,cellM()),set=new Set(cells.map(c=>c[0]+','+c[1]));
+    for(const [cx,cy] of cells)el('rect',{x:P(cx),y:P(cy),width:PX+.5,height:PX+.5,fill:t.fill,'fill-opacity':.8},svg);
+    for(const [cx,cy] of cells){const ln=(x1,y1,x2,y2)=>el('line',{x1:P(x1),y1:P(y1),x2:P(x2),y2:P(y2),stroke:t.stroke,'stroke-width':2.5,'stroke-dasharray':it.type==='pergola'?'7 5':''},svg);
+      if(!set.has(cx+','+(cy-1)))ln(cx,cy,cx+1,cy);if(!set.has(cx+','+(cy+1)))ln(cx,cy+1,cx+1,cy+1);if(!set.has((cx-1)+','+cy))ln(cx,cy,cx,cy+1);if(!set.has((cx+1)+','+cy))ln(cx+1,cy,cx+1,cy+1)}
+    if(it.type!=='terrace')for(const [vx,vy] of HouserModel.outdoorCorners(cells))el('rect',{x:P(vx)-4,y:P(vy)-4,width:8,height:8,fill:'#374151'},svg);
+    const cxm=cells.reduce((a,c)=>a+c[0]+.5,0)/cells.length,cym=cells.reduce((a,c)=>a+c[1]+.5,0)/cells.length;
+    el('text',{x:P(cxm),y:P(cym),'text-anchor':'middle','dominant-baseline':'middle','font-size':11*k,'font-weight':700,fill:'#1f2937','pointer-events':'none'},svg,(it.label||t.name)+' · '+(cells.length*cellM()*cellM()).toFixed(1)+' m²')}
+}
+function cellFromEvent(e){const svg=$('plan'),pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());return {cx:Math.floor(p.x/PX),cy:Math.floor(p.y/PX)}}
+document.addEventListener('contextmenu',e=>{if($('plan')?.contains(e.target))e.preventDefault()});
+document.addEventListener('pointerdown',e=>{const svg=$('plan');if(!project||!svg||!svg.contains(e.target))return;e.preventDefault();painting={type:(e.button===2||brush==='erase')?null:brush,changed:false};const c=cellFromEvent(e);if(paint(c.cx,c.cy,painting.type)){painting.changed=true;renderPlan()}});
+document.addEventListener('pointermove',e=>{if(!painting)return;const c=cellFromEvent(e);if(paint(c.cx,c.cy,painting.type)){painting.changed=true;renderPlan()}});
+document.addEventListener('pointerup',()=>{if(!painting)return;const ch=painting.changed;painting=null;renderAll();if(ch)save()});
+window.addEventListener('resize',renderPlan);
+if(window.ResizeObserver)new ResizeObserver(()=>{if(!painting)renderPlan()}).observe(document.querySelector('.main'));
+
+function renderAll(){renderSide();renderPlan()}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+$('file').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{const p=JSON.parse(await f.text());if(!p.grid&&!p.definitionSnapshot?.grid)throw new Error('brak siatki (grid)');setProject(p,'plik');HouserStore.save(project,'tarasy')}catch(err){alert('Nie udało się wczytać projektu: '+err.message)}e.target.value=''});
+$('export').addEventListener('click',()=>{if(!project)return;const d=new Date(),p2=n=>String(n).padStart(2,'0');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(project,null,2)],{type:'application/json'}));a.download='dom-uklad-v7-'+[d.getFullYear(),p2(d.getMonth()+1),p2(d.getDate()),p2(d.getHours()),p2(d.getMinutes())].join('-')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
+
+const rec=HouserStore.load();
+setProject(rec?rec.project:null,rec?'store':'');
+HouserStore.subscribe(r=>{if(painting)return;setProject(r.project,'store')});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

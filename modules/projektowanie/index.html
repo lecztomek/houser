@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Projektowanie – edytor układu domu</title>
+<title>Układ pomieszczeń</title>
 <link rel="stylesheet" href="../../shared/theme.css">
 <style>
 :root{--bg:var(--hs-bg);--panel:var(--hs-panel);--text:var(--hs-text);--muted:var(--hs-muted);--line:var(--hs-line-strong);--ok:var(--hs-ok);--bad:var(--hs-bad);--accent:var(--hs-accent);--warn:#b45309;--soft:#a16207;--warnbg:#fff7ed;--softbg:#fefce8}
@@ -29,7 +29,7 @@ select,input[type="number"],input[type="text"],input[type="search"]{border:1px s
 </head>
 <body>
 <div class="wrap">
-  <header style="margin-bottom:14px"><h1 class="hs-title">Projektowanie</h1><p class="hs-sub">Edytor i walidator układu domu. Pomieszczenia i komin są warstwą bazową. Otwory oraz tarasy/pergole są osobnymi warstwami; meble ustawiasz w module Meblowanie. Taras, pergolę albo altanę rysujesz teraz bezpośrednio po kratkach wokół domu — podobnie jak pomieszczenia, tylko poza obrysem.</p></header>
+  <header style="margin-bottom:14px"><h1 class="hs-title">Układ pomieszczeń</h1><p class="hs-sub">Edytor i walidator układu domu. Pomieszczenia i komin są warstwą bazową. Otwory są osobną warstwą. Tarasy i meble mają własne moduły. Taras, pergolę albo altanę rysujesz teraz bezpośrednio po kratkach wokół domu — podobnie jak pomieszczenia, tylko poza obrysem.</p></header>
 
   <div class="toolbar">
     <button id="loadDefinitionBtn" class="primary">Wczytaj definicję</button>
@@ -54,7 +54,6 @@ select,input[type="number"],input[type="text"],input[type="search"]{border:1px s
       <div class="layerbar">
         <label class="layerToggle"><input id="showOpenings" type="checkbox" checked> Otwory</label>
         <label class="layerToggle"><input id="showChimney" type="checkbox" checked> Komin</label>
-        <label class="layerToggle"><input id="showOutdoor" type="checkbox" checked> Taras / pergola</label>
       </div>
       <div class="settingsbar">
         <label>Góra siatki = <select id="topDirection"><option value="north">Północ</option><option value="east">Wschód</option><option value="south">Południe</option><option value="west">Zachód</option></select></label>
@@ -196,7 +195,7 @@ let floor=null,brush=null,mode='room',edgeTool=null,painting=false,dragErase=fal
 let orientation={top:'north'},elevationSettings={...HouserModel.DEF};
 const OUTDOOR_MARGIN_CELLS=8;
 let furnitureDrag=null,outdoorDrag=null;
-const visibility={openings:true,chimney:true,furniture:false,outdoor:true}; // meble są w module Meblowanie
+const visibility={openings:true,chimney:true,furniture:false,outdoor:false}; // meble i tarasy mają własne moduły
 let activeView='plan',selectedConditionIndex=0,selectedRoomEditIndex=0,roomEditorFloor='ground';
 
 const $=id=>document.getElementById(id);
@@ -346,7 +345,7 @@ function renderFloorTabs(){floorTabs.innerHTML='';for(const f of floors()){const
 function renderModeBar(){modeBar.innerHTML='<span class="modeLabel">TRYB:</span>';
   const add=(label,m,tool=null)=>{const b=document.createElement('button');b.className='toolBtn'+(mode===m&&(tool===null||edgeTool===tool)?' active':'');b.textContent=label;b.addEventListener('click',()=>setMode(m,tool));modeBar.appendChild(b);};
   add('Pomieszczenia','room');add('Gumka pól','eraseRoom');add('Komin (pion)','chimney');add('Gumka komina','eraseChimney');
-  for(const t of openingTypes()){const b=document.createElement('button');b.className='toolBtn'+(mode==='edge'&&edgeTool===t.id?' active':'');const dot=document.createElement('span');dot.className='toolDot'+(t.id==='opening'?' opening':'');dot.style.background=t.id==='opening'?'':t.color;b.appendChild(dot);b.appendChild(document.createTextNode(t.name));b.addEventListener('click',()=>setMode('edge',t.id));modeBar.appendChild(b);}add('Usuń otwór','eraseOpening');add('Taras / pergola','outdoor');
+  for(const t of openingTypes()){const b=document.createElement('button');b.className='toolBtn'+(mode==='edge'&&edgeTool===t.id?' active':'');const dot=document.createElement('span');dot.className='toolDot'+(t.id==='opening'?' opening':'');dot.style.background=t.id==='opening'?'':t.color;b.appendChild(dot);b.appendChild(document.createTextNode(t.name));b.addEventListener('click',()=>setMode('edge',t.id));modeBar.appendChild(b);}add('Usuń otwór','eraseOpening');
   $('furniturePanel').hidden=mode!=='furniture';$('outdoorPanel').hidden=mode!=='outdoor';
 }
 function renderCompass(){const m=cardinalMap();$('compassTop').textContent=DIR_SHORT[m.top];$('compassRight').textContent=DIR_SHORT[m.right];$('compassBottom').textContent=DIR_SHORT[m.bottom];$('compassLeft').textContent=DIR_SHORT[m.left];for(const [side,id] of [['top','compassTop'],['right','compassRight'],['bottom','compassBottom'],['left','compassLeft']])$(id).title=DIR_PL[m[side]];}
@@ -487,7 +486,7 @@ const projectInput=$('loadProjectInput');$('loadProjectBtn').addEventListener('c
 
 $('topDirection').addEventListener('change',()=>{pushHistory();orientation.top=$('topDirection').value;renderAll();});
 $('openBrylaBtn').addEventListener('click',()=>{saveLocal();window.HouserNav&&HouserNav.go('kondygnacje-dach');});
-for(const [id,key] of [['showOpenings','openings'],['showChimney','chimney'],['showOutdoor','outdoor']])$(id).addEventListener('change',()=>{visibility[key]=$(id).checked;renderAll();});
+for(const [id,key] of [['showOpenings','openings'],['showChimney','chimney']])$(id).addEventListener('change',()=>{visibility[key]=$(id).checked;renderAll();});
 $('clearOutdoorBtn').addEventListener('click',()=>{if(!outdoorStructures.length)return;if(confirm('Usunąć wszystkie tarasy i pergole z projektu?')){pushHistory();outdoorStructures=[];renderAll();}});
 outdoorSvg.addEventListener('contextmenu',e=>e.preventDefault());
 outdoorSvg.addEventListener('pointerdown',e=>{if(mode!=='outdoor'||!visibility.outdoor||floor!==floors()[0])return;e.preventDefault();pushHistory();const erase=e.button===2||$('outdoorType').value==='erase';outdoorDrag={erase,type:erase?null:$('outdoorType').value};try{outdoorSvg.setPointerCapture(e.pointerId);}catch(_){};const c=outdoorCellFromPointer(e);if(paintOutdoorCell(c.cx,c.cy,outdoorDrag.type))renderOutdoorOverlay();else if(!outdoorDrag.erase&&c.cx>=0&&c.cy>=0&&c.cx<W&&c.cy<H)interactionHint.textContent='Taras / pergola: maluj kratki poza obrysem domu.';});
@@ -511,10 +510,10 @@ if(window.HouserStore){
   const rec=HouserStore.load();
   if(rec&&rec.project&&rec.project.definitionSnapshot){try{window.__restoredFromStore=true;const snap=rec.project.definitionSnapshot;loadDefinitionObject(JSON.parse(JSON.stringify(snap)),JSON.stringify(snap,null,2),(rec.project.definitionName||'definicja')+' (bieżący projekt)');importProject(rec.project);renderAll();}catch(e){console.error('Nie udało się odtworzyć bieżącego projektu',e);}}
   HouserStore.subscribe(rec=>{const p=rec.project;if(!definition||!p||rec.source==='projektowanie')return;if(p.definitionFingerprint&&p.definitionFingerprint!==fingerprint)return;
-    // bryła z modułu Kondygnacje i dach, meble z modułu Meblowanie – reszta zostaje nasza
-    const nextE=validateElevationSettings(p.elevationSettings||{}),nextF=validateFurniture(p.furniture||{});
-    const chE=JSON.stringify(nextE)!==JSON.stringify(elevationSettings),chF=JSON.stringify(nextF)!==JSON.stringify(cloneFurniture());if(!chE&&!chF)return;
-    elevationSettings=nextE;furniture=nextF;renderAll();renderElevations();});
+    // bryła (Kondygnacje i dach), meble (Meblowanie), tarasy (Tarasy i pergole) – reszta zostaje nasza
+    const nextE=validateElevationSettings(p.elevationSettings||{}),nextF=validateFurniture(p.furniture||{}),nextO=validateOutdoorStructures(p.outdoorStructures||[]);
+    const chE=JSON.stringify(nextE)!==JSON.stringify(elevationSettings),chF=JSON.stringify(nextF)!==JSON.stringify(cloneFurniture()),chO=JSON.stringify(nextO)!==JSON.stringify(cloneOutdoor());if(!chE&&!chF&&!chO)return;
+    elevationSettings=nextE;furniture=nextF;outdoorStructures=nextO;renderAll();renderElevations();});
 }
 window.__houseDebug={loadDefinitionObject,projectPayload,importProject,resizeHouse,edgeInfo,canPlaceType,openingBetweenLength,exteriorOpeningLength,validation,getState:()=>snapshot(),cardinalMap,renderElevations,renderConditionsTab,renderRoomsTab};
 if(window.__AUTO_DEF__&&!window.__restoredFromStore){try{loadDefinitionObject(window.__AUTO_DEF__,JSON.stringify(window.__AUTO_DEF__,null,2),'dom_conditions_v7_kierunki.json');if(window.__AUTO_PROJECT__){importProject(window.__AUTO_PROJECT__);renderAll();}document.body.dataset.selftest='ok';}catch(e){document.body.dataset.selftest='fail';document.body.dataset.selftestError=e.message;console.error(e);}}

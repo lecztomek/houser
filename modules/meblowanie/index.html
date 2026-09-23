@@ -49,7 +49,7 @@ html,body{height:100%;margin:0}
 <div class="wrap">
 <aside class="side">
   <h1 class="hs-title">Meblowanie</h1>
-  <p class="hs-sub">Ustawiasz meble na gotowym rzucie z modułu Projektowanie. Pomieszczeń, drzwi i okien tu nie zmieniasz.</p>
+  <p class="hs-sub">Ustawiasz meble na gotowym rzucie z modułu Układ pomieszczeń. Pomieszczeń, drzwi i okien tu nie zmieniasz.</p>
 
   <div class="section">
     <h3>Projekt</h3>
@@ -134,7 +134,7 @@ function save(){ // zapisujemy tylko meble – reszta projektu zostaje taka, jak
 function renderSide(){
   $('export').disabled=!project;
   $('status').innerHTML=project?'<b>'+(source==='plik'?'Wczytany plik':'Bieżący projekt')+'</b>'+(project.definitionName?' – '+esc(project.definitionName):'')+'<br>Zmiany zapisują się automatycznie.'
-    :'Brak bieżącego projektu. Najpierw narysuj rzut w module <b>Projektowanie</b> albo wczytaj plik JSON.';
+    :'Brak bieżącego projektu. Najpierw narysuj rzut w module <b>Układ pomieszczeń</b> albo wczytaj plik JSON.';
   $('floorTabs').innerHTML='';
   for(const f of project?floors():[]){const b=document.createElement('button');b.className='btn'+(f===floor?' active':'');b.textContent=FLOOR_PL[f]||f;b.onclick=()=>{floor=f;selected=null;renderAll()};$('floorTabs').appendChild(b)}
   $('types').innerHTML='';
@@ -168,7 +168,7 @@ document.addEventListener('keydown',e=>{if(['INPUT','SELECT','TEXTAREA'].include
 function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
 function renderPlan(){
   const card=$('card');
-  if(!project){card.innerHTML='<div class="empty">Brak projektu do umeblowania.<br><br>Narysuj rzut w module <b>Projektowanie</b> – pojawi się tu automatycznie – albo wczytaj plik JSON z lewej.</div>';return}
+  if(!project){card.innerHTML='<div class="empty">Brak projektu do umeblowania.<br><br>Narysuj rzut w module <b>Układ pomieszczeń</b> – pojawi się tu automatycznie – albo wczytaj plik JSON z lewej.</div>';return}
   if(!$('plan'))card.innerHTML='<div class="planTitle"><div id="planTitle"></div><span id="planInfo"></span></div><svg id="plan"></svg>';
   const svg=$('plan');svg.innerHTML='';
   const g=grid(),c=g.cellMeters,Wm=g.width*c,Hm=g.height*c,pad=.4;

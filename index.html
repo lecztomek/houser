@@ -26,7 +26,8 @@ iframe{width:100%;height:100%;border:0;display:block;background:#fff}
 .wrap{max-width:1000px;margin:0 auto}
 h1{margin:0 0 6px;font-size:26px}
 .lead{color:var(--muted);margin:0 0 22px;line-height:1.5}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.group{grid-column:1/-1;margin:10px 0 -4px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--hs-muted)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--hs-radius-lg);box-shadow:var(--hs-shadow);padding:16px;cursor:pointer;text-align:left;font:inherit;color:inherit;display:flex;flex-direction:column;gap:8px}
 .card:hover{border-color:var(--accent);box-shadow:0 4px 14px rgba(37,99,235,.12)}
 .card h2{margin:0;font-size:17px}
@@ -56,9 +57,10 @@ a{color:var(--accent)}
       <div class="box">
         <h3>Jak pracować</h3>
         <ol>
-          <li><b>Projektowanie</b> – wczytaj definicję domu (warunki, siatka) albo gotowy projekt, narysuj pomieszczenia, otwory i tarasy. „Zapisz projekt” eksportuje plik <code>dom-uklad-v7-….json</code>.</li>
-          <li><b>Kondygnacje i dach</b> – ustaw, czy nad parterem jest pełne piętro czy poddasze, oraz kąt i kierunek dachu.</li>
-          <li><b>Wnętrze 3D</b> i <b>Zewnątrz 3D</b> – od razu pokazują bieżący projekt; możesz też wczytać dowolny plik JSON.</li>
+          <li>Przejdź kroki po kolei – każdy moduł zajmuje się jedną rzeczą i zapisuje ją do wspólnego bieżącego projektu.</li>
+          <li>Zacznij od <b>Układu pomieszczeń</b>: wczytaj definicję domu (albo gotowy projekt) i narysuj rzut.</li>
+          <li>Kolejne moduły (dach, tarasy, meble) biorą ten rzut i dokładają swoje elementy; podglądy 3D odświeżają się same.</li>
+          <li>Projekt zostaje w przeglądarce po odświeżeniu strony; na dysk zapisujesz go eksportem JSON z dowolnego modułu.</li>
         </ol>
       </div>
       <div class="box">
@@ -72,21 +74,26 @@ a{color:var(--accent)}
   </section>
 </main>
 <script>
+// Moduły w kolejności projektowania. group: etap, step: numer kroku na karcie.
 const MODULES=[
-  {id:'projektowanie',name:'Projektowanie',src:'modules/projektowanie/',desc:'Edytor i walidator układu: pomieszczenia, otwory, meble, tarasy, elewacje. Eksport układu do JSON.'},
-  {id:'kondygnacje-dach',name:'Kondygnacje i dach',src:'modules/kondygnacje-dach/',desc:'Widok z boku: parter, pełne piętro albo poddasze ze ścianką kolankową, kąt i kierunek dachu.'},
-  {id:'wnetrze-3d',name:'Wnętrze 3D',src:'modules/wnetrze-3d/',desc:'Podgląd 3D z punktu obserwatora – spacer po wnętrzu, schody, skosy dachu, meble z JSON.'},
-  {id:'zewnatrz-3d',name:'Zewnątrz 3D',src:'modules/zewnatrz-3d/',desc:'Bryła domu z zewnątrz: dach, okna, tarasy, pergole, skala z ludzikiem.'},
-  {id:'meblowanie',name:'Meblowanie',src:'modules/meblowanie/',desc:'Rozmieszczanie mebli na gotowym rzucie – pomieszczeń tu nie zmieniasz.'},
+  {id:'projektowanie',group:'Projekt',name:'Układ pomieszczeń',src:'modules/projektowanie/',desc:'Wczytaj definicję domu, maluj pomieszczenia, drzwi, okna i komin; walidacja warunków na bieżąco.'},
+  {id:'kondygnacje-dach',group:'Projekt',name:'Kondygnacje i dach',src:'modules/kondygnacje-dach/',desc:'Widok z boku: parter, pełne piętro albo poddasze ze ścianką kolankową, kąt i kierunek dachu.'},
+  {id:'tarasy',group:'Projekt',name:'Tarasy i pergole',src:'modules/tarasy/',desc:'Malowanie kratek wokół domu: taras, zadaszony taras, pergola.'},
+  {id:'meblowanie',group:'Wnętrza',name:'Meblowanie',src:'modules/meblowanie/',desc:'Rozmieszczanie mebli na gotowym rzucie – pomieszczeń tu nie zmieniasz.'},
+  {id:'wnetrze-3d',group:'Podgląd',name:'Wnętrze 3D',src:'modules/wnetrze-3d/',desc:'Spacer po domu z punktu obserwatora (strzałki), schody, skosy dachu, meble.'},
+  {id:'zewnatrz-3d',group:'Podgląd',name:'Zewnątrz 3D',src:'modules/zewnatrz-3d/',desc:'Bryła domu z zewnątrz: dach, okna, drzwi, tarasy i pergole.'},
 ];
+MODULES.forEach((m,i)=>m.step=i+1);
 const tabs=document.getElementById('tabs'),cards=document.getElementById('cards'),views=document.getElementById('views'),openExt=document.getElementById('openExt');
 const frames={};
 function tabBtn(id,label,soon){const b=document.createElement('button');b.className='tab';b.dataset.id=id;b.textContent=label;if(soon){const s=document.createElement('span');s.className='soon';s.textContent='wkrótce';b.appendChild(s);}b.onclick=()=>{location.hash=id;};tabs.appendChild(b);}
 tabBtn('start','Start');
-MODULES.forEach((m,i)=>{
-  tabBtn(m.id,m.name,m.soon);
+let lastGroup='';
+MODULES.forEach(m=>{
+  tabBtn(m.id,m.step+'. '+m.name,m.soon);
+  if(m.group!==lastGroup){lastGroup=m.group;const h=document.createElement('h3');h.className='group';h.textContent=m.group;cards.appendChild(h);}
   const c=document.createElement('button');c.className='card'+(m.soon?' disabled':'');
-  c.innerHTML='<span class="num">'+(m.soon?'wkrótce':'Moduł '+(i+1))+'</span><h2></h2><p></p>';
+  c.innerHTML='<span class="num">'+(m.soon?'wkrótce':'Krok '+m.step)+'</span><h2></h2><p></p>';
   c.querySelector('h2').textContent=m.name;c.querySelector('p').textContent=m.desc;
   c.onclick=()=>{location.hash=m.id;};cards.appendChild(c);
 });

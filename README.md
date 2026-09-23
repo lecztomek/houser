@@ -5,12 +5,13 @@ Statyczna strona WWW: bez kont i bez serwera. Wczytujesz pliki JSON, pracujesz w
 ## Struktura
 
 ```
-index.html                  strona główna – spina moduły (zakładki; moduły trzymają stan między przełączeniami)
+index.html                  strona główna – moduły jako kolejne kroki projektowania (zakładki)
 modules/
-  projektowanie/index.html  edytor i walidator układu (rzut, pomieszczenia, otwory, meble, tarasy, elewacje)
+  projektowanie/index.html  Układ pomieszczeń: definicja, malowanie pomieszczeń, otwory, komin, walidacja, elewacje
   kondygnacje-dach/index.html widok z boku: piętro / poddasze, ścianka kolankowa, kąt i kierunek dachu
   wnetrze-3d/index.html     podgląd 3D wnętrza z punktu obserwatora (meble z JSON)
   zewnatrz-3d/index.html    podgląd 3D bryły z zewnątrz (dach, okna, tarasy, pergole)
+  tarasy/index.html         tarasy, zadaszenia i pergole malowane kratkami wokół domu
   meblowanie/index.html     rozmieszczanie mebli na gotowym rzucie (pomieszczeń tu nie zmieniasz)
 shared/theme.css            wspólny jasny motyw (kolory, przyciski, nagłówki modułów)
 shared/gl-renderer.js       wspólny renderer WebGL modułów 3D (bufor głębokości, bez bibliotek)
@@ -23,6 +24,8 @@ examples/                   przykładowa definicja domu i gotowy układ
 
 Każdy moduł to samodzielny plik HTML – można go otworzyć bezpośrednio, a strona główna ładuje go w ramce.
 Moduły wymieniają dane przez wspólny bieżący projekt w pamięci przeglądarki (`shared/project-store.js`, format jak eksport JSON). Każdy moduł może też wczytać i wyeksportować plik JSON.
+
+Zasada: każda funkcja to osobny, prosty moduł – lepiej dodać nowy moduł niż komplikować istniejący.
 
 ### Dodanie nowego modułu
 

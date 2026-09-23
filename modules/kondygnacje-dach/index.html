@@ -132,7 +132,7 @@ function syncInputs(){
   const name=project?.definitionName||'';
   $('status').innerHTML=project
     ? '<b>'+(source==='plik'?'Wczytany plik':'Bieżący projekt')+'</b>'+(name?' – '+escapeHtml(name):'')+'<br>Zmiany zapisują się automatycznie.'
-    : 'Brak bieżącego projektu. Zacznij w module <b>Projektowanie</b> albo wczytaj plik JSON. Do tego czasu widzisz przykładową bryłę 9 × 9 m.';
+    : 'Brak bieżącego projektu. Zacznij w module <b>Układ pomieszczeń</b> albo wczytaj plik JSON. Do tego czasu widzisz przykładową bryłę 9 × 9 m.';
 }
 function readInputs(){
   settings=HouserModel.normalize({...settings,groundHeight:$('groundHeight').value,kneeWall:$('kneeWall').value,upperHeight:$('upperHeight').value,roofPitch:$('roofPitch').value,ridge:$('ridge').value},dims().span);
