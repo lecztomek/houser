@@ -339,7 +339,7 @@ function drawFurnitureOnPlan(f,ox,oy,s){
 }
 // Zdjęcie do wizualizacji AI: każdy rodzaj mebla dostaje wyraźny kolor-kod, a legenda trafia do promptu.
 // Bez jasnych niebieskich/szarych – te oznaczają okna i ściany.
-const SNAP_PALETTE=[['#e6194b','red'],['#3cb44b','green'],['#ffe119','yellow'],['#f58231','orange'],['#911eb4','purple'],['#f032e6','magenta'],['#9a6324','brown'],['#bfef45','lime green'],['#000075','navy blue'],['#469990','teal'],['#fabed4','pink'],['#808000','olive'],['#ffd8b1','peach'],['#000000','black'],['#dcbeff','lavender']];
+const SNAP_PALETTE=[['#e6194b','red'],['#3cb44b','green'],['#ffe119','yellow'],['#f58231','orange'],['#911eb4','purple'],['#f032e6','magenta'],['#9a6324','brown'],['#bfef45','lime green'],['#000075','navy blue'],['#469990','teal'],['#fabed4','pink'],['#808000','olive'],['#ffd8b1','peach'],['#dcbeff','lavender']];
 function codedOn(){return !!els('snapCoded')?.checked}
 // stałe przypisanie kolorów: kolejne rodzaje mebli w projekcie (obie kondygnacje) dostają kolejne kolory palety
 function codeMap(){ensureFurniture();const map={};let i=0;for(const f of ['ground','upper'])for(const it of furnitureList(f)){if(!validFurnitureItem(it))continue;const k=furnKey(it);if(map[k]||i>=SNAP_PALETTE.length)continue;map[k]=SNAP_PALETTE[i++]}return map}
@@ -375,10 +375,38 @@ function snapLegend(){if(!codedOn())return [];const cm=codeMap(),seen=new Set(),
 let _legendKey='';
 function updateCodeLegend(){const el=els('codeLegend');if(!el)return;const L=snapLegend();if(codedOn()&&chimneyVisible())L.push({color:CHIMNEY_CODE[0],name:'Komin'});const key=L.map(l=>l.color).join();if(key===_legendKey)return;_legendKey=key;
   el.hidden=!L.length;el.innerHTML='<b style="display:block;margin-bottom:3px">Meble kolorami</b>'+L.map(l=>'<div style="display:flex;align-items:center;gap:6px"><i style="width:12px;height:12px;border-radius:3px;border:1px solid #0003;background:'+l.color+'"></i>'+l.name.replace(/</g,'&lt;')+'</div>').join('')}
+// Kominek: przy kominie od strony salonu/pokoju dziennego/jadalni rysujemy wkład kominkowy (czarny, z pomarańczowym ogniem),
+// półkę i podest – wyraźna podpowiedź dla wizualizacji AI.
+const LIVING_RE=/salon|dzienn|jadal|kominek|living/i;let fireplacePts=[];
+function addFireplaces(){fireplacePts=[];const g=grid(),c=g.cellMeters,f='ground',set=new Set(project.structure?.chimney||[]),rm=roomMap(f),cand=[];
+  for(const n of set){const x=n%g.width,y=Math.floor(n/g.width);for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(set.has(ny*g.width+nx))continue;
+    const id=roomAt(f,nx,ny);if(!id||cellClass(f,id)!=='room'||!LIVING_RE.test(rm[id]?.name||id))continue;cand.push({x,y,dx,dy})}}
+  if(!cand.length)return;const cnt={};for(const k of cand){const key=k.dx+','+k.dy;cnt[key]=(cnt[key]||0)+1}
+  const best=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0];
+  const sel=cand.filter(k=>k.dx+','+k.dy===best),[dx,dy]=best.split(',').map(Number),runs=[];
+  // sąsiednie kratki komina po tej samej stronie łączymy w jeden szeroki kominek
+  sel.sort((a,b)=>dx?(a.x-b.x)||(a.y-b.y):(a.y-b.y)||(a.x-b.x));
+  for(const k of sel){const r=runs[runs.length-1],line=dx?k.x:k.y,pos=dx?k.y:k.x;if(r&&r.line===line&&pos===r.to+1)r.to=pos;else runs.push({line,from:pos,to:pos})}
+  for(const r of runs){const half=c/2-.03,lc=(r.line+.5)*c,u0=r.from*c+.03,u1=(r.to+1)*c-.03,um=(u0+u1)/2,w=(u1-u0)/2;
+    // lokalny układ: u – wzdłuż lica komina, o – na zewnątrz od lica
+    const B=(a0,a1,o0,o1,y0,y1,col)=>{const A=half+o0,Bo=half+o1;if(dx){const X0=lc+dx*A,X1=lc+dx*Bo;addBoxFaces(Math.min(X0,X1),y0,um+a0,Math.max(X0,X1),y1,um+a1,col,{stroke:'#1f2937',line:.5})}
+      else{const Z0=lc+dy*A,Z1=lc+dy*Bo;addBoxFaces(um+a0,y0,Math.min(Z0,Z1),um+a1,y1,Math.max(Z0,Z1),col,{stroke:'#1f2937',line:.5})}};
+    const fw=Math.min(w,.55);B(-fw,fw,0,.05,.32,1.0,'#18181b');B(-fw+.06,fw-.06,.05,.056,.38,.68,'#f97316');B(-fw+.14,fw-.14,.056,.06,.40,.56,'#fde047');
+    B(-w-.02,w+.02,0,.42,0,.07,'#78716c');B(-w-.04,w+.04,0,.2,1.12,1.18,'#57534e');
+    fireplacePts.push(dx?{x:lc+dx*(half+.3),z:um,dx,dy}:{x:um,z:lc+dy*(half+.3),dx,dy})}}
+function fireplaceVisible(){if(observer.floor!=='ground')return false;return fireplacePts.some(p=>(observer.x-p.x)*p.dx+(observer.z-p.z)*p.dy>0&&inFrame(p.x,.7,p.z)&&seeTo(p.x,p.z))}
+// Szafka RTV: nad nią telewizor na ścianie (czarny ekran) – od strony bliższej ściany
+function addTvFor(it,fl,top){const c=grid().cellMeters,x0=+it.x,z0=+it.y,x1=x0+ +it.w,z1=z0+ +it.h,long=(x1-x0)>=(z1-z0);
+  const id=roomAt(fl,Math.floor((x0+x1)/2/c),Math.floor((z0+z1)/2/c)),probe=(px,pz)=>roomAt(fl,Math.floor(px/c),Math.floor(pz/c))!==id;
+  const tw=Math.min(1.45,(long?x1-x0:z1-z0)*.85),th=tw*.58,y0=top+.3,y1=y0+th,t=.05;
+  if(long){const mx=(x0+x1)/2,backMin=probe(mx,z0-.25),backMax=probe(mx,z1+.25),zb=backMax&&!backMin?z1:z0,s=zb===z1?-1:1;addBoxFaces(mx-tw/2,y0,Math.min(zb,zb+s*t),mx+tw/2,y1,Math.max(zb,zb+s*t),'#0b0b0f',{stroke:'#3f3f46',line:.6})}
+  else{const mz=(z0+z1)/2,backMin=probe(x0-.25,mz),backMax=probe(x1+.25,mz),xb=backMax&&!backMin?x1:x0,s=xb===x1?-1:1;addBoxFaces(Math.min(xb,xb+s*t),y0,mz-tw/2,Math.max(xb,xb+s*t),y1,mz+tw/2,'#0b0b0f',{stroke:'#3f3f46',line:.6})}}
+function tvVisible(){const f=observer.floor;return furnitureList(f).some(it=>it.item==='s_rtv'&&validFurnitureItem(it)&&furnitureVisible(it))}
 function addFurniture3D(){
   ensureFurniture();const cm=codedOn()?codeMap():null;
   for(const f of ['ground','upper']){const base=floorBase(f),fh=floorHeight(f);for(const it of furnitureList(f)){
     if(!validFurnitureItem(it))continue;const d=furnViewDef(it),m=.025,x0=Number(it.x)+m,z0=Number(it.y)+m,x1=Number(it.x)+Number(it.w)-m,z1=Number(it.y)+Number(it.h)-m;if(x1<=x0||z1<=z0)continue;
+    if(it.item==='s_rtv')addTvFor(it,f,base+Math.min(d.height,fh-.04));
     let top=base+Math.min(d.height,fh-.04);const col=cm?(cm[furnKey(it)]?.[0]||'#d4d4d4'):d.color;
     // na poddaszu mebel nie może przebić skosu dachu – przycinamy do najniższego punktu połaci nad nim
     if(f==='upper'&&roofEnabled()){const lim=Math.min(roofAbsYAt(x0,z0),roofAbsYAt(x1,z0),roofAbsYAt(x0,z1),roofAbsYAt(x1,z1))-.03;top=Math.max(base+.1,Math.min(top,lim));}
@@ -581,6 +609,7 @@ function build3D(){
   if(settings.showChimney&&Array.isArray(project.structure?.chimney)){
     const c=grid().cellMeters;
     for(const n of project.structure.chimney){const x=n%grid().width,y=Math.floor(n/grid().width);let H=floorHeight('ground')+floorHeight('upper')+.45;if(roofEnabled())H=Math.max(H,roofAbsYAt((x+.5)*c,(y+.5)*c)+.55);addBoxFaces(x*c+.03,0,y*c+.03,(x+1)*c-.03,H,(y+1)*c-.03,codedOn()?CHIMNEY_CODE[0]:'#77716c',{stroke:'#5e5955'})}
+    addFireplaces();
   }
   addFurniture3D();
   if(three.gl){const L=window.HouserLandscape?HouserLandscape.build({minX:0,minZ:0,maxX:grid().width*grid().cellMeters,maxZ:grid().height*grid().cellMeters,y:-.03}):null;three.gl.upload(L?three.scenePolys.concat(L.polys):three.scenePolys,{ground:L?L.ground:{y:-.03,color:'#c8c3bb'}})}setStatus('Geometria 3D przebudowana — dodano skosy dachu, ściany do połaci, schody i meble z JSON-u.');render3D()
@@ -631,9 +660,9 @@ window.addEventListener('blur',()=>three.keys.clear());
 function resize3d(redraw=true){if(!three.ready||!three.canvas)return;const host=els('threeHost'),dpr=Math.min(devicePixelRatio||1,2),w=Math.max(1,Math.floor(host.clientWidth*dpr)),h=Math.max(1,Math.floor(host.clientHeight*dpr));if(three.canvas.width!==w||three.canvas.height!==h){three.canvas.width=w;three.canvas.height=h;if(redraw)render3D()}}
 function snapToast(){let t=document.querySelector('.hsToast');if(t)t.remove();t=document.createElement('div');t.className='hsToast';t.innerHTML='📷 Zdjęcie zapisane <button>Otwórz Wizualizacje AI</button>';t.querySelector('button').onclick=()=>window.HouserNav&&HouserNav.go('wizualizacje');document.body.appendChild(t);setTimeout(()=>t.remove(),6000)}
 els('snap').addEventListener('click',async()=>{ if(!three.ready){showTab('three');await new Promise(r=>setTimeout(r,300))} if(els('view3d').style.display!=='block')showTab('three');
-  render3D(); const img=HouserSnapshots.capture(three.canvas,'#a9c5dd','#e7edf1'), legend=snapLegend(),openingsSeen=visibleOpenings(),chim=chimneyVisible();
+  render3D(); const img=HouserSnapshots.capture(three.canvas,'#a9c5dd','#e7edf1'), legend=snapLegend(),openingsSeen=visibleOpenings(),chim=chimneyVisible(),fire=fireplaceVisible(),tv=tvVisible();
   const cell=currentCell(),id=roomAt(observer.floor,cell.x,cell.y),rm=roomMap(observer.floor)[id];
-  await HouserSnapshots.add(img,'wnetrze-3d',{kind:'interior',floor:observer.floor,roomId:id||null,roomName:rm?.name||null,angle:Math.round(observer.angle),fov:Math.round(observer.fov),eye:observer.eye,legend:legend.length?legend:undefined,openings:openingsSeen,doorMode:settings.doorMode,chimney:chim?{color:codedOn()?CHIMNEY_CODE[1]:'grey'}:undefined}); snapToast(); });
+  await HouserSnapshots.add(img,'wnetrze-3d',{kind:'interior',floor:observer.floor,roomId:id||null,roomName:rm?.name||null,angle:Math.round(observer.angle),fov:Math.round(observer.fov),eye:observer.eye,legend:legend.length?legend:undefined,openings:openingsSeen,doorMode:settings.doorMode,chimney:chim?{color:codedOn()?CHIMNEY_CODE[1]:'grey'}:undefined,fireplace:fire||undefined,tv:tv||undefined}); snapToast(); });
 (()=>{const cb=els('snapCoded');if(!cb)return;try{const v=localStorage.getItem('houser:snap-coded');if(v!==null&&cb.checked!==(v==='1')){cb.checked=v==='1';if(three.ready)build3D()}}catch(_){}
   cb.addEventListener('change',()=>{try{localStorage.setItem('houser:snap-coded',cb.checked?'1':'0')}catch(_){}_legendKey='x';build3D()})})();
 (()=>{const i=els('wallIn'),e=els('wallExt');if(!i||!e)return;i.value=Math.round(WALL_IN*100);e.value=Math.round(WALL_EXT*100);
