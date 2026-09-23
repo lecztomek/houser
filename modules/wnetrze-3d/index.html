@@ -338,19 +338,41 @@ function drawFurnitureOnPlan(f,ox,oy,s){
 }
 // Zdjęcie do wizualizacji AI: każdy rodzaj mebla dostaje wyraźny kolor-kod, a legenda trafia do promptu.
 // Bez jasnych niebieskich/szarych – te oznaczają okna i ściany.
-const SNAP_PALETTE=[['#e6194b','red'],['#3cb44b','green'],['#ffe119','yellow'],['#f58231','orange'],['#911eb4','purple'],['#f032e6','magenta'],['#9a6324','brown'],['#bfef45','lime green'],['#000075','navy blue'],['#800000','maroon'],['#469990','teal'],['#fabed4','pink'],['#808000','olive'],['#ffd8b1','peach'],['#000000','black'],['#dcbeff','lavender']];
+const SNAP_PALETTE=[['#e6194b','red'],['#3cb44b','green'],['#ffe119','yellow'],['#f58231','orange'],['#911eb4','purple'],['#f032e6','magenta'],['#9a6324','brown'],['#bfef45','lime green'],['#000075','navy blue'],['#469990','teal'],['#fabed4','pink'],['#808000','olive'],['#ffd8b1','peach'],['#000000','black'],['#dcbeff','lavender']];
 function codedOn(){return !!els('snapCoded')?.checked}
 // stałe przypisanie kolorów: kolejne rodzaje mebli w projekcie (obie kondygnacje) dostają kolejne kolory palety
 function codeMap(){ensureFurniture();const map={};let i=0;for(const f of ['ground','upper'])for(const it of furnitureList(f)){if(!validFurnitureItem(it))continue;const k=furnKey(it);if(map[k]||i>=SNAP_PALETTE.length)continue;map[k]=SNAP_PALETTE[i++]}return map}
 function furnKey(it){return it.item||('type:'+(it.type||'other'))}
-function furnitureVisible(it){const f=observer.floor,base=floorBase(f),h=Math.min(furnViewDef(it).height,1),x0=+it.x,z0=+it.y,x1=x0+ +it.w,z1=z0+ +it.h,lim=Math.tan(observer.fov*Math.PI/360)*1.05;
-  return [[x0,z0],[x1,z0],[x0,z1],[x1,z1],[(x0+x1)/2,(z0+z1)/2]].some(([x,z])=>{const c=worldToCamera([x,base+h/2,z]);return c.z>.1&&c.z<25&&Math.abs(c.x/c.z)<lim})}
+const CHIMNEY_CODE=['#800000','maroon'];
+// Czy punkt na rzucie widać z oka obserwatora: w kadrze i bez ściany po drodze (przejście przez otwór/okno/otwarte drzwi jest wolne).
+function inFrame(x,y,z){const c=worldToCamera([x,y,z]),lim=Math.tan(observer.fov*Math.PI/360)*1.05;return c.z>.1&&c.z<25&&Math.abs(c.x/c.z)<lim}
+function edgeOpen(f,ax,ay,bx,by){const A=roomAt(f,ax,ay),B=roomAt(f,bx,by),ca=cellClass(f,A),cb=cellClass(f,B);
+  if(A===B&&ca===cb)return true;if(ca==='hole'||cb==='hole')return true;if(ca==='outside'&&cb==='outside')return true;
+  if(f==='ground'&&(A==='schody'||B==='schody')&&modelStairs().length)return true;
+  const key=ax!==bx?openKeyV(Math.max(ax,bx),ay):openKeyH(ax,Math.max(ay,by)),op=openingAt(f,key);
+  if(!op)return false;if(['opening','hst','window'].includes(op))return true;return settings.doorMode!=='closed'}
+function seeTo(tx,tz){const f=observer.floor,c=grid().cellMeters,ox=observer.x,oz=observer.z,d=Math.hypot(tx-ox,tz-oz);if(d<.05)return true;
+  const ux=(tx-ox)/d,uz=(tz-oz)/d,ex=tx-ux*.06,ez=tz-uz*.06,n=Math.ceil(d/.04);let cx=Math.floor(ox/c),cy=Math.floor(oz/c);
+  for(let i=1;i<=n;i++){const t=i/n,px=ox+(ex-ox)*t,pz=oz+(ez-oz)*t,nx=Math.floor(px/c),ny=Math.floor(pz/c);
+    if(nx!==cx){if(!edgeOpen(f,cx,cy,nx,cy))return false;cx=nx}
+    if(ny!==cy){if(!edgeOpen(f,cx,cy,cx,ny))return false;cy=ny}}
+  return true}
+function furnitureVisible(it){const f=observer.floor,base=floorBase(f),h=Math.min(furnViewDef(it).height,1),x0=+it.x,z0=+it.y,x1=x0+ +it.w,z1=z0+ +it.h,m=.05;
+  return [[x0+m,z0+m],[x1-m,z0+m],[x0+m,z1-m],[x1-m,z1-m],[(x0+x1)/2,(z0+z1)/2]].some(([x,z])=>inFrame(x,base+h/2,z)&&seeTo(x,z))}
+function chimneyVisible(){const c=grid().cellMeters,W=grid().width,f=observer.floor,base=floorBase(f);if(!settings.showChimney)return false;
+  return (project.structure?.chimney||[]).some(n=>{const x=(n%W+.5)*c,z=(Math.floor(n/W)+.5)*c;return [[-.45,0],[.45,0],[0,-.45],[0,.45]].some(([dx,dz])=>{const px=x+dx*c,pz=z+dz*c;return inFrame(px,base+1.2,pz)&&seeTo(px,pz)})})}
+function visibleOpenings(){const f=observer.floor,base=floorBase(f),c=grid().cellMeters,r={doors:0,windows:0,glassDoors:0};
+  const vis=d=>{const pts=[.5,.2,.8].map(t=>d.s0+(d.s1-d.s0)*t);return pts.some(sv=>{const x=d.o==='h'?sv:d.L,z=d.o==='h'?d.L:sv;return inFrame(x,base+1.1,z)&&seeTo(x,z)})};
+  for(const d of doorGroups(f))if(vis(d))r.doors++;
+  for(const d of doorGroups(f,['window']))if(HouserOpenings.resolve(project,f,d.keys[0],'window').shape!=='roof'&&vis(d))r.windows++;
+  for(const d of doorGroups(f,['hst']))if(vis(d))r.glassDoors++;
+  return r}
 function snapLegend(){if(!codedOn())return [];const cm=codeMap(),seen=new Set(),legend=[];
   for(const it of furnitureList(observer.floor).filter(validFurnitureItem).filter(furnitureVisible)){const k=furnKey(it);if(seen.has(k)||!cm[k])continue;seen.add(k);
     legend.push({color:cm[k][0],colorName:cm[k][1],item:it.item||null,type:it.type||'other',name:(window.HouserFurniture?HouserFurniture.nameFor(it):(it.label||it.type))})}
   return legend}
 let _legendKey='';
-function updateCodeLegend(){const el=els('codeLegend');if(!el)return;const L=snapLegend(),key=L.map(l=>l.color).join();if(key===_legendKey)return;_legendKey=key;
+function updateCodeLegend(){const el=els('codeLegend');if(!el)return;const L=snapLegend();if(codedOn()&&chimneyVisible())L.push({color:CHIMNEY_CODE[0],name:'Komin'});const key=L.map(l=>l.color).join();if(key===_legendKey)return;_legendKey=key;
   el.hidden=!L.length;el.innerHTML='<b style="display:block;margin-bottom:3px">Meble kolorami</b>'+L.map(l=>'<div style="display:flex;align-items:center;gap:6px"><i style="width:12px;height:12px;border-radius:3px;border:1px solid #0003;background:'+l.color+'"></i>'+l.name.replace(/</g,'&lt;')+'</div>').join('')}
 function addFurniture3D(){
   ensureFurniture();const cm=codedOn()?codeMap():null;
@@ -410,8 +432,8 @@ function flushWallNodes(){if(!wallNodes)return;const t=WALL_IN/2-.004;
 // Skrzydła drzwi: łączymy sąsiednie krawędzie z drzwiami w jeden otwór; kierunek (swing) i zawiasy z modułu Drzwi wewnętrzne.
 // swing 'a' = do pomieszczenia po stronie mniejszych współrzędnych (A), 'b' = do B; hinge 'start'/'end' = początek/koniec otworu.
 const DOOR_BASES=['door','hiddenDoor','slidingDoor'];
-function doorGroups(f){const c=grid().cellMeters,groups={},out=[];
-  for(const [key,base] of Object.entries(project.openings?.[f]||{})){if(!DOOR_BASES.includes(base))continue;const [o,aS,bS]=key.split(':'),a=+aS,b=+bS;
+function doorGroups(f,bases=DOOR_BASES){const c=grid().cellMeters,groups={},out=[];
+  for(const [key,base] of Object.entries(project.openings?.[f]||{})){if(!bases.includes(base))continue;const [o,aS,bS]=key.split(':'),a=+aS,b=+bS;
     const A=o==='h'?roomAt(f,a,b-1):roomAt(f,a-1,b),B=roomAt(f,a,b),inA=cellClass(f,A)==='room',inB=cellClass(f,B)==='room';if(!inA&&!inB)continue;
     const line=o==='h'?b:a,along=o==='h'?a:b,gk=[o,line,A,B,base].join('|');(groups[gk]=groups[gk]||{o,line,A,B,inA,inB,base,items:[]}).items.push({key,along})}
   for(const g of Object.values(groups)){g.items.sort((p,q)=>p.along-q.along);let cur=null;
@@ -555,7 +577,7 @@ function build3D(){
   if(modelStairs().length)addStairsFromModel();else addStraightStairs();
   if(settings.showChimney&&Array.isArray(project.structure?.chimney)){
     const c=grid().cellMeters;
-    for(const n of project.structure.chimney){const x=n%grid().width,y=Math.floor(n/grid().width);let H=floorHeight('ground')+floorHeight('upper')+.45;if(roofEnabled())H=Math.max(H,roofAbsYAt((x+.5)*c,(y+.5)*c)+.55);addBoxFaces(x*c+.03,0,y*c+.03,(x+1)*c-.03,H,(y+1)*c-.03,'#77716c',{stroke:'#5e5955'})}
+    for(const n of project.structure.chimney){const x=n%grid().width,y=Math.floor(n/grid().width);let H=floorHeight('ground')+floorHeight('upper')+.45;if(roofEnabled())H=Math.max(H,roofAbsYAt((x+.5)*c,(y+.5)*c)+.55);addBoxFaces(x*c+.03,0,y*c+.03,(x+1)*c-.03,H,(y+1)*c-.03,codedOn()?CHIMNEY_CODE[0]:'#77716c',{stroke:'#5e5955'})}
   }
   addFurniture3D();
   if(three.gl)three.gl.upload(three.scenePolys,{ground:{y:-.03,color:'#c8c3bb'}});setStatus('Geometria 3D przebudowana — dodano skosy dachu, ściany do połaci, schody i meble z JSON-u.');render3D()
@@ -606,9 +628,9 @@ window.addEventListener('blur',()=>three.keys.clear());
 function resize3d(redraw=true){if(!three.ready||!three.canvas)return;const host=els('threeHost'),dpr=Math.min(devicePixelRatio||1,2),w=Math.max(1,Math.floor(host.clientWidth*dpr)),h=Math.max(1,Math.floor(host.clientHeight*dpr));if(three.canvas.width!==w||three.canvas.height!==h){three.canvas.width=w;three.canvas.height=h;if(redraw)render3D()}}
 function snapToast(){let t=document.querySelector('.hsToast');if(t)t.remove();t=document.createElement('div');t.className='hsToast';t.innerHTML='📷 Zdjęcie zapisane <button>Otwórz Wizualizacje AI</button>';t.querySelector('button').onclick=()=>window.HouserNav&&HouserNav.go('wizualizacje');document.body.appendChild(t);setTimeout(()=>t.remove(),6000)}
 els('snap').addEventListener('click',async()=>{ if(!three.ready){showTab('three');await new Promise(r=>setTimeout(r,300))} if(els('view3d').style.display!=='block')showTab('three');
-  render3D(); const img=HouserSnapshots.capture(three.canvas,'#a9c5dd','#e7edf1'), legend=snapLegend();
+  render3D(); const img=HouserSnapshots.capture(three.canvas,'#a9c5dd','#e7edf1'), legend=snapLegend(),openingsSeen=visibleOpenings(),chim=chimneyVisible();
   const cell=currentCell(),id=roomAt(observer.floor,cell.x,cell.y),rm=roomMap(observer.floor)[id];
-  await HouserSnapshots.add(img,'wnetrze-3d',{kind:'interior',floor:observer.floor,roomId:id||null,roomName:rm?.name||null,angle:Math.round(observer.angle),fov:Math.round(observer.fov),eye:observer.eye,legend:legend.length?legend:undefined}); snapToast(); });
+  await HouserSnapshots.add(img,'wnetrze-3d',{kind:'interior',floor:observer.floor,roomId:id||null,roomName:rm?.name||null,angle:Math.round(observer.angle),fov:Math.round(observer.fov),eye:observer.eye,legend:legend.length?legend:undefined,openings:openingsSeen,doorMode:settings.doorMode,chimney:chim?{color:codedOn()?CHIMNEY_CODE[1]:'grey'}:undefined}); snapToast(); });
 (()=>{const cb=els('snapCoded');if(!cb)return;try{const v=localStorage.getItem('houser:snap-coded');if(v!==null&&cb.checked!==(v==='1')){cb.checked=v==='1';if(three.ready)build3D()}}catch(_){}
   cb.addEventListener('change',()=>{try{localStorage.setItem('houser:snap-coded',cb.checked?'1':'0')}catch(_){}_legendKey='x';build3D()})})();
 (()=>{const i=els('wallIn'),e=els('wallExt');if(!i||!e)return;i.value=Math.round(WALL_IN*100);e.value=Math.round(WALL_EXT*100);
