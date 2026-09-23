@@ -145,15 +145,20 @@ function renderBar(){const rec=HouserStore.load();$('pbName').textContent=rec?pr
   const saved=lsGet(LAST_SAVE),dirty=rec&&(!saved||saved<rec.updatedAt);
   $('pbMeta').innerHTML=rec?((dirty?'<span class="dirty">● niezapisane w pliku</span>':'✓ zapisany w pliku '+fmtTime(saved))+' · zmiana '+fmtTime(rec.updatedAt)+(modName(rec.source)?' ('+modName(rec.source)+')':'')):'';
   $('pbMeta').title='Projekt jest zawsze trzymany w tej przeglądarce; plik JSON zapisujesz przyciskiem obok.';
-  $('pbSave').disabled=!rec}
+  $('pbSave').disabled=!rec;photoInfo()}
+// ile zajmują zdjęcia – podpowiedź przy „+ zdjęcia AI”
+async function photoInfo(){try{const l=await HouserSnapshots.list();let n=0,b=0;for(const r of l){b+=(r.image||'').length;for(const x of r.results||[]){n++;b+=(x.image||'').length}}
+  const mb=(b*.75/1048576).toFixed(1),lab=$('pbPhotos').parentElement;lab.lastChild.textContent=' + zdjęcia AI'+(l.length?' ('+l.length+'/'+n+', ~'+mb+' MB)':'');
+  lab.title='Dołącza do pliku zdjęcia z podglądów 3D ('+l.length+') i wizualizacje AI ('+n+'), razem ok. '+mb+' MB przed zapisem (wizualizacje zapisywane jako JPEG, więc plik zwykle wychodzi mniejszy). Bez tego plik ma kilkadziesiąt KB.'}catch(_){}}
+HouserSnapshots.onChange(photoInfo);window.addEventListener('hashchange',photoInfo);window.addEventListener('focus',photoInfo);
 function $(id){return document.getElementById(id)}
 function toast(t){const d=document.createElement('div');d.className='projmsg';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),3500)}
 function reloadModules(){for(const sec of Object.values(frames)){const f=sec.querySelector('iframe');try{f.contentWindow.location.reload()}catch(_){f.src=f.src}}}
 function slug(t){return (t||'projekt').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ł/g,'l').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,50)||'projekt'}
 async function saveFile(){const rec=HouserStore.load();if(!rec)return;
-  const withPhotos=$('pbPhotos').checked,vis=withPhotos?await HouserSnapshots.list().catch(()=>[]):undefined;
+  const withPhotos=$('pbPhotos').checked,vis=withPhotos?await HouserSnapshots.exportAll().catch(()=>[]):undefined;
   const out={...rec.project,houserFile:{app:'houser',format:1,savedAt:new Date().toISOString(),photos:!!withPhotos}};if(vis)out.visualizations=vis;
-  const blob=new Blob([JSON.stringify(out,null,1)],{type:'application/json'}),a=document.createElement('a');
+  const blob=new Blob([JSON.stringify(out)],{type:'application/json'}),a=document.createElement('a');
   a.href=URL.createObjectURL(blob);a.download=slug(projName(rec.project))+'-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
   lsSet(LAST_SAVE,new Date().toISOString());renderBar();toast('Zapisano plik '+a.download+(vis?' (zdjęć: '+vis.length+')':''))}
 function confirmReplace(){const rec=HouserStore.load();if(!rec)return true;const saved=lsGet(LAST_SAVE);

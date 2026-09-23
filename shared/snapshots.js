@@ -30,5 +30,13 @@
     const g=x.createLinearGradient(0,0,0,h);g.addColorStop(0,skyTop||'#b9d4e7');g.addColorStop(1,skyBottom||'#edf2f5');x.fillStyle=g;x.fillRect(0,0,w,h);
     x.drawImage(canvas,0,0,w,h);return c.toDataURL('image/jpeg',.9);
   }
-  global.HouserSnapshots={list,get,put,add,remove,clear,replaceAll,onChange,capture};
+  // PNG (i duże obrazy) -> JPEG, maks. 1600 px – wizualizacje AI przychodzą jako PNG, kilka razy większe
+  function toJpeg(url,q=.88,maxW=1600){return new Promise(res=>{if(!url||!/^data:image\//.test(url)||/^data:image\/jpeg/.test(url)&&url.length<700000){res(url);return}
+    const im=new Image();im.onload=()=>{const sc=Math.min(1,maxW/im.width),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);
+      const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);const out=c.toDataURL('image/jpeg',q);res(out.length<url.length?out:url)};
+    im.onerror=()=>res(url);im.src=url})}
+  // wszystkie zdjęcia do pliku projektu – wyniki zmniejszone do JPEG
+  async function exportAll(){const list=await list_();for(const r of list){r.image=await toJpeg(r.image);for(const x of r.results||[])x.image=await toJpeg(x.image)}return list}
+  const list_=list;
+  global.HouserSnapshots={list,get,put,add,remove,clear,replaceAll,onChange,capture,toJpeg,exportAll};
 })(window);

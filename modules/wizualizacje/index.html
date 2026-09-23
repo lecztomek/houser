@@ -281,13 +281,13 @@ async function generate(){
   if(!cur)return;const model=provider==='hf'?('hf:'+($('hfModel').value||'').trim()):$('imgModel').value;if(provider!=='hf'&&(!model||model==='__custom')){alert('Wybierz model do obrazów po lewej.');return}
   setBusy(true,'gen');lastError='';
   try{
-    if(provider==='hf'){const url=await hfGenerate($('prompt').value,cur.image);cur.results=[{id:'r'+Date.now().toString(36),createdAt:new Date().toISOString(),prompt:$('prompt').value,model,image:url},...(cur.results||[])];resultIdx=0;await S.put(cur);setBusy(false);renderAll(true);return}
+    if(provider==='hf'){const url=await hfGenerate($('prompt').value,cur.image);cur.results=[{id:'r'+Date.now().toString(36),createdAt:new Date().toISOString(),prompt:$('prompt').value,model,image:await S.toJpeg(url)},...(cur.results||[])];resultIdx=0;await S.put(cur);setBusy(false);renderAll(true);return}
     const b64=cur.image.split(',')[1];
     const j=await gemini(model,[{text:$('prompt').value},{inline_data:{mime_type:'image/jpeg',data:b64}}],true);
     const ps=partsOf(j),imgPart=ps.find(p=>p.inlineData||p.inline_data);
     if(!imgPart){const txt=ps.map(p=>p.text||'').join(' ').trim();throw new Error('Model nie zwrócił obrazu.'+(txt?' Odpowiedź: '+txt:'')+(j.promptFeedback?.blockReason?' Zablokowano: '+j.promptFeedback.blockReason:''))}
     const d=imgPart.inlineData||imgPart.inline_data,url='data:'+(d.mimeType||d.mime_type||'image/png')+';base64,'+d.data;
-    cur.results=[{id:'r'+Date.now().toString(36),createdAt:new Date().toISOString(),prompt:$('prompt').value,model,image:url},...(cur.results||[])];resultIdx=0;
+    cur.results=[{id:'r'+Date.now().toString(36),createdAt:new Date().toISOString(),prompt:$('prompt').value,model,image:await S.toJpeg(url)},...(cur.results||[])];resultIdx=0;
     await S.put(cur);
   }catch(err){lastError=err.message;lastAlt=err.noFree?[...$('imgModel').options].map(o=>o.value).filter(v=>v&&v!=='__custom'&&v!==model&&!(window._noFree||[]).includes(v)):[];if(err.noFree)(window._noFree=window._noFree||[]).push(model)}
   setBusy(false);renderAll(true);
@@ -321,7 +321,7 @@ function renderMain(keepPrompt){
   $('rebuild').onclick=()=>{$('prompt').value=buildPrompt()};$('refine').onclick=refinePrompt;if($('gen'))$('gen').onclick=generate;
   if($('mCopy'))$('mCopy').onclick=async()=>{const t=$('prompt').value;try{await navigator.clipboard.writeText(t)}catch(_){$('prompt').select();document.execCommand('copy')}$('mCopy').textContent='✓ Skopiowano'};
   if($('mDown'))$('mDown').onclick=()=>{const a=document.createElement('a');a.href=cur.image;a.download='zdjecie-3d-'+cur.id+'.jpg';document.body.appendChild(a);a.click();a.remove()};
-  $('mUp').onclick=()=>{const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=()=>{const f=i.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{cur.results=[{id:'r'+Date.now().toString(36),createdAt:new Date().toISOString(),prompt:$('prompt').value,model:'wgrany plik',image:r.result},...(cur.results||[])];resultIdx=0;lastError='';await S.put(cur);renderAll(true)};r.readAsDataURL(f)};i.click()};
+  $('mUp').onclick=()=>{const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=()=>{const f=i.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{const img=await S.toJpeg(r.result);cur.results=[{id:'r'+Date.now().toString(36),createdAt:new Date().toISOString(),prompt:$('prompt').value,model:'wgrany plik',image:img},...(cur.results||[])];resultIdx=0;lastError='';await S.put(cur);renderAll(true)};r.readAsDataURL(f)};i.click()};
   if($('hist'))cur.results.forEach((r,i)=>{const im=document.createElement('img');im.src=r.image;im.className=i===resultIdx?'sel':'';im.title=r.model+' · '+new Date(r.createdAt).toLocaleString('pl-PL');im.onclick=()=>{resultIdx=i;renderMain(true)};$('hist').appendChild(im)});
   if(busy)setBusy(busy);
 }
