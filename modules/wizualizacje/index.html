@@ -85,7 +85,7 @@ textarea{min-height:150px;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,mo
 <script>
 const $=id=>document.getElementById(id), S=HouserSnapshots, API='https://generativelanguage.googleapis.com/v1beta';
 const KEY_LS='houser:gemini-key', MODEL_LS='houser:gemini-models';
-let snaps=[], cur=null, resultIdx=0, busy=false, lastError='', opts={};
+let snaps=[], cur=null, resultIdx=0, busy=false, lastError='', lastAlt=[], opts={};
 
 // ---------- opcje (UI po polsku, prompt po angielsku – modele lepiej go rozumieją)
 const OPTS={
@@ -180,7 +180,10 @@ async function gemini(model,parts,image){
   const body={contents:[{role:'user',parts}]};if(image)body.generationConfig={responseModalities:['TEXT','IMAGE']};
   const r=await fetch(API+'/models/'+encodeURIComponent(model)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify(body)});
   const j=await r.json().catch(()=>({}));
-  if(!r.ok){const m=j.error?.message||('HTTP '+r.status);throw new Error((r.status===429?'Przekroczony limit darmowego planu (spróbuj później). ':'')+m)}
+  if(!r.ok){const m=j.error?.message||('HTTP '+r.status);
+    // „limit: 0” = ten model nie ma darmowego limitu na tym kluczu (to nie chwilowe przekroczenie)
+    if(r.status===429&&/limit:\s*0\b/.test(m)){const e=new Error('Model „'+model+'” nie ma darmowego limitu na Twoim kluczu (Google podaje limit 0) – czekanie nic nie da.\nMożesz: spróbować innego modelu obrazów z listy poniżej, albo włączyć płatności dla klucza w Google AI Studio (wtedy płacisz za każde wygenerowane zdjęcie).');e.noFree=true;throw e}
+    throw new Error((r.status===429?'Przekroczony chwilowy limit – spróbuj za chwilę. ':'')+m)}
   return j;
 }
 const partsOf=j=>j.candidates?.[0]?.content?.parts||[];
@@ -204,7 +207,7 @@ async function generate(){
     const d=imgPart.inlineData||imgPart.inline_data,url='data:'+(d.mimeType||d.mime_type||'image/png')+';base64,'+d.data;
     cur.results=[{id:'r'+Date.now().toString(36),createdAt:new Date().toISOString(),prompt:$('prompt').value,model,image:url},...(cur.results||[])];resultIdx=0;
     await S.put(cur);
-  }catch(err){lastError=err.message}
+  }catch(err){lastError=err.message;lastAlt=err.noFree?[...$('imgModel').options].map(o=>o.value).filter(v=>v&&v!=='__custom'&&v!==model&&!(window._noFree||[]).includes(v)):[];if(err.noFree)(window._noFree=window._noFree||[]).push(model)}
   setBusy(false);renderAll(true);
 }
 function setBusy(b,what){busy=b?what:false;const g=$('gen'),r=$('refine');if(g){g.disabled=!!b;g.innerHTML=b==='gen'?'<span class="busy"></span>Generuję… (do minuty)':'✨ Generuj wizualizację'}if(r){r.disabled=!!b;r.innerHTML=b==='refine'?'<span class="busy" style="border-color:#2563eb;border-right-color:transparent"></span>Dopracowuję…':'🪄 Dopracuj prompt przez AI'}}
@@ -222,7 +225,7 @@ function renderMain(keepPrompt){
   const kind=kindOf(cur),res=cur.results?.[resultIdx];
   M.innerHTML='<div class="pair"><div class="pane"><h4>Zdjęcie z modelu 3D <span class="hint" style="margin:0">'+new Date(cur.createdAt).toLocaleString('pl-PL')+'</span></h4><img id="orig" alt=""></div><div class="pane"><h4>Wizualizacja AI <span id="resActs"></span></h4><div id="resBox"></div></div></div>'+
     '<div class="card"><h3>Ustawienia wizualizacji</h3><div class="opts" id="opts"></div><div class="field" style="margin-top:10px"><label>Dodatkowe życzenia (możesz pisać po polsku)</label><input type="text" id="extra" placeholder="np. czerwony rower przy wejściu, zima ze śniegiem, duży fikus w rogu"></div></div>'+
-    '<div class="card"><h3>Prompt (tworzy się sam – możesz go poprawić)</h3><textarea id="prompt"></textarea><div class="row" style="margin-top:8px"><button class="btn" id="rebuild">↻ Odtwórz z projektu i opcji</button><button class="btn" id="refine">🪄 Dopracuj prompt przez AI</button><div style="flex:1"></div><button class="btn primary big" id="gen">✨ Generuj wizualizację</button></div>'+(lastError?'<div class="err">'+esc(lastError)+'</div>':'')+'</div>'+
+    '<div class="card"><h3>Prompt (tworzy się sam – możesz go poprawić)</h3><textarea id="prompt"></textarea><div class="row" style="margin-top:8px"><button class="btn" id="rebuild">↻ Odtwórz z projektu i opcji</button><button class="btn" id="refine">🪄 Dopracuj prompt przez AI</button><div style="flex:1"></div><button class="btn primary big" id="gen">✨ Generuj wizualizację</button></div>'+(lastError?'<div class="err">'+esc(lastError)+(lastAlt.length?'<div class="row" style="margin-top:8px" id="alt"></div>':'')+'</div>':'')+'</div>'+
     (cur.results?.length>1?'<div class="card"><h3>Poprzednie wersje</h3><div class="hist" id="hist"></div></div>':'');
   $('orig').src=cur.image;
   $('resBox').innerHTML=res?'<img alt="">':'<div class="ph">Tu pojawi się wizualizacja.<br>Ustaw opcje i kliknij „Generuj”.</div>';if(res)$('resBox').querySelector('img').src=res.image;
@@ -230,6 +233,7 @@ function renderMain(keepPrompt){
   const O=$('opts');for(const [k,g] of Object.entries(groupsFor(kind))){const f=document.createElement('div');f.className='field';f.innerHTML='<label>'+g.label+'</label>';const s=document.createElement('select');for(const [id,[pl]] of Object.entries(g.items)){const o=document.createElement('option');o.value=id;o.textContent=pl;s.appendChild(o)}s.value=opts[k]||Object.keys(g.items)[0];s.onchange=()=>{opts[k]=s.value;cur.opts={...opts};S.put(cur);$('prompt').value=buildPrompt()};f.appendChild(s);O.appendChild(f)}
   $('extra').value=keepPrompt?(prevExtra||''):(cur.extra||'');$('extra').oninput=()=>{cur.extra=$('extra').value;$('prompt').value=buildPrompt()};$('extra').onchange=()=>S.put(cur);
   $('prompt').value=keepPrompt&&prevPrompt?prevPrompt:(res?.prompt&&resultIdx===0&&keepPrompt?res.prompt:buildPrompt());
+  if($('alt'))for(const m of lastAlt){const b=document.createElement('button');b.className='btn';b.textContent='Spróbuj: '+m;b.onclick=()=>{$('imgModel').value=m;lastError='';lastAlt=[];generate()};$('alt').appendChild(b)}
   $('rebuild').onclick=()=>{$('prompt').value=buildPrompt()};$('refine').onclick=refinePrompt;$('gen').onclick=generate;
   if($('hist'))cur.results.forEach((r,i)=>{const im=document.createElement('img');im.src=r.image;im.className=i===resultIdx?'sel':'';im.title=r.model+' · '+new Date(r.createdAt).toLocaleString('pl-PL');im.onclick=()=>{resultIdx=i;renderMain(true)};$('hist').appendChild(im)});
   if(busy)setBusy(busy);

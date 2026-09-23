@@ -28,6 +28,7 @@ shared/openings.js          warianty okien i drzwi
 shared/stairs.js            geometria schodów (rzut, kratki, stopnie 3D)
 shared/house-model.js       wspólny model bryły (wysokości, poddasze, dach z kąta nachylenia)
 shared/project-store.js     wspólny bieżący projekt w localStorage (moduły widzą nawzajem swoje zmiany)
+shared/furniture.js         katalog mebli w kategoriach (wymiary, wysokość, kształt 3D)
 shared/snapshots.js         zdjęcia z podglądów 3D i wizualizacje (IndexedDB)
 shared/nav.js               przycisk powrotu do strony głównej, gdy moduł otwarto samodzielnie
 examples/                   przykładowa definicja domu i gotowy układ

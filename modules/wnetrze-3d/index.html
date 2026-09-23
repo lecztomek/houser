@@ -311,6 +311,8 @@ function furnViewDef(item){
     else if(/st[oó]ł/.test(label)){kind='surface';height=.78}
   }
   if(/dziur|ring|rama|u-kszt|u kształt/.test(label)){kind='ring';height=.92;color='#06b6d4'}
+  // mebel z katalogu (shared/furniture.js): własna wysokość i kształt
+  if(Number(item?.z)>0)height=Number(item.z);if(item?.view)kind=item.view;
   return {...base,kind,height,color};
 }
 function validFurnitureItem(it){return it&&[it.x,it.y,it.w,it.h].map(Number).every(Number.isFinite)&&Number(it.w)>0&&Number(it.h)>0}
