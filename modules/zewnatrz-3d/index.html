@@ -72,8 +72,22 @@ function addBox(x0,y0,z0,x1,y1,z1,color,opt={}){ const p=[[x0,y0,z0],[x1,y0,z0],
 function floorCellOccupied(f,x,y){ const id=stateGrid(f)[y]?.[x]||''; if(!id) return false; return roomKind(f,id)!=='exteriorVoid'; }
 function buildWalls(){ const c=C(), e=elev(); const floorsToBuild=[['ground',0,e.groundHeight],['upper',e.groundHeight,e.eave]]; for(const [f,y0,y1] of floorsToBuild){ for(let y=0;y<H();y++) for(let x=0;x<W();x++){ if(!floorCellOccupied(f,x,y)) continue; const x0=x*c,z0=y*c,x1=(x+1)*c,z1=(y+1)*c; if(!floorCellOccupied(f,x,y-1)) addQuad([x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],'#efeae2',{stroke:'#efeae2'}); if(!floorCellOccupied(f,x+1,y)) addQuad([x1,y0,z0],[x1,y0,z1],[x1,y1,z1],[x1,y1,z0],'#ece7df',{stroke:'#ece7df'}); if(!floorCellOccupied(f,x,y+1)) addQuad([x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1],'#efeae2',{stroke:'#efeae2'}); if(!floorCellOccupied(f,x-1,y)) addQuad([x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[x0,y1,z0],'#ece7df',{stroke:'#ece7df'}); } }
 }
-function buildRoof(){ if(!opts.roof) return; const r=roofSpec(),o=.35,col='#454b53',edge='#252a30'; if(r.ridge==='north-south'){ const lo=r.eave-o*r.rise/(r.w/2); addQuad([-o,lo,-o],[r.w/2,r.eave+r.rise,-o],[r.w/2,r.eave+r.rise,r.d+o],[-o,lo,r.d+o],col,{stroke:edge}); addQuad([r.w/2,r.eave+r.rise,-o],[r.w+o,lo,-o],[r.w+o,lo,r.d+o],[r.w/2,r.eave+r.rise,r.d+o],col,{stroke:edge}); } else { const lo=r.eave-o*r.rise/(r.d/2); addQuad([-o,lo,-o],[r.w+o,lo,-o],[r.w+o,r.eave+r.rise,r.d/2],[-o,r.eave+r.rise,r.d/2],col,{stroke:edge}); addQuad([-o,r.eave+r.rise,r.d/2],[r.w+o,r.eave+r.rise,r.d/2],[r.w+o,lo,r.d+o],[-o,lo,r.d+o],col,{stroke:edge}); } // okap opada poniżej linii ściany – połać przechodzi przez (ściana, okap)
- if(r.ridge==='north-south'){ for(const z of [0,r.d]) addPoly([[0,r.eave,z],[r.w,r.eave,z],[r.w/2,r.eave+r.rise,z]],'#ddd7ce','#a79f93',1,1); } else { for(const x of [0,r.w]) addPoly([[x,r.eave,0],[x,r.eave,r.d],[x,r.eave+r.rise,r.d/2]],'#ddd7ce','#a79f93',1,1); } }
+// Dach dwuspadowy: okap (wysunięcie przed ściany okapowe) i wysunięcie przy szczytach z ustawień Kondygnacji i dachu,
+// deski czołowe na krawędziach i podbitka pod okapem. a – w poprzek kalenicy (0..rozpiętość), l – wzdłuż kalenicy.
+const SOFFIT_COL={wood:'#a47148',white:'#eceae6',graphite:'#3f4650'};
+function buildRoof(){ if(!opts.roof) return; const r=roofSpec(),e=elev(),ns=r.ridge==='north-south',S=ns?r.w:r.d,L=ns?r.d:r.w,half=S/2,tan=r.rise/half,top=r.eave+r.rise;
+  const eo=e.eaveOverhang,go=e.gableOverhang,t=.2,lo=r.eave-eo*tan,col='#454b53',edge='#252a30',fas='#3a3f46',soff=SOFFIT_COL[e.soffit];
+  const P=(a,l,y)=>ns?[a,y,l]:[l,y,a],Q=(p1,p2,p3,p4,c,st)=>addQuad(p1,p2,p3,p4,c,{stroke:st||edge});
+  // połacie
+  Q(P(-eo,-go,lo),P(half,-go,top),P(half,L+go,top),P(-eo,L+go,lo),col);Q(P(half,-go,top),P(S+eo,-go,lo),P(S+eo,L+go,lo),P(half,L+go,top),col);
+  // deski czołowe okapu i wiatrownice przy szczytach
+  for(const a of [-eo,S+eo])Q(P(a,-go,lo-t),P(a,L+go,lo-t),P(a,L+go,lo),P(a,-go,lo),fas);
+  for(const l of [-go,L+go]){Q(P(-eo,l,lo-t),P(half,l,top-t),P(half,l,top),P(-eo,l,lo),fas);Q(P(half,l,top-t),P(S+eo,l,lo-t),P(S+eo,l,lo),P(half,l,top),fas)}
+  // podbitka: pozioma pod okapem, pod wysunięciem przy szczytach – równolegle do połaci
+  if(soff){if(eo>0){Q(P(-eo,-go,lo-t),P(0,-go,lo-t),P(0,L+go,lo-t),P(-eo,L+go,lo-t),soff,soff);Q(P(S,-go,lo-t),P(S+eo,-go,lo-t),P(S+eo,L+go,lo-t),P(S,L+go,lo-t),soff,soff)}
+    if(go>0)for(const [l0,l1] of [[-go,0],[L,L+go]]){Q(P(-eo,l0,lo-t),P(half,l0,top-t),P(half,l1,top-t),P(-eo,l1,lo-t),soff,soff);Q(P(half,l0,top-t),P(S+eo,l0,lo-t),P(S+eo,l1,lo-t),P(half,l1,top-t),soff,soff)}}
+  // ściany szczytowe (trójkąty pod dachem)
+  if(ns){ for(const z of [0,r.d]) addPoly([[0,r.eave,z],[r.w,r.eave,z],[r.w/2,r.eave+r.rise,z]],'#ddd7ce','#a79f93',1,1); } else { for(const x of [0,r.w]) addPoly([[x,r.eave,0],[x,r.eave,r.d],[x,r.eave+r.rise,r.d/2]],'#ddd7ce','#a79f93',1,1); } }
 function isRoofWindow(q){ if(!opts.roof || q.type!=='window' || q.f!=='upper') return false; const r=roofSpec(); return r.ridge==='north-south' ? (q.screenSide==='left'||q.screenSide==='right') : (q.screenSide==='top'||q.screenSide==='bottom'); }
 function buildOpenings(){ if(!opts.openings) return; const c=C(), e=elev(); for(const f of floors().slice(0,2)){ const base=f==='ground'?0:e.groundHeight,runs={};
   for(const raw of openingGroups(f)){ const q={...raw,f},info=HouserOpenings.resolve(project,f,q.key,q.type),explicit=!!project.openingVariants?.[f]?.[q.key];

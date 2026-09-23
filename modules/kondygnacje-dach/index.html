@@ -73,6 +73,9 @@ svg{display:block;width:100%;height:auto;max-height:62vh}
     <div class="field"><label>Kalenica biegnie</label>
       <select id="ridge"><option value="east-west">Wschód – Zachód</option><option value="north-south">Północ – Południe</option></select>
     </div>
+    <div class="field"><label title="Na ile dach wystaje przed ściany okapowe (te pod dolną krawędzią połaci)">Okap – wysunięcie przed ściany okapowe [cm]</label><input id="eaveOv" type="number" min="0" max="150" step="5"></div>
+    <div class="field"><label title="Na ile dach wystaje przed ściany szczytowe (te z trójkątem)">Wysunięcie przy szczytach (boki) [cm]</label><input id="gableOv" type="number" min="0" max="150" step="5"></div>
+    <div class="field"><label>Podbitka (spód okapu)</label><select id="soffit"></select></div>
   </div>
 
   <div class="section">
@@ -93,7 +96,7 @@ svg{display:block;width:100%;height:auto;max-height:62vh}
 <script>
 const $=id=>document.getElementById(id);
 const NS='http://www.w3.org/2000/svg';
-const OVERHANG=.35, DIR_PL={north:'północ',south:'południe',east:'wschód',west:'zachód'};
+const DIR_PL={north:'północ',south:'południe',east:'wschód',west:'zachód'};
 let project=null, source='';        // bieżący projekt (format eksportu z Projektowania)
 let settings={...HouserModel.DEF};   // ustawienia bryły
 
@@ -124,7 +127,7 @@ function commit(){
 function syncInputs(){
   const g=geom(),attic=g.upperType==='attic',act=document.activeElement;
   const set=(id,v)=>{if($(id)!==act)$(id).value=v};
-  set('groundHeight',g.groundHeight);set('kneeWall',g.kneeWall);set('upperHeight',g.upperHeight);set('roofPitch',g.roofPitch);set('pitchRange',g.roofPitch);set('ridge',g.ridge);
+  set('groundHeight',g.groundHeight);set('kneeWall',g.kneeWall);set('upperHeight',g.upperHeight);set('roofPitch',g.roofPitch);set('pitchRange',g.roofPitch);set('ridge',g.ridge);set('eaveOv',Math.round(g.eaveOverhang*100));set('gableOv',Math.round(g.gableOverhang*100));set('soffit',g.soffit);
   for(const b of $('upperTypeSeg').children)b.classList.toggle('active',b.dataset.v===g.upperType);
   $('kneeField').hidden=!attic;
   $('upperLabel').textContent=attic?'Poddasze – wysokość do stropu / jętek [m]':'Piętro – wysokość kondygnacji [m]';
@@ -135,9 +138,10 @@ function syncInputs(){
     : 'Brak bieżącego projektu. Zacznij w module <b>Układ pomieszczeń</b> albo wczytaj plik JSON. Do tego czasu widzisz przykładową bryłę 9 × 9 m.';
 }
 function readInputs(){
-  settings=HouserModel.normalize({...settings,groundHeight:$('groundHeight').value,kneeWall:$('kneeWall').value,upperHeight:$('upperHeight').value,roofPitch:$('roofPitch').value,ridge:$('ridge').value},dims().span);
+  settings=HouserModel.normalize({...settings,groundHeight:$('groundHeight').value,kneeWall:$('kneeWall').value,upperHeight:$('upperHeight').value,roofPitch:$('roofPitch').value,ridge:$('ridge').value,eaveOverhang:$('eaveOv').value===''?settings.eaveOverhang:$('eaveOv').value/100,gableOverhang:$('gableOv').value===''?settings.gableOverhang:$('gableOv').value/100,soffit:$('soffit').value},dims().span);
 }
-for(const id of ['groundHeight','kneeWall','upperHeight','roofPitch','ridge'])$(id).addEventListener('input',()=>{readInputs();syncInputs();commit();});
+$('soffit').innerHTML=Object.entries(HouserModel.SOFFITS).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('');
+for(const id of ['groundHeight','kneeWall','upperHeight','roofPitch','ridge','eaveOv','gableOv','soffit'])$(id).addEventListener('input',()=>{readInputs();syncInputs();commit();});
 $('pitchRange').addEventListener('input',()=>{$('roofPitch').value=$('pitchRange').value;readInputs();syncInputs();commit();});
 for(const b of $('upperTypeSeg').children)b.addEventListener('click',()=>{settings.upperType=b.dataset.v;syncInputs();commit();});
 $('file').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{const p=JSON.parse(await f.text());if(!p.grid&&!p.definitionSnapshot?.grid)throw new Error('brak siatki (grid) w pliku');setProject(p,'plik');HouserStore.save(project,'kondygnacje-dach');}catch(err){alert('Nie udało się wczytać projektu: '+err.message);}e.target.value='';});
@@ -158,8 +162,9 @@ function dimH(svg,x0,x1,y,label){
 }
 const m=v=>v.toFixed(2)+' m';
 
+const SOFFIT_COL={wood:'#a47148',white:'#e5e7eb',graphite:'#374151',none:null};
 function drawCross(){
-  const svg=$('cross');svg.innerHTML='';const g=geom(),span=g.span,half=span/2,tan=Math.tan(g.roofPitch*Math.PI/180);
+  const svg=$('cross');svg.innerHTML='';const g=geom(),span=g.span,half=span/2,tan=Math.tan(g.roofPitch*Math.PI/180),OVERHANG=g.eaveOverhang;
   const padL=90,padR=90,padT=30,padB=46,Wpx=900,s=(Wpx-padL-padR)/(span+2*OVERHANG),H=g.ridgeY+.3,Hpx=H*s+padT+padB;
   svg.setAttribute('viewBox','0 0 '+Wpx+' '+Hpx);
   const X=x=>padL+(x+OVERHANG)*s, Y=y=>Hpx-padB-y*s;
@@ -183,7 +188,9 @@ function drawCross(){
   }
   // dach z okapem
   const oy=g.eave-OVERHANG*tan;
+  const sc=SOFFIT_COL[g.soffit];if(sc&&OVERHANG>0)for(const [a,b] of [[-OVERHANG,0],[span,span+OVERHANG]])el('line',{x1:X(a),y1:Y(oy)+3,x2:X(b),y2:Y(oy)+3,stroke:sc,'stroke-width':4},svg);
   el('polyline',{points:[[-OVERHANG,oy],[half,g.ridgeY],[span+OVERHANG,oy]].map(([x,y])=>X(x)+','+Y(y)).join(' '),fill:'none',stroke:'#374151','stroke-width':5,'stroke-linejoin':'round'},svg);
+  if(OVERHANG>0)dimH(svg,X(-OVERHANG),X(0),Y(oy)-14,Math.round(OVERHANG*100)+' cm');
   // kąt
   const ax=X(span-1.4*Math.min(1,half/2)),ay=Y(g.eave+ (span-(span-1.4*Math.min(1,half/2)))*0);
   el('path',{d:'M '+X(span-1.2)+' '+Y(g.eave)+' A '+(1.2*s)+' '+(1.2*s)+' 0 0 1 '+X(span-1.2*Math.cos(g.roofPitch*Math.PI/180))+' '+Y(g.eave+1.2*Math.sin(g.roofPitch*Math.PI/180)),fill:'none',stroke:'#2563eb','stroke-width':1.5},svg);
@@ -197,18 +204,19 @@ function drawCross(){
   dimH(svg,X(0),X(span),Y(0)+18,m(span));
 }
 function drawLong(){
-  const svg=$('long');svg.innerHTML='';const g=geom(),L=dims().length;
+  const svg=$('long');svg.innerHTML='';const g=geom(),L=dims().length,OVERHANG=g.gableOverhang;
   const padL=90,padR=90,padT=24,padB=46,Wpx=900,s=(Wpx-padL-padR)/(L+2*OVERHANG),H=g.ridgeY+.3,Hpx=H*s+padT+padB;
   svg.setAttribute('viewBox','0 0 '+Wpx+' '+Hpx);
   const X=x=>padL+(x+OVERHANG)*s, Y=y=>Hpx-padB-y*s;
   el('rect',{x:0,y:Y(0),width:Wpx,height:padB,fill:'#e7e2d9'},svg);el('line',{x1:0,y1:Y(0),x2:Wpx,y2:Y(0),stroke:'#8b8378','stroke-width':2},svg);
   el('rect',{x:X(0),y:Y(g.eave),width:L*s,height:g.eave*s,fill:'#f8fafc',stroke:'#0f172a','stroke-width':2},svg);
   el('line',{x1:X(0),y1:Y(g.groundHeight),x2:X(L),y2:Y(g.groundHeight),stroke:'#94a3b8','stroke-width':1,'stroke-dasharray':'5 4'},svg);
-  const oy=g.eave-OVERHANG*Math.tan(g.roofPitch*Math.PI/180);
+  const oy=g.eave-g.eaveOverhang*Math.tan(g.roofPitch*Math.PI/180);
   el('polygon',{points:[[-OVERHANG,oy],[L+OVERHANG,oy],[L+OVERHANG,g.ridgeY],[-OVERHANG,g.ridgeY]].map(([x,y])=>X(x)+','+Y(y)).join(' '),fill:'#475569',stroke:'#1f2937','stroke-width':2},svg);
   dimV(svg,X(0)-40,Y(0),Y(g.eave),m(g.eave),'left');
   dimV(svg,X(L)+40,Y(0),Y(g.ridgeY),m(g.ridgeY),'right');
   dimH(svg,X(0),X(L),Y(0)+18,m(L));
+  if(OVERHANG>0)dimH(svg,X(-OVERHANG),X(0),Y(g.ridgeY)-12,Math.round(OVERHANG*100)+' cm');
 }
 function sideNames(){ // które ściany są szczytowe, a które okapowe
   const r=settings.ridge;return r==='north-south'?{gable:'północna i południowa',eave:'wschodnia i zachodnia'}:{gable:'wschodnia i zachodnia',eave:'północna i południowa'};
@@ -218,7 +226,7 @@ function render(){
   drawCross();drawLong();
   $('crossCaption').textContent='w poprzek kalenicy – tak wyglądają ściany szczytowe ('+n.gable+')';
   $('longCaption').textContent='wzdłuż kalenicy – ściany okapowe ('+n.eave+')';
-  const rows=[['Wymiary domu',d.span.toFixed(2)+' × '+d.length.toFixed(2)+' m'],['Okap nad terenem',m(g.eave)],['Wysokość dachu',m(g.rise)],['Kalenica nad terenem',m(g.ridgeY)],['Długość połaci',m(Math.hypot(d.span/2+OVERHANG,g.rise+OVERHANG*Math.tan(g.roofPitch*Math.PI/180)))]];
+  const rows=[['Wymiary domu',d.span.toFixed(2)+' × '+d.length.toFixed(2)+' m'],['Okap nad terenem',m(g.eave)],['Wysokość dachu',m(g.rise)],['Kalenica nad terenem',m(g.ridgeY)],['Długość połaci',m(Math.hypot(d.span/2+g.eaveOverhang,g.rise+g.eaveOverhang*Math.tan(g.roofPitch*Math.PI/180)))],['Okap / szczyty',Math.round(g.eaveOverhang*100)+' / '+Math.round(g.gableOverhang*100)+' cm'],['Dach (rzut)',(d.span+2*g.eaveOverhang).toFixed(2)+' × '+(d.length+2*g.gableOverhang).toFixed(2)+' m']];
   let hint='';
   if(g.upperType==='attic'){
     const tan=Math.tan(g.roofPitch*Math.PI/180),w=h=>{const y=g.groundHeight+h;if(y<=g.eave)return d.span;if(y>=g.ridgeY)return 0;return Math.max(0,d.span-2*(y-g.eave)/tan);};

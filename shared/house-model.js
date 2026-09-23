@@ -10,7 +10,8 @@
 //   ridge         'north-south' | 'east-west' – kierunek kalenicy
 //   roofHeight    wyliczana wysokość dachu od okapu do kalenicy [m] (zapisywana dla zgodności)
 (function(global){
-  const DEF={groundHeight:2.8,upperType:'full',upperHeight:2.8,kneeWall:1.0,roofPitch:35,ridge:'east-west'};
+  const DEF={groundHeight:2.8,upperType:'full',upperHeight:2.8,kneeWall:1.0,roofPitch:35,ridge:'east-west',eaveOverhang:.5,gableOverhang:.4,soffit:'wood'};
+  const SOFFITS={wood:'drewniana',white:'biała',graphite:'grafitowa',none:'brak (widoczne krokwie)'};
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const num=(v,d)=>{const n=Number(v);return Number.isFinite(n)&&v!==''&&v!=null?n:d;};
 
@@ -28,6 +29,9 @@
       kneeWall:clamp(num(e.kneeWall,DEF.kneeWall),0,2),
       roofPitch:clamp(Math.round(pitch*10)/10,5,60),
       ridge:e.ridge==='north-south'?'north-south':'east-west',
+      eaveOverhang:clamp(num(e.eaveOverhang,DEF.eaveOverhang),0,1.5),   // okap – wysunięcie dachu przed ściany okapowe [m]
+      gableOverhang:clamp(num(e.gableOverhang,DEF.gableOverhang),0,1.5), // wysunięcie dachu przed ściany szczytowe [m]
+      soffit:SOFFITS[e.soffit]?e.soffit:DEF.soffit,                    // podbitka
     };
   }
 
@@ -41,7 +45,7 @@
   }
 
   // Ustawienia do zapisu: znormalizowane + wyliczone roofHeight dla starszych przeglądarek.
-  function toSaved(e,span){const g=geometry(e,span);return {groundHeight:g.groundHeight,upperType:g.upperType,upperHeight:g.upperHeight,kneeWall:g.kneeWall,roofPitch:g.roofPitch,ridge:g.ridge,roofHeight:g.roofHeight};}
+  function toSaved(e,span){const g=geometry(e,span);return {groundHeight:g.groundHeight,upperType:g.upperType,upperHeight:g.upperHeight,kneeWall:g.kneeWall,roofPitch:g.roofPitch,ridge:g.ridge,roofHeight:g.roofHeight,eaveOverhang:g.eaveOverhang,gableOverhang:g.gableOverhang,soffit:g.soffit};}
 
   // Czy połacie opadają w poprzek osi X siatki (kalenica biegnie wzdłuż osi Z / wierszy)?
   // Zależy od kierunku kalenicy i tego, jaki kierunek świata jest u góry siatki.
@@ -85,5 +89,5 @@
     return out;
   }
 
-  global.HouserModel={DEF,normalize,geometry,toSaved,slopesAcrossX,outdoorCells,outdoorFromMap,outdoorMap,outdoorCorners};
+  global.HouserModel={DEF,SOFFITS,normalize,geometry,toSaved,slopesAcrossX,outdoorCells,outdoorFromMap,outdoorMap,outdoorCorners};
 })(window);
