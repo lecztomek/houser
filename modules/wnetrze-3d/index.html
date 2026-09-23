@@ -111,6 +111,7 @@ button,input,select{font:inherit} button{cursor:pointer}
         <div id="threeHost"></div>
         <div class="overlay3d" id="overlay3d">Strzałki / WASD = chodzenie · ←/→ lub Q/E = obrót · mysz = rozglądanie · rolka = FOV · podwójny klik = wyprostuj widok.</div>
         <div class="crosshair"></div>
+        <div id="codeLegend" hidden style="position:absolute;right:10px;top:10px;background:rgba(255,255,255,.92);border:1px solid #cbd5e1;border-radius:8px;padding:6px 9px;font:12px system-ui;color:#1f2937;max-width:240px;box-shadow:0 2px 8px #0002"></div>
       </div>
       <div id="settingsPane">
         <div class="settingsBox">
@@ -334,25 +335,30 @@ function drawFurnitureOnPlan(f,ox,oy,s){
 // Zdjęcie do wizualizacji AI: każdy rodzaj mebla dostaje wyraźny kolor-kod, a legenda trafia do promptu.
 // Bez jasnych niebieskich/szarych – te oznaczają okna i ściany.
 const SNAP_PALETTE=[['#e6194b','red'],['#3cb44b','green'],['#ffe119','yellow'],['#f58231','orange'],['#911eb4','purple'],['#f032e6','magenta'],['#9a6324','brown'],['#bfef45','lime green'],['#000075','navy blue'],['#800000','maroon'],['#469990','teal'],['#fabed4','pink'],['#808000','olive'],['#ffd8b1','peach'],['#000000','black'],['#dcbeff','lavender']];
-let snapColors=null;
+function codedOn(){return !!els('snapCoded')?.checked}
+// stałe przypisanie kolorów: kolejne rodzaje mebli w projekcie (obie kondygnacje) dostają kolejne kolory palety
+function codeMap(){ensureFurniture();const map={};let i=0;for(const f of ['ground','upper'])for(const it of furnitureList(f)){if(!validFurnitureItem(it))continue;const k=furnKey(it);if(map[k]||i>=SNAP_PALETTE.length)continue;map[k]=SNAP_PALETTE[i++]}return map}
 function furnKey(it){return it.item||('type:'+(it.type||'other'))}
 function furnitureVisible(it){const f=observer.floor,base=floorBase(f),h=Math.min(furnViewDef(it).height,1),x0=+it.x,z0=+it.y,x1=x0+ +it.w,z1=z0+ +it.h,lim=Math.tan(observer.fov*Math.PI/360)*1.05;
   return [[x0,z0],[x1,z0],[x0,z1],[x1,z1],[(x0+x1)/2,(z0+z1)/2]].some(([x,z])=>{const c=worldToCamera([x,base+h/2,z]);return c.z>.1&&c.z<25&&Math.abs(c.x/c.z)<lim})}
-function snapLegend(){const list=furnitureList(observer.floor).filter(validFurnitureItem).filter(furnitureVisible),map={},legend=[];
-  for(const it of list){const k=furnKey(it);if(map[k])continue;const i=legend.length;if(i>=SNAP_PALETTE.length)break;const [color,colorName]=SNAP_PALETTE[i];map[k]=color;
-    legend.push({color,colorName,item:it.item||null,type:it.type||'other',name:(window.HouserFurniture?HouserFurniture.nameFor(it):(it.label||it.type))})}
-  return {map,legend}}
+function snapLegend(){if(!codedOn())return [];const cm=codeMap(),seen=new Set(),legend=[];
+  for(const it of furnitureList(observer.floor).filter(validFurnitureItem).filter(furnitureVisible)){const k=furnKey(it);if(seen.has(k)||!cm[k])continue;seen.add(k);
+    legend.push({color:cm[k][0],colorName:cm[k][1],item:it.item||null,type:it.type||'other',name:(window.HouserFurniture?HouserFurniture.nameFor(it):(it.label||it.type))})}
+  return legend}
+let _legendKey='';
+function updateCodeLegend(){const el=els('codeLegend');if(!el)return;const L=snapLegend(),key=L.map(l=>l.color).join();if(key===_legendKey)return;_legendKey=key;
+  el.hidden=!L.length;el.innerHTML='<b style="display:block;margin-bottom:3px">Meble kolorami</b>'+L.map(l=>'<div style="display:flex;align-items:center;gap:6px"><i style="width:12px;height:12px;border-radius:3px;border:1px solid #0003;background:'+l.color+'"></i>'+l.name.replace(/</g,'&lt;')+'</div>').join('')}
 function addFurniture3D(){
-  ensureFurniture();
+  ensureFurniture();const cm=codedOn()?codeMap():null;
   for(const f of ['ground','upper']){const base=floorBase(f),fh=floorHeight(f);for(const it of furnitureList(f)){
     if(!validFurnitureItem(it))continue;const d=furnViewDef(it),m=.025,x0=Number(it.x)+m,z0=Number(it.y)+m,x1=Number(it.x)+Number(it.w)-m,z1=Number(it.y)+Number(it.h)-m;if(x1<=x0||z1<=z0)continue;
-    let top=base+Math.min(d.height,fh-.04);const col=snapColors?(snapColors[furnKey(it)]||'#d4d4d4'):d.color;
+    let top=base+Math.min(d.height,fh-.04);const col=cm?(cm[furnKey(it)]?.[0]||'#d4d4d4'):d.color;
     // na poddaszu mebel nie może przebić skosu dachu – przycinamy do najniższego punktu połaci nad nim
     if(f==='upper'&&roofEnabled()){const lim=Math.min(roofAbsYAt(x0,z0),roofAbsYAt(x1,z0),roofAbsYAt(x0,z1),roofAbsYAt(x1,z1))-.03;top=Math.max(base+.1,Math.min(top,lim));}
     if(d.kind==='ring'){
       const ins=Math.min((x1-x0)*.22,(z1-z0)*.22,.30);if(ins>.04){addBoxFaces(x0,base,z0,x1,top,z0+ins,col,{stroke:'#475569'});addBoxFaces(x0,base,z1-ins,x1,top,z1,col,{stroke:'#475569'});addBoxFaces(x0,base,z0+ins,x0+ins,top,z1-ins,col,{stroke:'#475569'});addBoxFaces(x1-ins,base,z0+ins,x1,top,z1-ins,col,{stroke:'#475569'});}else addBoxFaces(x0,base,z0,x1,top,z1,col,{stroke:'#475569'});
     }else if(d.kind==='bed'){
-      addBoxFaces(x0,base+.18,z0,x1,top,z1,col,{stroke:'#64748b'});const head=Math.min(.12,x1-x0);addBoxFaces(x0,base,z0,x0+head,base+.85,z1,snapColors?col:'#7aa2d6',{stroke:'#64748b'});
+      addBoxFaces(x0,base+.18,z0,x1,top,z1,col,{stroke:'#64748b'});const head=Math.min(.12,x1-x0);addBoxFaces(x0,base,z0,x0+head,base+.85,z1,cm?col:'#7aa2d6',{stroke:'#64748b'});
     }else if(d.kind==='seating'){
       const seatTop=base+.45;addBoxFaces(x0,base,z0,x1,seatTop,z1,col,{stroke:'#7f1d1d'});const back=Math.min(.14,z1-z0);addBoxFaces(x0,seatTop,z1-back,x1,base+.85,z1,col,{stroke:'#7f1d1d'});
     }else if(d.kind==='surface'){
@@ -514,7 +520,7 @@ function glCamera(){
 }
 function render3D(){
   if(!three.ready||!(three.ctx||three.gl))return;resize3d(false);
-  if(three.gl){three.gl.draw(glCamera());update3dOverlay();return}
+  if(three.gl){three.gl.draw(glCamera());update3dOverlay();updateCodeLegend();return}
   const cv=three.canvas,ctx=three.ctx,W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
   const sky=ctx.createLinearGradient(0,0,0,H*.56);sky.addColorStop(0,'#a9c5dd');sky.addColorStop(1,'#e7edf1');ctx.fillStyle=sky;ctx.fillRect(0,0,W,H*.58);
   const grd=ctx.createLinearGradient(0,H*.45,0,H);grd.addColorStop(0,'#c8c3bb');grd.addColorStop(1,'#9f9b95');ctx.fillStyle=grd;ctx.fillRect(0,H*.58,W,H*.42);
@@ -544,12 +550,11 @@ window.addEventListener('blur',()=>three.keys.clear());
 function resize3d(redraw=true){if(!three.ready||!three.canvas)return;const host=els('threeHost'),dpr=Math.min(devicePixelRatio||1,2),w=Math.max(1,Math.floor(host.clientWidth*dpr)),h=Math.max(1,Math.floor(host.clientHeight*dpr));if(three.canvas.width!==w||three.canvas.height!==h){three.canvas.width=w;three.canvas.height=h;if(redraw)render3D()}}
 function snapToast(){let t=document.querySelector('.hsToast');if(t)t.remove();t=document.createElement('div');t.className='hsToast';t.innerHTML='📷 Zdjęcie zapisane <button>Otwórz Wizualizacje AI</button>';t.querySelector('button').onclick=()=>window.HouserNav&&HouserNav.go('wizualizacje');document.body.appendChild(t);setTimeout(()=>t.remove(),6000)}
 els('snap').addEventListener('click',async()=>{ if(!three.ready){showTab('three');await new Promise(r=>setTimeout(r,300))} if(els('view3d').style.display!=='block')showTab('three');
-  const coded=els('snapCoded')?.checked!==false, L=coded?snapLegend():{map:null,legend:[]};
-  if(coded&&L.legend.length){snapColors=L.map;build3D()} else render3D();
-  const img=HouserSnapshots.capture(three.canvas,'#a9c5dd','#e7edf1');
-  if(snapColors){snapColors=null;build3D()}
+  render3D(); const img=HouserSnapshots.capture(three.canvas,'#a9c5dd','#e7edf1'), legend=snapLegend();
   const cell=currentCell(),id=roomAt(observer.floor,cell.x,cell.y),rm=roomMap(observer.floor)[id];
-  await HouserSnapshots.add(img,'wnetrze-3d',{kind:'interior',floor:observer.floor,roomId:id||null,roomName:rm?.name||null,angle:Math.round(observer.angle),fov:Math.round(observer.fov),eye:observer.eye,legend:L.legend.length?L.legend:undefined}); snapToast(); });
+  await HouserSnapshots.add(img,'wnetrze-3d',{kind:'interior',floor:observer.floor,roomId:id||null,roomName:rm?.name||null,angle:Math.round(observer.angle),fov:Math.round(observer.fov),eye:observer.eye,legend:legend.length?legend:undefined}); snapToast(); });
+(()=>{const cb=els('snapCoded');if(!cb)return;try{const v=localStorage.getItem('houser:snap-coded');if(v!==null&&cb.checked!==(v==='1')){cb.checked=v==='1';if(three.ready)build3D()}}catch(_){}
+  cb.addEventListener('change',()=>{try{localStorage.setItem('houser:snap-coded',cb.checked?'1':'0')}catch(_){}_legendKey='x';build3D()})})();
 window.addEventListener('resize',()=>resize3d());
 if(window.ResizeObserver) new ResizeObserver(()=>{ if(three.ready&&els('threeHost').clientWidth>0){resize3d(false);render3D()} }).observe(els('threeHost'));
 function syncCameraFromObserver(){if(three.ready)render3D()}
