@@ -27,6 +27,7 @@ main{position:relative;min-height:0}
 .projbar .dirty{color:#b45309;font-weight:600}
 .pbtn{border:1px solid var(--hs-line-strong,#cbd5e1);background:var(--hs-panel);color:var(--hs-text);padding:5px 10px;border-radius:var(--hs-radius,8px);font:600 12.5px var(--hs-font);cursor:pointer;white-space:nowrap}
 .pbtn:hover{border-color:var(--hs-accent)}
+.pbtn:disabled{opacity:.45;cursor:default;border-color:var(--hs-line)}
 .pbtn.primary{background:var(--hs-accent);border-color:var(--hs-accent);color:#fff}
 .projbar label.chk{display:inline-flex;align-items:center;gap:4px;color:var(--hs-muted);font-size:12px;white-space:nowrap}
 .projmsg{position:fixed;right:16px;bottom:16px;z-index:50;background:#0f172a;color:#fff;border-radius:10px;padding:10px 14px;font:600 13px var(--hs-font);box-shadow:0 8px 24px rgba(0,0,0,.25)}
@@ -61,6 +62,8 @@ a{color:var(--accent)}
 </header>
 <div class="projbar" id="projbar">
   <span>Projekt:</span><span class="name" id="pbName">—</span><span class="meta" id="pbMeta"></span>
+  <button class="pbtn" id="pbUndo" title="Cofnij ostatnią zmianę (Ctrl+Z)" disabled>↶ Cofnij</button>
+  <button class="pbtn" id="pbRedo" title="Ponów cofniętą zmianę (Ctrl+Y / Ctrl+Shift+Z)" disabled>↷ Ponów</button>
   <button class="pbtn primary" id="pbSave" title="Zapisuje cały projekt (pomieszczenia, warunki, rzut, okna, drzwi, schody, dach, tarasy, meble, ustawienia 3D) do jednego pliku JSON. Zdjęcia i wizualizacje AI zostają tylko w przeglądarce.">💾 Zapisz do pliku</button>
   <label class="pbtn" title="Wczytuje plik projektu JSON – zastępuje bieżący projekt w przeglądarce">📂 Otwórz plik<input type="file" id="pbFile" accept="application/json,.json" hidden></label>
   <button class="pbtn" id="pbNew" title="Pusty projekt – zaczynasz od modułu Pomieszczenia">Nowy</button>
@@ -138,7 +141,7 @@ const LAST_SAVE='houser:last-file-save';
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(_){return null}},lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(_){}};
 function projName(p){return p?.definitionSnapshot?.name||p?.definitionName||p?.name||'bez nazwy'}
 function fmtTime(iso){if(!iso)return '';const d=new Date(iso),today=d.toDateString()===new Date().toDateString();return today?d.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'}):d.toLocaleString('pl-PL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
-const modName=id=>MODULES.find(m=>m.id===id)?.name||'';
+const modName=id=>MODULES.find(m=>m.id===id)?.name||({plik:'wczytanie pliku / nowy projekt',cofnij:'cofnij/ponów'})[id]||'';
 function renderBar(){const rec=HouserStore.load();$('pbName').textContent=rec?projName(rec.project):'brak – kliknij „Nowy”, „Przykład” albo otwórz plik';
   const saved=lsGet(LAST_SAVE),dirty=rec&&(!saved||saved<rec.updatedAt);
   $('pbMeta').innerHTML=rec?((dirty?'<span class="dirty">● niezapisane w pliku</span>':'✓ zapisany w pliku '+fmtTime(saved))+' · zmiana '+fmtTime(rec.updatedAt)+(modName(rec.source)?' ('+modName(rec.source)+')':'')):'';
@@ -162,8 +165,10 @@ async function openProject(obj,label){
   let project={...obj};delete project.visualizations;delete project.houserFile; // obrazy nie są częścią pliku (starsze pliki mogły je mieć – pomijamy)
   if(!project.state&&!project.definitionSnapshot&&HouserDefinition.isDefinition(project))project=HouserDefinition.projectFromDefinition(project);
   if(!project.definitionSnapshot&&!project.state)throw new Error('Nie rozpoznaję pliku – brak definicji pomieszczeń i rzutu.');
+  const before=curJSON;
   if(!HouserStore.save(project,'plik'))throw new Error('Nie udało się zapisać projektu w przeglądarce (za mało miejsca?).');
   lsSet(LAST_SAVE,label==='file'?new Date().toISOString():'');
+  pushUndo(before,'plik');curJSON=JSON.stringify(project);lastPush={t:0,src:''};echoUntil=Date.now()+3000;
   reloadModules();renderBar();toast('Wczytano projekt „'+projName(project)+'”')}
 $('pbSave').onclick=()=>saveFile().catch(e=>alert('Nie udało się zapisać: '+e.message));
 $('pbFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f||!confirmReplace())return;
@@ -172,7 +177,25 @@ $('pbNew').onclick=async()=>{if(!confirmReplace())return;
   try{await openProject(HouserDefinition.projectFromDefinition(HouserDefinition.emptyDefinition()),'new');location.hash='pomieszczenia'}catch(err){alert(err.message)}};
 $('pbSample').onclick=async()=>{if(!confirmReplace())return;
   try{const r=await fetch('examples/uklad-domu-v7.json');await openProject(await r.json(),'sample')}catch(err){alert('Nie udało się wczytać przykładu: '+err.message)}};
-HouserStore.subscribe(renderBar);renderBar();setInterval(renderBar,30000);
+// ---------- Cofnij / Ponów – wspólne dla wszystkich modułów
+// Historia bieżącego projektu (w pamięci tej karty). Szybkie kolejne zapisy z tego samego modułu (np. malowanie) łączymy w jeden krok.
+const undoStack=[],redoStack=[],HIST_MAX=60;let curJSON=(()=>{const r=HouserStore.load();return r?JSON.stringify(r.project):null})(),lastPush={t:0,src:''};
+function pushUndo(prevJSON,src){if(prevJSON==null)return;const now=Date.now();
+  if(!(src&&src===lastPush.src&&now-lastPush.t<900&&undoStack.length)){undoStack.push({json:prevJSON,src});if(undoStack.length>HIST_MAX)undoStack.shift()}
+  lastPush={t:now,src};redoStack.length=0;renderUndo()}
+let echoUntil=0; // po cofnięciu moduły mogą zapisać przywrócony projekt ponownie (normalizacja) – to nie jest nowa zmiana
+function onStoreChange(rec){const j=JSON.stringify(rec.project);if(j===curJSON)return;if(Date.now()<echoUntil){curJSON=j;return}pushUndo(curJSON,rec.source);curJSON=j}
+function applyHist(from,to){if(!from.length)return;const cur=HouserStore.load(),step=from.pop();
+  to.push({json:cur?JSON.stringify(cur.project):curJSON,src:step.src});HouserStore.save(JSON.parse(step.json),'cofnij');curJSON=step.json;echoUntil=Date.now()+1500;lastPush={t:0,src:''};renderUndo();renderBar()}
+function renderUndo(){const u=undoStack[undoStack.length-1],r=redoStack[redoStack.length-1];$('pbUndo').disabled=!u;$('pbRedo').disabled=!r;
+  $('pbUndo').title='Cofnij'+(u?' zmianę'+(modName(u.src)?' z modułu '+modName(u.src):''):'')+' (Ctrl+Z) · kroków: '+undoStack.length;
+  $('pbRedo').title='Ponów'+(r?' zmianę'+(modName(r.src)?' z modułu '+modName(r.src):''):'')+' (Ctrl+Y) · kroków: '+redoStack.length}
+window.HouserUndo={undo:()=>applyHist(undoStack,redoStack),redo:()=>applyHist(redoStack,undoStack)};
+$('pbUndo').onclick=HouserUndo.undo;$('pbRedo').onclick=HouserUndo.redo;
+window.addEventListener('keydown',e=>{if(!(e.ctrlKey||e.metaKey)||e.altKey)return;const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;
+  const k=e.key.toLowerCase();if(k==='z'&&!e.shiftKey){e.preventDefault();HouserUndo.undo()}else if(k==='y'||(k==='z'&&e.shiftKey)){e.preventDefault();HouserUndo.redo()}});
+HouserStore.subscribe(onStoreChange);
+HouserStore.subscribe(renderBar);renderBar();renderUndo();setInterval(renderBar,30000);
 show(location.hash.slice(1)||'start');
 </script>
 </body>

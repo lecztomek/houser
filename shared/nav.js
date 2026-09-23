@@ -15,9 +15,13 @@
     document.documentElement.classList.add('hs-embedded');
     var st=document.createElement('style');
     st.textContent='html.hs-embedded label:has(> input[type=file][accept*="json"]),'+
-      'html.hs-embedded :is(#export,#exportDef,#exportProj,#newDef,#resetProject,#reset,#loadDefinitionBtn,#downloadDefinitionBtn,#saveProjectBtn,#loadProjectBtn){display:none!important}'+
+      'html.hs-embedded :is(#export,#exportDef,#exportProj,#newDef,#resetProject,#reset,#loadDefinitionBtn,#downloadDefinitionBtn,#saveProjectBtn,#loadProjectBtn,#undoBtn){display:none!important}'+
       'html.hs-embedded .section:has(> .row > label > input[type=file][accept*="json"]):not(:has(#fit)){display:none!important}';
     document.head.appendChild(st);
+    // Ctrl+Z / Ctrl+Y w module → wspólne Cofnij/Ponów strony głównej (poza polami tekstowymi)
+    document.addEventListener('keydown',function(e){if(!(e.ctrlKey||e.metaKey)||e.altKey)return;var t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable))return;
+      var u;try{u=window.top.HouserUndo}catch(_){}if(!u)return;var k=(e.key||'').toLowerCase();
+      if(k==='z'&&!e.shiftKey){e.preventDefault();u.undo()}else if(k==='y'||(k==='z'&&e.shiftKey)){e.preventDefault();u.redo()}});
     return;
   }
   var id=location.pathname.replace(/\/(index\.html)?$/,'').split('/').pop();
