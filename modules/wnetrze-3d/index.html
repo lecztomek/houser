@@ -382,23 +382,44 @@ function wallQuad(orient,x,z,len,base,y0,y1,color,opts={}){
   else addQuad([x,base+y0,z-len/2],[x,base+y0,z+len/2],[x,base+y1,z+len/2],[x,base+y1,z-len/2],color,opts)
 }
 let curOpInfo=null; // wariant bieżącego otworu z modułu Okna i drzwi (shared/openings.js)
+// Ściany mają grubość: działowe 12 cm po osi siatki, zewnętrzne 30 cm na zewnątrz od linii (wnętrze bez zmian, głębokie ościeża okien).
+// Renderer nie cieniuje, więc czoła, wierzch/spód i ościeża mają ciemniejszy kolor – dzięki temu widać grubość.
+const WALL_IN=.12,WALL_EXT=.30;let curOut=0,wallNodes=null;
+function wallSlab(orient,x,z,len,base,y0,y1,color,exterior){
+  if(y1<=y0+.001)return;const t=exterior?WALL_EXT:WALL_IN,o0=exterior&&curOut?Math.min(0,curOut*t):-t/2,o1=exterior&&curOut?Math.max(0,curOut*t):t/2;
+  const cap=exterior?'#c2bbb2':'#c9ccd1',edge=exterior?'#a79f95':'#b1b5bb',A=base+y0,B=base+y1,face={stroke:color,line:0},side={stroke:edge,line:.6},end={stroke:cap,line:0};
+  let x0,x1,z0,z1;if(orient==='h'){x0=x-len/2;x1=x+len/2;z0=z+o0;z1=z+o1}else{x0=x+o0;x1=x+o1;z0=z-len/2;z1=z+len/2}
+  if(orient==='h'){addQuad([x0,A,z0],[x1,A,z0],[x1,B,z0],[x0,B,z0],color,face);addQuad([x1,A,z1],[x0,A,z1],[x0,B,z1],[x1,B,z1],color,face);
+    addQuad([x0,A,z1],[x0,A,z0],[x0,B,z0],[x0,B,z1],cap,end);addQuad([x1,A,z0],[x1,A,z1],[x1,B,z1],[x1,B,z0],cap,end)}
+  else{addQuad([x0,A,z1],[x0,A,z0],[x0,B,z0],[x0,B,z1],color,face);addQuad([x1,A,z0],[x1,A,z1],[x1,B,z1],[x1,B,z0],color,face);
+    addQuad([x0,A,z0],[x1,A,z0],[x1,B,z0],[x0,B,z0],cap,end);addQuad([x1,A,z1],[x0,A,z1],[x0,B,z1],[x1,B,z1],cap,end)}
+  addQuad([x0,B,z0],[x1,B,z0],[x1,B,z1],[x0,B,z1],cap,side);addQuad([x0,A,z1],[x1,A,z1],[x1,A,z0],[x0,A,z0],cap,side);
+  // węzły ścian działowych – słupek w narożnikach i na końcach ścian (nie na prostym przedłużeniu)
+  if(!exterior&&wallNodes&&y0<.01){const H=y1,ends=orient==='h'?[[x-len/2,z,'r'],[x+len/2,z,'l']]:[[x,z-len/2,'d'],[x,z+len/2,'u']];
+    for(const [px,pz,dir] of ends){const k=base.toFixed(2)+':'+px.toFixed(3)+':'+pz.toFixed(3),n=wallNodes[k]||(wallNodes[k]={x:px,z:pz,base,h:H,dirs:new Set()});n.dirs.add(dir);n.h=Math.min(n.h,H)}}
+}
+function flushWallNodes(){if(!wallNodes)return;const t=WALL_IN/2-.004;
+  for(const n of Object.values(wallNodes)){const d=n.dirs;if(d.size===2&&((d.has('l')&&d.has('r'))||(d.has('u')&&d.has('d'))))continue;
+    addBoxFaces(n.x-t,n.base,n.z-t,n.x+t,n.base+n.h,n.z+t,'#f0f1f2',{stroke:'#c3c6ca',line:.6})}
+  wallNodes=null}
 function addWall2D(orient,x,z,len,height,base,opening,exterior){const info=opening?curOpInfo:null;
+  const go=exterior&&curOut?curOut*WALL_EXT*.4:0,gx=orient==='v'?x+go:x,gz=orient==='h'?z+go:z; // szyba w głębi muru
   const wallColor=exterior?'#dedbd7':'#f0f1f2';
   if(opening==='opening')return;
   if(['door','hiddenDoor','slidingDoor'].includes(opening)){
-    const dh=Math.min(info?.height??settings.doorH,height-.05);wallQuad(orient,x,z,len,base,dh,height,wallColor);return;
+    const dh=Math.min(info?.height??settings.doorH,height-.05);wallSlab(orient,x,z,len,base,dh,height,wallColor,exterior);return;
   }
   if(opening==='hst'){
-    const dh=Math.min(info?.height??settings.hstH,height-.05);wallQuad(orient,x,z,len,base,dh,height,wallColor);
-    if(settings.showGlass)wallQuad(orient,x,z,len,base,.03,dh,'#6fb4de',{alpha:.24,stroke:'#6fb4de',kind:'glass'});return;
+    const dh=Math.min(info?.height??settings.hstH,height-.05);wallSlab(orient,x,z,len,base,dh,height,wallColor,exterior);
+    if(settings.showGlass)wallQuad(orient,gx,gz,len,base,.03,dh,'#6fb4de',{alpha:.24,stroke:'#6fb4de',kind:'glass'});return;
   }
   if(opening==='window'){
-    if(info?.shape==='roof'){wallQuad(orient,x,z,len,base,0,height,wallColor);return} // okno dachowe – w ścianie nie ma otworu
+    if(info?.shape==='roof'){wallSlab(orient,x,z,len,base,0,height,wallColor,exterior);return} // okno dachowe – w ścianie nie ma otworu
     const sill=Math.min(info?.sill??settings.sillH,height-.35),wh=Math.min(info?.height??settings.windowH,height-sill-.08),top=sill+wh;
-    wallQuad(orient,x,z,len,base,0,sill,wallColor);wallQuad(orient,x,z,len,base,top,height,wallColor);
-    if(settings.showGlass)wallQuad(orient,x,z,len,base,sill,top,'#6fb4de',{alpha:.28,stroke:'#6fb4de',kind:'glass'});return;
+    wallSlab(orient,x,z,len,base,0,sill,wallColor,exterior);wallSlab(orient,x,z,len,base,top,height,wallColor,exterior);
+    if(settings.showGlass)wallQuad(orient,gx,gz,len,base,sill,top,'#6fb4de',{alpha:.28,stroke:'#6fb4de',kind:'glass'});return;
   }
-  wallQuad(orient,x,z,len,base,0,height,wallColor)
+  wallSlab(orient,x,z,len,base,0,height,wallColor,exterior)
 }
 function addRailing2D(orient,x,z,len,base){
   if(!settings.showRail)return;const h=settings.railH,dark='#27313d',bar=.055;
@@ -449,7 +470,7 @@ function addStraightStairs(){
 }
 function cellClass(f,id){if(!id||isExteriorVoid(f,id))return 'outside';if(isHole(f,id))return 'hole';return 'room'}
 function build3D(){
-  three.scenePolys=[];const g=grid(),c=g.cellMeters;
+  three.scenePolys=[];wallNodes={};const g=grid(),c=g.cellMeters;
   for(const f of ['ground','upper']){
     const base=floorBase(f),h=floorHeight(f);
     for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){
@@ -470,7 +491,7 @@ function build3D(){
     }
     for(let y=0;y<=g.height;y++)for(let x=0;x<g.width;x++){
       const a=roomAt(f,x,y-1),b=roomAt(f,x,y),ca=cellClass(f,a),cb=cellClass(f,b);if(ca===cb&&a===b)continue;if(f==='ground'&&(a==='schody'||b==='schody')&&ca==='room'&&cb==='room'&&modelStairs().length)continue; // schody z modułu – otwarte do sąsiednich pomieszczeń
-      const opKey=openKeyH(x,y),op=openingAt(f,opKey),opInfo=(curOpInfo=op&&['window','door','hst'].includes(op)?HouserOpenings.resolve(project,f,opKey,op):null),roomA=ca==='room',roomB=cb==='room',holeA=ca==='hole',holeB=cb==='hole',insideA=roomA||holeA,insideB=roomB||holeB;
+      const opKey=openKeyH(x,y),op=openingAt(f,opKey),opInfo=(curOpInfo=op&&['window','door','hst'].includes(op)?HouserOpenings.resolve(project,f,opKey,op):null),roomA=ca==='room',roomB=cb==='room',holeA=ca==='hole',holeB=cb==='hole',insideA=roomA||holeA,insideB=roomB||holeB;curOut=!insideA?-1:(!insideB?1:0);
       const edgeH=f==='upper'?upperEdgeHeight('h',x,y,c):h;
       if((holeA&&roomB)||(holeB&&roomA)){
         const roomId=roomA?a:b;
@@ -483,7 +504,7 @@ function build3D(){
     }
     for(let x=0;x<=g.width;x++)for(let y=0;y<g.height;y++){
       const a=roomAt(f,x-1,y),b=roomAt(f,x,y),ca=cellClass(f,a),cb=cellClass(f,b);if(ca===cb&&a===b)continue;if(f==='ground'&&(a==='schody'||b==='schody')&&ca==='room'&&cb==='room'&&modelStairs().length)continue; // schody z modułu – otwarte do sąsiednich pomieszczeń
-      const opKey=openKeyV(x,y),op=openingAt(f,opKey),opInfo=(curOpInfo=op&&['window','door','hst'].includes(op)?HouserOpenings.resolve(project,f,opKey,op):null),roomA=ca==='room',roomB=cb==='room',holeA=ca==='hole',holeB=cb==='hole',insideA=roomA||holeA,insideB=roomB||holeB;
+      const opKey=openKeyV(x,y),op=openingAt(f,opKey),opInfo=(curOpInfo=op&&['window','door','hst'].includes(op)?HouserOpenings.resolve(project,f,opKey,op):null),roomA=ca==='room',roomB=cb==='room',holeA=ca==='hole',holeB=cb==='hole',insideA=roomA||holeA,insideB=roomB||holeB;curOut=!insideA?-1:(!insideB?1:0);
       const edgeH=f==='upper'?upperEdgeHeight('v',x,y,c):h;
       if((holeA&&roomB)||(holeB&&roomA)){
         const roomId=roomA?a:b;
@@ -495,7 +516,7 @@ function build3D(){
       if(!insideA&&!insideB)continue;if(insideA&&insideB&&a===b&&ca===cb)continue;addWall2D('v',x*c,(y+.5)*c,c,edgeH,base,op,!insideA||!insideB)
     }
   }
-  addRoof3D();
+  flushWallNodes();addRoof3D();
   if(modelStairs().length)addStairsFromModel();else addStraightStairs();
   if(settings.showChimney&&Array.isArray(project.structure?.chimney)){
     const c=grid().cellMeters;
