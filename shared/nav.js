@@ -1,12 +1,16 @@
 // Wspólna nawigacja modułów.
-// W stronie głównej (iframe) nic nie robi – tam nawigacją są zakładki.
+// HouserNav.go('id-modułu') – przejście do innego modułu (zakładka w stronie głównej albo zwykły link).
 // Gdy moduł otwarto samodzielnie, dodaje mały przycisk powrotu do strony głównej.
 (function(){
   var embedded;
   try{embedded=window.self!==window.top;}catch(e){embedded=true;}
-  if(embedded)return;
   var here=(document.currentScript&&document.currentScript.src)||'';
   var home=here?new URL('../',here).href:'../../';
+  window.HouserNav={go:function(target){
+    if(embedded){try{window.top.location.hash=target;return;}catch(e){}}
+    location.href=home+'modules/'+target+'/';
+  }};
+  if(embedded)return;
   var id=location.pathname.replace(/\/(index\.html)?$/,'').split('/').pop();
   var a=document.createElement('a');
   a.href=home+(id?'#'+id:'');

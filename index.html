@@ -51,14 +51,14 @@ a{color:var(--accent)}
   <section id="start" class="view">
     <div class="wrap">
       <h1>Projektowanie domu w przeglądarce</h1>
-      <p class="lead">Wszystko działa lokalnie w Twojej przeglądarce – bez kont i bez serwera. Wczytujesz pliki JSON, pracujesz, eksportujesz wynik na swój dysk. Moduły między zakładkami zachowują stan, dopóki nie zamkniesz tej karty.</p>
+      <p class="lead">Wszystko działa lokalnie w Twojej przeglądarce – bez kont i bez serwera. Bieżący projekt jest trzymany w pamięci przeglądarki i wspólny dla wszystkich modułów: zmiana w jednym od razu widać w pozostałych, także po odświeżeniu strony. Na swój dysk zapisujesz go eksportem do pliku JSON.</p>
       <div class="cards" id="cards"></div>
       <div class="box">
         <h3>Jak pracować</h3>
         <ol>
-          <li><b>Projektowanie</b> – wczytaj definicję domu (warunki, siatka), narysuj pomieszczenia, otwory, meble i tarasy. Wyeksportuj układ do pliku <code>dom-uklad-v7-….json</code>.</li>
-          <li><b>Wnętrze 3D</b> – wczytaj wyeksportowany układ i obejrzyj dom od środka (z meblami).</li>
-          <li><b>Zewnątrz 3D</b> – wczytaj ten sam układ i obejrzyj bryłę, dach, tarasy i pergole.</li>
+          <li><b>Projektowanie</b> – wczytaj definicję domu (warunki, siatka) albo gotowy projekt, narysuj pomieszczenia, otwory i tarasy. „Zapisz projekt” eksportuje plik <code>dom-uklad-v7-….json</code>.</li>
+          <li><b>Kondygnacje i dach</b> – ustaw, czy nad parterem jest pełne piętro czy poddasze, oraz kąt i kierunek dachu.</li>
+          <li><b>Wnętrze 3D</b> i <b>Zewnątrz 3D</b> – od razu pokazują bieżący projekt; możesz też wczytać dowolny plik JSON.</li>
         </ol>
       </div>
       <div class="box">
@@ -74,9 +74,10 @@ a{color:var(--accent)}
 <script>
 const MODULES=[
   {id:'projektowanie',name:'Projektowanie',src:'modules/projektowanie/',desc:'Edytor i walidator układu: pomieszczenia, otwory, meble, tarasy, elewacje. Eksport układu do JSON.'},
+  {id:'kondygnacje-dach',name:'Kondygnacje i dach',src:'modules/kondygnacje-dach/',desc:'Widok z boku: parter, pełne piętro albo poddasze ze ścianką kolankową, kąt i kierunek dachu.'},
   {id:'wnetrze-3d',name:'Wnętrze 3D',src:'modules/wnetrze-3d/',desc:'Podgląd 3D z punktu obserwatora – spacer po wnętrzu, schody, skosy dachu, meble z JSON.'},
   {id:'zewnatrz-3d',name:'Zewnątrz 3D',src:'modules/zewnatrz-3d/',desc:'Bryła domu z zewnątrz: dach, okna, tarasy, pergole, skala z ludzikiem.'},
-  {id:'meblowanie',name:'Meblowanie',src:'modules/meblowanie/',desc:'Osobny moduł meblowania – w przygotowaniu.',soon:true},
+  {id:'meblowanie',name:'Meblowanie',src:'modules/meblowanie/',desc:'Rozmieszczanie mebli na gotowym rzucie.',soon:true},
 ];
 const tabs=document.getElementById('tabs'),cards=document.getElementById('cards'),views=document.getElementById('views'),openExt=document.getElementById('openExt');
 const frames={};
