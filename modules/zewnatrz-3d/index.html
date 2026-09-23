@@ -58,7 +58,7 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function snap(v,s){return Math.round(v/s)*s}
 function cardinalMap(){const top=orientTop(),i=ORIENT.indexOf(top);return{top,right:ORIENT[(i+1)%4],bottom:ORIENT[(i+2)%4],left:ORIENT[(i+3)%4]}}
 function screenSideForCardinal(card){const m=cardinalMap(); return Object.keys(m).find(k=>m[k]===card)||'top';}
-function edgeInfo(f,key){const p=String(key).split(':'); if(p.length!==3) return null; const [o,aS,bS]=p, a=+aS, b=+bS; const g=stateGrid(f), w=W(), h=H(); const cell=(x,y)=>x<0||y<0||x>=w||y>=h?'':(g[y]?.[x]||''); if(o==='v'){ const L=cell(a-1,b), R=cell(a,b); if(!!L===!!R) return null; return {screenSide:L?'right':'left', a,b}; } if(o==='h'){ const T=cell(a,b-1), B=cell(a,b); if(!!T===!!B) return null; return {screenSide:T?'bottom':'top', a,b}; } return null; }
+function edgeInfo(f,key){const p=String(key).split(':'); if(p.length!==3) return null; const [o,aS,bS]=p, a=+aS, b=+bS; const g=stateGrid(f), w=W(), h=H(); const cell=(x,y)=>x<0||y<0||x>=w||y>=h?'':(floorCellOccupied(f,x,y)?(g[y]?.[x]||''):''); /* wnęka zewnętrzna = na zewnątrz (drzwi do wnęki są na elewacji) */ if(o==='v'){ const L=cell(a-1,b), R=cell(a,b); if(!!L===!!R) return null; return {screenSide:L?'right':'left', a,b}; } if(o==='h'){ const T=cell(a,b-1), B=cell(a,b); if(!!T===!!B) return null; return {screenSide:T?'bottom':'top', a,b}; } return null; }
 function openingGroups(f){const ops=project.openings?.[f]||{}, out=[]; for(const [key,type] of Object.entries(ops)){ if(!['door','window','hst'].includes(type)) continue; const info=edgeInfo(f,key); if(!info) continue; const p=key.split(':'); out.push({key,type,o:p[0],a:+p[1],b:+p[2],screenSide:info.screenSide}); } return out; }
 function roofSpec(){const e=elev(),w=W()*C(),d=H()*C(); return {w,d,eave:e.eave,rise:e.rise,ridge:slopeX()?'north-south':'east-west'};} // 'north-south' = połacie w poprzek osi X
 function roofY(x,z){const r=roofSpec(); if(r.ridge==='north-south'){ const t=1-Math.abs(x-r.w/2)/(r.w/2); return r.eave+Math.max(0,t)*r.rise; } const t=1-Math.abs(z-r.d/2)/(r.d/2); return r.eave+Math.max(0,t)*r.rise; }
@@ -82,9 +82,11 @@ function buildOpenings(){ if(!opts.openings) return; const c=C(), e=elev(); for(
     for(let i=1;i<=bs.length;i++){ if(i<bs.length&&bs[i]===prev+1){prev=bs[i];continue;} flush(s0,prev); if(i<bs.length){s0=prev=bs[i];} } }
  }}
 // okno w połaci dachu nad ścianą okapową (t0..t1 wzdłuż ściany)
-function drawRoofWindow(q,info,t0,t1){ const r=roofSpec(),eps=.04,run=Math.max(.6,Math.min(info.height||1.2,1.8)),a0=t0+.05,a1=t1-.05,fr='#1f2937';
-  let pts; if(q.o==='v'){ const inner=q.a===0?1:-1,x0=q.a===0?.25:r.w-.25,x1=x0+inner*Math.min(run*Math.cos(Math.atan2(r.rise,r.w/2)),r.w/2-.45); pts=[[x0,a0],[x1,a0],[x1,a1],[x0,a1]].map(([x,z])=>[x,roofY(x,z)+eps,z]); }
-  else { const inner=q.b===0?1:-1,z0=q.b===0?.25:r.d-.25,z1=z0+inner*Math.min(run*Math.cos(Math.atan2(r.rise,r.d/2)),r.d/2-.45); pts=[[a0,z0],[a0,z1],[a1,z1],[a1,z0]].map(([x,z])=>[x,roofY(x,z)+eps,z]); }
+function drawRoofWindow(q,info,t0,t1){ const r=roofSpec(),eps=.04,a0=t0+.05,a1=t1-.05,fr='#1f2937';
+  // pozycja wzdłuż połaci: od okapu (info.sill) i długość (info.height), rzutowane na poziom
+  const half=q.o==='v'?r.w/2:r.d/2,cosA=Math.cos(Math.atan2(r.rise,half)),s0=Math.max(.1,+info.sill||.5)*cosA,s1=Math.min(half-.2,s0+Math.max(.4,+info.height||1.2)*cosA);
+  let pts; if(q.o==='v'){ const inner=q.a===0?1:-1,base=q.a===0?0:r.w,x0=base+inner*s0,x1=base+inner*s1; pts=[[x0,a0],[x1,a0],[x1,a1],[x0,a1]].map(([x,z])=>[x,roofY(x,z)+eps,z]); }
+  else { const inner=q.b===0?1:-1,base=q.b===0?0:r.d,z0=base+inner*s0,z1=base+inner*s1; pts=[[a0,z0],[a0,z1],[a1,z1],[a1,z0]].map(([x,z])=>[x,roofY(x,z)+eps,z]); }
   addQuad(pts[0],pts[1],pts[2],pts[3],'#e5e7eb',{stroke:fr,line:1.2});
   const cx=pts.reduce((s,p)=>s+p[0],0)/4,cy=pts.reduce((s,p)=>s+p[1],0)/4,cz=pts.reduce((s,p)=>s+p[2],0)/4,sh=p=>[cx+(p[0]-cx)*.82,cy+(p[1]-cy)*.82+.01,cz+(p[2]-cz)*.82];
   addQuad(sh(pts[0]),sh(pts[1]),sh(pts[2]),sh(pts[3]),'#87c8eb',{stroke:'#1d4ed8',line:1,alpha:.9}); }

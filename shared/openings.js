@@ -9,13 +9,16 @@
       balcony:{name:'Balkonowe (do podłogi)',sill:0,height:2.2},
       transom:{name:'Naświetle (wysoko)',sill:1.6,height:.6},
       sloped:{name:'Ścięte pod skos dachu',sill:.9,height:2.4,shape:'sloped'},
-      roof:{name:'Dachowe (połaciowe)',sill:0,height:1.2,shape:'roof'}
+      slopedLow:{name:'Ścięte niskie (pod skosem, nisko)',sill:.3,height:1.4,shape:'sloped'},
+      knee:{name:'Niskie w ściance kolankowej',sill:.2,height:.6},
+      roof:{name:'Dachowe (połaciowe)',sill:.5,height:1.2,shape:'roof'} // sill = odległość od okapu wzdłuż połaci, height = długość okna wzdłuż połaci
     },
     door:{
       single:{name:'Pojedyncze',sill:0,height:2.05},
       double:{name:'Dwuskrzydłowe',sill:0,height:2.05,leaves:2},
       sliding:{name:'Przesuwne',sill:0,height:2.05,sliding:true},
-      entrance:{name:'Wejściowe z doświetlem',sill:0,height:2.3,glassTop:true}
+      entrance:{name:'Wejściowe z doświetlem',sill:0,height:2.3,glassTop:true},
+      knee:{name:'Niskie – do schowka pod skosem',sill:0,height:1.0}
     },
     hst:{
       hst:{name:'HST – przesuwne tarasowe',sill:0,height:2.35},

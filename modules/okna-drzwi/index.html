@@ -107,7 +107,12 @@ function runs(){
 }
 function facadeLen(fac){const g=grid(),sm=sideMap(),side=Object.keys(sm).find(k=>sm[k]===fac);return (side==='top'||side==='bottom'?g.width:g.height)*g.cellMeters}
 function isGable(fac){const sm=sideMap(),side=Object.keys(sm).find(k=>sm[k]===fac),G=geom();return G.across?(side==='top'||side==='bottom'):(side==='left'||side==='right')}
-function warnings(r){const G=geom(),w=[];if(r.base!=='window'||r.f===floors()[0]||r.facade==='inside')return w;
+// wolna wysokość pod dachem w punkcie (m od podłogi piętra)
+function clearAt(xm,ym){const G=geom(),g=grid(),span=G.across?g.width*g.cellMeters:g.height*g.cellMeters,d=G.across?xm:ym,t=Math.max(0,1-Math.abs(d-span/2)/(span/2));return G.eave+G.rise*t-G.groundHeight}
+function warnings(r){const G=geom(),w=[],c=grid().cellMeters;
+  if(r.f!==floors()[0]&&G.upperType==='attic'&&(r.base==='door'||r.facade==='inside')){const pts=[r.from*c,(r.to+1)*c].map(a=>r.o==='h'?clearAt(a,r.line*c):clearAt(r.line*c,a)),avail=Math.min(...pts);
+    if(r.info.height>avail-.05)w.push('Pod skosem jest tu tylko '+avail.toFixed(2)+' m – wybierz „Niskie – do schowka pod skosem” albo obniż drzwi.')}
+  if(r.base!=='window'||r.f===floors()[0]||r.facade==='inside')return w;
   const top=r.info.sill+r.info.height;
   if(r.info.shape!=='roof'&&!isGable(r.facade)&&G.upperWall<top-.05)w.push('Ściana piętra ma tu tylko '+G.upperWall.toFixed(2)+' m – ustaw okno dachowe albo obniż okno.');
   if(r.info.shape==='roof'&&isGable(r.facade))w.push('Na ścianie szczytowej nie ma połaci – okno dachowe działa na ścianach okapowych.');
@@ -128,7 +133,7 @@ function renderList(){
       const sel=document.createElement('select');for(const [id,v] of Object.entries(O.variantsFor(r.base))){const op=document.createElement('option');op.value=id;op.textContent=v.name;sel.appendChild(op)}sel.value=r.info.variant;
       sel.onchange=()=>{const v=O.variantsFor(r.base)[sel.value];O.setVariant(project,r.f,r.keys,{variant:sel.value,sill:v.sill,height:v.height});selected=r.f+'|'+r.keys[0];commit()};
       const sill=num(r.info.sill,v=>{O.setVariant(project,r.f,r.keys,{variant:r.info.variant,sill:v});commit()}),hh=num(r.info.height,v=>{O.setVariant(project,r.f,r.keys,{variant:r.info.variant,height:v});commit()});
-      ctl.append(sel,'parapet',sill,'m · wys.',hh,'m');if(r.info.shape==='roof'){sill.disabled=true}
+      if(r.info.shape==='roof')ctl.append(sel,'od okapu',sill,'m · długość',hh,'m (wzdłuż połaci)');else ctl.append(sel,'parapet',sill,'m · wys.',hh,'m');
       d.appendChild(ctl);for(const w of warnings(r)){const e=document.createElement('div');e.className='warn';e.textContent='⚠ '+w;d.appendChild(e)}
       d.addEventListener('click',e=>{if(['SELECT','INPUT','OPTION'].includes(e.target.tagName))return;selected=r.id;if(r.facade!=='inside')facade=r.facade;renderAll()});
       L.appendChild(d)}
@@ -155,7 +160,7 @@ function renderElev(){
   for(const r of runs().filter(r=>r.facade===facade)){
     const base=r.f===floors()[0]?0:G.groundHeight,i=r.info,sel=selected===r.id,col=r.base==='door'?'#8a6a4a':'#9cc8e7',st=sel?'#2563eb':'#334155',sw=sel?3:1.5;
     let pts;
-    if(i.shape==='roof'&&!gable){const y0=G.eave+.35,y1=Math.min(G.eave+G.rise-.3,y0+i.height*Math.sin(G.roofPitch*Math.PI/180));pts=[[r.h0+.05,y0],[r.h1-.05,y0],[r.h1-.05,y1],[r.h0+.05,y1]]}
+    if(i.shape==='roof'&&!gable){const sn=Math.sin(G.roofPitch*Math.PI/180),y0=Math.min(G.eave+G.rise-.3,G.eave+i.sill*sn),y1=Math.min(G.eave+G.rise-.1,y0+i.height*sn);pts=[[r.h0+.05,y0],[r.h1-.05,y0],[r.h1-.05,y1],[r.h0+.05,y1]]}
     else if(i.shape==='sloped'&&gable&&base>0){const y0=base+i.sill,lim=h=>Math.max(y0+.2,Math.min(y0+i.height,roofAt(h)-.25));pts=[[r.h0+.05,y0],[r.h1-.05,y0],[r.h1-.05,lim(r.h1-.05)],[r.h0+.05,lim(r.h0+.05)]]}
     else{const y0=base+i.sill,y1=y0+i.height;pts=[[r.h0+.05,y0],[r.h1-.05,y0],[r.h1-.05,y1],[r.h0+.05,y1]]}
     const g=el('g',{style:'cursor:pointer'},svg);g.addEventListener('click',()=>{selected=r.id;renderAll()});
