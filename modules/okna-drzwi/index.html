@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Okna i drzwi</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+.wrap{height:100vh;display:grid;grid-template-columns:minmax(420px,520px) 1fr}
+.side{display:flex;flex-direction:column;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);min-height:0}
+.sideTop{padding:14px}
+.list{flex:1;overflow:auto;padding:0 14px 14px}
+.main{overflow:auto;padding:18px;background:#e2e8f0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--hs-line-strong);background:var(--hs-panel);color:var(--hs-text);padding:5px 9px;border-radius:var(--hs-radius);font:600 12px var(--hs-font);cursor:pointer}
+.btn:hover{background:var(--hs-panel-2);border-color:#94a3b8}
+.btn.primary,.btn.active{background:var(--hs-accent);border-color:var(--hs-accent);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.status{font-size:12px;line-height:1.45;color:var(--hs-muted);margin-top:8px}
+.status b{color:var(--hs-text)}
+select,input[type=number]{border:1px solid var(--hs-line-strong);border-radius:6px;padding:4px 6px;min-height:28px;font:inherit;font-size:12px;background:#fff;color:var(--hs-text)}
+input[type=number]{width:62px}
+h3.fac{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--hs-muted);margin:16px 0 6px}
+.op{display:grid;grid-template-columns:22px 1fr;gap:4px 8px;align-items:center;background:#fff;border:1px solid var(--hs-line);border-radius:var(--hs-radius);padding:7px 8px;margin-bottom:6px;cursor:pointer}
+.op.sel{outline:2px solid var(--hs-accent);outline-offset:1px}
+.op .ic{width:18px;height:18px;border-radius:4px}
+.op .t{font-weight:600;font-size:13px}
+.op .t small{color:var(--hs-muted);font-weight:500}
+.op .ctl{grid-column:2;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--hs-muted)}
+.op .warn{grid-column:2;font-size:11px;color:#b45309}
+.card{background:#fff;border-radius:var(--hs-radius-lg);padding:14px;box-shadow:0 6px 20px rgba(15,23,42,.12);margin-bottom:16px}
+.card h2{font-size:14px;margin:0 0 8px;display:flex;justify-content:space-between}
+.card h2 span{font-weight:500;font-size:12px;color:var(--hs-muted)}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+svg{display:block;width:100%;height:auto}
+.empty{padding:40px 24px;text-align:center;color:var(--hs-muted)}
+.hint{font-size:12px;color:var(--hs-muted);line-height:1.45;margin:8px 0 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <div class="sideTop">
+    <h1 class="hs-title">Okna i drzwi</h1>
+    <p class="hs-sub">Rodzaj i wymiary każdego okna i drzwi narysowanych w Układzie pomieszczeń: okna niskie, balkonowe, naświetla, ścięte pod skos, dachowe; drzwi pojedyncze, podwójne, przesuwne, wejściowe.</p>
+    <div class="section">
+      <div class="row"><label class="btn primary">Wczytaj projekt JSON<input id="file" type="file" accept="application/json,.json" hidden></label><button id="export" class="btn" disabled>Eksportuj JSON</button></div>
+      <div id="status" class="status"></div>
+    </div>
+  </div>
+  <div class="list" id="list"></div>
+</aside>
+<main class="main">
+  <div class="tabs" id="facTabs"></div>
+  <div id="elev"></div>
+  <p class="hint">Położenie i szerokość otworów zmieniasz w module Układ pomieszczeń (rysowanie na krawędziach kratek). Tu ustawiasz ich rodzaj, wysokość parapetu i wysokość otworu.</p>
+</main>
+</div>
+
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script>
+const $=id=>document.getElementById(id), NS='http://www.w3.org/2000/svg', O=HouserOpenings;
+const ORD=['north','east','south','west'],PL={north:'Północ',east:'Wschód',south:'Południe',west:'Zachód',inside:'Wewnętrzne'};
+const COLORS={window:'#2563eb',door:'#111827',hst:'#0891b2'};
+let project=null, source='', facade='south', selected=null;
+
+const grid=()=>project?.grid||project?.definitionSnapshot?.grid;
+const floors=()=>{const fo=project?.definitionSnapshot?.floorOrder;return Array.isArray(fo)&&fo.length?fo:['ground','upper']};
+const floorName=f=>project?.definitionSnapshot?.floors?.[f]?.name||f;
+const roomsOf=f=>project?.definitionSnapshot?.floors?.[f]?.rooms||[];
+function cellAt(f,x,y){const g=grid(),s=project?.state?.[f];if(!g||!s||x<0||y<0||x>=g.width||y>=g.height)return null;return (Array.isArray(s[0])?s[y]?.[x]:s[y*g.width+x])||null}
+const inside=(f,x,y)=>{const id=cellAt(f,x,y);return !!id&&roomsOf(f).find(r=>r.id===id)?.kind!=='exteriorVoid'};
+const roomName=(f,id)=>roomsOf(f).find(r=>r.id===id)?.name||id||'';
+function sideMap(){const top=project?.orientation?.top||'north',i=ORD.indexOf(top);return {top:ORD[i],right:ORD[(i+1)%4],bottom:ORD[(i+2)%4],left:ORD[(i+3)%4]}}
+function geom(){const g=grid(),e=project.elevationSettings||{},across=HouserModel.slopesAcrossX(e.ridge==='north-south'?'north-south':'east-west',project.orientation?.top);return {...HouserModel.geometry(e,across?g.width*g.cellMeters:g.height*g.cellMeters),across}}
+
+// ---------- otwory połączone w ciągi (jedno okno = kilka sąsiednich krawędzi)
+function runs(){
+  const out=[],g=grid(),c=g.cellMeters,sm=sideMap();
+  for(const f of floors().slice(0,2)){
+    const groups={};
+    for(const [key,base] of Object.entries(project.openings?.[f]||{})){
+      if(!['window','door','hst'].includes(base))continue;const [o,aS,bS]=key.split(':'),a=+aS,b=+bS;
+      let inA,inB,side;
+      if(o==='h'){inA=inside(f,a,b-1);inB=inside(f,a,b);side=inA&&!inB?'bottom':(!inA&&inB?'top':'inside')}
+      else{inA=inside(f,a-1,b);inB=inside(f,a,b);side=inA&&!inB?'right':(!inA&&inB?'left':'inside')}
+      const line=o==='h'?b:a,along=o==='h'?a:b,v=O.resolve(project,f,key,base).variant,gk=[f,o,line,side,base,v].join('|');
+      (groups[gk]=groups[gk]||{f,o,line,side,base,items:[]}).items.push({key,along,a,b});
+    }
+    for(const grp of Object.values(groups)){grp.items.sort((p,q)=>p.along-q.along);let cur=null;
+      for(const it of grp.items){if(cur&&it.along===cur.to+1){cur.to=it.along;cur.keys.push(it.key)}else{if(cur)out.push(cur);cur={...grp,from:it.along,to:it.along,keys:[it.key],a:it.a,b:it.b}}}
+      if(cur)out.push(cur)}
+  }
+  for(const r of out){
+    r.facade=r.side==='inside'?'inside':sm[r.side];r.len=(r.to-r.from+1)*c;r.info=O.resolve(project,r.f,r.keys[0],r.base);r.id=r.f+'|'+r.keys[0];
+    // pozycja w poziomie na elewacji oglądanej z zewnątrz
+    const Wm=g.width*c,Hm=g.height*c,t0=r.from*c,t1=(r.to+1)*c;
+    r.h0=r.side==='bottom'?t0:r.side==='top'?Wm-t1:r.side==='left'?t0:r.side==='right'?Hm-t1:t0;r.h1=r.h0+r.len;
+    const [x,y]=r.o==='h'?[r.from,r.side==='bottom'?r.line-1:r.line]:[r.side==='right'?r.line-1:r.line,r.from];r.room=roomName(r.f,cellAt(r.f,x,y));
+  }
+  return out;
+}
+function facadeLen(fac){const g=grid(),sm=sideMap(),side=Object.keys(sm).find(k=>sm[k]===fac);return (side==='top'||side==='bottom'?g.width:g.height)*g.cellMeters}
+function isGable(fac){const sm=sideMap(),side=Object.keys(sm).find(k=>sm[k]===fac),G=geom();return G.across?(side==='top'||side==='bottom'):(side==='left'||side==='right')}
+function warnings(r){const G=geom(),w=[];if(r.base!=='window'||r.f===floors()[0]||r.facade==='inside')return w;
+  const top=r.info.sill+r.info.height;
+  if(r.info.shape!=='roof'&&!isGable(r.facade)&&G.upperWall<top-.05)w.push('Ściana piętra ma tu tylko '+G.upperWall.toFixed(2)+' m – ustaw okno dachowe albo obniż okno.');
+  if(r.info.shape==='roof'&&isGable(r.facade))w.push('Na ścianie szczytowej nie ma połaci – okno dachowe działa na ścianach okapowych.');
+  return w}
+
+// ---------- lista
+function renderList(){
+  const L=$('list');L.innerHTML='';$('export').disabled=!project;
+  $('status').innerHTML=project?'<b>'+(source==='plik'?'Wczytany plik':'Bieżący projekt')+'</b> – zmiany zapisują się automatycznie.':'Brak projektu. Narysuj rzut z oknami i drzwiami w module <b>Układ pomieszczeń</b> albo wczytaj plik JSON.';
+  if(!project)return;
+  const all=runs();if(!all.length){L.innerHTML='<div class="empty">Brak okien i drzwi na rzucie.</div>';return}
+  for(const fac of [...ORD,'inside']){const rs=all.filter(r=>r.facade===fac);if(!rs.length)continue;
+    const h=document.createElement('h3');h.className='fac';h.textContent=fac==='inside'?'Drzwi wewnętrzne':'Elewacja: '+PL[fac];L.appendChild(h);
+    rs.sort((p,q)=>floors().indexOf(p.f)-floors().indexOf(q.f)||p.h0-q.h0);
+    for(const r of rs){const d=document.createElement('div');d.className='op'+(selected===r.id?' sel':'');
+      d.innerHTML='<span class="ic" style="background:'+COLORS[r.base]+'"></span><div class="t">'+O.BASE_NAMES[r.base]+' '+r.len.toFixed(2)+' m <small>· '+esc(floorName(r.f))+(r.room?' · '+esc(r.room):'')+'</small></div>';
+      const ctl=document.createElement('div');ctl.className='ctl';
+      const sel=document.createElement('select');for(const [id,v] of Object.entries(O.variantsFor(r.base))){const op=document.createElement('option');op.value=id;op.textContent=v.name;sel.appendChild(op)}sel.value=r.info.variant;
+      sel.onchange=()=>{const v=O.variantsFor(r.base)[sel.value];O.setVariant(project,r.f,r.keys,{variant:sel.value,sill:v.sill,height:v.height});selected=r.f+'|'+r.keys[0];commit()};
+      const sill=num(r.info.sill,v=>{O.setVariant(project,r.f,r.keys,{variant:r.info.variant,sill:v});commit()}),hh=num(r.info.height,v=>{O.setVariant(project,r.f,r.keys,{variant:r.info.variant,height:v});commit()});
+      ctl.append(sel,'parapet',sill,'m · wys.',hh,'m');if(r.info.shape==='roof'){sill.disabled=true}
+      d.appendChild(ctl);for(const w of warnings(r)){const e=document.createElement('div');e.className='warn';e.textContent='⚠ '+w;d.appendChild(e)}
+      d.addEventListener('click',e=>{if(['SELECT','INPUT','OPTION'].includes(e.target.tagName))return;selected=r.id;if(r.facade!=='inside')facade=r.facade;renderAll()});
+      L.appendChild(d)}
+  }
+}
+function num(v,onChange){const e=document.createElement('input');e.type='number';e.step='0.05';e.min='0';e.value=(+v).toFixed(2);e.addEventListener('change',()=>{const x=Number(e.value);if(Number.isFinite(x))onChange(x)});return e}
+
+// ---------- elewacja
+function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
+function renderElev(){
+  const T=$('facTabs');T.innerHTML='';const root=$('elev');root.innerHTML='';
+  if(!project){root.innerHTML='<div class="card"><div class="empty">Brak projektu.</div></div>';return}
+  for(const f of ORD){const b=document.createElement('button');b.className='btn'+(f===facade?' active':'');b.textContent=PL[f];b.onclick=()=>{facade=f;renderAll()};T.appendChild(b)}
+  const G=geom(),L=facadeLen(facade),gable=isGable(facade),S=60,pad=40,H=(gable?G.ridgeY:G.eave+G.rise)+.4,Wp=L*S+2*pad,Hp=H*S+2*pad;
+  const card=document.createElement('div');card.className='card';card.innerHTML='<h2>Elewacja '+PL[facade].toLowerCase()+'<span>'+(gable?'ściana szczytowa':'ściana okapowa – nad nią połać dachu')+' · '+L.toFixed(2)+' m</span></h2>';
+  const svg=el('svg',{viewBox:'0 0 '+Wp+' '+Hp},card);const X=h=>pad+h*S,Y=y=>Hp-pad-y*S;
+  el('rect',{x:0,y:Y(0),width:Wp,height:pad,fill:'#e7e2d9'},svg);
+  el('rect',{x:X(0),y:Y(G.eave),width:L*S,height:G.eave*S,fill:'#f5f3ef',stroke:'#0f172a','stroke-width':2},svg);
+  el('line',{x1:X(0),y1:Y(G.groundHeight),x2:X(L),y2:Y(G.groundHeight),stroke:'#94a3b8','stroke-dasharray':'5 4'},svg);
+  const roofAt=h=>G.eave+G.rise*Math.max(0,1-Math.abs(h-L/2)/(L/2));
+  if(gable)el('polygon',{points:[[0,G.eave],[L/2,G.ridgeY],[L,G.eave]].map(([h,y])=>X(h)+','+Y(y)).join(' '),fill:'#ece8e1',stroke:'#0f172a','stroke-width':2},svg);
+  else el('rect',{x:X(-.3),y:Y(G.eave+G.rise),width:(L+.6)*S,height:G.rise*S,fill:'#475569',stroke:'#1f2937','stroke-width':2},svg);
+  if(gable){el('line',{x1:X(-.3),y1:Y(G.eave-.3*Math.tan(G.roofPitch*Math.PI/180)),x2:X(L/2),y2:Y(G.ridgeY),stroke:'#374151','stroke-width':6},svg);el('line',{x1:X(L+.3),y1:Y(G.eave-.3*Math.tan(G.roofPitch*Math.PI/180)),x2:X(L/2),y2:Y(G.ridgeY),stroke:'#374151','stroke-width':6},svg)}
+  for(const r of runs().filter(r=>r.facade===facade)){
+    const base=r.f===floors()[0]?0:G.groundHeight,i=r.info,sel=selected===r.id,col=r.base==='door'?'#8a6a4a':'#9cc8e7',st=sel?'#2563eb':'#334155',sw=sel?3:1.5;
+    let pts;
+    if(i.shape==='roof'&&!gable){const y0=G.eave+.35,y1=Math.min(G.eave+G.rise-.3,y0+i.height*Math.sin(G.roofPitch*Math.PI/180));pts=[[r.h0+.05,y0],[r.h1-.05,y0],[r.h1-.05,y1],[r.h0+.05,y1]]}
+    else if(i.shape==='sloped'&&gable&&base>0){const y0=base+i.sill,lim=h=>Math.max(y0+.2,Math.min(y0+i.height,roofAt(h)-.25));pts=[[r.h0+.05,y0],[r.h1-.05,y0],[r.h1-.05,lim(r.h1-.05)],[r.h0+.05,lim(r.h0+.05)]]}
+    else{const y0=base+i.sill,y1=y0+i.height;pts=[[r.h0+.05,y0],[r.h1-.05,y0],[r.h1-.05,y1],[r.h0+.05,y1]]}
+    const g=el('g',{style:'cursor:pointer'},svg);g.addEventListener('click',()=>{selected=r.id;renderAll()});
+    el('polygon',{points:pts.map(([h,y])=>X(h)+','+Y(y)).join(' '),fill:'#f8fafc',stroke:st,'stroke-width':sw},g);
+    const ins=pts.map(([h,y],k)=>[h+(k===0||k===3?.06:-.06),y+(k<2?.06:-.06)]);
+    el('polygon',{points:ins.map(([h,y])=>X(h)+','+Y(y)).join(' '),fill:col,'fill-opacity':r.base==='door'?1:.8,stroke:'#64748b'},g);
+    if(i.leaves===2||(r.base!=='door'&&r.len>1.2)){const n=i.leaves===2?1:Math.max(1,Math.round(r.len/1.1)-1);for(let k=1;k<=n;k++){const h=r.h0+.05+(r.len-.1)*k/(n+1);el('line',{x1:X(h),y1:Y(pts[0][1]),x2:X(h),y2:Y(Math.min(pts[2][1],pts[3][1])),stroke:'#f8fafc','stroke-width':4},g)}}
+    el('text',{x:X((r.h0+r.h1)/2),y:Y(pts[0][1])+14,'text-anchor':'middle','font-size':11,fill:'#475569'},g,i.name);
+  }
+  root.appendChild(card);
+}
+
+function commit(){renderAll();if(project)HouserStore.save(project,'okna-drzwi')}
+function renderAll(){renderList();renderElev()}
+function esc(s){return String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]))}
+$('file').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{const p=JSON.parse(await f.text());if(!p.grid&&!p.definitionSnapshot?.grid)throw new Error('brak siatki (grid)');project=p;source='plik';renderAll();HouserStore.save(project,'okna-drzwi')}catch(err){alert('Nie udało się wczytać projektu: '+err.message)}e.target.value=''});
+$('export').addEventListener('click',()=>{if(!project)return;const d=new Date(),p2=n=>String(n).padStart(2,'0');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(project,null,2)],{type:'application/json'}));a.download='dom-uklad-v7-'+[d.getFullYear(),p2(d.getMonth()+1),p2(d.getDate()),p2(d.getHours()),p2(d.getMinutes())].join('-')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
+
+const rec=HouserStore.load();project=rec?.project?.grid||rec?.project?.definitionSnapshot?rec.project:null;source=rec?'store':'';renderAll();
+HouserStore.subscribe(r=>{const a=document.activeElement;if(a&&['INPUT','SELECT'].includes(a.tagName))return;project=r.project;source='store';renderAll()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

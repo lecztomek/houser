@@ -14,12 +14,14 @@ modules/
   wnetrze-3d/index.html     podgląd 3D wnętrza z punktu obserwatora (meble z JSON)
   zewnatrz-3d/index.html    podgląd 3D bryły z zewnątrz (dach, okna, tarasy, pergole)
   schody/index.html         schody: proste, L, dwubiegowe 180°, kręcone – kratki i otwór w stropie wpisywane automatycznie
+  okna-drzwi/index.html     rodzaje i wymiary okien i drzwi (niskie, balkonowe, ścięte, dachowe...) z podglądem elewacji
   tarasy/index.html         tarasy, zadaszenia i pergole malowane kratkami wokół domu
   meblowanie/index.html     rozmieszczanie mebli na gotowym rzucie (pomieszczeń tu nie zmieniasz)
 shared/theme.css            wspólny jasny motyw (kolory, przyciski, nagłówki modułów)
 shared/gl-renderer.js       wspólny renderer WebGL modułów 3D (bufor głębokości, bez bibliotek)
 shared/definition.js        wspólna obsługa definicji: typy warunków, normalizacja, etykiety
 shared/validator.js         sprawdzanie warunków na rzucie (moduły Warunki i Układ pomieszczeń)
+shared/openings.js          warianty okien i drzwi
 shared/stairs.js            geometria schodów (rzut, kratki, stopnie 3D)
 shared/house-model.js       wspólny model bryły (wysokości, poddasze, dach z kąta nachylenia)
 shared/project-store.js     wspólny bieżący projekt w localStorage (moduły widzą nawzajem swoje zmiany)
