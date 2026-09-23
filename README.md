@@ -36,7 +36,7 @@ examples/                   przykładowa definicja domu i gotowy układ
 ```
 
 Każdy moduł to samodzielny plik HTML – można go otworzyć bezpośrednio, a strona główna ładuje go w ramce.
-Moduły wymieniają dane przez wspólny bieżący projekt w pamięci przeglądarki (`shared/project-store.js`). Plik obsługuje wyłącznie pasek projektu na stronie głównej (`index.html`): **Zapisz do pliku / Otwórz plik / Nowy / Przykład**. Jeden plik JSON zawiera wszystko – definicję pomieszczeń i warunki, rzut, otwory i ich warianty, schody, dach, tarasy, meble, grubość ścian i punkty widokowe 3D oraz (opcjonalnie, pole `visualizations`) zdjęcia z podglądów i wizualizacje AI. Klucze API nie trafiają do pliku. Moduł otwarty samodzielnie (poza stroną główną) nadal pokazuje własne przyciski wczytania/eksportu.
+Moduły wymieniają dane przez wspólny bieżący projekt w pamięci przeglądarki (`shared/project-store.js`). Plik obsługuje wyłącznie pasek projektu na stronie głównej (`index.html`): **Zapisz do pliku / Otwórz plik / Nowy / Przykład**. Jeden plik JSON zawiera wszystko – definicję pomieszczeń i warunki, rzut, otwory i ich warianty, schody, dach, tarasy, meble, grubość ścian i punkty widokowe 3D Zdjęcia z podglądów, wizualizacje AI i klucze API nie trafiają do pliku (zostają w przeglądarce). Moduł otwarty samodzielnie (poza stroną główną) nadal pokazuje własne przyciski wczytania/eksportu.
 
 Zasada: każda funkcja to osobny, prosty moduł – lepiej dodać nowy moduł niż komplikować istniejący.
 

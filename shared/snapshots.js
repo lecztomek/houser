@@ -17,9 +17,6 @@
   function ping(id){try{localStorage.setItem('houser:last-snapshot',id+'|'+Date.now())}catch(_){}}
   async function add(image,source,meta){const rec={id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),createdAt:new Date().toISOString(),source,meta:meta||{},image,results:[]};await put(rec);ping(rec.id);return rec}
   async function remove(id){await tx('readwrite',st=>st.delete(id));changed()}
-  async function clear(){await tx('readwrite',st=>st.clear());changed()}
-  // zastąpienie wszystkich zdjęć (wczytanie pliku projektu)
-  async function replaceAll(list){await tx('readwrite',st=>{st.clear();for(const r of list||[])if(r&&r.id&&r.image)st.put(r)});changed()}
   function onChange(cb){if(bc)bc.addEventListener('message',()=>cb())}
 
   // Zdjęcie z płótna WebGL: tło (niebo z CSS) + scena, JPEG, maks. 1600 px szerokości.
@@ -35,8 +32,5 @@
     const im=new Image();im.onload=()=>{const sc=Math.min(1,maxW/im.width),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);
       const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);const out=c.toDataURL('image/jpeg',q);res(out.length<url.length?out:url)};
     im.onerror=()=>res(url);im.src=url})}
-  // wszystkie zdjęcia do pliku projektu – wyniki zmniejszone do JPEG
-  async function exportAll(){const list=await list_();for(const r of list){r.image=await toJpeg(r.image);for(const x of r.results||[])x.image=await toJpeg(x.image)}return list}
-  const list_=list;
-  global.HouserSnapshots={list,get,put,add,remove,clear,replaceAll,onChange,capture,toJpeg,exportAll};
+  global.HouserSnapshots={list,get,put,add,remove,onChange,capture,toJpeg};
 })(window);
