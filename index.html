@@ -12,7 +12,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
 body{display:grid;grid-template-rows:auto 1fr}
 header{display:flex;align-items:center;gap:4px;background:var(--hs-panel);border-bottom:1px solid var(--hs-line);padding:0 12px;min-height:46px;overflow-x:auto}
 .brand{font-weight:800;font-size:15px;margin-right:14px;white-space:nowrap;color:var(--hs-text);text-decoration:none}
-.tab{border:0;background:transparent;color:var(--hs-muted);padding:13px 12px 11px;cursor:pointer;font:600 14px var(--hs-font);white-space:nowrap;border-bottom:2px solid transparent}
+.tab{border:0;background:transparent;color:var(--hs-muted);padding:13px 9px 11px;cursor:pointer;font:600 13px var(--hs-font);white-space:nowrap;border-bottom:2px solid transparent}
 .tab:hover{color:var(--hs-text)}
 .tab.active{border-bottom-color:var(--hs-accent);color:var(--hs-accent)}
 .tab .soon{font-size:10px;font-weight:600;background:var(--hs-bg);color:var(--hs-muted);border:1px solid var(--hs-line);border-radius:999px;padding:1px 6px;margin-left:5px;vertical-align:middle}
@@ -58,7 +58,7 @@ a{color:var(--accent)}
         <h3>Jak pracować</h3>
         <ol>
           <li>Przejdź kroki po kolei – każdy moduł zajmuje się jedną rzeczą i zapisuje ją do wspólnego bieżącego projektu.</li>
-          <li>Zacznij od <b>Układu pomieszczeń</b>: wczytaj definicję domu (albo gotowy projekt) i narysuj rzut.</li>
+          <li>Zacznij od <b>Pomieszczeń</b>: wczytaj definicję domu (albo gotowy projekt) lub zacznij od pustej, potem ustaw <b>Warunki</b> i narysuj rzut w <b>Układzie pomieszczeń</b>.</li>
           <li>Kolejne moduły (dach, tarasy, meble) biorą ten rzut i dokładają swoje elementy; podglądy 3D odświeżają się same.</li>
           <li>Projekt zostaje w przeglądarce po odświeżeniu strony; na dysk zapisujesz go eksportem JSON z dowolnego modułu.</li>
         </ol>
@@ -76,7 +76,9 @@ a{color:var(--accent)}
 <script>
 // Moduły w kolejności projektowania. group: etap, step: numer kroku na karcie.
 const MODULES=[
-  {id:'projektowanie',group:'Projekt',name:'Układ pomieszczeń',src:'modules/projektowanie/',desc:'Wczytaj definicję domu, maluj pomieszczenia, drzwi, okna i komin; walidacja warunków na bieżąco.'},
+  {id:'pomieszczenia',group:'Założenia',name:'Pomieszczenia',src:'modules/pomieszczenia/',desc:'Jakie pomieszczenia ma dom i na której kondygnacji: nazwy, kolory, wnęki. Tu zaczynasz nowy projekt.'},
+  {id:'warunki',group:'Założenia',name:'Warunki',src:'modules/warunki/',desc:'Zasady układu: powierzchnie, sąsiedztwa, szerokości, drzwi, dojście – pogrupowane i rozwijane.'},
+  {id:'projektowanie',group:'Projekt',name:'Układ pomieszczeń',src:'modules/projektowanie/',desc:'Malowanie pomieszczeń na siatce, drzwi, okna i komin; walidacja warunków na bieżąco.'},
   {id:'kondygnacje-dach',group:'Projekt',name:'Kondygnacje i dach',src:'modules/kondygnacje-dach/',desc:'Widok z boku: parter, pełne piętro albo poddasze ze ścianką kolankową, kąt i kierunek dachu.'},
   {id:'tarasy',group:'Projekt',name:'Tarasy i pergole',src:'modules/tarasy/',desc:'Malowanie kratek wokół domu: taras, zadaszony taras, pergola.'},
   {id:'meblowanie',group:'Wnętrza',name:'Meblowanie',src:'modules/meblowanie/',desc:'Rozmieszczanie mebli na gotowym rzucie – pomieszczeń tu nie zmieniasz.'},

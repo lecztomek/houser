@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Warunki</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+.wrap{height:100vh;display:grid;grid-template-columns:420px 1fr}
+.side{display:flex;flex-direction:column;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);min-height:0}
+.sideTop{padding:14px 14px 0}
+.listWrap{flex:1;overflow:auto;padding:8px 14px 14px}
+.main{padding:18px;overflow:auto}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--hs-line-strong);background:var(--hs-panel);color:var(--hs-text);padding:5px 9px;border-radius:var(--hs-radius);font:600 12px var(--hs-font);cursor:pointer}
+.btn:hover{background:var(--hs-panel-2);border-color:#94a3b8}
+.btn.primary{background:var(--hs-accent);border-color:var(--hs-accent);color:#fff}
+.btn.danger{color:var(--hs-bad);border-color:#fecaca}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.status{font-size:12px;line-height:1.45;color:var(--hs-muted);margin-top:8px}
+.status b{color:var(--hs-text)}
+input[type=text],input[type=search],input[type=number],select{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.filters .wide{grid-column:1/-1}
+details.grp{margin-top:8px;border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);background:#fff;overflow:hidden}
+details.grp>summary{list-style:none;cursor:pointer;padding:8px 10px;font:600 13px var(--hs-font);display:flex;justify-content:space-between;gap:8px;align-items:center}
+details.grp>summary::-webkit-details-marker{display:none}
+details.grp>summary::before{content:'▸';color:var(--hs-muted);margin-right:6px;transition:transform .15s}
+details.grp[open]>summary::before{transform:rotate(90deg)}
+details.grp>summary span.l{flex:1}
+details.grp>summary small{color:var(--hs-muted);font-weight:500}
+.cond{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:7px 10px;border-top:1px solid var(--hs-line);cursor:pointer;font-size:12px}
+.cond:hover{background:var(--hs-panel-2)}
+.cond.sel{background:var(--hs-accent-soft);box-shadow:inset 3px 0 0 var(--hs-accent)}
+.cond.off{opacity:.5}
+.cond .t{font-weight:600;color:var(--hs-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cond .m{color:var(--hs-muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sev{font-size:10px;font-weight:800;border:1px solid var(--hs-line);border-radius:999px;padding:2px 6px;white-space:nowrap}
+.sev.hard{color:var(--hs-bad);border-color:#fecaca;background:var(--hs-bad-soft)}
+.sev.medium{color:#b45309;border-color:#fed7aa;background:#fff7ed}
+.sev.soft{color:#a16207;border-color:#fde68a;background:#fefce8}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);box-shadow:var(--hs-shadow);max-width:760px;padding:16px}
+.card h2{font-size:15px;margin:0 0 4px}
+.card .sub{font-size:12px;color:var(--hs-muted);margin:0 0 14px}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.f{display:grid;gap:4px;font-size:12px;color:var(--hs-muted)}
+.f.wide{grid-column:1/-1}
+.multi{border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;max-height:190px;overflow:auto;background:#fff}
+.multi label{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--hs-text)}
+.preview{margin-top:14px;padding:10px;border:1px solid var(--hs-line);border-radius:var(--hs-radius);background:var(--hs-panel-2);font-size:13px}
+.actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.empty{padding:40px 24px;text-align:center;color:var(--hs-muted)}
+.addRow{display:grid;grid-template-columns:1fr auto;gap:6px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr;height:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <div class="sideTop">
+    <h1 class="hs-title">Warunki</h1>
+    <p class="hs-sub">Zasady, które musi spełniać układ: powierzchnie, sąsiedztwa, szerokości, drzwi, dostęp. Ich spełnienie sprawdza na bieżąco moduł Układ pomieszczeń.</p>
+    <div class="section">
+      <div class="row"><label class="btn primary">Wczytaj definicję lub projekt<input id="file" type="file" accept="application/json,.json" hidden></label><button id="exportDef" class="btn" disabled>Eksportuj definicję</button></div>
+      <div id="status" class="status"></div>
+    </div>
+    <div id="filtersBox" hidden>
+      <div class="filters">
+        <input id="q" type="search" class="wide" placeholder="Szukaj warunku…">
+        <select id="fFloor"></select>
+        <select id="fSev"><option value="">Każdy priorytet</option><option value="hard">Twardy</option><option value="medium">Ważny</option><option value="soft">Miękki</option></select>
+      </div>
+      <div class="addRow" style="margin-top:8px"><select id="newType"></select><button id="addCond" class="btn primary">+ Dodaj</button></div>
+    </div>
+  </div>
+  <div class="listWrap" id="list"></div>
+</aside>
+<main class="main"><div id="editor"></div></main>
+</div>
+
+<script src="../../shared/definition.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script>
+const $=id=>document.getElementById(id), D=HouserDefinition;
+let project=null, source='', selected=0, openGroups=new Set(), scrollToSel=false;
+const def=()=>project?.definitionSnapshot;
+const conds=()=>{const d=def();if(!Array.isArray(d.conditions))d.conditions=[];return d.conditions};
+
+function setProject(p,src){project=p&&p.definitionSnapshot?p:null;source=src||'';if(project)selected=Math.max(0,Math.min(selected,conds().length-1));renderAll()}
+function save(){if(project)HouserStore.save(project,'warunki')}
+function commit(i,fn){const c=JSON.parse(JSON.stringify(conds()[i]));fn(c);conds()[i]=D.normalizeCondition(c,def());renderAll();save()}
+
+// ---------- lista pogrupowana
+function renderList(){
+  const L=$('list');L.innerHTML='';$('exportDef').disabled=!project;$('filtersBox').hidden=!project;
+  $('status').innerHTML=project?'<b>'+(source==='plik'?'Wczytany plik':'Bieżący projekt')+'</b> – '+conds().length+' warunków, zmiany zapisują się automatycznie.'
+    :'Brak projektu. Najpierw ustaw pomieszczenia w module <b>Pomieszczenia</b> albo wczytaj definicję.';
+  if(!project)return;
+  const fs=$('fFloor'),cur=fs.value;fs.innerHTML='<option value="">Każda kondygnacja</option>'+D.floors(def()).map(f=>'<option value="'+f+'">'+esc(D.floorDef(def(),f).name||f)+'</option>').join('');fs.value=cur;
+  const q=$('q').value.trim().toLowerCase(),ff=$('fFloor').value,fsev=$('fSev').value,groups=new Map();
+  conds().forEach((c,i)=>{const label=D.conditionLabel(c,def()),hay=(label+' '+c.group+' '+(D.CONDITION_TYPE_NAMES[c.type]||'')).toLowerCase();
+    if(q&&!hay.includes(q))return;if(fsev&&c.severity!==fsev)return;if(ff&&![c.floor,c.upperFloor,c.lowerFloor].includes(ff))return;
+    const g=c.group||'Warunki';if(!groups.has(g))groups.set(g,[]);groups.get(g).push([c,i,label])});
+  if(!groups.size){L.innerHTML='<div class="empty">Brak pasujących warunków.</div>';return}
+  const selGroup=conds()[selected]?.group||'Warunki';
+  for(const [g,items] of groups){
+    const det=document.createElement('details');det.className='grp';det.open=openGroups.has(g)||g===selGroup||!!q;
+    det.addEventListener('toggle',()=>{det.open?openGroups.add(g):openGroups.delete(g)});
+    const hard=items.filter(([c])=>c.severity==='hard').length;
+    det.innerHTML='<summary><span class="l">'+esc(g)+'</span><small>'+items.length+(hard?' · '+hard+' tward.':'')+'</small></summary>';
+    for(const [c,i,label] of items){const row=document.createElement('div');row.className='cond'+(i===selected?' sel':'')+(c.enabled===false?' off':'');
+      row.innerHTML='<input type="checkbox" title="Włącz / wyłącz"><div style="min-width:0"><div class="t"></div><div class="m"></div></div><span class="sev '+c.severity+'">'+D.SEVERITY[c.severity]+'</span>';
+      row.querySelector('.t').textContent=label;row.querySelector('.m').textContent=D.CONDITION_TYPE_NAMES[c.type]+(c.floor?' · '+(D.floorDef(def(),c.floor).name||c.floor):'');
+      const cb=row.querySelector('input');cb.checked=c.enabled!==false;cb.addEventListener('click',e=>e.stopPropagation());cb.addEventListener('change',()=>commit(i,x=>x.enabled=cb.checked));
+      row.addEventListener('click',()=>{selected=i;renderAll()});det.appendChild(row)}
+    L.appendChild(det);
+  }
+}
+for(const id of ['q','fFloor','fSev'])$(id).addEventListener('input',renderList);
+$('newType').innerHTML=Object.entries(D.CONDITION_TYPE_NAMES).map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join('');
+$('addCond').onclick=()=>{if(!project)return;const c=D.defaultCondition($('newType').value,def());conds().push(c);selected=conds().length-1;openGroups.add(c.group);scrollToSel=true;renderAll();save()};
+
+// ---------- edytor warunku
+function sel(value,options,onChange){const s=document.createElement('select');for(const o of options){const op=document.createElement('option');op.value=o.value;op.textContent=o.label;s.appendChild(op)}s.value=value??'';s.addEventListener('change',()=>onChange(s.value));return s}
+function num(value,step,onChange,min,max){const e=document.createElement('input');e.type='number';e.step=step;if(min!=null)e.min=min;if(max!=null)e.max=max;e.value=value??'';e.addEventListener('change',()=>{const v=Number(e.value);if(Number.isFinite(v))onChange(v)});return e}
+function txt(value,onChange){const e=document.createElement('input');e.type='text';e.value=value||'';e.addEventListener('change',()=>onChange(e.value));return e}
+function multi(values,options,onChange){const box=document.createElement('div');box.className='multi';const set=new Set(values||[]);for(const o of options){const l=document.createElement('label'),cb=document.createElement('input');cb.type='checkbox';cb.checked=set.has(o.value);cb.addEventListener('change',()=>{cb.checked?set.add(o.value):set.delete(o.value);onChange([...set])});l.append(cb,document.createTextNode(o.label));box.appendChild(l)}return box}
+function fld(label,control,wide){const w=document.createElement('label');w.className='f'+(wide?' wide':'');w.append(document.createTextNode(label),control);return w}
+function renderEditor(){
+  const root=$('editor');root.innerHTML='';
+  if(!project){root.innerHTML='<div class="card"><div class="empty">Brak projektu.</div></div>';return}
+  if(!conds().length){root.innerHTML='<div class="card"><div class="empty">Brak warunków. Wybierz typ po lewej i kliknij „+ Dodaj”.</div></div>';return}
+  const i=selected=Math.max(0,Math.min(selected,conds().length-1)),c=conds()[i],d=def();
+  const card=document.createElement('div');card.className='card';
+  card.innerHTML='<h2></h2><p class="sub"></p>';card.querySelector('h2').textContent=D.conditionLabel(c,d);card.querySelector('.sub').textContent=D.CONDITION_TYPE_NAMES[c.type]+' · '+(c.group||'Warunki');
+  const form=document.createElement('div');form.className='form';
+  const floorsOpt=D.floors(d).map(f=>({value:f,label:D.floorDef(d,f).name||f})),roomsOpt=f=>D.rooms(d,f).map(r=>({value:r.id,label:r.name})),typesOpt=D.openingTypes(d).map(t=>({value:t.id,label:t.name}));
+  const edgeOpt=['north','east','south','west','any'].map(v=>({value:v,label:D.DIR_PL[v]}));
+  const floorSel=(key,label)=>fld(label,sel(c[key],floorsOpt,v=>commit(i,x=>{x[key]=v;if(key==='floor'){x.room=null;x.a=null;x.b=null;x.startRoom=null;x.rooms=[]}if(key==='upperFloor')x.upperRoom=null;if(key==='lowerFloor'){x.lowerRoom=null;x.lowerRooms=[]}})));
+  const roomSel=(key,label,fk='floor')=>fld(label,sel(c[key],roomsOpt(c[fk]),v=>commit(i,x=>x[key]=v)));
+  form.append(
+    fld('Typ',sel(c.type,Object.entries(D.CONDITION_TYPE_NAMES).map(([value,label])=>({value,label})),v=>{const keep={severity:c.severity,enabled:c.enabled,group:c.group,label:c.label};conds()[i]={...D.defaultCondition(v,d),...keep,type:v};renderAll();save()})),
+    fld('Priorytet',sel(c.severity,Object.entries(D.SEVERITY).map(([value,label])=>({value,label})),v=>commit(i,x=>x.severity=v))),
+    fld('Grupa',txt(c.group,v=>commit(i,x=>x.group=v.trim()||'Warunki'))),
+    fld('Aktywny',sel(c.enabled===false?'0':'1',[{value:'1',label:'Tak'},{value:'0',label:'Nie'}],v=>commit(i,x=>x.enabled=v==='1'))),
+    fld('Własny opis (puste = automatyczny)',txt(c.label,v=>commit(i,x=>x.label=v.trim())),true));
+  if(['minArea','maxArea'].includes(c.type))form.append(floorSel('floor','Kondygnacja'),roomSel('room','Pomieszczenie'),fld('Wartość [m²]',num(c.value,.25,v=>commit(i,x=>x.value=v),0)));
+  else if(['fullPainted','contiguousAll','validOpenings'].includes(c.type))form.append(floorSel('floor','Kondygnacja'));
+  else if(['adjacent','notAdjacent','sharedEdgeMin','openingBetween'].includes(c.type)){form.append(floorSel('floor','Kondygnacja'),roomSel('a','Pomieszczenie A'),roomSel('b','Pomieszczenie B'));
+    if(['sharedEdgeMin','openingBetween'].includes(c.type))form.append(fld('Minimum [m]',num(c.meters,.1,v=>commit(i,x=>x.meters=v),.1)));
+    if(c.type==='openingBetween')form.append(fld('Dozwolone typy otworów',multi(c.types,typesOpt,v=>commit(i,x=>x.types=v)),true))}
+  else if(['edge','edgeLengthMin'].includes(c.type)){form.append(floorSel('floor','Kondygnacja'),roomSel('room','Pomieszczenie'),fld('Elewacja',sel(c.edge,edgeOpt,v=>commit(i,x=>x.edge=v))));if(c.type==='edgeLengthMin')form.append(fld('Minimum [m]',num(c.meters,.1,v=>commit(i,x=>x.meters=v),.1)))}
+  else if(c.type==='minRoomWidth')form.append(floorSel('floor','Kondygnacja'),roomSel('room','Pomieszczenie'),fld('Minimum [m]',num(c.meters,.1,v=>commit(i,x=>x.meters=v),.1)));
+  else if(c.type==='exactOverlay')form.append(floorSel('upperFloor','Górna kondygnacja'),roomSel('upperRoom','Pomieszczenie u góry','upperFloor'),floorSel('lowerFloor','Dolna kondygnacja'),roomSel('lowerRoom','Pomieszczenie na dole','lowerFloor'));
+  else if(c.type==='overlapMin')form.append(floorSel('upperFloor','Górna kondygnacja'),roomSel('upperRoom','Pomieszczenie u góry','upperFloor'),floorSel('lowerFloor','Dolna kondygnacja'),fld('Minimalne pokrycie (0–1)',num(c.ratio,.05,v=>commit(i,x=>x.ratio=v),0,1)),fld('Pomieszczenia na dole',multi(c.lowerRooms,roomsOpt(c.lowerFloor),v=>commit(i,x=>x.lowerRooms=v)),true));
+  else if(c.type==='exteriorOpening')form.append(floorSel('floor','Kondygnacja'),roomSel('room','Pomieszczenie'),fld('Elewacja',sel(c.edge,edgeOpt,v=>commit(i,x=>x.edge=v))),fld('Minimum [m]',num(c.meters,.1,v=>commit(i,x=>x.meters=v),.1)),fld('Typy otworów',multi(c.types,typesOpt,v=>commit(i,x=>x.types=v)),true));
+  else if(c.type==='reachableRooms')form.append(floorSel('floor','Kondygnacja'),roomSel('startRoom','Start'),fld('Pomieszczenia wymagane',multi(c.rooms,roomsOpt(c.floor),v=>commit(i,x=>x.rooms=v)),true),fld('Typy przejść',multi(c.types,typesOpt,v=>commit(i,x=>x.types=v)),true));
+  card.appendChild(form);
+  const pv=document.createElement('div');pv.className='preview';pv.innerHTML='<b>Podgląd:</b> '+esc(D.conditionLabel({...c,label:''},d));card.appendChild(pv);
+  const act=document.createElement('div');act.className='actions';
+  const dup=document.createElement('button');dup.className='btn';dup.textContent='Duplikuj';dup.onclick=()=>{conds().splice(i+1,0,JSON.parse(JSON.stringify(c)));selected=i+1;renderAll();save()};
+  const del=document.createElement('button');del.className='btn danger';del.textContent='Usuń warunek';del.onclick=()=>{if(!confirm('Usunąć warunek „'+D.conditionLabel(c,d)+'”?'))return;conds().splice(i,1);selected=Math.max(0,i-1);renderAll();save()};
+  act.append(dup,del);card.appendChild(act);root.appendChild(card);
+}
+
+function esc(s){return String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]))}
+function renderAll(){renderList();renderEditor();if(scrollToSel){scrollToSel=false;document.querySelector('.cond.sel')?.scrollIntoView({block:'center'})}}
+$('exportDef').onclick=()=>{if(!project)return;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(def(),null,2)],{type:'application/json'}));a.download='dom-definicja.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+$('file').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{const o=JSON.parse(await f.text());let p;if(o.definitionSnapshot)p=o;else if(D.isDefinition(o))p=D.projectFromDefinition(o);else throw new Error('to nie jest definicja ani projekt domu');setProject(p,'plik');save()}catch(err){alert('Nie udało się wczytać pliku: '+err.message)}e.target.value=''});
+
+const rec=HouserStore.load();
+setProject(rec?rec.project:null,rec?'store':'');
+HouserStore.subscribe(r=>{if(document.activeElement&&document.activeElement.closest('#editor')&&['INPUT','SELECT'].includes(document.activeElement.tagName))return;setProject(r.project,'store')});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

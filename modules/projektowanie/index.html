@@ -74,8 +74,8 @@ select,input[type="number"],input[type="text"],input[type="search"]{border:1px s
 
     <div class="viewTabs" role="tablist" aria-label="Widok projektu">
       <button id="viewPlanBtn" class="viewTab active" type="button" role="tab" aria-selected="true">Rzut</button>
-      <button id="viewRoomsBtn" class="viewTab" type="button" role="tab" aria-selected="false">Pomieszczenia</button>
-      <button id="viewConditionsBtn" class="viewTab" type="button" role="tab" aria-selected="false">Warunki</button>
+      <button id="viewRoomsBtn" class="viewTab" type="button" role="tab" aria-selected="false" title="Otwiera moduł Pomieszczenia">Pomieszczenia →</button>
+      <button id="viewConditionsBtn" class="viewTab" type="button" role="tab" aria-selected="false" title="Otwiera moduł Warunki">Warunki →</button>
     </div>
 
     <div id="planView" class="grid2">
@@ -496,8 +496,8 @@ outdoorSvg.addEventListener('pointercancel',()=>{outdoorDrag=null;renderAll();})
 
 for(const b of document.querySelectorAll('[data-wall]'))b.addEventListener('click',()=>resizeHouse(b.dataset.wall,Number(b.dataset.delta)));
 $('viewPlanBtn').addEventListener('click',()=>setActiveView('plan'));
-$('viewRoomsBtn').addEventListener('click',()=>{roomEditorFloor=floor;setActiveView('rooms');});
-$('viewConditionsBtn').addEventListener('click',()=>setActiveView('conditions'));
+$('viewRoomsBtn').addEventListener('click',()=>{saveLocal();window.HouserNav&&HouserNav.go('pomieszczenia');});
+$('viewConditionsBtn').addEventListener('click',()=>{saveLocal();window.HouserNav&&HouserNav.go('warunki');});
 const viewButtons=[$('viewPlanBtn'),$('viewRoomsBtn'),$('viewConditionsBtn')];for(const btn of viewButtons)btn.addEventListener('keydown',e=>{if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;e.preventDefault();const order=['plan','rooms','conditions'],cur=order.indexOf(activeView),next=order[(cur+(e.key==='ArrowRight'?1:-1)+order.length)%order.length];setActiveView(next);viewButtons[order.indexOf(next)].focus();});
 $('roomEditorFloor').addEventListener('change',()=>{roomEditorFloor=$('roomEditorFloor').value;selectedRoomEditIndex=0;renderRoomsTab();});
 $('addRoomBtn').addEventListener('click',()=>addRoomKind('room'));
@@ -509,7 +509,10 @@ $('addConditionBtn').addEventListener('click',()=>{pushHistory();definition.cond
 if(window.HouserStore){
   const rec=HouserStore.load();
   if(rec&&rec.project&&rec.project.definitionSnapshot){try{window.__restoredFromStore=true;const snap=rec.project.definitionSnapshot;loadDefinitionObject(JSON.parse(JSON.stringify(snap)),JSON.stringify(snap,null,2),(rec.project.definitionName||'definicja')+' (bieżący projekt)');importProject(rec.project);renderAll();}catch(e){console.error('Nie udało się odtworzyć bieżącego projektu',e);}}
-  HouserStore.subscribe(rec=>{const p=rec.project;if(!definition||!p||rec.source==='projektowanie')return;if(p.definitionFingerprint&&p.definitionFingerprint!==fingerprint)return;
+  HouserStore.subscribe(rec=>{const p=rec.project;if(!p||rec.source==='projektowanie')return;
+    // definicja zmieniona w modułach Pomieszczenia / Warunki (albo nowy projekt) – wczytujemy całość
+    if(p.definitionSnapshot&&(!definition||JSON.stringify(p.definitionSnapshot)!==JSON.stringify(cloneDefinition()))){try{if(!definition){const snap=p.definitionSnapshot;loadDefinitionObject(JSON.parse(JSON.stringify(snap)),JSON.stringify(snap,null,2),(p.definitionName||'definicja')+' (bieżący projekt)');}importProject(p);renderAll();}catch(e){console.error(e);}return;}
+    if(!definition)return;
     // bryła (Kondygnacje i dach), meble (Meblowanie), tarasy (Tarasy i pergole) – reszta zostaje nasza
     const nextE=validateElevationSettings(p.elevationSettings||{}),nextF=validateFurniture(p.furniture||{}),nextO=validateOutdoorStructures(p.outdoorStructures||[]);
     const chE=JSON.stringify(nextE)!==JSON.stringify(elevationSettings),chF=JSON.stringify(nextF)!==JSON.stringify(cloneFurniture()),chO=JSON.stringify(nextO)!==JSON.stringify(cloneOutdoor());if(!chE&&!chF&&!chO)return;

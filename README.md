@@ -7,6 +7,8 @@ Statyczna strona WWW: bez kont i bez serwera. Wczytujesz pliki JSON, pracujesz w
 ```
 index.html                  strona główna – moduły jako kolejne kroki projektowania (zakładki)
 modules/
+  pomieszczenia/index.html  lista pomieszczeń na kondygnacjach (nazwy, kolory, wnęki), start nowego projektu
+  warunki/index.html        edycja warunków układu, pogrupowane i rozwijane
   projektowanie/index.html  Układ pomieszczeń: definicja, malowanie pomieszczeń, otwory, komin, walidacja, elewacje
   kondygnacje-dach/index.html widok z boku: piętro / poddasze, ścianka kolankowa, kąt i kierunek dachu
   wnetrze-3d/index.html     podgląd 3D wnętrza z punktu obserwatora (meble z JSON)
@@ -15,6 +17,7 @@ modules/
   meblowanie/index.html     rozmieszczanie mebli na gotowym rzucie (pomieszczeń tu nie zmieniasz)
 shared/theme.css            wspólny jasny motyw (kolory, przyciski, nagłówki modułów)
 shared/gl-renderer.js       wspólny renderer WebGL modułów 3D (bufor głębokości, bez bibliotek)
+shared/definition.js        wspólna obsługa definicji: typy warunków, normalizacja, etykiety
 shared/house-model.js       wspólny model bryły (wysokości, poddasze, dach z kąta nachylenia)
 shared/project-store.js     wspólny bieżący projekt w localStorage (moduły widzą nawzajem swoje zmiany)
 shared/nav.js               przycisk powrotu do strony głównej, gdy moduł otwarto samodzielnie

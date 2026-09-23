@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pomieszczenia</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+.wrap{min-height:100vh;display:grid;grid-template-columns:340px 1fr}
+.side{padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{padding:18px;overflow:auto}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--hs-line-strong);background:var(--hs-panel);color:var(--hs-text);padding:5px 9px;border-radius:var(--hs-radius);font:600 12px var(--hs-font);cursor:pointer}
+.btn:hover{background:var(--hs-panel-2);border-color:#94a3b8}
+.btn.primary,.btn.active{background:var(--hs-accent);border-color:var(--hs-accent);color:#fff}
+.btn.danger{color:var(--hs-bad);border-color:#fecaca}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.status{font-size:12px;line-height:1.45;color:var(--hs-muted);margin-top:8px}
+.status b{color:var(--hs-text)}
+.field{display:grid;gap:4px;margin-bottom:8px}
+.field label{font-size:11px;color:var(--hs-muted)}
+input[type=text],select{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+input[type=color]{width:38px;height:32px;padding:2px;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);background:#fff;cursor:pointer}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);box-shadow:var(--hs-shadow);max-width:980px}
+.cardHead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--hs-line);flex-wrap:wrap}
+.cardHead h2{font-size:15px;margin:0}
+.badges{display:flex;gap:6px;flex-wrap:wrap}
+.badge{font-size:12px;border:1px solid var(--hs-line);border-radius:999px;padding:3px 9px;background:var(--hs-panel-2)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;font-weight:600;color:var(--hs-muted);padding:8px 10px;border-bottom:1px solid var(--hs-line)}
+td{padding:6px 10px;border-bottom:1px solid var(--hs-line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tag{font-size:11px;border-radius:999px;padding:2px 7px;border:1px solid var(--hs-line);white-space:nowrap}
+.tag.min{color:#166534;background:#f0fdf4;border-color:#bbf7d0}
+.tag.max{color:#9a3412;background:#fff7ed;border-color:#fed7aa}
+.tag.bad{color:var(--hs-bad);background:var(--hs-bad-soft);border-color:#fecaca}
+.muted{color:var(--hs-muted)}
+.foot{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--hs-line);flex-wrap:wrap}
+.hint{font-size:12px;color:var(--hs-muted);line-height:1.45;margin:10px 0 0}
+.empty{padding:40px 24px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}.side{border-right:0;border-bottom:1px solid var(--hs-line)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1 class="hs-title">Pomieszczenia</h1>
+  <p class="hs-sub">Pierwszy krok: jakie pomieszczenia ma mieć dom i na której kondygnacji. Ich kształt malujesz później w module Układ pomieszczeń.</p>
+
+  <div class="section">
+    <h3>Projekt</h3>
+    <div class="row">
+      <label class="btn primary">Wczytaj definicję lub projekt<input id="file" type="file" accept="application/json,.json" hidden></label>
+      <button id="newDef" class="btn">Nowa pusta definicja</button>
+    </div>
+    <div class="row" style="margin-top:7px">
+      <button id="exportDef" class="btn" disabled>Eksportuj definicję</button>
+      <button id="exportProj" class="btn" disabled>Eksportuj projekt</button>
+    </div>
+    <div id="status" class="status"></div>
+  </div>
+
+  <div class="section" id="defSection" hidden>
+    <h3>Dom</h3>
+    <div class="field"><label>Nazwa projektu</label><input id="defName" type="text"></div>
+  </div>
+
+  <div class="section" id="floorSection" hidden>
+    <h3>Kondygnacja</h3>
+    <div class="row" id="floorTabs"></div>
+    <div class="field" style="margin-top:10px"><label>Nazwa kondygnacji</label><input id="floorName" type="text"></div>
+  </div>
+</aside>
+
+<main class="main"><div id="content"></div></main>
+</div>
+
+<script src="../../shared/definition.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script>
+const $=id=>document.getElementById(id), D=HouserDefinition;
+let project=null, source='', floor=null;
+const def=()=>project?.definitionSnapshot;
+const cellM=()=>+(project?.grid?.cellMeters||def()?.grid?.cellMeters||.5);
+
+function setProject(p,src){
+  project=p&&p.definitionSnapshot?p:null;source=src||'';
+  if(project&&!D.floors(def()).includes(floor))floor=D.floors(def())[0];
+  renderAll();
+}
+function save(){if(!project)return;project.definitionName=def().name||null;HouserStore.save(project,'pomieszczenia')}
+function changed(){renderAll();save()}
+
+function area(f,id){const s=project?.state?.[f];if(!Array.isArray(s))return 0;let n=0;const flat=Array.isArray(s[0])?s.flat():s;for(const v of flat)if(v===id)n++;return n*cellM()*cellM()}
+
+// ---------- panel boczny
+function renderSide(){
+  const has=!!project;
+  $('exportDef').disabled=!has;$('exportProj').disabled=!has;$('defSection').hidden=!has;$('floorSection').hidden=!has;
+  $('status').innerHTML=has?'<b>'+(source==='plik'?'Wczytany plik':'Bieżący projekt')+'</b> – zmiany zapisują się automatycznie i od razu trafiają do pozostałych modułów.'
+    :'Brak projektu. Wczytaj plik definicji (np. <i>definicja-domu-v7.json</i> z przykładów) albo zacznij od pustej definicji.';
+  if(!has)return;
+  if(document.activeElement!==$('defName'))$('defName').value=def().name||'';
+  $('floorTabs').innerHTML='';
+  for(const f of D.floors(def())){const b=document.createElement('button');b.className='btn'+(f===floor?' active':'');b.textContent=D.floorDef(def(),f).name||f;b.onclick=()=>{floor=f;renderAll()};$('floorTabs').appendChild(b)}
+  if(document.activeElement!==$('floorName'))$('floorName').value=D.floorDef(def(),floor).name||'';
+}
+$('defName').addEventListener('change',()=>{def().name=$('defName').value.trim()||def().name;changed()});
+$('floorName').addEventListener('change',()=>{const fd=def().floors[floor];fd.name=$('floorName').value.trim()||fd.name;changed()});
+
+// ---------- lista pomieszczeń
+function renderContent(){
+  const root=$('content');
+  if(!project){root.innerHTML='<div class="card"><div class="empty">Wczytaj definicję albo zacznij od pustej – po lewej.</div></div>';return}
+  const rs=D.rooms(def(),floor),inside=rs.filter(r=>(r.kind||'room')!=='exteriorVoid');
+  const painted=inside.reduce((a,r)=>a+area(floor,r.id),0),minSum=inside.reduce((a,r)=>{const t=D.areaTargets(def(),floor,r.id).filter(x=>x.kind==='min');return a+(t.length?Math.max(...t.map(x=>x.value)):0)},0);
+  root.innerHTML='<div class="card"><div class="cardHead"><h2></h2><div class="badges"></div></div><table><thead><tr><th style="width:52px">Kolor</th><th>Nazwa</th><th style="width:210px">Rodzaj</th><th style="width:90px;text-align:right">Na rzucie</th><th style="width:200px">Cele (z warunków)</th><th style="width:70px"></th></tr></thead><tbody></tbody></table><div class="foot"><button class="btn primary" id="addRoom">+ Pomieszczenie</button><button class="btn" id="addVoid">+ Wnęka zewnętrzna</button></div></div><p class="hint">„Na rzucie” to powierzchnia narysowana w module Układ pomieszczeń. Cele powierzchni (min./maks.) ustawiasz w module Warunki. Wnęka zewnętrzna to wycięcie bryły – maluje się ją jak pomieszczenie, ale nie liczy do powierzchni domu.</p>';
+  root.querySelector('h2').textContent=D.floorDef(def(),floor).name||floor;
+  root.querySelector('.badges').innerHTML='<span class="badge">'+inside.length+' pomieszczeń</span><span class="badge">na rzucie '+painted.toFixed(1)+' m²</span>'+(minSum?'<span class="badge">suma minimów '+minSum.toFixed(1)+' m²</span>':'');
+  const tb=root.querySelector('tbody');
+  rs.forEach((r,i)=>{
+    const tr=document.createElement('tr'),isVoid=(r.kind||'room')==='exteriorVoid',a=area(floor,r.id),t=D.areaTargets(def(),floor,r.id);
+    const tags=t.map(x=>{const ok=x.kind==='min'?a>=x.value-1e-6:a<=x.value+1e-6,bad=a>0&&!ok;return '<span class="tag '+(bad?'bad':x.kind)+'" title="'+D.SEVERITY[x.severity]+'">'+(x.kind==='min'?'≥ ':'≤ ')+x.value+' m²</span>'}).join(' ');
+    tr.innerHTML='<td><input type="color"></td><td><input type="text"></td><td><select><option value="room">Pomieszczenie</option><option value="exteriorVoid">Wnęka zewnętrzna</option></select></td><td class="num">'+(a?a.toFixed(2)+' m²':'<span class="muted">—</span>')+'</td><td>'+(tags||'<span class="muted">—</span>')+'</td><td><button class="btn danger">Usuń</button></td>';
+    const [color]=tr.querySelectorAll('input[type=color]'),name=tr.querySelector('input[type=text]'),kind=tr.querySelector('select');
+    color.value=/^#[0-9a-f]{6}$/i.test(r.color)?r.color:'#94a3b8';name.value=r.name;kind.value=isVoid?'exteriorVoid':'room';
+    color.addEventListener('change',()=>{r.color=color.value;changed()});
+    name.addEventListener('change',()=>{r.name=name.value.trim()||r.name;changed()});
+    kind.addEventListener('change',()=>{r.kind=kind.value;changed()});
+    tr.querySelector('.btn.danger').onclick=()=>removeRoom(r);
+    tb.appendChild(tr);
+  });
+  if(!rs.length)tb.innerHTML='<tr><td colspan="6" class="muted" style="padding:16px">Brak pomieszczeń na tej kondygnacji.</td></tr>';
+  $('addRoom').onclick=()=>addRoom('room');$('addVoid').onclick=()=>addRoom('exteriorVoid');
+}
+const PALETTE=['#fb7185','#fbbf24','#34d399','#60a5fa','#a78bfa','#f97316','#67e8f9','#f472b6','#a3e635','#94a3b8'];
+function addRoom(kind){
+  const d=def(),name=kind==='exteriorVoid'?'Wnęka zewnętrzna':'Nowe pomieszczenie',id=D.slugRoomId(d,floor,kind==='exteriorVoid'?'wneka':name);
+  const used=new Set(D.rooms(d,floor).map(r=>r.color)),color=kind==='exteriorVoid'?'#cbd5e1':(PALETTE.find(c=>!used.has(c))||'#94a3b8');
+  d.floors[floor].rooms.push({id,name,color,kind});changed();
+  setTimeout(()=>{const inputs=document.querySelectorAll('tbody input[type=text]');const last=inputs[inputs.length-1];last?.focus();last?.select()},0);
+}
+function removeRoom(r){
+  const d=def(),conds=(d.conditions||[]).filter(c=>D.conditionUsesRoom(c,floor,r.id)),a=area(floor,r.id);
+  const msg='Usunąć „'+r.name+'”?'+(a?'\n• Z rzutu zniknie '+a.toFixed(2)+' m² pomalowanych kratek.':'')+(conds.length?'\n• Usuniętych zostanie '+conds.length+' warunków, które go dotyczą.':'');
+  if(!confirm(msg))return;
+  d.floors[floor].rooms=D.rooms(d,floor).filter(x=>x!==r);
+  d.conditions=(d.conditions||[]).filter(c=>!conds.includes(c));
+  const s=project.state?.[floor];if(Array.isArray(s)){if(Array.isArray(s[0]))project.state[floor]=s.map(row=>row.map(v=>v===r.id?null:v));else project.state[floor]=s.map(v=>v===r.id?null:v);}
+  changed();
+}
+
+// ---------- plik
+function download(obj,name){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+const stamp=()=>{const d=new Date(),p2=n=>String(n).padStart(2,'0');return [d.getFullYear(),p2(d.getMonth()+1),p2(d.getDate()),p2(d.getHours()),p2(d.getMinutes())].join('-')};
+$('exportDef').onclick=()=>project&&download(def(),'dom-definicja-'+stamp()+'.json');
+$('exportProj').onclick=()=>project&&download(project,'dom-uklad-v7-'+stamp()+'.json');
+$('newDef').onclick=()=>{if(project&&!confirm('Zacząć nowy projekt od pustej definicji? Bieżący projekt zostanie zastąpiony (wyeksportuj go wcześniej, jeśli chcesz go zachować).'))return;setProject(D.projectFromDefinition(D.emptyDefinition()),'store');save()};
+$('file').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{const o=JSON.parse(await f.text());let p;if(o.definitionSnapshot)p=o;else if(D.isDefinition(o))p=D.projectFromDefinition(o);else throw new Error('to nie jest definicja ani projekt domu');setProject(p,'plik');save()}catch(err){alert('Nie udało się wczytać pliku: '+err.message)}e.target.value=''});
+
+function renderAll(){renderSide();renderContent()}
+const rec=HouserStore.load();
+setProject(rec?rec.project:null,rec?'store':'');
+HouserStore.subscribe(r=>{if(document.activeElement&&['INPUT','SELECT'].includes(document.activeElement.tagName)&&document.activeElement.closest('tbody'))return;setProject(r.project,'store')});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>
