@@ -69,7 +69,7 @@ button,input,select{font:inherit} button{cursor:pointer}
         <h3>Podgląd 3D</h3>
         <button class="btn primary" id="go3d" style="width:100%;margin-bottom:7px">Pokaż z pozycji człowieka</button>
         <button class="btn" id="rebuild" style="width:100%;margin-bottom:7px">Przebuduj geometrię</button>
-        <div class="hint">W widoku 3D przeciągaj myszą, aby się rozglądać. <b>WASD</b> porusza obserwatorem. Jest podstawowa kolizja ze ścianami; przechodzisz tylko przez drzwi, HST i otwarte przejścia.</div>
+        <div class="hint">W widoku 3D przeciągaj myszą, aby się rozglądać. <b>Strzałki</b> (lub WASD) – chodzenie, <b>←/→</b> lub Q/E – obrót. Jest podstawowa kolizja ze ścianami; przechodzisz tylko przez drzwi, HST i otwarte przejścia.</div>
       </div>
 
       <div class="section">
@@ -107,7 +107,7 @@ button,input,select{font:inherit} button{cursor:pointer}
       </div>
       <div id="view3d">
         <div id="threeHost"></div>
-        <div class="overlay3d" id="overlay3d">Przeciągnij myszą = rozglądanie · WASD = ruch · rolka = FOV · podwójny klik = wyprostuj widok.</div>
+        <div class="overlay3d" id="overlay3d">Strzałki / WASD = chodzenie · ←/→ lub Q/E = obrót · mysz = rozglądanie · rolka = FOV · podwójny klik = wyprostuj widok.</div>
         <div class="crosshair"></div>
       </div>
       <div id="settingsPane">
@@ -500,7 +500,8 @@ function initThree(){
   window.addEventListener('mousemove',e=>{if(!three.drag)return;const dx=e.clientX-three.lastX,dy=e.clientY-three.lastY;three.lastX=e.clientX;three.lastY=e.clientY;observer.angle=normAngle(observer.angle+dx*.28);three.pitch=clamp(three.pitch-dy*.0035,-1.05,1.05);ui.angle.value=Math.round(observer.angle);drawPlan();render3D()});
   cv.addEventListener('dblclick',()=>{three.pitch=0;render3D()});
   cv.addEventListener('wheel',e=>{e.preventDefault();observer.fov=clamp(observer.fov+Math.sign(e.deltaY)*3,35,110);ui.fov.value=Math.round(observer.fov);render3D()},{passive:false});
-  window.addEventListener('keydown',e=>{if(['KeyW','KeyA','KeyS','KeyD'].includes(e.code))three.keys.add(e.code)});
+  window.addEventListener('keydown',e=>{if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))return;const arrows=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];if(['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE',...arrows].includes(e.code)){three.keys.add(e.code);if(arrows.includes(e.code)&&els('view3d').style.display==='block')e.preventDefault()}});
+window.addEventListener('blur',()=>three.keys.clear());
   window.addEventListener('keyup',e=>three.keys.delete(e.code));
   resize3d();build3D();syncCameraFromObserver();if(!three.loopStarted){three.loopStarted=true;requestAnimationFrame(loop3d)}return true
 }
@@ -520,6 +521,9 @@ function canStepTo(nx,nz){
 }
 function loop3d(t){
   if(!three.ready){requestAnimationFrame(loop3d);return}const dt=Math.min(.05,(t-three.lastT)/1000||0);three.lastT=t;let fw=0,rt=0;if(three.keys.has('KeyW'))fw+=1;if(three.keys.has('KeyS'))fw-=1;if(three.keys.has('KeyD'))rt+=1;if(three.keys.has('KeyA'))rt-=1;
+  // strzałki: góra/dół = przód/tył, lewo/prawo = obrót (Q/E też obracają)
+  if(three.keys.has('ArrowUp'))fw+=1;if(three.keys.has('ArrowDown'))fw-=1;let turn=0;if(three.keys.has('ArrowLeft')||three.keys.has('KeyQ'))turn-=1;if(three.keys.has('ArrowRight')||three.keys.has('KeyE'))turn+=1;
+  if(turn){observer.angle=normAngle(observer.angle+turn*90*dt);ui.angle.value=Math.round(observer.angle);if(!fw&&!rt)drawPlan()}
   if(fw||rt){const L=Math.hypot(fw,rt)||1,y=observer.angle*Math.PI/180,s=Math.sin(y),c=Math.cos(y),speed=1.7;const dx=(s*fw+c*rt)/L*speed*dt,dz=(-c*fw+s*rt)/L*speed*dt;const nx=observer.x+dx,nz=observer.z+dz;if(canStepTo(nx,observer.z))observer.x=nx;if(canStepTo(observer.x,nz))observer.z=nz;drawPlan()}
   render3D();requestAnimationFrame(loop3d)
 }

@@ -6,25 +6,227 @@
 <title>Meblowanie</title>
 <link rel="stylesheet" href="../../shared/theme.css">
 <style>
+*{box-sizing:border-box}
 html,body{height:100%;margin:0}
-.wrap{max-width:640px;margin:0 auto;padding:48px 16px;line-height:1.55}
-.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:18px 20px;box-shadow:var(--hs-shadow);margin-top:14px}
-.card p,.card li{color:var(--hs-muted)}
+.wrap{height:100vh;display:grid;grid-template-columns:340px 1fr}
+.side{padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{position:relative;min-width:0;overflow:auto;background:#e2e8f0;display:flex;align-items:flex-start;justify-content:center;padding:18px}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--hs-line-strong);background:var(--hs-panel);color:var(--hs-text);padding:5px 8px;border-radius:var(--hs-radius);font:600 12px var(--hs-font);cursor:pointer}
+.btn:hover{background:var(--hs-panel-2);border-color:#94a3b8}
+.btn.primary,.btn.active{background:var(--hs-accent);border-color:var(--hs-accent);color:#fff}
+.btn.danger{color:var(--hs-bad);border-color:#fecaca}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.status{font-size:12px;line-height:1.45;color:var(--hs-muted);margin-top:8px}
+.status b{color:var(--hs-text)}
+.types{display:grid;gap:6px}
+.type{display:flex;align-items:center;gap:8px;border:1px solid var(--hs-line-strong);background:#fff;border-radius:var(--hs-radius);padding:7px 8px;font:600 13px var(--hs-font);cursor:pointer;text-align:left;color:var(--hs-text)}
+.type:hover{border-color:#94a3b8}
+.type.active{outline:2px solid var(--hs-accent);outline-offset:1px}
+.type:disabled{opacity:.45;cursor:not-allowed}
+.sw{width:16px;height:16px;border-radius:4px;border:1px solid rgba(0,0,0,.2);flex:0 0 auto}
+.hint{font-size:12px;color:var(--hs-muted);line-height:1.45;margin:8px 0 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field{display:grid;gap:4px}
+.field.wide{grid-column:1/-1}
+.field label{font-size:11px;color:var(--hs-muted)}
+.field input,.field select{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+.list{display:grid;gap:5px;max-height:260px;overflow:auto}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;border:1px solid var(--hs-line);border-radius:var(--hs-radius);padding:6px 8px;background:#fff;font-size:12px;cursor:pointer}
+.item.sel{outline:2px solid var(--hs-accent);outline-offset:1px}
+.item small{color:var(--hs-muted)}
+.planCard{background:#fff;border-radius:var(--hs-radius-lg);padding:14px;box-shadow:0 6px 20px rgba(15,23,42,.12)}
+.planTitle{font-weight:700;font-size:14px;margin-bottom:8px;display:flex;justify-content:space-between;gap:12px}
+.planTitle span{color:var(--hs-muted);font-weight:500;font-size:12px}
+#plan{display:block;touch-action:none;user-select:none}
+.empty{padding:40px 24px;text-align:center;color:var(--hs-muted);max-width:420px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr;height:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}}
 </style>
 </head>
 <body>
 <div class="wrap">
+<aside class="side">
   <h1 class="hs-title">Meblowanie</h1>
-  <p class="hs-sub">Moduł w przygotowaniu.</p>
-  <div class="card">
-  <p>To będzie osobny moduł do rozmieszczania mebli na wczytanym układzie domu (JSON z modułu Projektowanie), z eksportem wyniku do pliku.</p>
-  <p>Na razie:</p>
-  <ul>
-    <li>proste meble (warstwa „Meble”) można dodawać w module <b>Projektowanie</b>,</li>
-    <li>meble zapisane w układzie JSON wyświetla moduł <b>Wnętrze 3D</b>.</li>
-  </ul>
+  <p class="hs-sub">Ustawiasz meble na gotowym rzucie z modułu Projektowanie. Pomieszczeń, drzwi i okien tu nie zmieniasz.</p>
+
+  <div class="section">
+    <h3>Projekt</h3>
+    <div class="row">
+      <label class="btn primary">Wczytaj projekt JSON<input id="file" type="file" accept="application/json,.json" hidden></label>
+      <button id="export" class="btn" disabled>Eksportuj JSON</button>
+    </div>
+    <div id="status" class="status"></div>
   </div>
+
+  <div class="section">
+    <h3>Kondygnacja</h3>
+    <div class="row" id="floorTabs"></div>
+  </div>
+
+  <div class="section">
+    <h3>Dodaj mebel</h3>
+    <div class="types" id="types"></div>
+    <p class="hint">Wybierz typ i przeciągnij prostokąt na rzucie (siatka 10 cm) albo kliknij, żeby wstawić typowy rozmiar. Kliknij mebel, żeby go zaznaczyć i przesuwać. <b>R</b> obraca, <b>strzałki</b> przesuwają, <b>Delete</b> usuwa, <b>Esc</b> kończy dodawanie.</p>
+  </div>
+
+  <div class="section" id="editSection" hidden>
+    <h3>Zaznaczony mebel</h3>
+    <div class="grid2">
+      <div class="field wide"><label>Nazwa</label><input id="eLabel" type="text" placeholder="np. szafa w przedpokoju"></div>
+      <div class="field wide"><label>Typ</label><select id="eType"></select></div>
+      <div class="field"><label>Szerokość [m]</label><input id="eW" type="number" step="0.1" min="0.1"></div>
+      <div class="field"><label>Głębokość [m]</label><input id="eH" type="number" step="0.1" min="0.1"></div>
+      <div class="field"><label>X [m]</label><input id="eX" type="number" step="0.1"></div>
+      <div class="field"><label>Y [m]</label><input id="eY" type="number" step="0.1"></div>
+    </div>
+    <div class="row" style="margin-top:10px"><button id="eRot" class="btn">Obróć 90°</button><button id="eDup" class="btn">Duplikuj</button><button id="eDel" class="btn danger">Usuń</button></div>
+  </div>
+
+  <div class="section">
+    <h3>Meble na kondygnacji</h3>
+    <div class="list" id="list"></div>
+  </div>
+</aside>
+<main class="main"><div class="planCard" id="card"></div></main>
 </div>
+
+<script src="../../shared/project-store.js"></script>
+<script>
+const $=id=>document.getElementById(id), NS='http://www.w3.org/2000/svg';
+// te same typy co w dawnym Projektowaniu i we Wnętrzu 3D
+const FURNITURE_TYPES={
+  storage:{name:'Szafa / zabudowa',fill:'#cbd5e1'},
+  surface:{name:'Blat / wyspa / stół',fill:'#fde68a'},
+  bed:{name:'Łóżko',fill:'#bfdbfe'},
+  seating:{name:'Sofa / siedzisko',fill:'#fecdd3'},
+  other:{name:'Inne',fill:'#ddd6fe'}
+};
+const DEFAULT_SIZE={storage:[1.2,.6],surface:[1.6,.9],bed:[1.6,2.0],seating:[2.0,.9],other:[.8,.8]};
+const SNAP=.1, PX=40; // px na metr w rzucie
+const FLOOR_PL={ground:'Parter',upper:'Piętro / poddasze'};
+let project=null, source='', floor='ground', tool=null, selected=null, drag=null;
+
+// ---------- dane projektu
+const grid=()=>project?.grid||project?.definitionSnapshot?.grid;
+const floors=()=>{const fo=project?.definitionSnapshot?.floorOrder;return Array.isArray(fo)&&fo.length?fo:['ground','upper']};
+const rooms=f=>project?.definitionSnapshot?.floors?.[f]?.rooms||[];
+const roomOf=(f,id)=>rooms(f).find(r=>r.id===id);
+function cellAt(f,x,y){const g=grid(),s=project?.state?.[f];if(!g||!s||x<0||y<0||x>=g.width||y>=g.height)return null;return (Array.isArray(s[0])?s[y]?.[x]:s[y*g.width+x])||null}
+function items(){if(!project.furniture)project.furniture={};if(!Array.isArray(project.furniture[floor]))project.furniture[floor]=[];return project.furniture[floor]}
+const snap=v=>Math.round(v/SNAP)*SNAP, r2=v=>Math.round(v*100)/100;
+const uid=()=>'f'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+function setProject(p,src){
+  project=p&&(p.grid||p.definitionSnapshot?.grid)?p:null; source=src||'';
+  if(project&&!floors().includes(floor))floor=floors()[0];
+  if(selected&&!(project?.furniture?.[floor]||[]).some(i=>i.id===selected))selected=null;
+  renderAll();
+}
+function save(){ // zapisujemy tylko meble – reszta projektu zostaje taka, jak zapisały ją inne moduły
+  if(!project)return;
+  const furniture=JSON.parse(JSON.stringify(project.furniture||{}));
+  if(!HouserStore.update(p=>{p.furniture=furniture;return p},'meblowanie'))HouserStore.save(project,'meblowanie');
+}
+
+// ---------- panel boczny
+function renderSide(){
+  $('export').disabled=!project;
+  $('status').innerHTML=project?'<b>'+(source==='plik'?'Wczytany plik':'Bieżący projekt')+'</b>'+(project.definitionName?' – '+esc(project.definitionName):'')+'<br>Zmiany zapisują się automatycznie.'
+    :'Brak bieżącego projektu. Najpierw narysuj rzut w module <b>Projektowanie</b> albo wczytaj plik JSON.';
+  $('floorTabs').innerHTML='';
+  for(const f of project?floors():[]){const b=document.createElement('button');b.className='btn'+(f===floor?' active':'');b.textContent=FLOOR_PL[f]||f;b.onclick=()=>{floor=f;selected=null;renderAll()};$('floorTabs').appendChild(b)}
+  $('types').innerHTML='';
+  for(const [id,t] of Object.entries(FURNITURE_TYPES)){const b=document.createElement('button');b.className='type'+(tool===id?' active':'');b.disabled=!project;b.innerHTML='<span class="sw" style="background:'+t.fill+'"></span>'+t.name;b.onclick=()=>{tool=tool===id?null:id;selected=null;renderAll()};$('types').appendChild(b)}
+  const list=$('list');list.innerHTML='';
+  const its=project?items():[];
+  if(!its.length)list.innerHTML='<div class="hint" style="margin:0">Brak mebli na tej kondygnacji.</div>';
+  for(const it of its){const d=document.createElement('div');d.className='item'+(it.id===selected?' sel':'');d.innerHTML='<span class="sw" style="background:'+(FURNITURE_TYPES[it.type]?.fill||'#ddd')+'"></span><span>'+esc(it.label||FURNITURE_TYPES[it.type]?.name||it.type)+'</span><small>'+(+it.w).toFixed(2)+' × '+(+it.h).toFixed(2)+'</small>';d.onclick=()=>{selected=it.id;tool=null;renderAll()};list.appendChild(d)}
+  const it=its.find(i=>i.id===selected);$('editSection').hidden=!it;
+  if(it){const set=(id,v)=>{if(document.activeElement!==$(id))$(id).value=v};set('eLabel',it.label||'');set('eType',it.type);set('eW',it.w);set('eH',it.h);set('eX',it.x);set('eY',it.y)}
+}
+$('eType').innerHTML=Object.entries(FURNITURE_TYPES).map(([id,t])=>'<option value="'+id+'">'+t.name+'</option>').join('');
+function sel(){return project?items().find(i=>i.id===selected):null}
+function clampItem(it){const g=grid(),W=g.width*g.cellMeters,H=g.height*g.cellMeters;it.w=r2(Math.max(SNAP,Math.min(W,+it.w)));it.h=r2(Math.max(SNAP,Math.min(H,+it.h)));it.x=r2(Math.max(0,Math.min(W-it.w,+it.x)));it.y=r2(Math.max(0,Math.min(H-it.h,+it.y)))}
+function changed(){renderAll();save()}
+$('eLabel').addEventListener('input',()=>{const it=sel();if(!it)return;it.label=$('eLabel').value;renderPlan();save()});
+$('eLabel').addEventListener('change',renderSide);
+$('eType').addEventListener('change',()=>{const it=sel();if(!it)return;it.type=$('eType').value;changed()});
+for(const [id,k] of [['eW','w'],['eH','h'],['eX','x'],['eY','y']])$(id).addEventListener('change',()=>{const it=sel();if(!it)return;const v=Number($(id).value);if(Number.isFinite(v))it[k]=v;clampItem(it);changed()});
+function rotate(it){const cx=it.x+it.w/2,cy=it.y+it.h/2;[it.w,it.h]=[it.h,it.w];it.x=snap(cx-it.w/2);it.y=snap(cy-it.h/2);clampItem(it);changed()}
+$('eRot').onclick=()=>{const it=sel();if(it)rotate(it)};
+$('eDel').onclick=()=>{const it=sel();if(!it)return;project.furniture[floor]=items().filter(i=>i!==it);selected=null;changed()};
+$('eDup').onclick=()=>{const it=sel();if(!it)return;const c={...it,id:uid(),x:it.x+.2,y:it.y+.2};clampItem(c);items().push(c);selected=c.id;changed()};
+document.addEventListener('keydown',e=>{if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))return;const it=sel();
+  if(e.key==='Escape'){tool=null;selected=null;renderAll()}
+  else if(it&&(e.key==='Delete'||e.key==='Backspace')){e.preventDefault();$('eDel').click()}
+  else if(it&&(e.key==='r'||e.key==='R'))rotate(it);
+  else if(it&&e.key.startsWith('Arrow')){e.preventDefault();const d=e.shiftKey?.5:SNAP;if(e.key==='ArrowLeft')it.x-=d;if(e.key==='ArrowRight')it.x+=d;if(e.key==='ArrowUp')it.y-=d;if(e.key==='ArrowDown')it.y+=d;clampItem(it);changed()}});
+
+// ---------- rzut (pomieszczenia, ściany i otwory tylko do podglądu)
+function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
+function renderPlan(){
+  const card=$('card');
+  if(!project){card.innerHTML='<div class="empty">Brak projektu do umeblowania.<br><br>Narysuj rzut w module <b>Projektowanie</b> – pojawi się tu automatycznie – albo wczytaj plik JSON z lewej.</div>';return}
+  if(!$('plan'))card.innerHTML='<div class="planTitle"><div id="planTitle"></div><span id="planInfo"></span></div><svg id="plan"></svg>';
+  const svg=$('plan');svg.innerHTML='';
+  const g=grid(),c=g.cellMeters,Wm=g.width*c,Hm=g.height*c,pad=.4;
+  svg.setAttribute('viewBox',[-pad*PX,-pad*PX,(Wm+2*pad)*PX,(Hm+2*pad)*PX].join(' '));
+  const main=document.querySelector('.main'),avail=Math.max(300,Math.min(main.clientWidth-70,(main.clientHeight-90)*(Wm+2*pad)/(Hm+2*pad)));
+  svg.setAttribute('width',Math.round(avail));
+  const k=(Wm+2*pad)*PX/Math.round(avail); // jednostki rysunku na piksel ekranu – stały rozmiar napisów
+  $('planTitle').textContent=(FLOOR_PL[floor]||floor)+' · '+Wm.toFixed(1)+' × '+Hm.toFixed(1)+' m';
+  $('planInfo').textContent=tool?'Przeciągnij lub kliknij, aby dodać: '+FURNITURE_TYPES[tool].name:'kliknij mebel, aby go zaznaczyć';
+  svg.style.cursor=tool?'crosshair':'default';
+  const X=m=>m*PX;
+  for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){const id=cellAt(floor,x,y);if(!id)continue;const r=roomOf(floor,id),voidK=r?.kind==='exteriorVoid';
+    el('rect',{x:X(x*c),y:X(y*c),width:X(c)+.5,height:X(c)+.5,fill:voidK?'#e2e8f0':(r?.color||'#e5e7eb'),'fill-opacity':voidK?1:.3},svg)}
+  for(let x=0;x<=g.width;x++)el('line',{x1:X(x*c),y1:0,x2:X(x*c),y2:X(Hm),stroke:'rgba(15,23,42,.06)','stroke-width':1},svg);
+  for(let y=0;y<=g.height;y++)el('line',{x1:0,y1:X(y*c),x2:X(Wm),y2:X(y*c),stroke:'rgba(15,23,42,.06)','stroke-width':1},svg);
+  for(const n of project.structure?.chimney||[]){const x=n%g.width,y=Math.floor(n/g.width);el('rect',{x:X(x*c),y:X(y*c),width:X(c),height:X(c),fill:'#374151'},svg)}
+  const ops=project.openings?.[floor]||{},OPC={door:'#ffffff',opening:'#ffffff',window:'#60a5fa',hst:'#22d3ee'};
+  const edge=(key,a,b,x1,y1,x2,y2)=>{if(a===b)return;const ext=!a||!b,op=ops[key];
+    el('line',{x1:X(x1),y1:X(y1),x2:X(x2),y2:X(y2),stroke:'#0f172a','stroke-width':ext?6:3,'stroke-linecap':'square'},svg);
+    if(op)el('line',{x1:X(x1),y1:X(y1),x2:X(x2),y2:X(y2),stroke:OPC[op]||'#fff','stroke-width':ext?3:2,'stroke-dasharray':op==='opening'?'4 3':''},svg)};
+  for(let y=0;y<=g.height;y++)for(let x=0;x<g.width;x++)edge('h:'+x+':'+y,cellAt(floor,x,y-1),cellAt(floor,x,y),x*c,y*c,(x+1)*c,y*c);
+  for(let y=0;y<g.height;y++)for(let x=0;x<=g.width;x++)edge('v:'+x+':'+y,cellAt(floor,x-1,y),cellAt(floor,x,y),x*c,y*c,x*c,(y+1)*c);
+  const acc={};for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){const id=cellAt(floor,x,y);if(!id)continue;(acc[id]=acc[id]||{sx:0,sy:0,n:0});acc[id].sx+=x;acc[id].sy+=y;acc[id].n++}
+  for(const [id,a] of Object.entries(acc)){const r=roomOf(floor,id);if(r?.kind==='exteriorVoid')continue;el('text',{x:X((a.sx/a.n+.5)*c),y:X((a.sy/a.n+.5)*c),'text-anchor':'middle','dominant-baseline':'middle','font-size':12*k,'font-weight':600,fill:'rgba(15,23,42,.5)','pointer-events':'none'},svg,(r?.name||id)+' · '+(a.n*c*c).toFixed(1)+' m²')}
+  for(const it of items()){const t=FURNITURE_TYPES[it.type]||FURNITURE_TYPES.other,isSel=it.id===selected;
+    const gr=el('g',{'data-id':it.id,style:'cursor:'+(tool?'crosshair':'move')},svg);
+    el('rect',{x:X(it.x),y:X(it.y),width:X(it.w),height:X(it.h),rx:3,fill:t.fill,'fill-opacity':.92,stroke:isSel?'#2563eb':'#334155','stroke-width':isSel?3:1.3},gr);
+    if(X(it.w)>34&&X(it.h)>14)el('text',{x:X(it.x+it.w/2),y:X(it.y+it.h/2),'text-anchor':'middle','dominant-baseline':'middle','font-size':Math.min(11*k,X(it.h)*.45),'font-weight':600,fill:'#1f2937','pointer-events':'none'},gr,(it.label||t.name).slice(0,Math.max(3,Math.floor(X(it.w)/(6.5*k)))))}
+  if(drag?.kind==='new'){const r=drag.rect;el('rect',{x:X(r.x),y:X(r.y),width:X(r.w),height:X(r.h),fill:FURNITURE_TYPES[tool].fill,'fill-opacity':.6,stroke:'#2563eb','stroke-width':2,'stroke-dasharray':'5 4'},svg);
+    el('text',{x:X(r.x+r.w/2),y:X(r.y)-6,'text-anchor':'middle','font-size':12*k,'font-weight':700,fill:'#2563eb'},svg,r.w.toFixed(1)+' × '+r.h.toFixed(1)+' m')}
+}
+function toMeters(e){const svg=$('plan'),pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());return {x:p.x/PX,y:p.y/PX}}
+document.addEventListener('pointerdown',e=>{
+  const svg=$('plan');if(!project||!svg||!svg.contains(e.target))return;const m=toMeters(e);
+  if(tool){drag={kind:'new',x0:snap(m.x),y0:snap(m.y),rect:{x:snap(m.x),y:snap(m.y),w:0,h:0}};return}
+  const gEl=e.target.closest('g[data-id]');
+  if(gEl){const it=items().find(i=>i.id===gEl.dataset.id);selected=it.id;drag={kind:'move',it,dx:m.x-it.x,dy:m.y-it.y,moved:false};renderAll()}
+  else{selected=null;renderAll()}
+});
+document.addEventListener('pointermove',e=>{if(!drag)return;const m=toMeters(e);
+  if(drag.kind==='new'){const x1=snap(m.x),y1=snap(m.y);drag.rect={x:Math.min(drag.x0,x1),y:Math.min(drag.y0,y1),w:Math.abs(x1-drag.x0),h:Math.abs(y1-drag.y0)};renderPlan()}
+  else{drag.it.x=snap(m.x-drag.dx);drag.it.y=snap(m.y-drag.dy);clampItem(drag.it);drag.moved=true;renderPlan()}});
+document.addEventListener('pointerup',()=>{if(!drag)return;const d=drag;drag=null;
+  if(d.kind==='new'){let r=d.rect;if(r.w<SNAP||r.h<SNAP){const [w,h]=DEFAULT_SIZE[tool];r={x:snap(d.x0-w/2),y:snap(d.y0-h/2),w,h}}const it={id:uid(),type:tool,label:'',x:r.x,y:r.y,w:r.w,h:r.h};clampItem(it);items().push(it);selected=it.id;changed()}
+  else if(d.moved)changed();else renderAll()});
+window.addEventListener('resize',renderPlan);
+if(window.ResizeObserver)new ResizeObserver(()=>{if(!drag)renderPlan()}).observe(document.querySelector('.main'));
+
+function renderAll(){renderSide();renderPlan()}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+$('file').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{const p=JSON.parse(await f.text());if(!p.grid&&!p.definitionSnapshot?.grid)throw new Error('brak siatki (grid)');setProject(p,'plik');HouserStore.save(p,'meblowanie')}catch(err){alert('Nie udało się wczytać projektu: '+err.message)}e.target.value=''});
+$('export').addEventListener('click',()=>{if(!project)return;const d=new Date(),p2=n=>String(n).padStart(2,'0');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(project,null,2)],{type:'application/json'}));a.download='dom-uklad-v7-'+[d.getFullYear(),p2(d.getMonth()+1),p2(d.getDate()),p2(d.getHours()),p2(d.getMinutes())].join('-')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
+
+const rec=HouserStore.load();
+setProject(rec?rec.project:null,rec?'store':'');
+HouserStore.subscribe(r=>{if(drag)return;setProject(r.project,'store')});
+</script>
 <script src="../../shared/nav.js"></script>
 </body>
 </html>

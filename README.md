@@ -11,7 +11,7 @@ modules/
   kondygnacje-dach/index.html widok z boku: piętro / poddasze, ścianka kolankowa, kąt i kierunek dachu
   wnetrze-3d/index.html     podgląd 3D wnętrza z punktu obserwatora (meble z JSON)
   zewnatrz-3d/index.html    podgląd 3D bryły z zewnątrz (dach, okna, tarasy, pergole)
-  meblowanie/index.html     osobny moduł meblowania – w przygotowaniu
+  meblowanie/index.html     rozmieszczanie mebli na gotowym rzucie (pomieszczeń tu nie zmieniasz)
 shared/theme.css            wspólny jasny motyw (kolory, przyciski, nagłówki modułów)
 shared/gl-renderer.js       wspólny renderer WebGL modułów 3D (bufor głębokości, bez bibliotek)
 shared/house-model.js       wspólny model bryły (wysokości, poddasze, dach z kąta nachylenia)
