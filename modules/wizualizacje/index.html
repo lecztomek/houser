@@ -55,9 +55,24 @@ textarea{min-height:150px;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,mo
 <div class="wrap">
 <aside class="side">
   <h1 class="hs-title">Wizualizacje AI</h1>
-  <p class="hs-sub">Zamienia zdjęcie z podglądu 3D na realistyczną wizualizację. Prompt składa się sam z projektu i wybranych opcji.</p>
+  <p class="hs-sub">Zamienia zdjęcie z podglądu 3D na realistyczną wizualizację (Google Gemini albo Hugging Face). Prompt składa się sam z projektu i wybranych opcji.</p>
 
   <div class="section">
+    <h3>Dostawca AI</h3>
+    <div class="row" id="provRow"><button class="btn" data-p="gemini">Google Gemini</button><button class="btn" data-p="hf">Hugging Face</button></div>
+    <p class="hint" id="provHint"></p>
+  </div>
+
+  <div class="section" id="hfBox" hidden>
+    <h3>Token Hugging Face</h3>
+    <div class="field"><input id="hfKey" type="password" placeholder="wklej token (hf_…)" autocomplete="off"></div>
+    <div class="row"><button class="btn primary" id="hfSave">Zapisz</button><button class="btn" id="hfForget">Usuń token</button></div>
+    <div id="hfStatus" class="hint"></div>
+    <p class="hint">Token utworzysz w <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener">ustawieniach konta Hugging Face</a> – typ „Fine-grained” z uprawnieniem <b>„Make calls to Inference Providers”</b>. Darmowe konto ma niewielki miesięczny limit. Token zapisuje się tylko w tej przeglądarce.</p>
+    <div class="field" style="margin-top:10px"><label>Model (edycja obrazu)</label><input id="hfModel" type="text" value="black-forest-labs/FLUX.1-Kontext-dev"></div>
+  </div>
+
+  <div class="section" id="gemBox">
     <h3>Klucz API Gemini</h3>
     <div class="field"><input id="key" type="password" placeholder="wklej klucz API (AIza…)" autocomplete="off"></div>
     <div class="row"><button class="btn primary" id="saveKey">Zapisz i sprawdź</button><button class="btn" id="forget">Usuń klucz</button></div>
@@ -84,7 +99,9 @@ textarea{min-height:150px;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,mo
 <script src="../../shared/snapshots.js"></script>
 <script>
 const $=id=>document.getElementById(id), S=HouserSnapshots, API='https://generativelanguage.googleapis.com/v1beta';
-const KEY_LS='houser:gemini-key', MODEL_LS='houser:gemini-models';
+const KEY_LS='houser:gemini-key', MODEL_LS='houser:gemini-models', HF_LS='houser:hf-token', HFM_LS='houser:hf-model', PROV_LS='houser:ai-provider';
+const ls={get:k=>{try{return localStorage.getItem(k)||''}catch(_){return ''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(_){}},del:k=>{try{localStorage.removeItem(k)}catch(_){}}};
+let provider=ls.get(PROV_LS)||'gemini';
 let snaps=[], cur=null, resultIdx=0, busy=false, lastError='', lastAlt=[], opts={};
 
 // ---------- opcje (UI po polsku, prompt po angielsku – modele lepiej go rozumieją)
@@ -174,6 +191,30 @@ for(const id of ['imgModel','txtModel'])$(id).addEventListener('change',()=>{if(
 $('saveKey').onclick=()=>{const k=$('key').value.trim();if(!k)return;try{localStorage.setItem(KEY_LS,k)}catch(_){}$('key').value='';$('key').placeholder='klucz zapisany ('+k.slice(0,6)+'…)';loadModels()};
 $('forget').onclick=()=>{try{localStorage.removeItem(KEY_LS)}catch(_){}$('key').placeholder='wklej klucz API (AIza…)';setKeyStatus('Klucz usunięty z przeglądarki.');fillModels([],[])};
 
+// ---------- dostawca
+function renderProvider(){for(const b of $('provRow').children)b.classList.toggle('primary',b.dataset.p===provider);$('hfBox').hidden=provider!=='hf';
+  $('provHint').innerHTML=provider==='hf'?'Obraz generuje Hugging Face (model FLUX Kontext). Dopracowanie promptu nadal korzysta z Gemini, jeśli masz klucz.':'Obraz i dopracowanie promptu przez Google Gemini.';
+  const t=ls.get(HF_LS);$('hfKey').placeholder=t?'token zapisany ('+t.slice(0,6)+'…)':'wklej token (hf_…)';$('hfStatus').innerHTML=t?'<span class="ok">✓ Token zapisany.</span>':'Brak tokenu.';$('hfModel').value=ls.get(HFM_LS)||$('hfModel').value}
+for(const b of $('provRow').children)b.onclick=()=>{provider=b.dataset.p;ls.set(PROV_LS,provider);renderProvider()};
+$('hfSave').onclick=()=>{const t=$('hfKey').value.trim();if(!t)return;ls.set(HF_LS,t);$('hfKey').value='';renderProvider()};
+$('hfForget').onclick=()=>{ls.del(HF_LS);renderProvider()};
+$('hfModel').onchange=()=>ls.set(HFM_LS,$('hfModel').value.trim());
+// Hugging Face: oficjalna biblioteka @huggingface/inference ładowana z CDN przy pierwszym użyciu
+let hfLib=null;
+async function hfGenerate(prompt,imageUrl){
+  const token=ls.get(HF_LS);if(!token)throw new Error('Najpierw zapisz token Hugging Face po lewej.');
+  if(!hfLib)hfLib=await import('https://cdn.jsdelivr.net/npm/@huggingface/inference@4/+esm').catch(()=>import('https://cdn.jsdelivr.net/npm/@huggingface/inference/+esm'));
+  const Client=hfLib.InferenceClient||hfLib.HfInference,client=new Client(token),model=($('hfModel').value||'black-forest-labs/FLUX.1-Kontext-dev').trim();
+  const blob=await (await fetch(imageUrl)).blob();
+  let out;try{out=await client.imageToImage({provider:'auto',model,inputs:blob,parameters:{prompt}})}
+  catch(err){const m=String(err?.message||err);
+    if(/401|unauthor|invalid.*token/i.test(m))throw new Error('Token Hugging Face jest nieprawidłowy albo nie ma uprawnienia „Make calls to Inference Providers”.\n'+m);
+    if(/402|payment|credit|quota|exceeded/i.test(m))throw new Error('Wyczerpany darmowy limit Hugging Face w tym miesiącu (albo wymagane doładowanie).\n'+m);
+    if(/not supported|no provider|not found/i.test(m))throw new Error('Model „'+model+'” nie jest dostępny do edycji obrazu u dostawców Hugging Face. Spróbuj innego modelu image-to-image.\n'+m);
+    throw err}
+  const b=out instanceof Blob?out:new Blob([out]);return await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(b)});
+}
+
 // ---------- wywołania Gemini
 async function gemini(model,parts,image){
   const key=getKey();if(!key)throw new Error('Najpierw zapisz klucz API po lewej.');
@@ -188,7 +229,7 @@ async function gemini(model,parts,image){
 }
 const partsOf=j=>j.candidates?.[0]?.content?.parts||[];
 async function refinePrompt(){
-  const model=$('txtModel').value;if(!model){alert('Wybierz model tekstowy po lewej.');return}
+  const model=$('txtModel').value;if(!getKey()){alert('Dopracowanie promptu korzysta z Gemini – zapisz klucz Gemini (sekcja poniżej).');return}if(!model){alert('Wybierz model tekstowy po lewej.');return}
   setBusy(true,'refine');lastError='';
   try{
     const inst='You write prompts for an AI image editing model that turns a plain grey 3D render into a photorealistic architectural visualization. Improve the prompt below: make it vivid and specific about materials, lighting and atmosphere, but KEEP all constraints about preserving camera, geometry, windows and doors. Keep it under 180 words. Answer with the prompt only, in English.\n\nPROMPT:\n'+$('prompt').value;
@@ -197,9 +238,10 @@ async function refinePrompt(){
   setBusy(false);renderMain(true);
 }
 async function generate(){
-  if(!cur)return;const model=$('imgModel').value;if(!model||model==='__custom'){alert('Wybierz model do obrazów po lewej.');return}
+  if(!cur)return;const model=provider==='hf'?('hf:'+($('hfModel').value||'').trim()):$('imgModel').value;if(provider!=='hf'&&(!model||model==='__custom')){alert('Wybierz model do obrazów po lewej.');return}
   setBusy(true,'gen');lastError='';
   try{
+    if(provider==='hf'){const url=await hfGenerate($('prompt').value,cur.image);cur.results=[{id:'r'+Date.now().toString(36),createdAt:new Date().toISOString(),prompt:$('prompt').value,model,image:url},...(cur.results||[])];resultIdx=0;await S.put(cur);setBusy(false);renderAll(true);return}
     const b64=cur.image.split(',')[1];
     const j=await gemini(model,[{text:$('prompt').value},{inline_data:{mime_type:'image/jpeg',data:b64}}],true);
     const ps=partsOf(j),imgPart=ps.find(p=>p.inlineData||p.inline_data);
@@ -248,6 +290,7 @@ function esc(s){return String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;',
 
 S.onChange(reload);HouserStore.subscribe(()=>{if(cur&&!busy&&document.activeElement?.id!=='prompt'){$('prompt').value=buildPrompt()}});
 if(getKey()){$('key').placeholder='klucz zapisany ('+getKey().slice(0,6)+'…)';loadModels()}else{setKeyStatus('Wklej klucz i kliknij „Zapisz i sprawdź”.');fillModels([],[])}
+renderProvider();
 reload();
 </script>
 <script src="../../shared/nav.js"></script>
