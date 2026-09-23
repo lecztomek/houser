@@ -10,6 +10,7 @@
       transom:{name:'Naświetle (wysoko)',sill:1.6,height:.6},
       sloped:{name:'Ścięte pod skos dachu',sill:.9,height:2.4,shape:'sloped'},
       slopedLow:{name:'Ścięte niskie (pod skosem, nisko)',sill:.3,height:1.4,shape:'sloped'},
+      slopedFull:{name:'Ścięte do podłogi (od podłogi pod skos)',sill:0,height:3.5,shape:'sloped'},
       knee:{name:'Niskie w ściance kolankowej',sill:.2,height:.6},
       roof:{name:'Dachowe (połaciowe)',sill:.5,height:1.2,shape:'roof'} // sill = odległość od okapu wzdłuż połaci, height = długość okna wzdłuż połaci
     },

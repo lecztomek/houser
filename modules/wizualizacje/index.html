@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wizualizacje AI</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+.wrap{height:100vh;display:grid;grid-template-columns:340px 1fr}
+.side{padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{overflow:auto;padding:18px}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--hs-line-strong);background:var(--hs-panel);color:var(--hs-text);padding:5px 9px;border-radius:var(--hs-radius);font:600 12px var(--hs-font);cursor:pointer;text-decoration:none;display:inline-block}
+.btn:hover{background:var(--hs-panel-2);border-color:#94a3b8}
+.btn.primary{background:var(--hs-accent);border-color:var(--hs-accent);color:#fff}
+.btn.big{padding:9px 14px;font-size:14px}
+.btn.danger{color:var(--hs-bad);border-color:#fecaca}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.field{display:grid;gap:4px;margin-bottom:8px}
+.field label{font-size:11px;color:var(--hs-muted)}
+input[type=text],input[type=password],select,textarea{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;font-size:13px;background:#fff;color:var(--hs-text)}
+textarea{min-height:150px;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;resize:vertical}
+.hint{font-size:12px;color:var(--hs-muted);line-height:1.45;margin:6px 0 0}
+.hint a{color:var(--hs-accent)}
+.ok{color:#166534}.bad{color:var(--hs-bad)}
+.gallery{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.thumb{position:relative;border:2px solid transparent;border-radius:8px;overflow:hidden;cursor:pointer;background:#e2e8f0;aspect-ratio:4/3}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb.sel{border-color:var(--hs-accent)}
+.thumb span{position:absolute;left:4px;bottom:4px;background:rgba(15,23,42,.75);color:#fff;font-size:10px;padding:2px 5px;border-radius:4px}
+.thumb b{position:absolute;right:4px;top:4px;background:var(--hs-accent);color:#fff;font-size:10px;padding:1px 5px;border-radius:999px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pane{background:#fff;border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:10px;box-shadow:var(--hs-shadow)}
+.pane h4{margin:0 0 8px;font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pane img{width:100%;border-radius:6px;display:block;background:#e2e8f0}
+.ph{aspect-ratio:4/3;border-radius:6px;background:repeating-linear-gradient(45deg,#f1f5f9 0 10px,#e2e8f0 10px 20px);display:flex;align-items:center;justify-content:center;color:var(--hs-muted);font-size:13px;text-align:center;padding:20px}
+.opts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+.card{background:#fff;border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;box-shadow:var(--hs-shadow);margin-top:14px}
+.card h3{margin:0 0 8px;font-size:13px}
+.hist{display:flex;gap:8px;overflow:auto;padding-bottom:4px}
+.hist img{height:90px;border-radius:6px;cursor:pointer;border:2px solid transparent}
+.hist img.sel{border-color:var(--hs-accent)}
+.err{background:var(--hs-bad-soft);color:var(--hs-bad);border:1px solid #fecaca;border-radius:8px;padding:8px 10px;font-size:12px;margin-top:10px;white-space:pre-wrap}
+.busy{display:inline-block;width:14px;height:14px;border:2px solid #fff;border-right-color:transparent;border-radius:50%;animation:sp 1s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.empty{padding:50px 24px;text-align:center;color:var(--hs-muted)}
+@media(max-width:1100px){.opts{grid-template-columns:1fr 1fr}.pair{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1 class="hs-title">Wizualizacje AI</h1>
+  <p class="hs-sub">Zamienia zdjęcie z podglądu 3D na realistyczną wizualizację. Prompt składa się sam z projektu i wybranych opcji.</p>
+
+  <div class="section">
+    <h3>Klucz API Gemini</h3>
+    <div class="field"><input id="key" type="password" placeholder="wklej klucz API (AIza…)" autocomplete="off"></div>
+    <div class="row"><button class="btn primary" id="saveKey">Zapisz i sprawdź</button><button class="btn" id="forget">Usuń klucz</button></div>
+    <div id="keyStatus" class="hint"></div>
+    <p class="hint">Darmowy klucz utworzysz w <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> (limit dzienny zależy od Google). Klucz zapisuje się <b>tylko w tej przeglądarce</b>; zdjęcie i prompt są wysyłane bezpośrednio do Google.</p>
+    <div class="field" style="margin-top:10px"><label>Model do obrazów</label><select id="imgModel"></select></div>
+    <div class="field"><label>Model do dopracowania promptu (tekst)</label><select id="txtModel"></select></div>
+  </div>
+
+  <div class="section">
+    <h3>Zdjęcia</h3>
+    <div class="gallery" id="gallery"></div>
+    <div class="row" style="margin-top:8px"><label class="btn">+ Z dysku<input id="upload" type="file" accept="image/*" hidden></label><button class="btn danger" id="delSnap" disabled>Usuń zaznaczone</button></div>
+    <p class="hint">Zdjęcia robisz przyciskiem „📷” w modułach Wnętrze 3D i Zewnątrz 3D.</p>
+  </div>
+</aside>
+
+<main class="main" id="main"></main>
+</div>
+
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/snapshots.js"></script>
+<script>
+const $=id=>document.getElementById(id), S=HouserSnapshots, API='https://generativelanguage.googleapis.com/v1beta';
+const KEY_LS='houser:gemini-key', MODEL_LS='houser:gemini-models';
+let snaps=[], cur=null, resultIdx=0, busy=false, lastError='', opts={};
+
+// ---------- opcje (UI po polsku, prompt po angielsku – modele lepiej go rozumieją)
+const OPTS={
+  common:{
+    style:{label:'Styl',items:{modern:['Nowoczesny','modern contemporary'],scandi:['Skandynawski','Scandinavian'],minimal:['Minimalistyczny','minimalist'],loft:['Industrialny / loft','industrial loft'],classic:['Klasyczny','classic timeless'],barn:['Nowoczesna stodoła','modern barn house']}},
+    light:{label:'Pora dnia',items:{sunny:['Słoneczny dzień','bright sunny day, soft natural daylight'],golden:['Złota godzina','golden hour warm sunlight, long soft shadows'],overcast:['Pochmurno','overcast soft diffuse light'],evening:['Wieczór','blue hour evening with warm interior lights on']}}
+  },
+  exterior:{
+    facade:{label:'Elewacja',items:{white:['Biały tynk','smooth white render facade'],grey:['Szary tynk','light grey render facade'],wood:['Drewno (modrzew)','vertical larch wood cladding'],mix:['Tynk + drewno','white render with warm wood cladding accents'],brick:['Cegła','red-brown clinker brick facade']}},
+    roof:{label:'Dach',items:{graphite:['Dachówka grafitowa','matte graphite ceramic roof tiles'],seam:['Blacha na rąbek','black standing seam metal roof'],red:['Dachówka czerwona','traditional red clay roof tiles']}},
+    garden:{label:'Otoczenie',items:{lawn:['Trawnik','neat green lawn, low ornamental grasses'],garden:['Ogród z drzewami','lush garden with mature trees and shrubs'],drive:['Podjazd z kostki','paved driveway and path, simple landscaping']}}
+  },
+  interior:{
+    floor:{label:'Podłoga',items:{oak:['Jasny dąb','light oak wooden floor'],dark:['Ciemne drewno','dark walnut wooden floor'],concrete:['Beton','polished concrete floor'],tiles:['Duże płytki','large format light stone tiles']}},
+    walls:{label:'Ściany',items:{white:['Białe','white painted walls'],warm:['Ciepła biel','warm off-white walls'],grey:['Szarości','soft grey walls'],wood:['Akcent drewna','white walls with wooden slat accent wall']}},
+    furnish:{label:'Wyposażenie',items:{as:['Jak w projekcie','furnish according to the room function'],light:['Oszczędne','sparse, minimal furnishing'],cozy:['Przytulne','cozy furnishing with textiles, plants and decor']}}
+  }
+};
+function kindOf(s){return s?.meta?.kind==='interior'?'interior':'exterior'}
+function groupsFor(kind){return {...OPTS.common,...OPTS[kind]}}
+function defaults(kind){const o={};for(const [k,g] of Object.entries(groupsFor(kind)))o[k]=Object.keys(g.items)[0];return o}
+
+// ---------- opis projektu do promptu
+function projectFacts(s){
+  const rec=HouserStore.load(),p=rec?.project;if(!p)return {text:'',hints:[]};
+  const g=p.grid||p.definitionSnapshot?.grid,e=p.elevationSettings||{},across=HouserModel.slopesAcrossX(e.ridge==='north-south'?'north-south':'east-west',p.orientation?.top);
+  const G=HouserModel.geometry(e,across?g.width*g.cellMeters:g.height*g.cellMeters),c=g.cellMeters,out=[];
+  const floors=p.definitionSnapshot?.floorOrder||['ground','upper'];
+  if(kindOf(s)==='exterior'){
+    out.push('Single-family house, footprint about '+(g.width*c).toFixed(0)+' x '+(g.height*c).toFixed(0)+' m.');
+    out.push(G.upperType==='attic'?'Ground floor plus a usable attic under a '+G.roofPitch+' degree gable roof (knee wall '+G.kneeWall.toFixed(1)+' m).':'Two full storeys with a '+G.roofPitch+' degree gable roof.');
+    const ov=p.openingVariants||{},vals=Object.values(ov).flatMap(o=>Object.values(o));
+    if(vals.some(v=>v.variant==='roof'))out.push('Roof windows (skylights) in the roof slope.');
+    if(Object.values(p.openings||{}).some(o=>Object.values(o).includes('hst')))out.push('Large floor-to-ceiling sliding glass terrace doors.');
+    const od=p.outdoorStructures||[];const kinds=[...new Set(od.map(o=>o.type))];
+    if(kinds.includes('coveredTerrace'))out.push('Covered terrace with a flat roof on slim posts.');
+    if(kinds.includes('pergola'))out.push('Wooden pergola with slats.');
+    if(kinds.includes('terrace'))out.push('Open terrace with stone or wood decking.');
+    if((p.structure?.chimney||[]).length)out.push('Brick or plastered chimney above the roof.');
+  }else{
+    const m=s.meta||{},f=m.floor||floors[0],room=m.roomName||'room',st=p.state?.[f]||[],flat=Array.isArray(st[0])?st.flat():st,area=m.roomId?flat.filter(v=>v===m.roomId).length*c*c:0;
+    out.push('Interior of a '+room.toLowerCase()+(area?' (about '+area.toFixed(0)+' m²)':'')+' in a single-family house.');
+    if(f!==floors[0]&&G.upperType==='attic')out.push('Attic room with sloped ceiling following the '+G.roofPitch+' degree roof.');
+    const fur=(p.furniture?.[f]||[]).map(i=>({storage:'wardrobe / built-in storage',surface:'table / kitchen counter',bed:'bed',seating:'sofa',other:'furniture'}[i.type])).filter(Boolean);
+    if(fur.length)out.push('Furniture in the plan includes: '+[...new Set(fur)].join(', ')+'.');
+    if((p.stairs||[]).length&&f===floors[0])out.push('Open wooden staircase may be visible ('+({straight:'straight',L:'L-shaped',U:'U-shaped with landing',spiral:'spiral'}[p.stairs[0].type]||'straight')+').');
+  }
+  return {text:out.join(' ')};
+}
+function buildPrompt(){
+  if(!cur)return '';const kind=kindOf(cur),G=groupsFor(kind),o=opts,pick=k=>G[k]?.items[o[k]]?.[1]||'';
+  const base=kind==='exterior'
+    ?'Turn this simple untextured 3D massing render of a house into a photorealistic architectural exterior visualization.'
+    :'Turn this simple untextured 3D render of a room into a photorealistic interior design visualization.';
+  const keep='Keep EXACTLY the same camera position, perspective and composition. Keep the geometry unchanged: all walls, roof lines, window and door openings, stairs and room proportions must stay where they are. Do not add or remove windows or doors. Replace flat grey surfaces with realistic materials and add realistic lighting, shadows and details.';
+  const style=kind==='exterior'
+    ?'Style: '+pick('style')+'. Facade: '+pick('facade')+'. Roof: '+pick('roof')+'. Surroundings: '+pick('garden')+'. Lighting: '+pick('light')+'.'
+    :'Style: '+pick('style')+'. Floor: '+pick('floor')+'. Walls: '+pick('walls')+'. '+pick('furnish')+'. Lighting: '+pick('light')+'.';
+  const facts=projectFacts(cur).text;
+  const extra=($('extra')?.value||'').trim();
+  return [base,keep,facts?'Project facts: '+facts:'',style,extra?'Additional wishes (may be in Polish): '+extra:'','High quality, realistic, sharp, professional architectural photography.'].filter(Boolean).join('\n');
+}
+
+// ---------- klucz i modele
+const getKey=()=>{try{return localStorage.getItem(KEY_LS)||''}catch(_){return ''}};
+function setKeyStatus(html){$('keyStatus').innerHTML=html}
+async function loadModels(){
+  const key=getKey();if(!key){setKeyStatus('Brak klucza.');fillModels([],[]);return}
+  setKeyStatus('<span class="busy" style="border-color:#2563eb;border-right-color:transparent"></span>Sprawdzam klucz…');
+  try{
+    const r=await fetch(API+'/models?pageSize=200',{headers:{'x-goog-api-key':key}});const j=await r.json();
+    if(!r.ok)throw new Error(j.error?.message||('HTTP '+r.status));
+    const all=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>m.name.replace(/^models\//,''));
+    const img=all.filter(n=>/image/.test(n)&&!/imagen/.test(n)),txt=all.filter(n=>/flash|pro/.test(n)&&!/image|tts|live|embed|audio|vision/.test(n));
+    fillModels(img,txt);try{localStorage.setItem(MODEL_LS,JSON.stringify({img,txt}))}catch(_){}
+    setKeyStatus(img.length?'<span class="ok">✓ Klucz działa – dostępnych modeli do obrazów: '+img.length+'.</span>':'<span class="bad">Klucz działa, ale nie widzę modeli do edycji obrazów. Wpisz nazwę modelu ręcznie poniżej.</span>');
+  }catch(err){setKeyStatus('<span class="bad">✗ '+esc(err.message)+'</span>');const c=JSON.parse(localStorage.getItem(MODEL_LS)||'{}');fillModels(c.img||[],c.txt||[])}
+}
+function fillModels(img,txt){
+  const prefImg=['gemini-2.5-flash-image','gemini-3.1-flash-image','gemini-3-pro-image'],prefTxt=['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-3-flash'];
+  const pick=(list,pref)=>pref.map(p=>list.find(n=>n===p)||list.find(n=>n.startsWith(p))).find(Boolean)||list[0];
+  const fill=(sel,list,pref,none)=>{const prev=sel.value;sel.innerHTML=(list.length?list:[]).map(n=>'<option>'+esc(n)+'</option>').join('')+'<option value="__custom">wpisz ręcznie…</option>'+(none?'<option value="">(nie używaj)</option>':'');sel.value=list.includes(prev)?prev:(pick(list,pref)||(none?'':'__custom'))};
+  fill($('imgModel'),img,prefImg,false);fill($('txtModel'),txt,prefTxt,true);
+}
+for(const id of ['imgModel','txtModel'])$(id).addEventListener('change',()=>{if($(id).value==='__custom'){const n=prompt('Nazwa modelu (np. gemini-2.5-flash-image):');if(n){const o=document.createElement('option');o.textContent=n.trim();$(id).insertBefore(o,$(id).firstChild);$(id).value=n.trim()}}});
+$('saveKey').onclick=()=>{const k=$('key').value.trim();if(!k)return;try{localStorage.setItem(KEY_LS,k)}catch(_){}$('key').value='';$('key').placeholder='klucz zapisany ('+k.slice(0,6)+'…)';loadModels()};
+$('forget').onclick=()=>{try{localStorage.removeItem(KEY_LS)}catch(_){}$('key').placeholder='wklej klucz API (AIza…)';setKeyStatus('Klucz usunięty z przeglądarki.');fillModels([],[])};
+
+// ---------- wywołania Gemini
+async function gemini(model,parts,image){
+  const key=getKey();if(!key)throw new Error('Najpierw zapisz klucz API po lewej.');
+  const body={contents:[{role:'user',parts}]};if(image)body.generationConfig={responseModalities:['TEXT','IMAGE']};
+  const r=await fetch(API+'/models/'+encodeURIComponent(model)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){const m=j.error?.message||('HTTP '+r.status);throw new Error((r.status===429?'Przekroczony limit darmowego planu (spróbuj później). ':'')+m)}
+  return j;
+}
+const partsOf=j=>j.candidates?.[0]?.content?.parts||[];
+async function refinePrompt(){
+  const model=$('txtModel').value;if(!model){alert('Wybierz model tekstowy po lewej.');return}
+  setBusy(true,'refine');lastError='';
+  try{
+    const inst='You write prompts for an AI image editing model that turns a plain grey 3D render into a photorealistic architectural visualization. Improve the prompt below: make it vivid and specific about materials, lighting and atmosphere, but KEEP all constraints about preserving camera, geometry, windows and doors. Keep it under 180 words. Answer with the prompt only, in English.\n\nPROMPT:\n'+$('prompt').value;
+    const j=await gemini(model,[{text:inst}],false);const t=partsOf(j).map(p=>p.text||'').join('').trim();if(t)$('prompt').value=t;
+  }catch(err){lastError=err.message}
+  setBusy(false);renderMain(true);
+}
+async function generate(){
+  if(!cur)return;const model=$('imgModel').value;if(!model||model==='__custom'){alert('Wybierz model do obrazów po lewej.');return}
+  setBusy(true,'gen');lastError='';
+  try{
+    const b64=cur.image.split(',')[1];
+    const j=await gemini(model,[{text:$('prompt').value},{inline_data:{mime_type:'image/jpeg',data:b64}}],true);
+    const ps=partsOf(j),imgPart=ps.find(p=>p.inlineData||p.inline_data);
+    if(!imgPart){const txt=ps.map(p=>p.text||'').join(' ').trim();throw new Error('Model nie zwrócił obrazu.'+(txt?' Odpowiedź: '+txt:'')+(j.promptFeedback?.blockReason?' Zablokowano: '+j.promptFeedback.blockReason:''))}
+    const d=imgPart.inlineData||imgPart.inline_data,url='data:'+(d.mimeType||d.mime_type||'image/png')+';base64,'+d.data;
+    cur.results=[{id:'r'+Date.now().toString(36),createdAt:new Date().toISOString(),prompt:$('prompt').value,model,image:url},...(cur.results||[])];resultIdx=0;
+    await S.put(cur);
+  }catch(err){lastError=err.message}
+  setBusy(false);renderAll(true);
+}
+function setBusy(b,what){busy=b?what:false;const g=$('gen'),r=$('refine');if(g){g.disabled=!!b;g.innerHTML=b==='gen'?'<span class="busy"></span>Generuję… (do minuty)':'✨ Generuj wizualizację'}if(r){r.disabled=!!b;r.innerHTML=b==='refine'?'<span class="busy" style="border-color:#2563eb;border-right-color:transparent"></span>Dopracowuję…':'🪄 Dopracuj prompt przez AI'}}
+
+// ---------- widok
+function renderGallery(){
+  const G=$('gallery');G.innerHTML='';$('delSnap').disabled=!cur;
+  if(!snaps.length)G.innerHTML='<div class="hint" style="grid-column:1/-1">Brak zdjęć. Zrób zdjęcie w Wnętrzu 3D albo Zewnątrz 3D.</div>';
+  for(const s of snaps){const d=document.createElement('div');d.className='thumb'+(cur&&s.id===cur.id?' sel':'');d.innerHTML='<img alt=""><span>'+(kindOf(s)==='interior'?'Wnętrze'+(s.meta?.roomName?' · '+esc(s.meta.roomName):''):'Zewnątrz')+'</span>'+(s.results?.length?'<b>'+s.results.length+'</b>':'');d.querySelector('img').src=s.results?.[0]?.image||s.image;d.onclick=()=>{select(s.id)};G.appendChild(d)}
+}
+function select(id){cur=snaps.find(s=>s.id===id)||null;resultIdx=0;opts=cur?(cur.opts||defaults(kindOf(cur))):{};renderAll()}
+function renderMain(keepPrompt){
+  const M=$('main');const prevPrompt=$('prompt')?.value,prevExtra=$('extra')?.value;
+  if(!cur){M.innerHTML='<div class="empty">Wybierz zdjęcie po lewej (albo zrób je przyciskiem „📷” w Wnętrzu 3D lub Zewnątrz 3D).</div>';return}
+  const kind=kindOf(cur),res=cur.results?.[resultIdx];
+  M.innerHTML='<div class="pair"><div class="pane"><h4>Zdjęcie z modelu 3D <span class="hint" style="margin:0">'+new Date(cur.createdAt).toLocaleString('pl-PL')+'</span></h4><img id="orig" alt=""></div><div class="pane"><h4>Wizualizacja AI <span id="resActs"></span></h4><div id="resBox"></div></div></div>'+
+    '<div class="card"><h3>Ustawienia wizualizacji</h3><div class="opts" id="opts"></div><div class="field" style="margin-top:10px"><label>Dodatkowe życzenia (możesz pisać po polsku)</label><input type="text" id="extra" placeholder="np. czerwony rower przy wejściu, zima ze śniegiem, duży fikus w rogu"></div></div>'+
+    '<div class="card"><h3>Prompt (tworzy się sam – możesz go poprawić)</h3><textarea id="prompt"></textarea><div class="row" style="margin-top:8px"><button class="btn" id="rebuild">↻ Odtwórz z projektu i opcji</button><button class="btn" id="refine">🪄 Dopracuj prompt przez AI</button><div style="flex:1"></div><button class="btn primary big" id="gen">✨ Generuj wizualizację</button></div>'+(lastError?'<div class="err">'+esc(lastError)+'</div>':'')+'</div>'+
+    (cur.results?.length>1?'<div class="card"><h3>Poprzednie wersje</h3><div class="hist" id="hist"></div></div>':'');
+  $('orig').src=cur.image;
+  $('resBox').innerHTML=res?'<img alt="">':'<div class="ph">Tu pojawi się wizualizacja.<br>Ustaw opcje i kliknij „Generuj”.</div>';if(res)$('resBox').querySelector('img').src=res.image;
+  if(res){const a=document.createElement('a');a.className='btn';a.textContent='⬇ Pobierz';a.href=res.image;a.download='wizualizacja-'+res.id+'.png';const del=document.createElement('button');del.className='btn danger';del.textContent='Usuń';del.onclick=async()=>{cur.results.splice(resultIdx,1);resultIdx=0;await S.put(cur);renderAll()};$('resActs').append(a,' ',del)}
+  const O=$('opts');for(const [k,g] of Object.entries(groupsFor(kind))){const f=document.createElement('div');f.className='field';f.innerHTML='<label>'+g.label+'</label>';const s=document.createElement('select');for(const [id,[pl]] of Object.entries(g.items)){const o=document.createElement('option');o.value=id;o.textContent=pl;s.appendChild(o)}s.value=opts[k]||Object.keys(g.items)[0];s.onchange=()=>{opts[k]=s.value;cur.opts={...opts};S.put(cur);$('prompt').value=buildPrompt()};f.appendChild(s);O.appendChild(f)}
+  $('extra').value=keepPrompt?(prevExtra||''):(cur.extra||'');$('extra').oninput=()=>{cur.extra=$('extra').value;$('prompt').value=buildPrompt()};$('extra').onchange=()=>S.put(cur);
+  $('prompt').value=keepPrompt&&prevPrompt?prevPrompt:(res?.prompt&&resultIdx===0&&keepPrompt?res.prompt:buildPrompt());
+  $('rebuild').onclick=()=>{$('prompt').value=buildPrompt()};$('refine').onclick=refinePrompt;$('gen').onclick=generate;
+  if($('hist'))cur.results.forEach((r,i)=>{const im=document.createElement('img');im.src=r.image;im.className=i===resultIdx?'sel':'';im.title=r.model+' · '+new Date(r.createdAt).toLocaleString('pl-PL');im.onclick=()=>{resultIdx=i;renderMain(true)};$('hist').appendChild(im)});
+  if(busy)setBusy(busy);
+}
+function renderAll(keepPrompt){renderGallery();renderMain(keepPrompt)}
+async function reload(){snaps=await S.list();if(cur)cur=snaps.find(s=>s.id===cur.id)||null;if(!cur&&snaps.length){cur=snaps[0];opts=cur.opts||defaults(kindOf(cur))}renderAll(true)}
+$('delSnap').onclick=async()=>{if(!cur||!confirm('Usunąć to zdjęcie razem z jego wizualizacjami?'))return;await S.remove(cur.id);cur=null;reload()};
+$('upload').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;const url=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(f)});
+  const img=new Image();img.src=url;await img.decode();const sc=Math.min(1,1600/img.width),c=document.createElement('canvas');c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+  const kind=confirm('To zdjęcie wnętrza? (OK = wnętrze, Anuluj = widok z zewnątrz)')?'interior':'exterior';const rec=await S.add(c.toDataURL('image/jpeg',.9),'plik',{kind});cur=rec;opts=defaults(kind);e.target.value='';reload()});
+function esc(s){return String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]))}
+
+S.onChange(reload);HouserStore.subscribe(()=>{if(cur&&!busy&&document.activeElement?.id!=='prompt'){$('prompt').value=buildPrompt()}});
+if(getKey()){$('key').placeholder='klucz zapisany ('+getKey().slice(0,6)+'…)';loadModels()}else{setKeyStatus('Wklej klucz i kliknij „Zapisz i sprawdź”.');fillModels([],[])}
+reload();
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

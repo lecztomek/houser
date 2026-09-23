@@ -88,6 +88,7 @@ const MODULES=[
   {id:'meblowanie',group:'Wnętrza',name:'Meblowanie',src:'modules/meblowanie/',desc:'Rozmieszczanie mebli na gotowym rzucie – pomieszczeń tu nie zmieniasz.'},
   {id:'wnetrze-3d',group:'Podgląd',name:'Wnętrze 3D',src:'modules/wnetrze-3d/',desc:'Spacer po domu z punktu obserwatora (strzałki), schody, skosy dachu, meble.'},
   {id:'zewnatrz-3d',group:'Podgląd',name:'Zewnątrz 3D',src:'modules/zewnatrz-3d/',desc:'Bryła domu z zewnątrz: dach, okna, drzwi, tarasy i pergole.'},
+  {id:'wizualizacje',group:'Podgląd',name:'Wizualizacje AI',src:'modules/wizualizacje/',desc:'Zdjęcie z podglądu 3D zamienione przez AI (Gemini) na realistyczną wizualizację – prompt tworzy się sam z projektu.'},
 ];
 MODULES.forEach((m,i)=>m.step=i+1);
 const tabs=document.getElementById('tabs'),cards=document.getElementById('cards'),views=document.getElementById('views'),openExt=document.getElementById('openExt');

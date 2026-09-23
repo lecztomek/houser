@@ -13,6 +13,7 @@ modules/
   projektowanie/index.html  Układ pomieszczeń: definicja, malowanie pomieszczeń, otwory, komin, walidacja, elewacje
   kondygnacje-dach/index.html widok z boku: piętro / poddasze, ścianka kolankowa, kąt i kierunek dachu
   wnetrze-3d/index.html     podgląd 3D wnętrza z punktu obserwatora (meble z JSON)
+  wizualizacje/index.html   wizualizacje AI (Gemini, własny klucz API w przeglądarce) ze zdjęć podglądów 3D
   zewnatrz-3d/index.html    podgląd 3D bryły z zewnątrz (dach, okna, tarasy, pergole)
   schody/index.html         schody: proste, L, dwubiegowe 180°, kręcone – kratki i otwór w stropie wpisywane automatycznie
   okna-drzwi/index.html     rodzaje i wymiary okien i drzwi (niskie, balkonowe, ścięte, dachowe...) z podglądem elewacji
@@ -27,6 +28,7 @@ shared/openings.js          warianty okien i drzwi
 shared/stairs.js            geometria schodów (rzut, kratki, stopnie 3D)
 shared/house-model.js       wspólny model bryły (wysokości, poddasze, dach z kąta nachylenia)
 shared/project-store.js     wspólny bieżący projekt w localStorage (moduły widzą nawzajem swoje zmiany)
+shared/snapshots.js         zdjęcia z podglądów 3D i wizualizacje (IndexedDB)
 shared/nav.js               przycisk powrotu do strony głównej, gdy moduł otwarto samodzielnie
 examples/                   przykładowa definicja domu i gotowy układ
 .github/workflows/pages.yml automatyczna publikacja na GitHub Pages
