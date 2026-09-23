@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Schody</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+.wrap{height:100vh;display:grid;grid-template-columns:360px 1fr}
+.side{padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{position:relative;min-width:0;overflow:auto;background:#e2e8f0;display:flex;align-items:flex-start;justify-content:center;padding:18px}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--hs-line-strong);background:var(--hs-panel);color:var(--hs-text);padding:5px 9px;border-radius:var(--hs-radius);font:600 12px var(--hs-font);cursor:pointer}
+.btn:hover{background:var(--hs-panel-2);border-color:#94a3b8}
+.btn.primary,.btn.active{background:var(--hs-accent);border-color:var(--hs-accent);color:#fff}
+.btn.danger{color:var(--hs-bad);border-color:#fecaca}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.status{font-size:12px;line-height:1.45;color:var(--hs-muted);margin-top:8px}
+.status b{color:var(--hs-text)}
+.types{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.type{border:1px solid var(--hs-line-strong);background:#fff;border-radius:var(--hs-radius);padding:8px 6px 6px;cursor:pointer;font:600 12px var(--hs-font);color:var(--hs-text);display:grid;justify-items:center;gap:4px;text-align:center}
+.type:hover{border-color:#94a3b8}
+.type.active{outline:2px solid var(--hs-accent);outline-offset:1px}
+.type svg{width:64px;height:48px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field{display:grid;gap:4px}
+.field label{font-size:11px;color:var(--hs-muted)}
+.field input,.field select{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+.stats{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:12px;margin-top:10px}
+.stats span:nth-child(odd){color:var(--hs-muted)}
+.stats span:nth-child(even){font-weight:650;text-align:right}
+.ok{color:#166534}.warn{color:#b45309}
+.hint{font-size:12px;color:var(--hs-muted);line-height:1.45;margin:8px 0 0}
+.planCard{background:#fff;border-radius:var(--hs-radius-lg);padding:14px;box-shadow:0 6px 20px rgba(15,23,42,.12)}
+.planTitle{font-weight:700;font-size:14px;margin-bottom:8px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.planTitle span{color:var(--hs-muted);font-weight:500;font-size:12px}
+#plan{display:block;touch-action:none;user-select:none}
+.empty{padding:40px 24px;text-align:center;color:var(--hs-muted);max-width:420px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr;height:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1 class="hs-title">Schody</h1>
+  <p class="hs-sub">Wybierz rodzaj schodów i wstaw je na rzut. Kratki schodów same pojawią się w Układzie pomieszczeń – na piętrze otwór w stropie tylko tam, gdzie brakuje miejsca nad głową, więc nad dolną częścią biegu możesz mieć pokój.</p>
+
+  <div class="section">
+    <h3>Projekt</h3>
+    <div class="row"><label class="btn primary">Wczytaj projekt JSON<input id="file" type="file" accept="application/json,.json" hidden></label><button id="export" class="btn" disabled>Eksportuj JSON</button></div>
+    <div id="status" class="status"></div>
+  </div>
+
+  <div class="section">
+    <h3>Rodzaj schodów</h3>
+    <div class="types" id="types"></div>
+  </div>
+
+  <div class="section" id="params" hidden>
+    <h3>Parametry</h3>
+    <div class="grid2">
+      <div class="field"><label>Szerokość biegu [m]</label><input id="pWidth" type="number" step="0.05" min="0.6" max="1.6"></div>
+      <div class="field"><label>Liczba stopni (podniesień)</label><input id="pRisers" type="number" step="1" min="8" max="24"></div>
+      <div class="field"><label>Głębokość stopnia [m]</label><input id="pTread" type="number" step="0.01" min="0.2" max="0.35"></div>
+      <div class="field" id="turnField"><label>Skręt</label><select id="pTurn"><option value="left">w lewo</option><option value="right">w prawo</option></select></div>
+    </div>
+    <div class="row" style="margin-top:10px"><button id="rotL" class="btn">↺ Obróć</button><button id="rotR" class="btn">↻ Obróć</button><button id="del" class="btn danger">Usuń schody</button></div>
+    <div class="stats" id="stats"></div>
+  </div>
+  <p class="hint">Kliknij na rzucie, aby wstawić lub przenieść schody (przeciągnij je myszą). Strzałka pokazuje kierunek wchodzenia. Szary kreskowany obszar to otwór w stropie piętra.</p>
+</aside>
+<main class="main"><div class="planCard" id="card"></div></main>
+</div>
+
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/stairs.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script>
+const $=id=>document.getElementById(id), NS='http://www.w3.org/2000/svg', S=HouserStairs;
+const PX=36;
+let project=null, source='', drag=null, showUpper=true;
+const grid=()=>project?.grid||project?.definitionSnapshot?.grid;
+const floors=()=>{const fo=project?.definitionSnapshot?.floorOrder;return Array.isArray(fo)&&fo.length?fo:['ground','upper']};
+const rooms=f=>project?.definitionSnapshot?.floors?.[f]?.rooms||[];
+const gh=()=>HouserModel.normalize(project?.elevationSettings||{}).groundHeight;
+function cellAt(f,x,y){const g=grid(),s=project?.state?.[f];if(!g||!s||x<0||y<0||x>=g.width||y>=g.height)return null;return (Array.isArray(s[0])?s[y]?.[x]:s[y*g.width+x])||null}
+function setCell(f,x,y,v){const g=grid(),s=project.state[f];if(Array.isArray(s[0]))s[y][x]=v;else s[y*g.width+x]=v}
+const stair=()=>project?.stairs?.[0]||null; // na razie jedne schody w domu
+
+function setProject(p,src){project=p&&(p.grid||p.definitionSnapshot?.grid)?p:null;source=src||'';renderAll()}
+
+// ---------- wpisanie schodów w kratki obu kondygnacji
+function ensureRoom(f){const fd=project.definitionSnapshot?.floors?.[f];if(!fd)return;if(!fd.rooms.some(r=>r.id==='schody'))fd.rooms.push({id:'schody',name:f===floors()[0]?'Schody':'Otwór schodów',color:'#64748b',kind:'room'})}
+// zwolnione kratki (po przesunięciu / zmianie schodów) dostają najczęstsze sąsiednie pomieszczenie
+function fillFromNeighbors(f,cells){let todo=cells.filter(([x,y])=>!cellAt(f,x,y));for(let pass=0;pass<40&&todo.length;pass++){const next=[];for(const [x,y] of todo){const cnt={};for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const v=cellAt(f,x+dx,y+dy);if(v&&v!=='schody')cnt[v]=(cnt[v]||0)+1}const best=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];if(best)setCell(f,x,y,best[0]);else next.push([x,y])}if(next.length===todo.length)break;todo=next}}
+function stamp(){
+  const s=stair(),g=grid(),[lo,up]=floors();if(!project.state)project.state={};
+  for(const f of [lo,up])if(f&&!Array.isArray(project.state[f]))project.state[f]=Array(g.width*g.height).fill(null);
+  const prev=s?._cells||project._stairCells||{lower:[],upper:[]};
+  // zdejmij poprzedni ślad (tylko kratki nadal oznaczone jako schody)
+  if(s?._cells)for(const [key,f] of [['lower',lo],['upper',up]])for(const [x,y] of s._cells[key]||[])if(f&&cellAt(f,x,y)==='schody')setCell(f,x,y,null);
+  if(!s)return;
+  const c=S.cells(s,g.cellMeters,gh(),g.width,g.height);
+  const freedL=(s._cells?.lower||[]).filter(([x,y])=>!c.lower.some(q=>q[0]===x&&q[1]===y)),freedU=(s._cells?.upper||[]).filter(([x,y])=>!c.upper.some(q=>q[0]===x&&q[1]===y));
+  ensureRoom(lo);if(up)ensureRoom(up);
+  for(const [x,y] of c.lower)setCell(lo,x,y,'schody');
+  if(up)for(const [x,y] of c.upper)setCell(up,x,y,'schody');
+  fillFromNeighbors(lo,freedL);if(up)fillFromNeighbors(up,freedU);
+  s._cells={lower:c.lower,upper:c.upper};
+}
+function commit(){stamp();renderAll();HouserStore.save(project,'schody')}
+
+// ---------- panel boczny
+const ICONS={
+  straight:'<rect x="24" y="4" width="16" height="40" fill="none" stroke="currentColor" stroke-width="2"/>'+[...Array(7)].map((_,i)=>'<line x1="24" x2="40" y1="'+(9+i*5)+'" y2="'+(9+i*5)+'" stroke="currentColor"/>').join(''),
+  L:'<path d="M34 44V20H10v-12h36v36z" fill="none" stroke="currentColor" stroke-width="2"/>'+[...Array(4)].map((_,i)=>'<line x1="34" x2="46" y1="'+(40-i*5)+'" y2="'+(40-i*5)+'" stroke="currentColor"/>').join('')+[...Array(3)].map((_,i)=>'<line y1="8" y2="20" x1="'+(15+i*6)+'" x2="'+(15+i*6)+'" stroke="currentColor"/>').join(''),
+  U:'<path d="M14 44V8h36v36H34V20h-4v24z" fill="none" stroke="currentColor" stroke-width="2"/>'+[...Array(4)].map((_,i)=>'<line x1="14" x2="30" y1="'+(40-i*5)+'" y2="'+(40-i*5)+'" stroke="currentColor"/><line x1="34" x2="50" y1="'+(40-i*5)+'" y2="'+(40-i*5)+'" stroke="currentColor"/>').join(''),
+  spiral:'<circle cx="32" cy="24" r="19" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="32" cy="24" r="3" fill="currentColor"/>'+[...Array(8)].map((_,i)=>{const a=i*Math.PI/4;return '<line x1="'+(32+3*Math.cos(a))+'" y1="'+(24+3*Math.sin(a))+'" x2="'+(32+19*Math.cos(a))+'" y2="'+(24+19*Math.sin(a))+'" stroke="currentColor"/>'}).join('')
+};
+function renderSide(){
+  const s=stair();$('export').disabled=!project;$('params').hidden=!s;
+  $('status').innerHTML=project?'<b>'+(source==='plik'?'Wczytany plik':'Bieżący projekt')+'</b> – '+(s?'schody: '+S.TYPES[s.type]:'brak schodów, wybierz rodzaj i kliknij na rzucie')+'.'
+    :'Brak projektu. Najpierw ustaw pomieszczenia i rzut albo wczytaj plik JSON.';
+  $('types').innerHTML='';
+  for(const [id,name] of Object.entries(S.TYPES)){const b=document.createElement('button');b.className='type'+(s?.type===id||(!s&&pendingType===id)?' active':'');b.disabled=!project;b.innerHTML='<svg viewBox="0 0 64 48">'+ICONS[id]+'</svg>'+name;
+    b.onclick=()=>{if(s){const keep={x:s.x,y:s.y,rot:s.rot,width:s.width};Object.assign(s,S.defaults(id,gh()),keep,{type:id});if(id==='spiral')s.width=Math.min(s.width,.9);commit()}else{pendingType=id;renderAll()}};$('types').appendChild(b)}
+  if(!s)return;
+  const set=(id,v)=>{if(document.activeElement!==$(id))$(id).value=v};set('pWidth',s.width);set('pRisers',s.risers);set('pTread',s.tread);set('pTurn',s.turn||'left');
+  $('turnField').style.visibility=s.type==='straight'?'hidden':'visible';
+  const k=S.comfort(s,gh()),geo=S.geometry(s,grid().cellMeters,gh()),bb=geo.bbox,c=S.cells(s,grid().cellMeters,gh(),grid().width,grid().height);
+  $('stats').innerHTML=[['Wysokość stopnia',(k.rise*100).toFixed(1)+' cm'],['Wygoda 2h + s',(k.step*100).toFixed(0)+' cm <span class="'+(k.ok?'ok':'warn')+'">'+(k.ok?'✓':'(zalecane 59–66, h ≤ 19)')+'</span>'],['Obrys',(bb.x1-bb.x0).toFixed(2)+' × '+(bb.z1-bb.z0).toFixed(2)+' m'],['Kratki na parterze',c.lower.length],['Otwór w stropie',c.upper.length+' kratek']].map(([a,b])=>'<span>'+a+'</span><span>'+b+'</span>').join('');
+}
+let pendingType='U';
+for(const [id,k] of [['pWidth','width'],['pRisers','risers'],['pTread','tread'],['pTurn','turn']])$(id).addEventListener('change',()=>{const s=stair();if(!s)return;const v=$(id).value;s[k]=k==='turn'?v:Number(v)||s[k];commit()});
+$('rotL').onclick=()=>{const s=stair();if(s){s.rot=((s.rot||0)+270)%360;commit()}};
+$('rotR').onclick=()=>{const s=stair();if(s){s.rot=((s.rot||0)+90)%360;commit()}};
+$('del').onclick=()=>{const s=stair();if(!s||!confirm('Usunąć schody? Ich kratki na obu kondygnacjach dostaną sąsiednie pomieszczenie.'))return;const cells=s._cells;project.stairs=[];const [lo,up]=floors();if(cells){for(const [x,y] of cells.lower||[])if(cellAt(lo,x,y)==='schody')setCell(lo,x,y,null);for(const [x,y] of cells.upper||[])if(up&&cellAt(up,x,y)==='schody')setCell(up,x,y,null);fillFromNeighbors(lo,cells.lower||[]);if(up)fillFromNeighbors(up,cells.upper||[])}renderAll();HouserStore.save(project,'schody')};
+
+// ---------- rzut
+function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
+function renderPlan(){
+  const card=$('card');
+  if(!project){card.innerHTML='<div class="empty">Brak projektu.<br><br>Narysuj rzut w module <b>Układ pomieszczeń</b> albo wczytaj plik JSON z lewej.</div>';return}
+  if(!$('plan'))card.innerHTML='<div class="planTitle"><div id="planTitle"></div><label style="font-size:12px;font-weight:500;display:flex;gap:6px;align-items:center"><input type="checkbox" id="upToggle" checked> pokaż otwór na piętrze</label></div><svg id="plan"></svg>';
+  $('upToggle').checked=showUpper;$('upToggle').onchange=e=>{showUpper=e.target.checked;renderPlan()};
+  const svg=$('plan');svg.innerHTML='';const g=grid(),c=g.cellMeters,W=g.width,H=g.height,[lo,up]=floors(),pad=.5;
+  svg.setAttribute('viewBox',[-pad*PX,-pad*PX,(W+2*pad)*PX,(H+2*pad)*PX].join(' '));
+  const main=document.querySelector('.main'),avail=Math.max(320,Math.min(main.clientWidth-70,(main.clientHeight-90)*(W+2*pad)/(H+2*pad)));svg.setAttribute('width',Math.round(avail));const k=(W+2*pad)*PX/Math.round(avail);
+  $('planTitle').textContent=(project.definitionSnapshot?.floors?.[lo]?.name||'Parter')+' · kratka '+c.toFixed(2)+' m';
+  const P=v=>v*PX;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const id=cellAt(lo,x,y);if(!id||id==='schody')continue;const r=rooms(lo).find(q=>q.id===id);if(r?.kind==='exteriorVoid')continue;el('rect',{x:P(x),y:P(y),width:PX+.5,height:PX+.5,fill:r?.color||'#e5e7eb','fill-opacity':.25},svg)}
+  for(let x=0;x<=W;x++)el('line',{x1:P(x),y1:0,x2:P(x),y2:P(H),stroke:'rgba(15,23,42,.07)','stroke-width':1},svg);
+  for(let y=0;y<=H;y++)el('line',{x1:0,y1:P(y),x2:P(W),y2:P(y),stroke:'rgba(15,23,42,.07)','stroke-width':1},svg);
+  const isRoom=(x,y)=>{const id=cellAt(lo,x,y);return id&&id!=='schody'?id:(id==='schody'?'schody':null)};
+  for(let y=0;y<=H;y++)for(let x=0;x<W;x++){const a=cellAt(lo,x,y-1),b=cellAt(lo,x,y);if(a!==b&&a!=='schody'&&b!=='schody')el('line',{x1:P(x),y1:P(y),x2:P(x+1),y2:P(y),stroke:'#0f172a','stroke-width':!a||!b?5:2},svg)}
+  for(let y=0;y<H;y++)for(let x=0;x<=W;x++){const a=cellAt(lo,x-1,y),b=cellAt(lo,x,y);if(a!==b&&a!=='schody'&&b!=='schody')el('line',{x1:P(x),y1:P(y),x2:P(x),y2:P(y+1),stroke:'#0f172a','stroke-width':!a||!b?5:2},svg)}
+  const acc={};for(let y=0;y<H;y++)for(let x=0;x<W;x++){const id=cellAt(lo,x,y);if(!id||id==='schody')continue;(acc[id]=acc[id]||{sx:0,sy:0,n:0});acc[id].sx+=x+.5;acc[id].sy+=y+.5;acc[id].n++}
+  for(const [id,a] of Object.entries(acc)){const r=rooms(lo).find(q=>q.id===id);if(r?.kind==='exteriorVoid')continue;el('text',{x:P(a.sx/a.n),y:P(a.sy/a.n),'text-anchor':'middle','dominant-baseline':'middle','font-size':11*k,fill:'rgba(15,23,42,.45)','font-weight':600,'pointer-events':'none'},svg,r?.name||id)}
+  const s=stair();if(!s){el('text',{x:P(W/2),y:P(H/2),'text-anchor':'middle','font-size':14*k,fill:'#2563eb','font-weight':700},svg,'Kliknij, aby wstawić: '+S.TYPES[pendingType]);return}
+  const cc=S.cells(s,c,gh(),W,H),geo=cc.geometry,M=v=>v/c*PX;
+  if(showUpper)for(const [x,y] of cc.upper)el('rect',{x:P(x),y:P(y),width:PX,height:PX,fill:'url(#hatch)',stroke:'#94a3b8','stroke-width':.5},svg);
+  const defs=el('defs',{},svg),pat=el('pattern',{id:'hatch',width:8,height:8,patternUnits:'userSpaceOnUse',patternTransform:'rotate(45)'},defs);el('rect',{width:8,height:8,fill:'rgba(148,163,184,.25)'},pat);el('line',{x1:0,y1:0,x2:0,y2:8,stroke:'#94a3b8','stroke-width':2},pat);
+  const gS=el('g',{id:'stairG',style:'cursor:move'},svg);
+  for(const st of geo.steps)el('polygon',{points:st.poly.map(([x,z])=>M(x)+','+M(z)).join(' '),fill:'#d6b48c',stroke:'#7c5b3b','stroke-width':1.2},gS);
+  if(geo.center)el('circle',{cx:M(geo.center[0]),cy:M(geo.center[1]),r:M(geo.pole),fill:'#374151'},gS);
+  // linia biegu + strzałka
+  const pts=geo.steps.map(st=>{let x=0,z=0;for(const p of st.poly){x+=p[0];z+=p[1]}return [M(x/st.poly.length),M(z/st.poly.length)]});
+  el('polyline',{points:pts.map(p=>p.join(',')).join(' '),fill:'none',stroke:'#111827','stroke-width':2.5*k,'pointer-events':'none'},gS);
+  const e=pts[pts.length-1],p0=pts[pts.length-2]||pts[0],a=Math.atan2(e[1]-p0[1],e[0]-p0[0]),L=10*k;
+  el('polygon',{points:[e,[e[0]-L*Math.cos(a-.5),e[1]-L*Math.sin(a-.5)],[e[0]-L*Math.cos(a+.5),e[1]-L*Math.sin(a+.5)]].map(p=>p.join(',')).join(' '),fill:'#111827','pointer-events':'none'},gS);
+  el('circle',{cx:pts[0][0],cy:pts[0][1],r:4*k,fill:'#111827','pointer-events':'none'},gS);
+}
+function cellFromEvent(e){const svg=$('plan'),pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());return {x:p.x/PX,y:p.y/PX}}
+document.addEventListener('pointerdown',e=>{const svg=$('plan');if(!project||!svg||!svg.contains(e.target))return;const m=cellFromEvent(e);let s=stair();
+  if(!s){
+    // schody narysowane wcześniej ręcznie (kratki „schody”) zastępujemy nowymi
+    const [lo,up]=floors(),g=grid(),old=[];for(const f of [lo,up])if(f)for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++)if(cellAt(f,x,y)==='schody')old.push([f,x,y]);
+    if(old.length){if(!confirm('Na rzucie są już kratki „Schody” narysowane ręcznie ('+old.length+'). Zastąpić je nowymi schodami? Zwolnione kratki dostaną sąsiednie pomieszczenie.'))return;for(const [f,x,y] of old)setCell(f,x,y,null);s={id:'st'+Date.now().toString(36),...S.defaults(pendingType,gh()),x:Math.floor(m.x),y:Math.floor(m.y)};project.stairs=[s];stamp();for(const f of [lo,up])if(f)fillFromNeighbors(f,old.filter(o=>o[0]===f).map(o=>[o[1],o[2]]));renderAll();HouserStore.save(project,'schody');return}
+    s={id:'st'+Date.now().toString(36),...S.defaults(pendingType,gh()),x:Math.floor(m.x),y:Math.floor(m.y)};project.stairs=[s];commit();return}
+  if(e.target.closest('#stairG')){drag={dx:m.x-s.x,dy:m.y-s.y,moved:false};return}
+  s.x=Math.floor(m.x);s.y=Math.floor(m.y);commit()});
+document.addEventListener('pointermove',e=>{if(!drag)return;const s=stair(),m=cellFromEvent(e),nx=Math.round(m.x-drag.dx),ny=Math.round(m.y-drag.dy);if(nx!==s.x||ny!==s.y){s.x=nx;s.y=ny;drag.moved=true;renderPlan()}});
+document.addEventListener('pointerup',()=>{if(!drag)return;const d=drag;drag=null;if(d.moved)commit()});
+window.addEventListener('resize',renderPlan);
+if(window.ResizeObserver)new ResizeObserver(()=>{if(!drag)renderPlan()}).observe(document.querySelector('.main'));
+
+function renderAll(){renderSide();renderPlan()}
+$('file').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{const p=JSON.parse(await f.text());if(!p.grid&&!p.definitionSnapshot?.grid)throw new Error('brak siatki (grid)');setProject(p,'plik');HouserStore.save(project,'schody')}catch(err){alert('Nie udało się wczytać projektu: '+err.message)}e.target.value=''});
+$('export').addEventListener('click',()=>{if(!project)return;const d=new Date(),p2=n=>String(n).padStart(2,'0');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(project,null,2)],{type:'application/json'}));a.download='dom-uklad-v7-'+[d.getFullYear(),p2(d.getMonth()+1),p2(d.getDate()),p2(d.getHours()),p2(d.getMinutes())].join('-')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
+
+const rec=HouserStore.load();
+setProject(rec?rec.project:null,rec?'store':'');
+HouserStore.subscribe(r=>{if(drag)return;setProject(r.project,'store')});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

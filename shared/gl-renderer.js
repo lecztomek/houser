@@ -43,7 +43,8 @@
       if(opts.ground){const g=opts.ground,S=g.size||200;tris({points:[[-S,g.y,-S],[-S,g.y,S],[S,g.y,S],[S,g.y,-S]],color:g.color||'#cdc8bd',alpha:1},o);}
       for(const p of polys){
         if((p.alpha??1)<1)trans.push(p);else tris(p,o);
-        if((p.line??1)>0&&p.stroke){const c=rgb(p.stroke);for(let i=0;i<p.points.length;i++){const a=p.points[i],b=p.points[(i+1)%p.points.length];l.push(a[0],a[1],a[2],c[0],c[1],c[2],1,b[0],b[1],b[2],c[0],c[1],c[2],1);}}
+        if((p.line??1)>0&&p.stroke&&p.stroke!==p.color){ // obrys w kolorze wypełnienia = bez linii
+        const c=rgb(p.stroke);for(let i=0;i<p.points.length;i++){const a=p.points[i],b=p.points[(i+1)%p.points.length];l.push(a[0],a[1],a[2],c[0],c[1],c[2],1,b[0],b[1],b[2],c[0],c[1],c[2],1);}}
       }
       nOpaque=send(bufOpaque,o);nLines=send(bufLines,l);
     }

@@ -143,6 +143,7 @@ button,input,select{font:inherit} button{cursor:pointer}
 <!-- Renderer 3D jest wbudowany; brak zależności sieciowych. -->
 <script src="../../shared/gl-renderer.js"></script>
 <script src="../../shared/house-model.js"></script>
+<script src="../../shared/stairs.js"></script>
 <script src="../../shared/project-store.js"></script>
 <script>
 'use strict';
@@ -223,7 +224,10 @@ function stairSpec(){
   return {axis,lowSide,minX,maxX,minY,maxY,x0:minX*c,x1:(maxX+1)*c,z0:minY*c,z1:(maxY+1)*c,width:(axis==='z'?(maxX-minX+1):(maxY-minY+1))*c,run:(axis==='z'?(maxY-minY+1):(maxX-minX+1))*c};
 }
 function drawStairsOnPlan(ox,oy,s){
-  if(!settings.showStairs||observer.floor!=='ground')return;const sp=stairSpec();if(!sp)return;const c=grid().cellMeters,N=Math.max(12,Math.round(settings.stairRisers||17));
+  if(!settings.showStairs||observer.floor!=='ground')return;
+  if(modelStairs().length){const c=grid().cellMeters,k=s/c;pctx.save();pctx.strokeStyle='#7c5b3b';pctx.fillStyle='rgba(214,180,140,.55)';pctx.lineWidth=1;
+    for(const st of modelStairs())for(const step of HouserStairs.geometry(st,c,floorHeight('ground')).steps){pctx.beginPath();step.poly.forEach(([x,z],i)=>i?pctx.lineTo(ox+x*k,oy+z*k):pctx.moveTo(ox+x*k,oy+z*k));pctx.closePath();pctx.fill();pctx.stroke()}
+    pctx.restore();return}const sp=stairSpec();if(!sp)return;const c=grid().cellMeters,N=Math.max(12,Math.round(settings.stairRisers||17));
   const x0=ox+sp.x0/c*s,x1=ox+sp.x1/c*s,z0=oy+sp.z0/c*s,z1=oy+sp.z1/c*s;
   pctx.save();pctx.strokeStyle='#7c5b3b';pctx.lineWidth=1.2;pctx.globalAlpha=.9;
   for(let i=1;i<N;i++){const t=i/N;pctx.beginPath();if(sp.axis==='z'){const yy=sp.lowSide==='max'?z1-(z1-z0)*t:z0+(z1-z0)*t;pctx.moveTo(x0+2,yy);pctx.lineTo(x1-2,yy)}else{const xx=sp.lowSide==='max'?x1-(x1-x0)*t:x0+(x1-x0)*t;pctx.moveTo(xx,z0+2);pctx.lineTo(xx,z1-2)}pctx.stroke()}
@@ -394,6 +398,16 @@ function addStairRail(sp,N,H){
     for(let i=0;i<=N;i+=2){const t=i/N,x=sp.lowSide==='max'?sp.x1-sp.run*t:sp.x0+sp.run*t,y=H*t;addQuad([x-.018,y,z],[x+.018,y,z],[x+.018,y+settings.railH,z],[x-.018,y+settings.railH,z],dark,{stroke:dark})}
   }
 }
+// schody z modułu Schody (proste, L, 180°, kręcone) – stopnie jako płyty o kształcie z shared/stairs.js
+function addPrism(poly,y0,y1,color,opts){const n=poly.length;pushPoly(poly.map(([x,z])=>[x,y1,z]),color,opts);pushPoly(poly.slice().reverse().map(([x,z])=>[x,y0,z]),color,opts);for(let i=0;i<n;i++){const a=poly[i],b=poly[(i+1)%n];addQuad([a[0],y0,a[1]],[b[0],y0,b[1]],[b[0],y1,b[1]],[a[0],y1,a[1]],color,opts)}}
+function modelStairs(){return Array.isArray(project.stairs)?project.stairs.filter(s=>s&&HouserStairs.TYPES[s.type]):[]}
+function addStairsFromModel(){
+  if(!settings.showStairs)return;const c=grid().cellMeters,H=floorHeight('ground'),oak='#b8895b',edge='#805d3d',thick=.06;
+  for(const s of modelStairs()){const g=HouserStairs.geometry(s,c,H);
+    for(const st of g.steps){const top=st.top*g.rise;addPrism(st.poly,Math.max(0,top-thick),top,oak,{stroke:edge,line:.55})}
+    if(g.center){const r=g.pole,[cx,cz]=g.center;addBoxFaces(cx-r,0,cz-r,cx+r,H+.9,cz+r,'#374151',{stroke:'#1f2937'})}
+  }
+}
 function addStraightStairs(){
   if(!settings.showStairs)return;const sp=stairSpec();if(!sp)return;const H=floorHeight('ground'),N=Math.max(12,Math.min(24,Math.round(settings.stairRisers||17))),rise=H/N,run=sp.run/N,margin=.045,oak='#b8895b',edge='#805d3d',thick=.06,nose=.012;
   for(let i=0;i<N;i++){const top=(i+1)*rise,bottom=Math.max(0,top-thick);
@@ -429,7 +443,7 @@ function build3D(){
       }
     }
     for(let y=0;y<=g.height;y++)for(let x=0;x<g.width;x++){
-      const a=roomAt(f,x,y-1),b=roomAt(f,x,y),ca=cellClass(f,a),cb=cellClass(f,b);if(ca===cb&&a===b)continue;
+      const a=roomAt(f,x,y-1),b=roomAt(f,x,y),ca=cellClass(f,a),cb=cellClass(f,b);if(ca===cb&&a===b)continue;if(f==='ground'&&(a==='schody'||b==='schody')&&ca==='room'&&cb==='room'&&modelStairs().length)continue; // schody z modułu – otwarte do sąsiednich pomieszczeń
       const op=openingAt(f,openKeyH(x,y)),roomA=ca==='room',roomB=cb==='room',holeA=ca==='hole',holeB=cb==='hole',insideA=roomA||holeA,insideB=roomB||holeB;
       const edgeH=f==='upper'?upperEdgeHeight('h',x,y,c):h;
       if((holeA&&roomB)||(holeB&&roomA)){
@@ -442,7 +456,7 @@ function build3D(){
       if(!insideA&&!insideB)continue;if(insideA&&insideB&&a===b&&ca===cb)continue;addWall2D('h',(x+.5)*c,y*c,c,edgeH,base,op,!insideA||!insideB)
     }
     for(let x=0;x<=g.width;x++)for(let y=0;y<g.height;y++){
-      const a=roomAt(f,x-1,y),b=roomAt(f,x,y),ca=cellClass(f,a),cb=cellClass(f,b);if(ca===cb&&a===b)continue;
+      const a=roomAt(f,x-1,y),b=roomAt(f,x,y),ca=cellClass(f,a),cb=cellClass(f,b);if(ca===cb&&a===b)continue;if(f==='ground'&&(a==='schody'||b==='schody')&&ca==='room'&&cb==='room'&&modelStairs().length)continue; // schody z modułu – otwarte do sąsiednich pomieszczeń
       const op=openingAt(f,openKeyV(x,y)),roomA=ca==='room',roomB=cb==='room',holeA=ca==='hole',holeB=cb==='hole',insideA=roomA||holeA,insideB=roomB||holeB;
       const edgeH=f==='upper'?upperEdgeHeight('v',x,y,c):h;
       if((holeA&&roomB)||(holeB&&roomA)){
@@ -456,7 +470,7 @@ function build3D(){
     }
   }
   addRoof3D();
-  addStraightStairs();
+  if(modelStairs().length)addStairsFromModel();else addStraightStairs();
   if(settings.showChimney&&Array.isArray(project.structure?.chimney)){
     const c=grid().cellMeters;
     for(const n of project.structure.chimney){const x=n%grid().width,y=Math.floor(n/grid().width);let H=floorHeight('ground')+floorHeight('upper')+.45;if(roofEnabled())H=Math.max(H,roofAbsYAt((x+.5)*c,(y+.5)*c)+.55);addBoxFaces(x*c+.03,0,y*c+.03,(x+1)*c-.03,H,(y+1)*c-.03,'#77716c',{stroke:'#5e5955'})}
