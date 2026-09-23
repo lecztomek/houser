@@ -135,6 +135,8 @@ function renderList(){
       sel.onchange=()=>{const v=O.variantsFor(r.base)[sel.value];O.setVariant(project,r.f,r.keys,{variant:sel.value,sill:v.sill,height:v.height});selected=r.f+'|'+r.keys[0];commit()};
       const sill=num(r.info.sill,v=>{O.setVariant(project,r.f,r.keys,{variant:r.info.variant,sill:v});commit()}),hh=num(r.info.height,v=>{O.setVariant(project,r.f,r.keys,{variant:r.info.variant,height:v});commit()});
       if(r.info.shape==='roof')ctl.append(sel,'od okapu',sill,'m · długość',hh,'m (wzdłuż połaci)');else ctl.append(sel,'parapet',sill,'m · wys.',hh,'m');
+      if(r.base==='door'){const vs=document.createElement('select');vs.title='Jak te drzwi wyglądają na podglądzie 3D i na wizualizacji';vs.innerHTML='<option value="">jak domyślnie we Wnętrzu 3D</option><option value="open">otwarte</option><option value="closed">zamknięte</option><option value="none">bez skrzydła (sam otwór)</option>';vs.value=project.openingVariants?.[r.f]?.[r.keys[0]]?.view||'';
+        vs.onchange=()=>{O.setVariant(project,r.f,r.keys,{variant:r.info.variant,view:vs.value});selected=r.id;commit()};const lb=document.createElement('span');lb.textContent=' · w 3D:';ctl.append(lb,vs)}
       d.appendChild(ctl);for(const w of warnings(r)){const e=document.createElement('div');e.className='warn';e.textContent='⚠ '+w;d.appendChild(e)}
       d.addEventListener('click',e=>{if(['SELECT','INPUT','OPTION'].includes(e.target.tagName))return;selected=r.id;if(r.facade!=='inside')facade=r.facade;renderAll()});
       L.appendChild(d)}

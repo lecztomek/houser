@@ -53,6 +53,7 @@ html,body{height:100%;margin:0}
     <div class="field"><label>Wysokość [m]</label><input id="eH" type="number" step="0.05" min="0.6" max="2.6"></div>
     <div class="field" id="swingField"><label>Otwierają się do</label><select id="eSwing"></select></div>
     <div class="field" id="hingeField"><label>Zawiasy</label><select id="eHinge"><option value="start">z lewej / od góry rzutu</option><option value="end">z prawej / od dołu rzutu</option></select></div>
+    <div class="field"><label>Na podglądzie 3D i wizualizacji</label><select id="eView"><option value="">jak domyślnie we Wnętrzu 3D</option><option value="open">otwarte</option><option value="closed">zamknięte</option><option value="none">bez skrzydła (sam otwór)</option></select></div>
     <div class="row"><button class="btn" id="flip">⇄ Odwróć kierunek</button></div>
     <div id="warn"></div>
   </div>
@@ -106,7 +107,7 @@ function renderSide(){
   $('editTitle').textContent=(roomOf(floor,d.A)?.name||d.A)+' ↔ '+(roomOf(floor,d.B)?.name||d.B);
   $('eVar').innerHTML=Object.entries(O.variantsFor('door')).filter(([id])=>id!=='entrance').map(([id,v])=>'<option value="'+id+'">'+v.name+'</option>').join('');$('eVar').value=d.info.variant;
   if(document.activeElement!==$('eH'))$('eH').value=d.info.height.toFixed(2);
-  $('eSwing').innerHTML='<option value="a">'+esc(roomOf(floor,d.A)?.name||d.A)+'</option><option value="b">'+esc(roomOf(floor,d.B)?.name||d.B)+'</option>';$('eSwing').value=d.swing;$('eHinge').value=d.hinge;
+  $('eSwing').innerHTML='<option value="a">'+esc(roomOf(floor,d.A)?.name||d.A)+'</option><option value="b">'+esc(roomOf(floor,d.B)?.name||d.B)+'</option>';$('eSwing').value=d.swing;$('eHinge').value=d.hinge;$('eView').value=project.openingVariants?.[floor]?.[d.keys[0]]?.view||'';
   const sliding=!!d.info.sliding;$('swingField').hidden=sliding;$('hingeField').hidden=sliding||d.info.leaves===2;
   let w='';if(floor!==floors()[0]){const c=grid().cellMeters,pts=[d.from*c,(d.to+1)*c].map(a=>d.o==='h'?clearAt(a,d.line*c):clearAt(d.line*c,a));if(pts[0].attic){const av=Math.min(...pts.map(p=>p.h));if(d.info.height>av-.05)w='⚠ Pod skosem jest tu tylko '+av.toFixed(2)+' m – wybierz „Niskie – do schowka pod skosem” albo obniż drzwi.'}}
   $('warn').innerHTML=w?'<div class="warn">'+w+'</div>':'';
@@ -115,6 +116,7 @@ $('eVar').onchange=()=>{const v=O.variantsFor('door')[$('eVar').value];update({v
 $('eH').onchange=()=>{const x=Number($('eH').value);if(Number.isFinite(x))update({height:x})};
 $('eSwing').onchange=()=>update({swing:$('eSwing').value});
 $('eHinge').onchange=()=>update({hinge:$('eHinge').value});
+$('eView').onchange=()=>update({view:$('eView').value});
 $('flip').onclick=()=>{const d=sel();if(!d)return;update({swing:d.swing==='a'?'b':'a',hinge:d.hinge==='start'?'end':'start'})};
 
 function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}

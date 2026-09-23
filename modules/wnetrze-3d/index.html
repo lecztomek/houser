@@ -71,7 +71,7 @@ button,input,select{font:inherit} button{cursor:pointer}
         <h3>Podgląd 3D</h3>
         <button class="btn primary" id="go3d" style="width:100%;margin-bottom:7px">Pokaż z pozycji człowieka</button>
         <button class="btn" id="rebuild" style="width:100%;margin-bottom:7px">Przebuduj geometrię</button>
-        <label style="display:block;font-size:12px;color:#64748b;margin:4px 0 3px">Drzwi</label>
+        <label style="display:block;font-size:12px;color:#64748b;margin:4px 0 3px" title="Pojedyncze drzwi możesz ustawić inaczej w modułach Drzwi wewnętrzne oraz Okna i drzwi zewnętrzne">Drzwi – domyślnie (pojedyncze ustawisz w module Drzwi wewnętrzne)</label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:7px"><label style="font-size:12px;color:#64748b">Ściany działowe [cm]<input id="wallIn" type="number" min="6" max="40" step="1" style="width:100%"></label><label style="font-size:12px;color:#64748b">Ściany zewnętrzne [cm]<input id="wallExt" type="number" min="10" max="70" step="1" style="width:100%"></label></div>
         <div id="doorModeRow" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:7px"><button class="btn small" data-m="closed" title="Skrzydła zamknięte w ścianie">Zamknięte</button><button class="btn small" data-m="open" title="Skrzydła otwarte o 90° (wg kierunku z modułu Drzwi wewnętrzne)">Otwarte</button><button class="btn small" data-m="none" title="Sam otwór w ścianie, bez skrzydeł">Otwór</button></div>
         <div class="hint">W widoku 3D przeciągaj myszą, aby się rozglądać. <b>Strzałki</b> (lub WASD) – chodzenie, <b>←/→</b> lub Q/E – obrót. Jest podstawowa kolizja ze ścianami; przechodzisz tylko przez drzwi, HST i otwarte przejścia.</div>
@@ -351,7 +351,7 @@ function edgeOpen(f,ax,ay,bx,by){const A=roomAt(f,ax,ay),B=roomAt(f,bx,by),ca=ce
   if(A===B&&ca===cb)return true;if(ca==='hole'||cb==='hole')return true;if(ca==='outside'&&cb==='outside')return true;
   if(f==='ground'&&(A==='schody'||B==='schody')&&modelStairs().length)return true;
   const key=ax!==bx?openKeyV(Math.max(ax,bx),ay):openKeyH(ax,Math.max(ay,by)),op=openingAt(f,key);
-  if(!op)return false;if(['opening','hst','window'].includes(op))return true;return settings.doorMode!=='closed'}
+  if(!op)return false;if(['opening','hst','window'].includes(op))return true;return doorModeFor(f,key)!=='closed'}
 function seeTo(tx,tz){const f=observer.floor,c=grid().cellMeters,ox=observer.x,oz=observer.z,d=Math.hypot(tx-ox,tz-oz);if(d<.05)return true;
   const ux=(tx-ox)/d,uz=(tz-oz)/d,ex=tx-ux*.06,ez=tz-uz*.06,n=Math.ceil(d/.04);let cx=Math.floor(ox/c),cy=Math.floor(oz/c);
   for(let i=1;i<=n;i++){const t=i/n,px=ox+(ex-ox)*t,pz=oz+(ez-oz)*t,nx=Math.floor(px/c),ny=Math.floor(pz/c);
@@ -476,16 +476,17 @@ function doorGroups(f,bases=DOOR_BASES){const c=grid().cellMeters,groups={},out=
   return out}
 function doorBox(d,base,s0,s1,o0,o1,y0,y1,color,opts){if(d.o==='h')addBoxFaces(Math.min(s0,s1),base+y0,d.L+Math.min(o0,o1),Math.max(s0,s1),base+y1,d.L+Math.max(o0,o1),color,opts);
   else addBoxFaces(d.L+Math.min(o0,o1),base+y0,Math.min(s0,s1),d.L+Math.max(o0,o1),base+y1,Math.max(s0,s1),color,opts)}
-function addDoorLeaves(){if(settings.doorMode==='none')return;
-  for(const f of ['ground','upper']){const base=floorBase(f);for(const d of doorGroups(f)){
+function doorModeFor(f,key){const v=project.openingVariants?.[f]?.[key]?.view;return ['open','closed','none'].includes(v)?v:settings.doorMode}
+function addDoorLeaves(){
+  for(const f of ['ground','upper']){const base=floorBase(f);for(const d of doorGroups(f)){const mode=doorModeFor(f,d.keys[0]);if(mode==='none')continue;
     const th=.045,col=d.exterior?'#7c5a3e':'#f4f2ee',edge=d.exterior?'#4b3726':'#a8a29e',op={stroke:edge,line:.6},hc='#3f3f46',ho={stroke:hc,line:.4};
     const sg=d.swing==='a'?-1:1,mid=d.exterior?(d.inA?1:-1)*WALL_EXT*.25:0,face=d.exterior?(d.inA?0:0):WALL_IN/2,W=d.s1-d.s0,y1=d.h;
     const leaf=(hp,dir,w)=>{ // hp – oś zawiasu, dir – w którą stronę otworu leży skrzydło (+1/-1), w – szerokość skrzydła
-      if(settings.doorMode==='closed'){doorBox(d,base,hp,hp+dir*w,mid-th/2,mid+th/2,0,y1,col,op);
+      if(mode==='closed'){doorBox(d,base,hp,hp+dir*w,mid-th/2,mid+th/2,0,y1,col,op);
         const hx=hp+dir*(w-.08);doorBox(d,base,hx-.06,hx+.06,mid-th/2-.05,mid+th/2+.05,1.0,1.04,hc,ho)}
       else{const o0=sg*face;doorBox(d,base,hp,hp+dir*th,o0,o0+sg*w,0,y1,col,op);
         doorBox(d,base,hp+dir*th/2-.05,hp+dir*th/2+.05,o0+sg*(w-.14),o0+sg*(w-.08),1.0,1.04,hc,ho)}};
-    if(d.sliding){const o=settings.doorMode==='open'?(sg*(face+th)):mid,sh=settings.doorMode==='open'?(d.hinge==='end'?-W:W)*.92:0;
+    if(d.sliding){const o=mode==='open'?(sg*(face+th)):mid,sh=mode==='open'?(d.hinge==='end'?-W:W)*.92:0;
       doorBox(d,base,d.s0+sh,d.s1+sh,o-th/2,o+th/2,0,y1,col,op);continue}
     if(d.leaves===2){leaf(d.s0,1,W/2);leaf(d.s1,-1,W/2)}
     else if(d.hinge==='end')leaf(d.s1,-1,W);else leaf(d.s0,1,W);
