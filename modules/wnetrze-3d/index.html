@@ -148,6 +148,7 @@ button,input,select{font:inherit} button{cursor:pointer}
 </div>
 <!-- Renderer 3D jest wbudowany; brak zależności sieciowych. -->
 <script src="../../shared/gl-renderer.js"></script>
+<script src="../../shared/landscape.js"></script>
 <script src="../../shared/house-model.js"></script>
 <script src="../../shared/stairs.js"></script>
 <script src="../../shared/openings.js"></script>
@@ -580,7 +581,7 @@ function build3D(){
     for(const n of project.structure.chimney){const x=n%grid().width,y=Math.floor(n/grid().width);let H=floorHeight('ground')+floorHeight('upper')+.45;if(roofEnabled())H=Math.max(H,roofAbsYAt((x+.5)*c,(y+.5)*c)+.55);addBoxFaces(x*c+.03,0,y*c+.03,(x+1)*c-.03,H,(y+1)*c-.03,codedOn()?CHIMNEY_CODE[0]:'#77716c',{stroke:'#5e5955'})}
   }
   addFurniture3D();
-  if(three.gl)three.gl.upload(three.scenePolys,{ground:{y:-.03,color:'#c8c3bb'}});setStatus('Geometria 3D przebudowana — dodano skosy dachu, ściany do połaci, schody i meble z JSON-u.');render3D()
+  if(three.gl){const L=window.HouserLandscape?HouserLandscape.build({minX:0,minZ:0,maxX:grid().width*grid().cellMeters,maxZ:grid().height*grid().cellMeters,y:-.03}):null;three.gl.upload(L?three.scenePolys.concat(L.polys):three.scenePolys,{ground:L?L.ground:{y:-.03,color:'#c8c3bb'}})}setStatus('Geometria 3D przebudowana — dodano skosy dachu, ściany do połaci, schody i meble z JSON-u.');render3D()
 }
 function worldToCamera(p){
   const yaw=observer.angle*Math.PI/180,dx=p[0]-observer.x,dy=p[1]-(floorBase(observer.floor)+observer.eye),dz=p[2]-observer.z;
