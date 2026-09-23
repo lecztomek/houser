@@ -27,6 +27,24 @@ input[type=number]{width:70px}
 .badge.soft{color:#a16207;border-color:#fde68a;background:#fefce8}
 .badge.ok{color:#166534;border-color:#bbf7d0;background:#f0fdf4}
 .status{font-size:12px;color:var(--hs-muted)}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tiles:empty{display:none}
+.tile{border-radius:12px;padding:10px 14px;border:1px solid;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform .1s}
+.tile:hover{transform:translateY(-1px)}
+.tile .n{font:800 34px/1 var(--hs-font)}
+.tile .l{font:700 13px/1.25 var(--hs-font)}
+.tile .l small{display:block;font-weight:500;font-size:11px;opacity:.8}
+.tile.hard{background:#fef2f2;border-color:#fecaca;color:#b91c1c}
+.tile.medium{background:#fff7ed;border-color:#fed7aa;color:#c2410c}
+.tile.soft{background:#fefce8;border-color:#fde68a;color:#a16207}
+.tile.ok{background:#f0fdf4;border-color:#bbf7d0;color:#15803d;flex-direction:column;align-items:stretch;gap:6px}
+.tile.zero{opacity:.55}
+.bar{height:8px;border-radius:999px;background:#dcfce7;overflow:hidden}.bar i{display:block;height:100%;background:#22c55e}
+tr.grp .cnt{display:inline-flex;gap:6px;margin-left:10px;vertical-align:1px}
+tr.grp .cnt b{font-size:12px;border-radius:999px;padding:2px 8px}
+tr.grp .cnt b.bad{background:var(--hs-bad);color:#fff}
+tr.grp .cnt b.ok{background:#dcfce7;color:#15803d}
+@media(max-width:900px){.tiles{grid-template-columns:1fr 1fr}}
 .status b{color:var(--hs-text)}
 main{padding:12px 16px 40px}
 table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;background:#fff;border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);overflow:hidden;box-shadow:var(--hs-shadow)}
@@ -62,11 +80,11 @@ details.ms label{display:flex;gap:6px;align-items:center;font-size:12px;white-sp
 <div class="top">
   <div class="topRow">
     <div><h1 class="hs-title">Warunki</h1></div>
-    <div class="badges" id="summary"></div>
     <div class="grow"></div>
     <label class="btn primary">Wczytaj definicję lub projekt<input id="file" type="file" accept="application/json,.json" hidden></label>
     <button id="exportDef" class="btn" disabled>Eksportuj definicję</button>
   </div>
+  <div class="tiles" id="summary"></div>
   <div class="topRow" id="toolbar" hidden>
     <input id="q" type="search" placeholder="Szukaj…" style="min-width:220px">
     <select id="fFloor"></select>
@@ -99,8 +117,11 @@ function commit(i,fn,rerender=true){const c=JSON.parse(JSON.stringify(conds()[i]
 function renderSummary(){
   $('exportDef').disabled=!project;$('toolbar').hidden=!project;
   if(!project){$('summary').innerHTML='';$('status').innerHTML='Brak projektu. Najpierw ustaw pomieszczenia w module <b>Pomieszczenia</b> albo wczytaj definicję.';return}
-  const act=conds().map((c,i)=>[c,results[i]]).filter(([c,r])=>r),bad=s=>act.filter(([c,r])=>!r.ok&&c.severity===s).length,ok=act.filter(([,r])=>r.ok).length;
-  $('summary').innerHTML='<span class="badge bad">Twarde błędy: '+bad('hard')+'</span><span class="badge warn">Ważne: '+bad('medium')+'</span><span class="badge soft">Miękkie: '+bad('soft')+'</span><span class="badge ok">Spełnione: '+ok+' / '+act.length+'</span>';
+  const act=conds().map((c,i)=>[c,results[i]]).filter(([c,r])=>r),bad=sv=>act.filter(([c,r])=>!r.ok&&c.severity===sv).length,ok=act.filter(([,r])=>r.ok).length,pct=act.length?Math.round(ok/act.length*100):0;
+  const tile=(cls,n,l,sub)=>'<div class="tile '+cls+(n?'':' zero')+'" data-f="'+cls+'"><span class="n">'+n+'</span><span class="l">'+l+'<small>'+sub+'</small></span></div>';
+  $('summary').innerHTML=tile('hard',bad('hard'),'✗ Twarde błędy','układ wymaga poprawy')+tile('medium',bad('medium'),'✗ Ważne','warto poprawić')+tile('soft',bad('soft'),'✗ Miękkie','drobne odchylenia')+
+    '<div class="tile ok" data-f="ok"><div style="display:flex;align-items:center;gap:12px"><span class="n">'+ok+'<span style="font-size:18px;font-weight:700"> / '+act.length+'</span></span><span class="l">✓ Spełnione<small>'+pct+'% aktywnych warunków</small></span></div><div class="bar"><i style="width:'+pct+'%"></i></div></div>';
+  for(const t of $('summary').querySelectorAll('.tile'))t.onclick=()=>{const f=t.dataset.f;$('fState').value=f==='ok'?'ok':'bad';$('fSev').value=f==='ok'?'':f;renderTable()};
   const painted=Object.values(project.state||{}).some(s=>Array.isArray(s)&&(Array.isArray(s[0])?s.flat():s).some(Boolean));
   $('status').innerHTML='<b>'+(source==='plik'?'Wczytany plik':'Bieżący projekt')+'</b> – '+conds().length+' warunków. '+(painted?'Status liczony na bieżąco z rzutu z modułu Układ pomieszczeń.':'Rzut jest jeszcze pusty – większość warunków będzie niespełniona, dopóki nie narysujesz układu.');
 }
@@ -173,7 +194,7 @@ function renderTable(){
   for(const [g,idx] of groups){
     const isOpen=open.has(g)||filtering||idx.includes(focusIndex),bad=idx.filter(i=>results[i]&&!results[i].ok).length,act=idx.filter(i=>results[i]).length;
     const h=document.createElement('tr');h.className='grp'+(isOpen?' open':'');h.innerHTML='<td colspan="8"><span class="car">▸</span></td>';
-    h.firstChild.append(document.createTextNode(g));const sm=document.createElement('small');sm.innerHTML=(bad?'<span style="color:var(--hs-bad)">✗ '+bad+'</span> · ':'')+'✓ '+(act-bad)+' / '+idx.length;h.firstChild.appendChild(sm);
+    h.firstChild.append(document.createTextNode(g));const sm=document.createElement('span');sm.className='cnt';sm.innerHTML=(bad?'<b class="bad">✗ '+bad+'</b>':'')+'<b class="ok">✓ '+(act-bad)+' / '+idx.length+'</b>';h.firstChild.appendChild(sm);
     h.onclick=()=>{open.has(g)?open.delete(g):open.add(g);renderTable()};tb.appendChild(h);
     if(isOpen)for(const i of idx)tb.appendChild(buildRow(i));
   }
