@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Drzwi wewnętrzne</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+.wrap{height:100vh;display:grid;grid-template-columns:350px 1fr}
+.side{padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{position:relative;min-width:0;overflow:auto;background:#e2e8f0;display:flex;align-items:flex-start;justify-content:center;padding:18px}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--hs-line-strong);background:var(--hs-panel);color:var(--hs-text);padding:5px 9px;border-radius:var(--hs-radius);font:600 12px var(--hs-font);cursor:pointer}
+.btn:hover{background:var(--hs-panel-2);border-color:#94a3b8}
+.btn.primary,.btn.active{background:var(--hs-accent);border-color:var(--hs-accent);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.status{font-size:12px;line-height:1.45;color:var(--hs-muted);margin-top:8px}
+.status b{color:var(--hs-text)}
+.field{display:grid;gap:4px;margin-bottom:8px}
+.field label{font-size:11px;color:var(--hs-muted)}
+.field select,.field input{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+.list{display:grid;gap:5px}
+.item{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;border:1px solid var(--hs-line);border-radius:var(--hs-radius);padding:6px 8px;background:#fff;font-size:12px;cursor:pointer}
+.item.sel{outline:2px solid var(--hs-accent);outline-offset:1px}
+.item small{color:var(--hs-muted)}
+.warn{font-size:12px;color:#b45309;margin-top:6px}
+.hint{font-size:12px;color:var(--hs-muted);line-height:1.45;margin:8px 0 0}
+.planCard{background:#fff;border-radius:var(--hs-radius-lg);padding:14px;box-shadow:0 6px 20px rgba(15,23,42,.12)}
+.planTitle{font-weight:700;font-size:14px;margin-bottom:8px;display:flex;justify-content:space-between;gap:12px}
+.planTitle span{color:var(--hs-muted);font-weight:500;font-size:12px}
+#plan{display:block;user-select:none}
+.empty{padding:40px 24px;text-align:center;color:var(--hs-muted);max-width:420px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1 class="hs-title">Drzwi wewnętrzne</h1>
+  <p class="hs-sub">Rodzaj, wysokość i kierunek otwierania drzwi między pomieszczeniami. Położenie drzwi rysujesz w module Układ pomieszczeń.</p>
+  <div class="section">
+    <h3>Projekt</h3>
+    <div class="row"><label class="btn primary">Wczytaj projekt JSON<input id="file" type="file" accept="application/json,.json" hidden></label><button id="export" class="btn" disabled>Eksportuj JSON</button></div>
+    <div id="status" class="status"></div>
+  </div>
+  <div class="section"><h3>Kondygnacja</h3><div class="row" id="floorTabs"></div></div>
+  <div class="section" id="edit" hidden>
+    <h3 id="editTitle">Drzwi</h3>
+    <div class="field"><label>Rodzaj</label><select id="eVar"></select></div>
+    <div class="field"><label>Wysokość [m]</label><input id="eH" type="number" step="0.05" min="0.6" max="2.6"></div>
+    <div class="field" id="swingField"><label>Otwierają się do</label><select id="eSwing"></select></div>
+    <div class="field" id="hingeField"><label>Zawiasy</label><select id="eHinge"><option value="start">z lewej / od góry rzutu</option><option value="end">z prawej / od dołu rzutu</option></select></div>
+    <div class="row"><button class="btn" id="flip">⇄ Odwróć kierunek</button></div>
+    <div id="warn"></div>
+  </div>
+  <div class="section"><h3>Drzwi na kondygnacji</h3><div class="list" id="list"></div></div>
+  <p class="hint">Kliknij drzwi na rzucie, żeby je wybrać. Łuk pokazuje, w którą stronę otwiera się skrzydło.</p>
+</aside>
+<main class="main"><div class="planCard" id="card"></div></main>
+</div>
+
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script>
+const $=id=>document.getElementById(id), NS='http://www.w3.org/2000/svg', O=HouserOpenings, PX=40;
+const FLOOR_PL={ground:'Parter',upper:'Piętro / poddasze'};
+let project=null, source='', floor='ground', selected=null;
+const grid=()=>project?.grid||project?.definitionSnapshot?.grid;
+const floors=()=>{const fo=project?.definitionSnapshot?.floorOrder;return Array.isArray(fo)&&fo.length?fo:['ground','upper']};
+const rooms=f=>project?.definitionSnapshot?.floors?.[f]?.rooms||[];
+const roomOf=(f,id)=>rooms(f).find(r=>r.id===id);
+function cellAt(f,x,y){const g=grid(),s=project?.state?.[f];if(!g||!s||x<0||y<0||x>=g.width||y>=g.height)return null;return (Array.isArray(s[0])?s[y]?.[x]:s[y*g.width+x])||null}
+const insideId=(f,x,y)=>{const id=cellAt(f,x,y);return id&&roomOf(f,id)?.kind!=='exteriorVoid'?id:null};
+
+// drzwi wewnętrzne połączone w całe skrzydła (sąsiednie krawędzie tej samej linii)
+function doors(f){
+  const groups={},out=[];
+  for(const [key,base] of Object.entries(project.openings?.[f]||{})){if(base!=='door')continue;const [o,aS,bS]=key.split(':'),a=+aS,b=+bS;
+    const A=o==='h'?insideId(f,a,b-1):insideId(f,a-1,b),B=insideId(f,a,b);if(!A||!B)continue; // tylko między dwoma pomieszczeniami
+    const line=o==='h'?b:a,along=o==='h'?a:b,gk=[o,line,A,B].join('|');(groups[gk]=groups[gk]||{o,line,A,B,items:[]}).items.push({key,along})}
+  for(const g of Object.values(groups)){g.items.sort((p,q)=>p.along-q.along);let cur=null;
+    for(const it of g.items){if(cur&&it.along===cur.to+1&&cur.keys.length<4){cur.to=it.along;cur.keys.push(it.key)}else{if(cur)out.push(cur);cur={...g,from:it.along,to:it.along,keys:[it.key]}}}if(cur)out.push(cur)}
+  for(const d of out){d.id=f+'|'+d.keys[0];const v=project.openingVariants?.[f]?.[d.keys[0]]||{};d.info=O.resolve(project,f,d.keys[0],'door');d.swing=v.swing==='b'?'b':'a';d.hinge=v.hinge==='end'?'end':'start';d.len=(d.to-d.from+1)*grid().cellMeters}
+  return out;
+}
+function setProject(p,src){project=p&&(p.grid||p.definitionSnapshot?.grid)?p:null;source=src||'';if(project&&!floors().includes(floor))floor=floors()[0];renderAll()}
+function save(){if(project)HouserStore.save(project,'drzwi-wewnetrzne')}
+function sel(){return project?doors(floor).find(d=>d.id===selected):null}
+function update(data){const d=sel();if(!d)return;O.setVariant(project,floor,d.keys,{variant:d.info.variant,...data});renderAll();save()}
+
+// wolna wysokość pod dachem (poddasze)
+function clearAt(xm,ym){const g=grid(),e=project.elevationSettings||{},across=HouserModel.slopesAcrossX(e.ridge==='north-south'?'north-south':'east-west',project.orientation?.top),G=HouserModel.geometry(e,across?g.width*g.cellMeters:g.height*g.cellMeters),span=across?g.width*g.cellMeters:g.height*g.cellMeters,d=across?xm:ym,t=Math.max(0,1-Math.abs(d-span/2)/(span/2));return {h:G.eave+G.rise*t-G.groundHeight,attic:G.upperType==='attic'}}
+
+function renderSide(){
+  $('export').disabled=!project;
+  $('status').innerHTML=project?'<b>'+(source==='plik'?'Wczytany plik':'Bieżący projekt')+'</b> – zmiany zapisują się automatycznie.':'Brak projektu. Narysuj rzut z drzwiami w module <b>Układ pomieszczeń</b> albo wczytaj plik JSON.';
+  $('floorTabs').innerHTML='';for(const f of project?floors():[]){const b=document.createElement('button');b.className='btn'+(f===floor?' active':'');b.textContent=FLOOR_PL[f]||f;b.onclick=()=>{floor=f;selected=null;renderAll()};$('floorTabs').appendChild(b)}
+  const L=$('list');L.innerHTML='';const ds=project?doors(floor):[];
+  if(!ds.length)L.innerHTML='<div class="hint" style="margin:0">Brak drzwi między pomieszczeniami na tej kondygnacji.</div>';
+  for(const d of ds){const it=document.createElement('div');it.className='item'+(d.id===selected?' sel':'');it.innerHTML='<div><b>'+esc(roomOf(floor,d.A)?.name||d.A)+' ↔ '+esc(roomOf(floor,d.B)?.name||d.B)+'</b><br><small>'+esc(d.info.name)+' · '+d.len.toFixed(2)+' × '+d.info.height.toFixed(2)+' m</small></div>';it.onclick=()=>{selected=d.id;renderAll()};L.appendChild(it)}
+  const d=sel();$('edit').hidden=!d;if(!d)return;
+  $('editTitle').textContent=(roomOf(floor,d.A)?.name||d.A)+' ↔ '+(roomOf(floor,d.B)?.name||d.B);
+  $('eVar').innerHTML=Object.entries(O.variantsFor('door')).filter(([id])=>id!=='entrance').map(([id,v])=>'<option value="'+id+'">'+v.name+'</option>').join('');$('eVar').value=d.info.variant;
+  if(document.activeElement!==$('eH'))$('eH').value=d.info.height.toFixed(2);
+  $('eSwing').innerHTML='<option value="a">'+esc(roomOf(floor,d.A)?.name||d.A)+'</option><option value="b">'+esc(roomOf(floor,d.B)?.name||d.B)+'</option>';$('eSwing').value=d.swing;$('eHinge').value=d.hinge;
+  const sliding=!!d.info.sliding;$('swingField').hidden=sliding;$('hingeField').hidden=sliding||d.info.leaves===2;
+  let w='';if(floor!==floors()[0]){const c=grid().cellMeters,pts=[d.from*c,(d.to+1)*c].map(a=>d.o==='h'?clearAt(a,d.line*c):clearAt(d.line*c,a));if(pts[0].attic){const av=Math.min(...pts.map(p=>p.h));if(d.info.height>av-.05)w='⚠ Pod skosem jest tu tylko '+av.toFixed(2)+' m – wybierz „Niskie – do schowka pod skosem” albo obniż drzwi.'}}
+  $('warn').innerHTML=w?'<div class="warn">'+w+'</div>':'';
+}
+$('eVar').onchange=()=>{const v=O.variantsFor('door')[$('eVar').value];update({variant:$('eVar').value,height:v.height})};
+$('eH').onchange=()=>{const x=Number($('eH').value);if(Number.isFinite(x))update({height:x})};
+$('eSwing').onchange=()=>update({swing:$('eSwing').value});
+$('eHinge').onchange=()=>update({hinge:$('eHinge').value});
+$('flip').onclick=()=>{const d=sel();if(!d)return;update({swing:d.swing==='a'?'b':'a',hinge:d.hinge==='start'?'end':'start'})};
+
+function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
+function renderPlan(){
+  const card=$('card');
+  if(!project){card.innerHTML='<div class="empty">Brak projektu.</div>';return}
+  if(!$('plan'))card.innerHTML='<div class="planTitle"><div id="planTitle"></div><span id="planInfo">kliknij drzwi, aby je wybrać</span></div><svg id="plan"></svg>';
+  const svg=$('plan');svg.innerHTML='';const g=grid(),c=g.cellMeters,Wm=g.width*c,Hm=g.height*c,pad=.4;
+  svg.setAttribute('viewBox',[-pad*PX,-pad*PX,(Wm+2*pad)*PX,(Hm+2*pad)*PX].join(' '));
+  const main=document.querySelector('.main'),avail=Math.max(300,Math.min(main.clientWidth-70,(main.clientHeight-90)*(Wm+2*pad)/(Hm+2*pad)));svg.setAttribute('width',Math.round(avail));const k=(Wm+2*pad)*PX/Math.round(avail);
+  $('planTitle').textContent=(FLOOR_PL[floor]||floor)+' · '+Wm.toFixed(1)+' × '+Hm.toFixed(1)+' m';
+  const X=m=>m*PX;
+  for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){const id=cellAt(floor,x,y);if(!id)continue;const r=roomOf(floor,id),vd=r?.kind==='exteriorVoid';el('rect',{x:X(x*c),y:X(y*c),width:X(c)+.5,height:X(c)+.5,fill:vd?'#e2e8f0':(r?.color||'#e5e7eb'),'fill-opacity':vd?1:.28},svg)}
+  const ops=project.openings?.[floor]||{},OPC={opening:'#ffffff',window:'#60a5fa',hst:'#22d3ee'};
+  const edge=(key,a,b,x1,y1,x2,y2)=>{if(a===b)return;const ext=!a||!b,op=ops[key];if(op==='door'&&!ext)return;el('line',{x1:X(x1),y1:X(y1),x2:X(x2),y2:X(y2),stroke:'#0f172a','stroke-width':ext?6:3,'stroke-linecap':'square'},svg);if(op&&op!=='door')el('line',{x1:X(x1),y1:X(y1),x2:X(x2),y2:X(y2),stroke:OPC[op]||'#fff','stroke-width':ext?3:2,'stroke-dasharray':op==='opening'?'4 3':''},svg);if(op==='door'&&ext)el('line',{x1:X(x1),y1:X(y1),x2:X(x2),y2:X(y2),stroke:'#fff','stroke-width':3},svg)};
+  for(let y=0;y<=g.height;y++)for(let x=0;x<g.width;x++)edge('h:'+x+':'+y,cellAt(floor,x,y-1),cellAt(floor,x,y),x*c,y*c,(x+1)*c,y*c);
+  for(let y=0;y<g.height;y++)for(let x=0;x<=g.width;x++)edge('v:'+x+':'+y,cellAt(floor,x-1,y),cellAt(floor,x,y),x*c,y*c,x*c,(y+1)*c);
+  const acc={};for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){const id=cellAt(floor,x,y);if(!id)continue;(acc[id]=acc[id]||{sx:0,sy:0,n:0});acc[id].sx+=x;acc[id].sy+=y;acc[id].n++}
+  for(const [id,a] of Object.entries(acc)){const r=roomOf(floor,id);if(r?.kind==='exteriorVoid')continue;el('text',{x:X((a.sx/a.n+.5)*c),y:X((a.sy/a.n+.5)*c),'text-anchor':'middle','dominant-baseline':'middle','font-size':12*k,'font-weight':600,fill:'rgba(15,23,42,.45)','pointer-events':'none'},svg,r?.name||id)}
+  // drzwi: skrzydło + łuk
+  for(const d of doors(floor)){const isSel=d.id===selected,col=isSel?'#2563eb':'#111827',gr=el('g',{style:'cursor:pointer'},svg);gr.addEventListener('click',()=>{selected=d.id;renderAll()});
+    const t0=d.from*c,t1=(d.to+1)*c,L=d.line*c,P=(t,n)=>d.o==='h'?[X(t),X(L+n)]:[X(L+n),X(t)],dir=d.swing==='a'?-1:1; // a = pokój „przed” krawędzią (wyżej / na lewo)
+    el('line',{x1:P(t0,0)[0],y1:P(t0,0)[1],x2:P(t1,0)[0],y2:P(t1,0)[1],stroke:'#fff','stroke-width':5},gr);
+    const hit=el('rect',{},gr);const [hx,hy]=P(t0,-.25),[hx2,hy2]=P(t1,.25);hit.setAttribute('x',Math.min(hx,hx2));hit.setAttribute('y',Math.min(hy,hy2));hit.setAttribute('width',Math.abs(hx2-hx));hit.setAttribute('height',Math.abs(hy2-hy));hit.setAttribute('fill','transparent');
+    const leaf=(h,e)=>{const r=Math.abs(e-h),s=Math.sign(e-h),[ax,ay]=P(h,0),[bx,by]=P(h,dir*r),[ex,ey]=P(e,0);el('line',{x1:ax,y1:ay,x2:bx,y2:by,stroke:col,'stroke-width':2.5},gr);const sweep=(d.o==='h')===((s>0)===(dir>0))?0:1;el('path',{d:'M '+bx+' '+by+' A '+X(r)+' '+X(r)+' 0 0 '+sweep+' '+ex+' '+ey,fill:'none',stroke:col,'stroke-width':1.2,'stroke-dasharray':'4 3'},gr)};
+    if(d.info.sliding){const [a1,b1]=P(t0,dir*.08),[a2,b2]=P(t0+(t1-t0)*.95,dir*.08);el('line',{x1:a1,y1:b1,x2:a2,y2:b2,stroke:col,'stroke-width':3},gr)}
+    else if(d.info.leaves===2){const m=(t0+t1)/2;leaf(t0,m);leaf(t1,m)}
+    else if(d.hinge==='start')leaf(t0,t1);else leaf(t1,t0);
+    if(d.info.height<1.6){const [tx,ty]=P((t0+t1)/2,-dir*.28);el('text',{x:tx,y:ty,'text-anchor':'middle','dominant-baseline':'middle','font-size':10*k,'font-weight':700,fill:'#b45309'},gr,d.info.height.toFixed(2)+' m')}
+  }
+}
+window.addEventListener('resize',renderPlan);
+if(window.ResizeObserver)new ResizeObserver(()=>renderPlan()).observe(document.querySelector('.main'));
+function renderAll(){renderSide();renderPlan()}
+function esc(s){return String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]))}
+$('file').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{const p=JSON.parse(await f.text());if(!p.grid&&!p.definitionSnapshot?.grid)throw new Error('brak siatki (grid)');setProject(p,'plik');save()}catch(err){alert('Nie udało się wczytać projektu: '+err.message)}e.target.value=''});
+$('export').addEventListener('click',()=>{if(!project)return;const d=new Date(),p2=n=>String(n).padStart(2,'0');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(project,null,2)],{type:'application/json'}));a.download='dom-uklad-v7-'+[d.getFullYear(),p2(d.getMonth()+1),p2(d.getDate()),p2(d.getHours()),p2(d.getMinutes())].join('-')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
+const rec=HouserStore.load();setProject(rec?rec.project:null,rec?'store':'');
+HouserStore.subscribe(r=>{const a=document.activeElement;if(a&&['INPUT','SELECT'].includes(a.tagName))return;setProject(r.project,'store')});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

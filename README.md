@@ -16,6 +16,7 @@ modules/
   zewnatrz-3d/index.html    podgląd 3D bryły z zewnątrz (dach, okna, tarasy, pergole)
   schody/index.html         schody: proste, L, dwubiegowe 180°, kręcone – kratki i otwór w stropie wpisywane automatycznie
   okna-drzwi/index.html     rodzaje i wymiary okien i drzwi (niskie, balkonowe, ścięte, dachowe...) z podglądem elewacji
+  drzwi-wewnetrzne/index.html drzwi między pomieszczeniami: rodzaj, wysokość, kierunek otwierania
   tarasy/index.html         tarasy, zadaszenia i pergole malowane kratkami wokół domu
   meblowanie/index.html     rozmieszczanie mebli na gotowym rzucie (pomieszczeń tu nie zmieniasz)
 shared/theme.css            wspólny jasny motyw (kolory, przyciski, nagłówki modułów)

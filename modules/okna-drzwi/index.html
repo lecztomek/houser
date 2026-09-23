@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Okna i drzwi</title>
+<title>Okna i drzwi zewnętrzne</title>
 <link rel="stylesheet" href="../../shared/theme.css">
 <style>
 *{box-sizing:border-box}
@@ -44,7 +44,7 @@ svg{display:block;width:100%;height:auto}
 <div class="wrap">
 <aside class="side">
   <div class="sideTop">
-    <h1 class="hs-title">Okna i drzwi</h1>
+    <h1 class="hs-title">Okna i drzwi zewnętrzne</h1>
     <p class="hs-sub">Rodzaj i wymiary każdego okna i drzwi narysowanych w Układzie pomieszczeń: okna niskie, balkonowe, naświetla, ścięte pod skos, dachowe; drzwi pojedyncze, podwójne, przesuwne, wejściowe.</p>
     <div class="section">
       <div class="row"><label class="btn primary">Wczytaj projekt JSON<input id="file" type="file" accept="application/json,.json" hidden></label><button id="export" class="btn" disabled>Eksportuj JSON</button></div>
@@ -123,8 +123,9 @@ function renderList(){
   const L=$('list');L.innerHTML='';$('export').disabled=!project;
   $('status').innerHTML=project?'<b>'+(source==='plik'?'Wczytany plik':'Bieżący projekt')+'</b> – zmiany zapisują się automatycznie.':'Brak projektu. Narysuj rzut z oknami i drzwiami w module <b>Układ pomieszczeń</b> albo wczytaj plik JSON.';
   if(!project)return;
-  const all=runs();if(!all.length){L.innerHTML='<div class="empty">Brak okien i drzwi na rzucie.</div>';return}
-  for(const fac of [...ORD,'inside']){const rs=all.filter(r=>r.facade===fac);if(!rs.length)continue;
+  const inner=runs().filter(r=>r.facade==='inside').length;if(inner){const n=document.createElement('p');n.className='hint';n.innerHTML='Drzwi między pomieszczeniami ('+inner+') ustawiasz w module <a href="#" id="goInner">Drzwi wewnętrzne</a>.';L.appendChild(n);n.querySelector('a').onclick=e=>{e.preventDefault();window.HouserNav&&HouserNav.go('drzwi-wewnetrzne')}}
+  const all=runs().filter(r=>r.facade!=='inside');if(!all.length){L.innerHTML='<div class="empty">Brak okien i drzwi na rzucie.</div>';return}
+  for(const fac of ORD){const rs=all.filter(r=>r.facade===fac);if(!rs.length)continue;
     const h=document.createElement('h3');h.className='fac';h.textContent=fac==='inside'?'Drzwi wewnętrzne':'Elewacja: '+PL[fac];L.appendChild(h);
     rs.sort((p,q)=>floors().indexOf(p.f)-floors().indexOf(q.f)||p.h0-q.h0);
     for(const r of rs){const d=document.createElement('div');d.className='op'+(selected===r.id?' sel':'');
