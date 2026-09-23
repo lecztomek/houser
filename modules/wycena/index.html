@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wycena</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+.wrap{height:100%;display:grid;grid-template-columns:320px 1fr}
+.side{padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{padding:16px;overflow:auto;display:grid;gap:14px;align-content:start}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.field{display:grid;gap:4px;margin-bottom:10px}
+.field label{font-size:12px;color:var(--hs-muted)}
+.field input,.field select{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:34px;font:inherit;background:#fff;color:var(--hs-text)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);overflow:hidden}
+.seg button{border:0;background:#fff;padding:8px 4px;font:600 12.5px var(--hs-font);color:var(--hs-muted);cursor:pointer}
+.seg button+button{border-left:1px solid var(--hs-line-strong)}
+.seg button.active{background:var(--hs-accent);color:#fff}
+.btn{border:1px solid var(--hs-line-strong);background:var(--hs-panel);color:var(--hs-text);padding:6px 10px;border-radius:var(--hs-radius);font:600 12.5px var(--hs-font);cursor:pointer}
+.btn:hover{background:var(--hs-panel-2);border-color:#94a3b8}
+.row{display:flex;gap:7px;flex-wrap:wrap}
+.stats{display:grid;grid-template-columns:1fr auto;gap:5px 10px;font-size:13px}
+.stats span:nth-child(odd){color:var(--hs-muted)}
+.stats span:nth-child(even){font-weight:650;text-align:right}
+.hint{font-size:12px;color:var(--hs-muted);line-height:1.45}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.tile .l{font-size:12px;color:var(--hs-muted);font-weight:600}
+.tile .v{font-size:26px;font-weight:800;margin-top:4px;letter-spacing:-.01em}
+.tile .s{font-size:12px;color:var(--hs-muted);margin-top:2px}
+.tile.main{border-color:var(--hs-accent);background:linear-gradient(180deg,#eff6ff,#fff)}
+.tile.main .v{color:var(--hs-accent);font-size:30px}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);box-shadow:var(--hs-shadow);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--hs-line);text-align:left;vertical-align:middle}
+th{font-size:11.5px;color:var(--hs-muted);font-weight:700;background:var(--hs-panel-2);text-transform:uppercase;letter-spacing:.03em}
+td.num,th.num{text-align:right;white-space:nowrap}
+tr.stage td{background:#f8fafc;font-weight:800;font-size:13.5px;border-top:2px solid var(--hs-line)}
+tr.stage td.num{color:var(--hs-accent)}
+tr.off td{color:#94a3b8}
+tr.off td input.price{opacity:.5}
+td .how{display:block;font-size:11.5px;color:var(--hs-muted);margin-top:1px}
+input.price{width:92px;text-align:right;border:1px solid var(--hs-line-strong);border-radius:6px;padding:4px 6px;font:inherit}
+input.price.changed{border-color:#f59e0b;background:#fffbeb}
+tr.total td{font-weight:800;font-size:15px;background:#eff6ff;border-top:2px solid var(--hs-accent)}
+.empty{padding:40px 24px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){.wrap{grid-template-columns:1fr;height:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}}
+@media print{.side{display:none}.wrap{display:block}input.price{border:0;background:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1 class="hs-title">Wycena</h1>
+  <p class="hs-sub">Orientacyjny koszt budowy policzony z projektu: ilości (ściany, stropy, dach, okna, drzwi, schody, instalacje, wykończenie) razy ceny jednostkowe. Ceny możesz zmienić pod swoje oferty – zapisują się w projekcie.</p>
+
+  <div class="section">
+    <h3>Standard wykończenia</h3>
+    <div class="seg" id="stdSeg"><button data-v="eco">Ekonomiczny</button><button data-v="std">Średni</button><button data-v="high">Wysoki</button></div>
+    <div class="field" style="margin-top:10px"><label>Współczynnik cen (region, rok, wykonawca)</label><input id="factor" type="number" step="0.05" min="0.5" max="2"></div>
+    <p class="hint">Standard mnoży ceny wykończenia i instalacji (ekonomiczny ×0,85, wysoki ×1,35). Współczynnik mnoży wszystko – np. 1,15 dla dużego miasta.</p>
+  </div>
+
+  <div class="section">
+    <h3>Dom w liczbach</h3>
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <div class="section">
+    <h3>Raport</h3>
+    <div class="row"><button class="btn" id="csv">⬇ Pobierz CSV</button><button class="btn" id="print">🖨 Drukuj</button><button class="btn" id="reset">Przywróć ceny domyślne</button></div>
+    <p class="hint">Ceny domyślne to przybliżone stawki rynkowe (z materiałem i robocizną, brutto). Traktuj wynik jako rząd wielkości – do porównania wariantów projektu, nie jako kosztorys.</p>
+  </div>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let project=null;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const zl=v=>Math.round(v).toLocaleString('pl-PL')+' zł',n1=v=>(Math.round(v*10)/10).toLocaleString('pl-PL'),n2=v=>(Math.round(v*100)/100).toLocaleString('pl-PL');
+
+// ---------- ilości z projektu
+function grid(){return project.grid||project.definitionSnapshot?.grid}
+function floorsOrder(){return project.definitionSnapshot?.floorOrder||['ground','upper']}
+function rooms(f){return project.definitionSnapshot?.floors?.[f]?.rooms||[]}
+function flat(f){const st=project.state?.[f]||[];return Array.isArray(st[0])?st.flat():st}
+function quantities(){
+  const g=grid(),W=g.width,H=g.height,c=g.cellMeters,c2=c*c,[lo,up]=floorsOrder();
+  const kind={};for(const f of [lo,up])kind[f]=Object.fromEntries(rooms(f).map(r=>[r.id,r]));
+  const st={[lo]:flat(lo),[up]:flat(up)};
+  const id=(f,x,y)=>x<0||y<0||x>=W||y>=H?null:(st[f]?.[y*W+x]||null);
+  const isHole=(f,v)=>f===up&&(v==='pustka'||v==='schody');
+  const occ=(f,x,y)=>{const v=id(f,x,y);return !!v&&kind[f]?.[v]?.kind!=='exteriorVoid'};
+  const e=project.elevationSettings||{},across=HouserModel.slopesAcrossX(e.ridge==='north-south'?'north-south':'east-west',project.orientation?.top);
+  const span=across?W*c:H*c,length=across?H*c:W*c,G=HouserModel.geometry(e,span),tan=Math.tan(G.roofPitch*Math.PI/180),attic=G.upperType==='attic';
+  const q={c,span,length,G};
+  // powierzchnie
+  let foot=0,usable={[lo]:0,[up]:0},net={[lo]:0,[up]:0},slab=0;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const gO=occ(lo,x,y),uO=occ(up,x,y);if(gO||uO)foot+=c2;
+    for(const f of [lo,up]){if(!occ(f,x,y))continue;const v=id(f,x,y);if(isHole(f,v))continue;net[f]+=c2;
+      if(f===up&&attic){const a=across?(x+.5)*c:(y+.5)*c,h=Math.min(G.kneeWall+Math.min(a,span-a)*tan,G.upperHeight);usable[f]+=h>=2.2?c2:h>=1.4?c2/2:0}else usable[f]+=c2}
+    if(uO&&!isHole(up,id(up,x,y)))slab+=c2;
+  }
+  Object.assign(q,{foot,usable,net,slab,usableTotal:usable[lo]+usable[up]});
+  // ściany: zewnętrzne (krawędź zajęta / niezajęta) i działowe (między różnymi pomieszczeniami)
+  const hWall={[lo]:G.groundHeight,[up]:G.upperWall},hPart={[lo]:G.groundHeight,[up]:attic?Math.max(G.kneeWall,(G.kneeWall+G.upperHeight)/2):G.upperHeight};
+  let extLen={[lo]:0,[up]:0},partLen={[lo]:0,[up]:0};
+  const edge=(f,ax,ay,bx,by,key)=>{const A=occ(f,ax,ay),B=occ(f,bx,by);if(A!==B){extLen[f]+=c;return}
+    if(!A)return;const va=id(f,ax,ay),vb=id(f,bx,by);if(va===vb||isHole(f,va)||isHole(f,vb))return;if(project.openings?.[f]?.[key]==='opening')return;partLen[f]+=c};
+  for(const f of [lo,up]){for(let y=0;y<=H;y++)for(let x=0;x<W;x++)edge(f,x,y-1,x,y,'h:'+x+':'+y);for(let x=0;x<=W;x++)for(let y=0;y<H;y++)edge(f,x-1,y,x,y,'v:'+x+':'+y)}
+  const gable=span*G.rise; // dwa trójkąty ścian szczytowych
+  // otwory: łączymy sąsiednie krawędzie tego samego typu w jeden otwór
+  const ops={win:0,winA:0,roofWin:0,hst:0,hstA:0,extDoor:0,extDoorA:0,intDoor:0};
+  for(const f of [lo,up]){const groups={};
+    for(const [key,base] of Object.entries(project.openings?.[f]||{})){if(!['window','door','hst'].includes(base))continue;const [o,aS,bS]=key.split(':'),a=+aS,b=+bS;
+      const A=o==='h'?occ(f,a,b-1):occ(f,a-1,b),B=occ(f,a,b),ext=A!==B;if(!A&&!B)continue;const line=o==='h'?b:a,along=o==='h'?a:b;
+      const gk=[o,line,base,ext].join('|');(groups[gk]=groups[gk]||{base,ext,items:[]}).items.push({key,along})}
+    for(const gr of Object.values(groups)){gr.items.sort((p,q)=>p.along-q.along);let run=null;const runs=[];
+      for(const it of gr.items){if(run&&it.along===run.to+1&&(gr.base!=='door'||run.keys.length<4)){run.to=it.along;run.keys.push(it.key)}else{run={to:it.along,keys:[it.key]};runs.push(run)}}
+      for(const r of runs){const info=HouserOpenings.resolve(project,f,r.keys[0],gr.base),w=r.keys.length*c,area=w*(+info.height||1.2);
+        if(gr.base==='window'){if(info.shape==='roof')ops.roofWin++;else if(gr.ext){ops.win++;ops.winA+=area}}
+        else if(gr.base==='hst'){ops.hst++;ops.hstA+=area}
+        else if(gr.ext){ops.extDoor++;ops.extDoorA+=area}else ops.intDoor++}}}
+  const extGross=extLen[lo]*hWall[lo]+extLen[up]*hWall[up]+gable,extNet=Math.max(0,extGross-ops.winA-ops.hstA-ops.extDoorA);
+  const partA=partLen[lo]*hPart[lo]+partLen[up]*hPart[up];
+  Object.assign(q,{extLen,partLen,extGross,extNet,partA,gable,ops});
+  // dach
+  const eo=G.eaveOverhang,go=G.gableOverhang,slope=(span/2+eo)/Math.cos(G.roofPitch*Math.PI/180),roofA=2*slope*(length+2*go);
+  const soffitA=G.soffit==='none'?0:2*eo*(length+2*go)+2*go*2*slope,gutter=2*(length+2*go);
+  Object.assign(q,{roofA,soffitA,gutter});
+  // komin: spójne grupy kratek
+  const ch=new Set(project.structure?.chimney||[]),seen=new Set();let chimneys=0;
+  for(const n of ch){if(seen.has(n))continue;chimneys++;const stack=[n];while(stack.length){const k=stack.pop();if(seen.has(k)||!ch.has(k))continue;seen.add(k);const x=k%W,y=Math.floor(k/W);if(x>0)stack.push(k-1);if(x<W-1)stack.push(k+1);stack.push(k-W,k+W)}}
+  // schody
+  const stairs=(project.stairs||[]).length?(project.stairs||[]).map(s=>s.type):(rooms(lo).some(r=>r.id==='schody')?['straight']:[]);
+  // łazienki i WC
+  let baths=0,wcs=0;for(const f of [lo,up])for(const r of rooms(f)){if(r.kind==='exteriorVoid'||!st[f]?.includes(r.id))continue;const nm=(r.name||r.id).toLowerCase();if(/łazien|lazien/.test(nm))baths++;else if(/\bwc\b|toalet/.test(nm))wcs++}
+  // tarasy
+  const out={terrace:0,coveredTerrace:0,pergola:0};for(const o of project.outdoorStructures||[]){const cells=(o.cells||[]).length||((+o.w||0)*(+o.h||0));if(out[o.type]!=null)out[o.type]+=cells*c2}
+  // powierzchnie do tynków/malowania: ściany zewn. od środka + działowe z dwóch stron + sufity
+  const plaster=extLen[lo]*hWall[lo]+extLen[up]*(attic?G.kneeWall:hWall[up])+2*partA+net[lo]+(attic?roofA*.55:net[up]);
+  Object.assign(q,{chimneys,stairs,baths,wcs,out,plaster});
+  return q;
+}
+
+// ---------- pozycje wyceny: [id, etap, nazwa, jm, ilość(q), cena domyślna, grupa standardu (fin = wykończenie/instalacje), opis ilości, domyślnie włączona]
+const STAIR_PRICE={straight:16000,L:19000,U:22000,spiral:24000},STAIR_PL={straight:'proste',L:'L',U:'U (180°)',spiral:'kręcone'};
+const ITEMS=[
+  ['found','Stan zerowy','Fundamenty (ławy, ściany fundamentowe, izolacje)','m²',q=>q.foot,650,0,'powierzchnia zabudowy'],
+  ['groundslab','Stan zerowy','Podłoga na gruncie (podsypka, chudziak, izolacja)','m²',q=>Object.values(q.net)[0]??q.foot,260,0,'powierzchnia parteru'],
+  ['utilities','Stan zerowy','Przyłącza (prąd, woda, kanalizacja)','kpl',()=>1,25000,0,'ryczałt'],
+  ['extwalls','Stan surowy otwarty','Ściany zewnętrzne (mur z robocizną)','m²',q=>q.extNet,320,0,'ściany netto bez otworów, ze szczytami'],
+  ['partwalls','Stan surowy otwarty','Ściany działowe','m²',q=>q.partA,170,0,'długość × wysokość kondygnacji'],
+  ['slab','Stan surowy otwarty','Strop nad parterem','m²',q=>q.slab,430,0,'powierzchnia piętra bez otworów w stropie'],
+  ['stairs','Stan surowy otwarty','Schody','szt',q=>q.stairs.length,null,0,q=>q.stairs.map(t=>STAIR_PL[t]||t).join(', ')||'brak'],
+  ['chimney','Stan surowy otwarty','Komin','szt',q=>q.chimneys,9000,0,'z rzutu'],
+  ['roof','Stan surowy otwarty','Dach: więźba, membrana, łaty, pokrycie','m²',q=>q.roofA,480,0,'połacie z okapami'],
+  ['gutters','Stan surowy otwarty','Rynny, obróbki blacharskie','mb',q=>q.gutter,220,0,'długość okapów'],
+  ['soffit','Stan surowy otwarty','Podbitka dachu','m²',q=>q.soffitA,190,1,'spód okapów i wysunięć'],
+  ['windows','Stan surowy zamknięty','Okna','m²',q=>q.ops.winA,1300,1,q=>q.ops.win+' szt.'],
+  ['roofwin','Stan surowy zamknięty','Okna dachowe z kołnierzami','szt',q=>q.ops.roofWin,3800,1,'z projektu'],
+  ['hst','Stan surowy zamknięty','Drzwi tarasowe przesuwne (HST)','m²',q=>q.ops.hstA,3000,1,q=>q.ops.hst+' szt.'],
+  ['extdoor','Stan surowy zamknięty','Drzwi zewnętrzne','szt',q=>q.ops.extDoor,6500,1,'z projektu'],
+  ['elec','Instalacje','Instalacja elektryczna','m²',q=>q.usableTotal,170,1,'powierzchnia użytkowa'],
+  ['plumb','Instalacje','Instalacja wodno-kanalizacyjna','m²',q=>q.usableTotal,130,1,'powierzchnia użytkowa'],
+  ['heatsrc','Instalacje','Źródło ciepła (pompa ciepła z montażem)','kpl',()=>1,45000,1,'ryczałt'],
+  ['floorheat','Instalacje','Ogrzewanie podłogowe','m²',q=>q.usableTotal,120,1,'powierzchnia użytkowa'],
+  ['vent','Instalacje','Wentylacja mechaniczna z rekuperacją','m²',q=>q.usableTotal,170,1,'powierzchnia użytkowa'],
+  ['facade','Elewacja i wykończenie','Ocieplenie i tynk elewacji','m²',q=>q.extNet,290,1,'ściany zewnętrzne netto'],
+  ['plaster','Elewacja i wykończenie','Tynki wewnętrzne / sufity','m²',q=>q.plaster,65,1,'ściany od środka i sufity'],
+  ['screed','Elewacja i wykończenie','Wylewki z ociepleniem podłóg','m²',q=>Object.values(q.net).reduce((a,b)=>a+b,0),120,1,'powierzchnia podłóg'],
+  ['floors','Elewacja i wykończenie','Posadzki (panele, deska, płytki)','m²',q=>Object.values(q.net).reduce((a,b)=>a+b,0),220,1,'powierzchnia podłóg'],
+  ['paint','Elewacja i wykończenie','Malowanie','m²',q=>q.plaster,28,1,'ściany i sufity'],
+  ['intdoor','Elewacja i wykończenie','Drzwi wewnętrzne z montażem','szt',q=>q.ops.intDoor,1500,1,'z projektu'],
+  ['baths','Elewacja i wykończenie','Łazienki (płytki, biały montaż, armatura)','szt',q=>q.baths,24000,1,'pomieszczenia „łazienka”'],
+  ['wc','Elewacja i wykończenie','WC','szt',q=>q.wcs,12000,1,'pomieszczenia „WC”'],
+  ['kitchen','Elewacja i wykończenie','Zabudowa kuchenna z AGD','kpl',()=>1,35000,1,'ryczałt',false],
+  ['terrace','Na zewnątrz','Taras','m²',q=>q.out.terrace,450,1,'z modułu Tarasy'],
+  ['covterrace','Na zewnątrz','Taras zadaszony','m²',q=>q.out.coveredTerrace,1100,1,'z modułu Tarasy'],
+  ['pergola','Na zewnątrz','Pergola','m²',q=>q.out.pergola,700,1,'z modułu Tarasy'],
+  ['design','Inne','Projekt, adaptacja, formalności','kpl',()=>1,18000,0,'ryczałt'],
+  ['manager','Inne','Kierownik budowy, geodeta','kpl',()=>1,10000,0,'ryczałt'],
+];
+const STD={eco:.85,std:1,high:1.35};
+function cs(){const s=project.costSettings||{};return {std:STD[s.std]?s.std:'std',factor:Number.isFinite(+s.factor)&&+s.factor>0?+s.factor:1,prices:s.prices||{},off:s.off||{},on:s.on||{},reserve:Number.isFinite(+s.reserve)?+s.reserve:10}}
+let saveT=null;function saveCs(s){project.costSettings=s;clearTimeout(saveT);saveT=setTimeout(()=>HouserStore.update(p=>{p.costSettings=s},'wycena'),300)}
+
+function compute(){
+  const q=quantities(),s=cs(),rows=[];
+  for(const [id,stage,name,unit,qf,defPrice,fin,how,defOn] of ITEMS){
+    const qty=Math.max(0,qf(q)||0);let base=defPrice;if(id==='stairs')base=q.stairs.length?q.stairs.reduce((a,t)=>a+(STAIR_PRICE[t]||18000),0)/q.stairs.length:18000;
+    const def=base*(fin?STD[s.std]:1)*s.factor,custom=s.prices[id]!=null,price=custom?+s.prices[id]:def,on=s.off[id]?false:(defOn===false?!!s.on[id]:true);
+    rows.push({id,stage,name,unit,qty,price,def,custom,on,how:typeof how==='function'?how(q):how,value:on?qty*price:0})}
+  const sub=rows.reduce((a,r)=>a+r.value,0),reserve=sub*s.reserve/100;
+  return {q,s,rows,sub,reserve,total:sub+reserve};
+}
+
+// ---------- widok
+function render(){
+  const M=$('main');
+  if(!project||!grid()){M.innerHTML='<div class="empty">Brak projektu. Zacznij od modułu <b>Pomieszczenia</b> i narysuj rzut w <b>Układzie pomieszczeń</b> (albo kliknij „Przykład” na pasku u góry).</div>';$('stats').innerHTML='';return}
+  const R=compute(),{q,s}=R,perM=q.usableTotal>0?R.total/q.usableTotal:0;
+  for(const b of $('stdSeg').children)b.classList.toggle('active',b.dataset.v===s.std);if(document.activeElement!==$('factor'))$('factor').value=s.factor;
+  $('stats').innerHTML=[['Powierzchnia użytkowa',n1(q.usableTotal)+' m²'],['– parter',n1(Object.values(q.usable)[0]||0)+' m²'],['– piętro'+(q.G.upperType==='attic'?' (wg wysokości)':''),n1(Object.values(q.usable)[1]||0)+' m²'],['Powierzchnia zabudowy',n1(q.foot)+' m²'],
+    ['Ściany zewnętrzne netto',n1(q.extNet)+' m²'],['Ściany działowe',n1(q.partA)+' m²'],['Dach',n1(q.roofA)+' m²'],['Okna / HST',n1(q.ops.winA+q.ops.hstA)+' m² ('+(q.ops.win+q.ops.hst)+' szt.)'],['Okna dachowe',q.ops.roofWin+' szt.'],['Drzwi zewn. / wewn.',q.ops.extDoor+' / '+q.ops.intDoor+' szt.'],['Łazienki / WC',q.baths+' / '+q.wcs]]
+    .map(([a,b])=>'<span>'+a+'</span><span>'+b+'</span>').join('');
+  const stageSum={};for(const r of R.rows)stageSum[r.stage]=(stageSum[r.stage]||0)+r.value;
+  const ssoBase=['Stan zerowy','Stan surowy otwarty'],sso=ssoBase.reduce((a,k)=>a+(stageSum[k]||0),0),ssz=sso+(stageSum['Stan surowy zamknięty']||0);
+  let html='<div class="tiles"><div class="tile main"><div class="l">Szacunkowy koszt budowy</div><div class="v">'+zl(R.total)+'</div><div class="s">z rezerwą '+s.reserve+'% · brutto</div></div>'+
+    '<div class="tile"><div class="l">Za m² powierzchni użytkowej</div><div class="v">'+zl(perM)+'</div><div class="s">'+n1(q.usableTotal)+' m² użytkowej</div></div>'+
+    '<div class="tile"><div class="l">Stan surowy otwarty</div><div class="v">'+zl(sso)+'</div><div class="s">fundamenty, ściany, strop, dach</div></div>'+
+    '<div class="tile"><div class="l">Stan surowy zamknięty</div><div class="v">'+zl(ssz)+'</div><div class="s">+ okna i drzwi zewnętrzne</div></div></div>';
+  html+='<div class="card"><table><thead><tr><th style="width:28px"></th><th>Pozycja</th><th class="num">Ilość</th><th>j.m.</th><th class="num">Cena jedn. [zł]</th><th class="num">Wartość</th></tr></thead><tbody>';
+  let last='';for(const r of R.rows){if(r.stage!==last){last=r.stage;html+='<tr class="stage"><td></td><td colspan="4">'+esc(r.stage)+'</td><td class="num">'+zl(stageSum[r.stage])+'</td></tr>'}
+    html+='<tr class="'+(r.on?'':'off')+'"><td><input type="checkbox" data-on="'+r.id+'"'+(r.on?' checked':'')+' title="Uwzględnij w wycenie"></td><td>'+esc(r.name)+'<span class="how">'+esc(r.how)+'</span></td><td class="num">'+(r.unit==='szt'||r.unit==='kpl'?Math.round(r.qty):n1(r.qty))+'</td><td>'+r.unit+'</td>'+
+      '<td class="num"><input class="price'+(r.custom?' changed':'')+'" type="number" step="10" min="0" data-price="'+r.id+'" value="'+Math.round(r.price)+'" title="'+(r.custom?'Twoja cena (domyślnie '+Math.round(r.def)+' zł)':'Cena domyślna – wpisz swoją')+'"></td><td class="num">'+(r.on?zl(r.value):'—')+'</td></tr>'}
+  html+='<tr class="stage"><td></td><td colspan="4">Rezerwa na nieprzewidziane <input class="price" type="number" step="1" min="0" max="50" id="reserve" value="'+s.reserve+'" style="width:60px"> %</td><td class="num">'+zl(R.reserve)+'</td></tr>';
+  html+='<tr class="total"><td></td><td colspan="4">Razem</td><td class="num">'+zl(R.total)+'</td></tr></tbody></table></div>';
+  html+='<p class="hint">Ilości liczone z rzutu: ściany po obwodzie kratek, okna i drzwi z modułów Okna i drzwi, dach z Kondygnacji i dachu (z okapami), powierzchnia użytkowa poddasza wg wysokości (≥2,2 m – 100%, 1,4–2,2 m – 50%). Pozycje z pomarańczową ramką mają Twoją cenę.</p>';
+  M.innerHTML=html;
+  M.querySelectorAll('[data-on]').forEach(cb=>cb.onchange=()=>{const s2=cs(),id=cb.dataset.on,def=ITEMS.find(i=>i[0]===id)[8]!==false;if(def){if(cb.checked)delete s2.off[id];else s2.off[id]=true}else{if(cb.checked)s2.on[id]=true;else delete s2.on[id];delete s2.off[id]}saveCs(s2);render()});
+  M.querySelectorAll('[data-price]').forEach(inp=>inp.onchange=()=>{const s2=cs(),v=Number(inp.value);if(Number.isFinite(v)&&v>=0)s2.prices[inp.dataset.price]=v;else delete s2.prices[inp.dataset.price];saveCs(s2);render()});
+  $('reserve').onchange=()=>{const s2=cs(),v=Number($('reserve').value);if(Number.isFinite(v))s2.reserve=Math.max(0,Math.min(50,v));saveCs(s2);render()};
+}
+for(const b of $('stdSeg').children)b.onclick=()=>{if(!project)return;const s=cs();s.std=b.dataset.v;saveCs(s);render()};
+$('factor').onchange=()=>{if(!project)return;const s=cs(),v=Number($('factor').value);if(Number.isFinite(v)&&v>0)s.factor=v;saveCs(s);render()};
+$('reset').onclick=()=>{if(!project||!confirm('Przywrócić wszystkie ceny domyślne (Twoje zmiany cen zostaną usunięte)?'))return;const s=cs();s.prices={};saveCs(s);render()};
+$('print').onclick=()=>window.print();
+$('csv').onclick=()=>{if(!project)return;const R=compute(),L=[['Etap','Pozycja','Ilość','j.m.','Cena jedn. [zł]','Wartość [zł]']];
+  for(const r of R.rows)if(r.on)L.push([r.stage,r.name,(Math.round(r.qty*100)/100+'').replace('.',','),r.unit,Math.round(r.price),Math.round(r.value)]);
+  L.push(['','Rezerwa '+R.s.reserve+'%','','','',Math.round(R.reserve)],['','RAZEM','','','',Math.round(R.total)]);
+  const csv='﻿'+L.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n'),a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='wycena-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove()};
+
+const rec=HouserStore.load();project=rec?rec.project:null;render();
+HouserStore.subscribe(r=>{project=r.project;render()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

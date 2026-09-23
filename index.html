@@ -105,6 +105,7 @@ const MODULES=[
   {id:'wnetrze-3d',group:'Podgląd',name:'Wnętrze 3D',src:'modules/wnetrze-3d/',desc:'Spacer po domu z punktu obserwatora (strzałki), schody, skosy dachu, meble.'},
   {id:'zewnatrz-3d',group:'Podgląd',name:'Zewnątrz 3D',src:'modules/zewnatrz-3d/',desc:'Bryła domu z zewnątrz: dach, okna, drzwi, tarasy i pergole.'},
   {id:'wizualizacje',group:'Podgląd',name:'Wizualizacje AI',src:'modules/wizualizacje/',desc:'Zdjęcie z podglądu 3D zamienione przez AI (Gemini) na realistyczną wizualizację – prompt tworzy się sam z projektu.'},
+  {id:'wycena',group:'Koszty',name:'Wycena',src:'modules/wycena/',desc:'Orientacyjny koszt budowy z projektu: ilości (ściany, strop, dach, okna, drzwi, instalacje, wykończenie) × ceny jednostkowe, które możesz zmienić.'},
 ];
 MODULES.forEach((m,i)=>m.step=i+1);
 const tabs=document.getElementById('tabs'),cards=document.getElementById('cards'),views=document.getElementById('views'),openExt=document.getElementById('openExt');
