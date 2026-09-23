@@ -60,16 +60,7 @@ select,input[type="number"],input[type="text"],input[type="search"]{border:1px s
         <span id="roofInfo" class="badge info"></span>
         <button id="openBrylaBtn" type="button">Piętra i dach →</button>
       </div>
-      <div class="houseOutline">
-        <div class="sectionTitle">Obrys / ściany zewnętrzne</div>
-        <div class="outlineMeta"><span id="houseSizeBadge" class="badge info"></span><span class="small">Każdy klik przesuwa wskazaną ścianę o jedną kratkę. Przy zwężaniu elementy poza nowym obrysem są usuwane; zawsze możesz użyć „Cofnij”.</span></div>
-        <div class="wallGrid">
-          <div class="wallControl"><strong id="wallTopLabel">Górna ściana</strong><div class="wallButtons"><button type="button" data-wall="top" data-delta="-1">Do środka</button><button type="button" data-wall="top" data-delta="1">Na zewnątrz</button></div></div>
-          <div class="wallControl"><strong id="wallBottomLabel">Dolna ściana</strong><div class="wallButtons"><button type="button" data-wall="bottom" data-delta="-1">Do środka</button><button type="button" data-wall="bottom" data-delta="1">Na zewnątrz</button></div></div>
-          <div class="wallControl"><strong id="wallLeftLabel">Lewa ściana</strong><div class="wallButtons"><button type="button" data-wall="left" data-delta="-1">Do środka</button><button type="button" data-wall="left" data-delta="1">Na zewnątrz</button></div></div>
-          <div class="wallControl"><strong id="wallRightLabel">Prawa ściana</strong><div class="wallButtons"><button type="button" data-wall="right" data-delta="-1">Do środka</button><button type="button" data-wall="right" data-delta="1">Na zewnątrz</button></div></div>
-        </div>
-      </div>
+      <div class="houseOutline"><div class="outlineMeta"><span id="houseSizeBadge" class="badge info"></span><span class="small">Kształt budynku rysujesz w module Obrys domu (dowolny kształt).</span><button type="button" id="openObrysBtn">Obrys domu →</button></div><strong hidden id="wallTopLabel">Górna ściana</strong><strong hidden id="wallBottomLabel">Dolna ściana</strong><strong hidden id="wallLeftLabel">Lewa ściana</strong><strong hidden id="wallRightLabel">Prawa ściana</strong></div>
     </div>
 
     <div class="viewTabs" role="tablist" aria-label="Widok projektu">
@@ -489,6 +480,7 @@ $('saveProjectBtn').addEventListener('click',()=>{saveLocal();const blob=new Blo
 const projectInput=$('loadProjectInput');$('loadProjectBtn').addEventListener('click',()=>{projectInput.value='';projectInput.click();});projectInput.addEventListener('change',()=>{const file=projectInput.files&&projectInput.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const p=JSON.parse(String(reader.result||'')),different=!!(p.definitionFingerprint&&p.definitionFingerprint!==fingerprint);pushHistory();importProject(p);renderAll();alert(different?'Projekt wczytany z innej wersji definicji. Pola zgodne z aktualną definicją zostały zachowane.':'Projekt wczytany.');}catch(err){alert('Nie udało się wczytać projektu: '+err.message);}};reader.readAsText(file);});
 
 $('topDirection').addEventListener('change',()=>{pushHistory();orientation.top=$('topDirection').value;renderAll();});
+$('openObrysBtn').addEventListener('click',()=>{saveLocal();window.HouserNav&&HouserNav.go('obrys');});
 $('openBrylaBtn').addEventListener('click',()=>{saveLocal();window.HouserNav&&HouserNav.go('kondygnacje-dach');});
 for(const [id,key] of [['showOpenings','openings'],['showChimney','chimney']])$(id).addEventListener('change',()=>{visibility[key]=$(id).checked;renderAll();});
 $('clearOutdoorBtn').addEventListener('click',()=>{if(!outdoorStructures.length)return;if(confirm('Usunąć wszystkie tarasy i pergole z projektu?')){pushHistory();outdoorStructures=[];renderAll();}});

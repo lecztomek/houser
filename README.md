@@ -9,6 +9,7 @@ index.html                  strona główna – moduły jako kolejne kroki proje
 modules/
   pomieszczenia/index.html  lista pomieszczeń na kondygnacjach (nazwy, kolory, wnęki), start nowego projektu
   warunki/index.html        edycja warunków układu, pogrupowane i rozwijane
+  obrys/index.html          obrys budynku rysowany krawędziami (dowolny kształt), dopasowanie siatki i warstw
   projektowanie/index.html  Układ pomieszczeń: definicja, malowanie pomieszczeń, otwory, komin, walidacja, elewacje
   kondygnacje-dach/index.html widok z boku: piętro / poddasze, ścianka kolankowa, kąt i kierunek dachu
   wnetrze-3d/index.html     podgląd 3D wnętrza z punktu obserwatora (meble z JSON)

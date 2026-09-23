@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Obrys domu</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+.wrap{height:100vh;display:grid;grid-template-columns:340px 1fr}
+.side{padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{position:relative;min-width:0;overflow:auto;background:#e2e8f0;display:flex;align-items:flex-start;justify-content:center;padding:18px}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--hs-line-strong);background:var(--hs-panel);color:var(--hs-text);padding:5px 9px;border-radius:var(--hs-radius);font:600 12px var(--hs-font);cursor:pointer}
+.btn:hover{background:var(--hs-panel-2);border-color:#94a3b8}
+.btn.primary,.btn.active{background:var(--hs-accent);border-color:var(--hs-accent);color:#fff}
+.btn.danger{color:var(--hs-bad);border-color:#fecaca}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.big{padding:9px 12px;font-size:13px;width:100%}
+.status{font-size:12px;line-height:1.45;color:var(--hs-muted);margin-top:8px}
+.status b{color:var(--hs-text)}
+.stats{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:13px}
+.stats span:nth-child(odd){color:var(--hs-muted)}
+.stats span:nth-child(even){font-weight:650;text-align:right}
+.msg{font-size:12px;line-height:1.45;border-radius:var(--hs-radius);padding:8px 10px;margin-top:10px}
+.msg.ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+.msg.bad{background:var(--hs-bad-soft);color:var(--hs-bad);border:1px solid #fecaca}
+.msg.info{background:var(--hs-accent-soft);color:#1e40af;border:1px solid var(--hs-accent-line)}
+.hint{font-size:12px;color:var(--hs-muted);line-height:1.45;margin:8px 0 0}
+.planCard{background:#fff;border-radius:var(--hs-radius-lg);padding:14px;box-shadow:0 6px 20px rgba(15,23,42,.12)}
+.planTitle{font-weight:700;font-size:14px;margin-bottom:8px;display:flex;justify-content:space-between;gap:12px}
+.planTitle span{color:var(--hs-muted);font-weight:500;font-size:12px}
+#plan{display:block;touch-action:none;user-select:none}
+.empty{padding:40px 24px;text-align:center;color:var(--hs-muted);max-width:420px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1 class="hs-title">Obrys domu</h1>
+  <p class="hs-sub">Narysuj obrys budynku po liniach siatki – dowolny kształt (L, T, z wnękami…). Po zastosowaniu siatka dopasuje się do obrysu, a wszystkie warstwy projektu przesuną się razem z nią.</p>
+
+  <div class="section">
+    <h3>Projekt</h3>
+    <div class="row"><label class="btn primary">Wczytaj projekt JSON<input id="file" type="file" accept="application/json,.json" hidden></label><button id="export" class="btn" disabled>Eksportuj JSON</button></div>
+    <div id="status" class="status"></div>
+  </div>
+
+  <div class="section" id="tools" hidden>
+    <h3>Rysowanie</h3>
+    <div class="row"><button class="btn active" id="tDraw">Rysuj krawędzie</button><button class="btn" id="tErase">Gumka</button></div>
+    <div class="row" style="margin-top:8px"><button class="btn" id="fromGrid">Prostokąt = obecna siatka</button><button class="btn danger" id="clear">Wyczyść</button></div>
+    <p class="hint">Przeciągaj po liniach siatki, aby rysować ściany zewnętrzne. Prawy przycisk myszy usuwa. Obrys musi być zamknięty – wnętrze podświetli się na niebiesko.</p>
+  </div>
+
+  <div class="section" id="summary" hidden>
+    <h3>Obrys</h3>
+    <div class="stats" id="stats"></div>
+    <div id="msg"></div>
+    <button class="btn primary big" id="apply" style="margin-top:10px">Zastosuj obrys</button>
+  </div>
+</aside>
+<main class="main"><div class="planCard" id="card"></div></main>
+</div>
+
+<script src="../../shared/project-store.js"></script>
+<script>
+const $=id=>document.getElementById(id), NS='http://www.w3.org/2000/svg';
+const M=6, PX=30, OUT_ID='poza_obrysem';
+let project=null, source='', edges=new Set(), tool='draw', drag=null, dirty=false;
+
+const grid=()=>project?.grid||project?.definitionSnapshot?.grid;
+const floors=()=>{const fo=project?.definitionSnapshot?.floorOrder;return Array.isArray(fo)&&fo.length?fo:['ground','upper']};
+const rooms=f=>project?.definitionSnapshot?.floors?.[f]?.rooms||[];
+function cellAt(f,x,y){const g=grid(),s=project?.state?.[f];if(!g||!s||x<0||y<0||x>=g.width||y>=g.height)return null;return (Array.isArray(s[0])?s[y]?.[x]:s[y*g.width+x])||null}
+const isOutCell=(f,x,y)=>cellAt(f,x,y)===OUT_ID;
+
+// Obszar roboczy: siatka projektu + M kratek z każdej strony. Krawędzie w układzie siatki projektu:
+// 'h:x:y' – pozioma nad kratką (x,y); 'v:x:y' – pionowa na lewo od kratki (x,y).
+function bounds(){const g=grid();return {x0:-M,y0:-M,x1:g.width+M,y1:g.height+M}}
+function initialEdges(){
+  const g=grid(),e=new Set();
+  if(Array.isArray(project.outline?.edges)&&project.outline.edges.length){for(const k of project.outline.edges)e.add(k);return e}
+  // z obecnego rzutu: granica kratek nie oznaczonych jako „poza obrysem”; bez tego – cała siatka
+  const f=floors()[0],inside=(x,y)=>x>=0&&y>=0&&x<g.width&&y<g.height&&!isOutCell(f,x,y);
+  for(let y=0;y<=g.height;y++)for(let x=0;x<g.width;x++)if(inside(x,y-1)!==inside(x,y))e.add('h:'+x+':'+y);
+  for(let y=0;y<g.height;y++)for(let x=0;x<=g.width;x++)if(inside(x-1,y)!==inside(x,y))e.add('v:'+x+':'+y);
+  return e;
+}
+// kratki wewnątrz: zalewanie od brzegu obszaru roboczego bez przechodzenia przez krawędzie obrysu
+function insideCells(){
+  const b0=bounds(),b={x0:b0.x0-1,y0:b0.y0-1,x1:b0.x1+1,y1:b0.y1+1},W=b.x1-b.x0,H=b.y1-b.y0,out=new Uint8Array(W*H),q=[],I=(x,y)=>(y-b.y0)*W+(x-b.x0);
+  const push=(x,y)=>{if(x<b.x0||y<b.y0||x>=b.x1||y>=b.y1)return;const i=I(x,y);if(out[i])return;out[i]=1;q.push([x,y])};
+  for(let x=b.x0;x<b.x1;x++){push(x,b.y0);push(x,b.y1-1)}for(let y=b.y0;y<b.y1;y++){push(b.x0,y);push(b.x1-1,y)}
+  while(q.length){const [x,y]=q.pop();
+    if(!edges.has('v:'+(x+1)+':'+y))push(x+1,y);if(!edges.has('v:'+x+':'+y))push(x-1,y);
+    if(!edges.has('h:'+x+':'+(y+1)))push(x,y+1);if(!edges.has('h:'+x+':'+y))push(x,y-1)}
+  const ins=[];for(let y=b.y0;y<b.y1;y++)for(let x=b.x0;x<b.x1;x++)if(!out[I(x,y)])ins.push([x,y]);return ins;
+}
+function analyse(){
+  const ins=insideCells(),set=new Set(ins.map(c=>c[0]+','+c[1])),c=grid().cellMeters;
+  // krawędzie wiszące (nie oddzielają wnętrza od zewnątrza)
+  let dangling=0;for(const k of edges){const [o,xs,ys]=k.split(':'),x=+xs,y=+ys,a=o==='h'?set.has(x+','+(y-1)):set.has((x-1)+','+y),bb=set.has(x+','+y);if(a===bb)dangling++}
+  if(!ins.length)return {ok:false,ins,dangling};
+  const xs=ins.map(p=>p[0]),ys=ins.map(p=>p[1]),bx0=Math.min(...xs),by0=Math.min(...ys),bx1=Math.max(...xs)+1,by1=Math.max(...ys)+1;
+  return {ok:true,ins,set,dangling,bx0,by0,bx1,by1,area:ins.length*c*c,w:(bx1-bx0)*c,h:(by1-by0)*c};
+}
+
+function setProject(p,src){project=p&&(p.grid||p.definitionSnapshot?.grid)?p:null;source=src||'';if(project){edges=initialEdges();dirty=false}renderAll()}
+
+// ---------- zastosowanie obrysu: nowa siatka = prostokąt obejmujący obrys, przesunięcie wszystkich warstw
+function apply(){
+  const A=analyse();if(!A.ok)return;const g=grid(),c=g.cellMeters,fl=floors(),dx=-A.bx0,dy=-A.by0,W=A.bx1-A.bx0,H=A.by1-A.by0;
+  const inNew=(x,y)=>x>=0&&y>=0&&x<W&&y<H;
+  // ile narysowanych kratek zniknie (poza obrysem)
+  let lost=0;for(const f of fl)for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){const v=cellAt(f,x,y);if(!v||v===OUT_ID)continue;const r=rooms(f).find(q=>q.id===v);if(!A.set.has(x+','+y)&&r?.kind!=='exteriorVoid')lost++}
+  if(lost&&!confirm(lost+' pomalowanych kratek pomieszczeń leży poza nowym obrysem i zostanie usuniętych. Kontynuować?'))return;
+  for(const f of fl){
+    const fd=project.definitionSnapshot.floors[f];if(!fd.rooms.some(r=>r.id===OUT_ID))fd.rooms.push({id:OUT_ID,name:'Poza obrysem',color:'#e2e8f0',kind:'exteriorVoid'});
+    const ns=Array(W*H).fill(null);
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){const ox=x-dx,oy=y-dy,inside=A.set.has(ox+','+oy);let v=cellAt(f,ox,oy);if(v===OUT_ID)v=null;ns[y*W+x]=inside?v:OUT_ID}
+    project.state[f]=ns;
+    // otwory i ich warianty
+    const shiftKeys=obj=>{const out={};for(const [k,val] of Object.entries(obj||{})){const [o,xs,ys]=k.split(':'),x=+xs+dx,y=+ys+dy;const ok=o==='h'?(x>=0&&x<W&&y>=0&&y<=H):(x>=0&&x<=W&&y>=0&&y<H);if(ok)out[o+':'+x+':'+y]=val}return out};
+    if(project.openings)project.openings[f]=shiftKeys(project.openings[f]);
+    if(project.openingVariants?.[f])project.openingVariants[f]=shiftKeys(project.openingVariants[f]);
+    for(const it of project.furniture?.[f]||[]){it.x=+(it.x+dx*c).toFixed(3);it.y=+(it.y+dy*c).toFixed(3)}
+    if(project.furniture?.[f])project.furniture[f]=project.furniture[f].filter(it=>it.x+it.w>0&&it.y+it.h>0&&it.x<W*c&&it.y<H*c);
+  }
+  const ch=project.structure?.chimney||[];if(project.structure)project.structure.chimney=ch.map(n=>[n%g.width+dx,Math.floor(n/g.width)+dy]).filter(([x,y])=>inNew(x,y)).map(([x,y])=>y*W+x);
+  for(const it of project.outdoorStructures||[]){if(Array.isArray(it.cells))it.cells=it.cells.map(([x,y])=>[x+dx,y+dy]);if(Number.isFinite(+it.x)){it.x=+it.x+dx*c;it.y=+it.y+dy*c}}
+  for(const s of project.stairs||[]){s.x=(+s.x||0)+dx;s.y=(+s.y||0)+dy;if(s._cells)for(const k of ['lower','upper'])s._cells[k]=(s._cells[k]||[]).map(([x,y])=>[x+dx,y+dy])}
+  project.grid={...g,width:W,height:H};project.definitionSnapshot.grid={...project.definitionSnapshot.grid,width:W,height:H};
+  project.outline={edges:[...edges].map(k=>{const [o,xs,ys]=k.split(':');return o+':'+(+xs+dx)+':'+(+ys+dy)})};
+  edges=new Set(project.outline.edges);dirty=false;
+  HouserStore.save(project,'obrys');renderAll();
+}
+
+// ---------- panel
+function renderSide(){
+  $('export').disabled=!project;$('tools').hidden=!project;$('summary').hidden=!project;
+  $('status').innerHTML=project?'<b>'+(source==='plik'?'Wczytany plik':'Bieżący projekt')+'</b> – siatka '+grid().width+' × '+grid().height+' kratek po '+grid().cellMeters+' m.':'Brak projektu. Zacznij w module <b>Pomieszczenia</b> albo wczytaj plik JSON.';
+  if(!project)return;
+  $('tDraw').classList.toggle('active',tool==='draw');$('tErase').classList.toggle('active',tool==='erase');
+  const A=analyse();
+  $('stats').innerHTML=A.ok?[['Powierzchnia zabudowy',A.area.toFixed(2)+' m²'],['Wymiary (obejmujące)',A.w.toFixed(2)+' × '+A.h.toFixed(2)+' m'],['Kratki w obrysie',A.ins.length]].map(([a,b])=>'<span>'+a+'</span><span>'+b+'</span>').join(''):'';
+  $('msg').innerHTML=!A.ok?'<div class="msg bad">Obrys nie jest zamknięty – dorysuj brakujące krawędzie.</div>':(A.dangling?'<div class="msg info">'+A.dangling+' krawędzi nie domyka obrysu (wiszą wewnątrz lub na zewnątrz) – zostaną pominięte.</div>':'')+(dirty?'<div class="msg info">Obrys zmieniony – kliknij „Zastosuj obrys”, żeby przenieść go do projektu.</div>':'<div class="msg ok">Obrys zgodny z projektem.</div>');
+  $('apply').disabled=!A.ok||!dirty;
+}
+$('tDraw').onclick=()=>{tool='draw';renderSide()};$('tErase').onclick=()=>{tool='erase';renderSide()};
+$('clear').onclick=()=>{if(!confirm('Wyczyścić narysowany obrys?'))return;edges.clear();dirty=true;renderAll()};
+$('fromGrid').onclick=()=>{const g=grid();edges.clear();for(let x=0;x<g.width;x++){edges.add('h:'+x+':0');edges.add('h:'+x+':'+g.height)}for(let y=0;y<g.height;y++){edges.add('v:0:'+y);edges.add('v:'+g.width+':'+y)}dirty=true;renderAll()};
+$('apply').onclick=apply;
+
+// ---------- rzut
+function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
+function renderPlan(){
+  const card=$('card');
+  if(!project){card.innerHTML='<div class="empty">Brak projektu.</div>';return}
+  if(!$('plan'))card.innerHTML='<div class="planTitle"><div id="planTitle"></div><span id="planInfo"></span></div><svg id="plan"></svg>';
+  const svg=$('plan');svg.innerHTML='';const b=bounds(),g=grid(),Wc=b.x1-b.x0,Hc=b.y1-b.y0,A=analyse(),f=floors()[0];
+  svg.setAttribute('viewBox',[b.x0*PX,b.y0*PX,Wc*PX,Hc*PX].join(' '));
+  const main=document.querySelector('.main'),avail=Math.max(320,Math.min(main.clientWidth-70,(main.clientHeight-90)*Wc/Hc));svg.setAttribute('width',Math.round(avail));const k=Wc*PX/Math.round(avail);
+  $('planTitle').textContent='Obszar roboczy · kratka '+g.cellMeters+' m';$('planInfo').textContent=tool==='erase'?'Gumka':'Rysuj po liniach siatki';
+  const P=v=>v*PX;
+  el('rect',{x:P(b.x0),y:P(b.y0),width:Wc*PX,height:Hc*PX,fill:'#f8fafc'},svg);
+  if(A.ok)for(const [x,y] of A.ins)el('rect',{x:P(x),y:P(y),width:PX+.5,height:PX+.5,fill:'#dbeafe'},svg);
+  // obecny rzut parteru (podgląd)
+  for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){const id=cellAt(f,x,y);if(!id||id===OUT_ID)continue;const r=rooms(f).find(q=>q.id===id);el('rect',{x:P(x)+3,y:P(y)+3,width:PX-6,height:PX-6,rx:3,fill:r?.color||'#cbd5e1','fill-opacity':r?.kind==='exteriorVoid'?.25:.45},svg)}
+  for(let x=b.x0;x<=b.x1;x++)el('line',{x1:P(x),y1:P(b.y0),x2:P(x),y2:P(b.y1),stroke:'rgba(15,23,42,.1)','stroke-width':1},svg);
+  for(let y=b.y0;y<=b.y1;y++)el('line',{x1:P(b.x0),y1:P(y),x2:P(b.x1),y2:P(y),stroke:'rgba(15,23,42,.1)','stroke-width':1},svg);
+  el('rect',{x:0,y:0,width:g.width*PX,height:g.height*PX,fill:'none',stroke:'#94a3b8','stroke-dasharray':'6 5','stroke-width':1.5},svg);
+  for(const key of edges){const [o,xs,ys]=key.split(':'),x=+xs,y=+ys;el('line',o==='h'?{x1:P(x),y1:P(y),x2:P(x+1),y2:P(y)}:{x1:P(x),y1:P(y),x2:P(x),y2:P(y+1)},svg).setAttribute('style','stroke:#0f172a;stroke-width:'+(6)+';stroke-linecap:square')}
+  el('text',{x:P(g.width/2),y:P(-M+.8),'text-anchor':'middle','font-size':12*k,fill:'#64748b'},svg,'przerywana ramka = obecna siatka projektu');
+}
+// najbliższa krawędź siatki pod kursorem
+function edgeAt(e){const svg=$('plan'),pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse()),x=p.x/PX,y=p.y/PX,b=bounds();
+  const fx=x-Math.floor(x),fy=y-Math.floor(y),dxl=Math.min(fx,1-fx),dyl=Math.min(fy,1-fy);if(Math.min(dxl,dyl)>.3)return null;
+  let key;if(dyl<dxl){const yy=Math.round(y),xx=Math.floor(x);if(xx<b.x0||xx>=b.x1||yy<b.y0||yy>b.y1)return null;key='h:'+xx+':'+yy}else{const xx=Math.round(x),yy=Math.floor(y);if(yy<b.y0||yy>=b.y1||xx<b.x0||xx>b.x1)return null;key='v:'+xx+':'+yy}return key}
+function paint(key){if(!key)return false;if(drag.erase){if(!edges.has(key))return false;edges.delete(key)}else{if(edges.has(key))return false;edges.add(key)}dirty=true;return true}
+document.addEventListener('contextmenu',e=>{if($('plan')?.contains(e.target))e.preventDefault()});
+document.addEventListener('pointerdown',e=>{const svg=$('plan');if(!project||!svg||!svg.contains(e.target))return;e.preventDefault();drag={erase:e.button===2||tool==='erase'};if(paint(edgeAt(e)))renderPlan()});
+document.addEventListener('pointermove',e=>{if(!drag)return;if(paint(edgeAt(e)))renderPlan()});
+document.addEventListener('pointerup',()=>{if(!drag)return;drag=null;renderAll()});
+window.addEventListener('resize',renderPlan);
+if(window.ResizeObserver)new ResizeObserver(()=>{if(!drag)renderPlan()}).observe(document.querySelector('.main'));
+
+function renderAll(){renderSide();renderPlan()}
+$('file').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{const p=JSON.parse(await f.text());if(!p.grid&&!p.definitionSnapshot?.grid)throw new Error('brak siatki (grid)');setProject(p,'plik');HouserStore.save(project,'obrys')}catch(err){alert('Nie udało się wczytać projektu: '+err.message)}e.target.value=''});
+$('export').addEventListener('click',()=>{if(!project)return;const d=new Date(),p2=n=>String(n).padStart(2,'0');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(project,null,2)],{type:'application/json'}));a.download='dom-uklad-v7-'+[d.getFullYear(),p2(d.getMonth()+1),p2(d.getDate()),p2(d.getHours()),p2(d.getMinutes())].join('-')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
+
+const rec=HouserStore.load();
+setProject(rec?rec.project:null,rec?'store':'');
+// zmiany z innych modułów: odśwież podgląd, ale nie kasuj niezastosowanego rysunku
+HouserStore.subscribe(r=>{if(drag)return;if(dirty){project=r.project;renderAll();return}setProject(r.project,'store')});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>
