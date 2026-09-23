@@ -50,5 +50,40 @@
     return (ridge==='north-south')===gridZIsNorthSouth;
   }
 
-  global.HouserModel={DEF,normalize,geometry,toSaved,slopesAcrossX};
+  // ---------- tarasy / pergole malowane kratkami
+  // Element zewnętrzny: {id,type,label,cells:[[cx,cy],...]} – kratki siatki domu (mogą być ujemne, poza obrysem).
+  // Dla zgodności element ma też prostokąt obejmujący x,y,w,h w metrach.
+  const OUTDOOR_KEY=(x,y)=>x+','+y;
+  function outdoorCells(it,cellM){
+    if(Array.isArray(it?.cells)&&it.cells.length)return it.cells.map(c=>[Math.round(+c[0]),Math.round(+c[1])]).filter(c=>c.every(Number.isFinite));
+    const x=+it?.x,y=+it?.y,w=+it?.w,h=+it?.h,out=[];if(![x,y,w,h].every(Number.isFinite)||!cellM)return out;
+    const x0=Math.round(x/cellM),y0=Math.round(y/cellM),nx=Math.max(1,Math.round(w/cellM)),ny=Math.max(1,Math.round(h/cellM));
+    for(let j=0;j<ny;j++)for(let i=0;i<nx;i++)out.push([x0+i,y0+j]);return out;
+  }
+  // mapa "x,y" -> typ  ->  lista elementów (spójne obszary jednego typu); etykiety przejmowane z poprzednich elementów
+  function outdoorFromMap(map,cellM,prev){
+    const seen=new Set(),out=[],prevByCell=new Map();
+    for(const it of prev||[])for(const c of outdoorCells(it,cellM))prevByCell.set(OUTDOOR_KEY(c[0],c[1]),it);
+    for(const [k,type] of map){if(seen.has(k))continue;const cells=[],stack=[k];seen.add(k);
+      while(stack.length){const cur=stack.pop(),[x,y]=cur.split(',').map(Number);cells.push([x,y]);
+        for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nk=OUTDOOR_KEY(x+dx,y+dy);if(!seen.has(nk)&&map.get(nk)===type){seen.add(nk);stack.push(nk);}}}
+      cells.sort((a,b)=>a[1]-b[1]||a[0]-b[0]);
+      const old=cells.map(c=>prevByCell.get(OUTDOOR_KEY(c[0],c[1]))).find(o=>o&&o.type===type);
+      const xs=cells.map(c=>c[0]),ys=cells.map(c=>c[1]),x0=Math.min(...xs),y0=Math.min(...ys);
+      out.push({id:old?.id||('o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)),type,label:old?.label||'',cells,
+        x:x0*cellM,y:y0*cellM,w:(Math.max(...xs)-x0+1)*cellM,h:(Math.max(...ys)-y0+1)*cellM});
+    }
+    return out;
+  }
+  function outdoorMap(list,cellM){const m=new Map();for(const it of list||[])for(const c of outdoorCells(it,cellM))m.set(OUTDOOR_KEY(c[0],c[1]),it.type);return m;}
+  // narożniki obszaru (wierzchołki siatki) – tam stoją słupki pergoli / zadaszenia
+  function outdoorCorners(cells){
+    const set=new Set(cells.map(c=>OUTDOOR_KEY(c[0],c[1]))),has=(x,y)=>set.has(OUTDOOR_KEY(x,y)),out=[],done=new Set();
+    for(const [cx,cy] of cells)for(const [vx,vy] of [[cx,cy],[cx+1,cy],[cx,cy+1],[cx+1,cy+1]]){const k=OUTDOOR_KEY(vx,vy);if(done.has(k))continue;done.add(k);
+      const a=has(vx-1,vy-1),b=has(vx,vy-1),c=has(vx-1,vy),d=has(vx,vy),n=a+b+c+d;
+      if(n===1||n===3||(n===2&&a===d))out.push([vx,vy]);}
+    return out;
+  }
+
+  global.HouserModel={DEF,normalize,geometry,toSaved,slopesAcrossX,outdoorCells,outdoorFromMap,outdoorMap,outdoorCorners};
 })(window);

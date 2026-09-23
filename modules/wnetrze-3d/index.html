@@ -324,7 +324,9 @@ function addFurniture3D(){
   ensureFurniture();
   for(const f of ['ground','upper']){const base=floorBase(f),fh=floorHeight(f);for(const it of furnitureList(f)){
     if(!validFurnitureItem(it))continue;const d=furnViewDef(it),m=.025,x0=Number(it.x)+m,z0=Number(it.y)+m,x1=Number(it.x)+Number(it.w)-m,z1=Number(it.y)+Number(it.h)-m;if(x1<=x0||z1<=z0)continue;
-    const top=base+Math.min(d.height,fh-.04),col=d.color;
+    let top=base+Math.min(d.height,fh-.04);const col=d.color;
+    // na poddaszu mebel nie może przebić skosu dachu – przycinamy do najniższego punktu połaci nad nim
+    if(f==='upper'&&roofEnabled()){const lim=Math.min(roofAbsYAt(x0,z0),roofAbsYAt(x1,z0),roofAbsYAt(x0,z1),roofAbsYAt(x1,z1))-.03;top=Math.max(base+.1,Math.min(top,lim));}
     if(d.kind==='ring'){
       const ins=Math.min((x1-x0)*.22,(z1-z0)*.22,.30);if(ins>.04){addBoxFaces(x0,base,z0,x1,top,z0+ins,col,{stroke:'#475569'});addBoxFaces(x0,base,z1-ins,x1,top,z1,col,{stroke:'#475569'});addBoxFaces(x0,base,z0+ins,x0+ins,top,z1-ins,col,{stroke:'#475569'});addBoxFaces(x1-ins,base,z0+ins,x1,top,z1-ins,col,{stroke:'#475569'});}else addBoxFaces(x0,base,z0,x1,top,z1,col,{stroke:'#475569'});
     }else if(d.kind==='bed'){
