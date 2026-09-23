@@ -92,6 +92,8 @@ html,body{height:100%;margin:0}
 <main class="main"><div class="planCard" id="card"></div></main>
 </div>
 
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/stairs.js"></script>
 <script src="../../shared/project-store.js"></script>
 <script>
 const $=id=>document.getElementById(id), NS='http://www.w3.org/2000/svg';
@@ -193,6 +195,8 @@ function renderPlan(){
   for(let y=0;y<g.height;y++)for(let x=0;x<=g.width;x++)edge('v:'+x+':'+y,cellAt(floor,x-1,y),cellAt(floor,x,y),x*c,y*c,x*c,(y+1)*c);
   const acc={};for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){const id=cellAt(floor,x,y);if(!id)continue;(acc[id]=acc[id]||{sx:0,sy:0,n:0});acc[id].sx+=x;acc[id].sy+=y;acc[id].n++}
   for(const [id,a] of Object.entries(acc)){const r=roomOf(floor,id);if(r?.kind==='exteriorVoid')continue;el('text',{x:X((a.sx/a.n+.5)*c),y:X((a.sy/a.n+.5)*c),'text-anchor':'middle','dominant-baseline':'middle','font-size':12*k,'font-weight':600,fill:'rgba(15,23,42,.5)','pointer-events':'none'},svg,(r?.name||id)+' · '+(a.n*c*c).toFixed(1)+' m²')}
+  // schody (tylko podgląd, przerywany obrys) – nie stawiaj tu mebli
+  if(floor===floors()[0])for(const st of project.stairs||[]){if(!HouserStairs.TYPES[st.type])continue;const geo=HouserStairs.geometry(st,c,HouserModel.normalize(project.elevationSettings||{}).groundHeight);for(const step of geo.steps)el('polygon',{points:step.poly.map(([x,z])=>X(x)+','+X(z)).join(' '),fill:'rgba(255,255,255,.4)',stroke:'#1f2937','stroke-width':1.2*k,'stroke-dasharray':(5*k)+' '+(4*k),'pointer-events':'none'},svg)}
   for(const it of items()){const t=FURNITURE_TYPES[it.type]||FURNITURE_TYPES.other,isSel=it.id===selected;
     const gr=el('g',{'data-id':it.id,style:'cursor:'+(tool?'crosshair':'move')},svg);
     el('rect',{x:X(it.x),y:X(it.y),width:X(it.w),height:X(it.h),rx:3,fill:t.fill,'fill-opacity':.92,stroke:isSel?'#2563eb':'#334155','stroke-width':isSel?3:1.3},gr);

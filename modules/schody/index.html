@@ -47,7 +47,7 @@ html,body{height:100%;margin:0}
 <div class="wrap">
 <aside class="side">
   <h1 class="hs-title">Schody</h1>
-  <p class="hs-sub">Wybierz rodzaj schodów i wstaw je na rzut. Kratki schodów same pojawią się w Układzie pomieszczeń – na piętrze otwór w stropie tylko tam, gdzie brakuje miejsca nad głową, więc nad dolną częścią biegu możesz mieć pokój.</p>
+  <p class="hs-sub">Wybierz rodzaj schodów i wstaw je na rzut. Schody stoją w pomieszczeniu, w którym je postawisz (np. w holu) – w Układzie pomieszczeń widać je jako przerywany obrys. Na piętrze powstaje otwór w stropie tylko tam, gdzie brakuje miejsca nad głową, więc nad dolną częścią biegu możesz mieć pokój.</p>
 
   <div class="section">
     <h3>Projekt</h3>
@@ -94,23 +94,34 @@ const stair=()=>project?.stairs?.[0]||null; // na razie jedne schody w domu
 function setProject(p,src){project=p&&(p.grid||p.definitionSnapshot?.grid)?p:null;source=src||'';renderAll()}
 
 // ---------- wpisanie schodów w kratki obu kondygnacji
-function ensureRoom(f){const fd=project.definitionSnapshot?.floors?.[f];if(!fd)return;if(!fd.rooms.some(r=>r.id==='schody'))fd.rooms.push({id:'schody',name:f===floors()[0]?'Schody':'Otwór schodów',color:'#64748b',kind:'room'})}
+// na piętrze schody wymagają otworu w stropie – to nie pomieszczenie, tylko pustka (kratki 'schody' na piętrze)
+function ensureHole(f){const fd=project.definitionSnapshot?.floors?.[f];if(!fd)return;const r=fd.rooms.find(r=>r.id==='schody');if(!r)fd.rooms.push({id:'schody',name:'Otwór w stropie',color:'#cbd5e1',kind:'room'});}
 // zwolnione kratki (po przesunięciu / zmianie schodów) dostają najczęstsze sąsiednie pomieszczenie
 function fillFromNeighbors(f,cells){let todo=cells.filter(([x,y])=>!cellAt(f,x,y));for(let pass=0;pass<40&&todo.length;pass++){const next=[];for(const [x,y] of todo){const cnt={};for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const v=cellAt(f,x+dx,y+dy);if(v&&v!=='schody')cnt[v]=(cnt[v]||0)+1}const best=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];if(best)setCell(f,x,y,best[0]);else next.push([x,y])}if(next.length===todo.length)break;todo=next}}
 function stamp(){
   const s=stair(),g=grid(),[lo,up]=floors();if(!project.state)project.state={};
   for(const f of [lo,up])if(f&&!Array.isArray(project.state[f]))project.state[f]=Array(g.width*g.height).fill(null);
-  const prev=s?._cells||project._stairCells||{lower:[],upper:[]};
-  // zdejmij poprzedni ślad (tylko kratki nadal oznaczone jako schody)
-  if(s?._cells)for(const [key,f] of [['lower',lo],['upper',up]])for(const [x,y] of s._cells[key]||[])if(f&&cellAt(f,x,y)==='schody')setCell(f,x,y,null);
+  // parter: schody stoją w pomieszczeniu (np. w holu) – kratki „schody” zamieniamy na sąsiednie pomieszczenie
+  const loSt=[];for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++)if(cellAt(lo,x,y)==='schody'){setCell(lo,x,y,null);loSt.push([x,y])}
+  fillFromNeighbors(lo,loSt);
+  // piętro: zdejmij poprzedni otwór
+  if(up&&s?._cells)for(const [x,y] of s._cells.upper||[])if(cellAt(up,x,y)==='schody')setCell(up,x,y,null);
   if(!s)return;
   const c=S.cells(s,g.cellMeters,gh(),g.width,g.height);
-  const freedL=(s._cells?.lower||[]).filter(([x,y])=>!c.lower.some(q=>q[0]===x&&q[1]===y)),freedU=(s._cells?.upper||[]).filter(([x,y])=>!c.upper.some(q=>q[0]===x&&q[1]===y));
-  ensureRoom(lo);if(up)ensureRoom(up);
-  for(const [x,y] of c.lower)setCell(lo,x,y,'schody');
-  if(up)for(const [x,y] of c.upper)setCell(up,x,y,'schody');
-  fillFromNeighbors(lo,freedL);if(up)fillFromNeighbors(up,freedU);
+  const freedU=(s._cells?.upper||[]).filter(([x,y])=>!c.upper.some(q=>q[0]===x&&q[1]===y));
+  if(up){ensureHole(up);for(const [x,y] of c.upper)setCell(up,x,y,'schody');fillFromNeighbors(up,freedU)}
   s._cells={lower:c.lower,upper:c.upper};
+  cleanOpenings(lo);if(up)cleanOpenings(up);
+  offerRemoveStairRoom();
+}
+// otwory, które po zmianie kratek leżą wewnątrz jednego pomieszczenia (np. dawne drzwi hol–schody), usuwamy
+function cleanOpenings(f){const ops=project.openings?.[f];if(!ops)return;for(const k of Object.keys(ops)){const [o,xs,ys]=k.split(':'),x=+xs,y=+ys,a=o==='h'?cellAt(f,x,y-1):cellAt(f,x-1,y),b=cellAt(f,x,y);if(a===b){delete ops[k];if(project.openingVariants?.[f])delete project.openingVariants[f][k]}}}
+// dawne pomieszczenie „Schody” na parterze nie jest już potrzebne – zaproponuj usunięcie (raz)
+function offerRemoveStairRoom(){
+  const lo=floors()[0],fd=project.definitionSnapshot?.floors?.[lo];if(!fd||!fd.rooms.some(r=>r.id==='schody')||project._stairRoomAsked)return;project._stairRoomAsked=true;
+  const conds=(project.definitionSnapshot.conditions||[]).filter(c=>(c.floor===lo&&(['room','a','b','startRoom'].some(k=>c[k]==='schody')||(c.rooms||[]).includes('schody')))||(c.lowerFloor===lo&&(c.lowerRoom==='schody'||(c.lowerRooms||[]).includes('schody'))));
+  if(!confirm('Schody stoją teraz w holu (albo innym pomieszczeniu), więc pomieszczenie „Schody” na parterze nie jest potrzebne.\nUsunąć je z listy pomieszczeń'+(conds.length?' razem z '+conds.length+' warunkami, które go dotyczą':'')+'?'))return;
+  fd.rooms=fd.rooms.filter(r=>r.id!=='schody');project.definitionSnapshot.conditions=(project.definitionSnapshot.conditions||[]).filter(c=>!conds.includes(c));
 }
 function commit(){stamp();renderAll();HouserStore.save(project,'schody')}
 
@@ -132,13 +143,13 @@ function renderSide(){
   const set=(id,v)=>{if(document.activeElement!==$(id))$(id).value=v};set('pWidth',s.width);set('pRisers',s.risers);set('pTread',s.tread);set('pTurn',s.turn||'left');
   $('turnField').style.visibility=s.type==='straight'?'hidden':'visible';
   const k=S.comfort(s,gh()),geo=S.geometry(s,grid().cellMeters,gh()),bb=geo.bbox,c=S.cells(s,grid().cellMeters,gh(),grid().width,grid().height);
-  $('stats').innerHTML=[['Wysokość stopnia',(k.rise*100).toFixed(1)+' cm'],['Wygoda 2h + s',(k.step*100).toFixed(0)+' cm <span class="'+(k.ok?'ok':'warn')+'">'+(k.ok?'✓':'(zalecane 59–66, h ≤ 19)')+'</span>'],['Obrys',(bb.x1-bb.x0).toFixed(2)+' × '+(bb.z1-bb.z0).toFixed(2)+' m'],['Kratki na parterze',c.lower.length],['Otwór w stropie',c.upper.length+' kratek']].map(([a,b])=>'<span>'+a+'</span><span>'+b+'</span>').join('');
+  $('stats').innerHTML=[['Wysokość stopnia',(k.rise*100).toFixed(1)+' cm'],['Wygoda 2h + s',(k.step*100).toFixed(0)+' cm <span class="'+(k.ok?'ok':'warn')+'">'+(k.ok?'✓':'(zalecane 59–66, h ≤ 19)')+'</span>'],['Obrys',(bb.x1-bb.x0).toFixed(2)+' × '+(bb.z1-bb.z0).toFixed(2)+' m'],['Zajmuje na parterze',(c.lower.length*grid().cellMeters**2).toFixed(2)+' m²'],['Otwór w stropie',c.upper.length+' kratek']].map(([a,b])=>'<span>'+a+'</span><span>'+b+'</span>').join('');
 }
 let pendingType='U';
 for(const [id,k] of [['pWidth','width'],['pRisers','risers'],['pTread','tread'],['pTurn','turn']])$(id).addEventListener('change',()=>{const s=stair();if(!s)return;const v=$(id).value;s[k]=k==='turn'?v:Number(v)||s[k];commit()});
 $('rotL').onclick=()=>{const s=stair();if(s){s.rot=((s.rot||0)+270)%360;commit()}};
 $('rotR').onclick=()=>{const s=stair();if(s){s.rot=((s.rot||0)+90)%360;commit()}};
-$('del').onclick=()=>{const s=stair();if(!s||!confirm('Usunąć schody? Ich kratki na obu kondygnacjach dostaną sąsiednie pomieszczenie.'))return;const cells=s._cells;project.stairs=[];const [lo,up]=floors();if(cells){for(const [x,y] of cells.lower||[])if(cellAt(lo,x,y)==='schody')setCell(lo,x,y,null);for(const [x,y] of cells.upper||[])if(up&&cellAt(up,x,y)==='schody')setCell(up,x,y,null);fillFromNeighbors(lo,cells.lower||[]);if(up)fillFromNeighbors(up,cells.upper||[])}renderAll();HouserStore.save(project,'schody')};
+$('del').onclick=()=>{const s=stair();if(!s||!confirm('Usunąć schody? Otwór w stropie piętra zostanie zamknięty (kratki dostaną sąsiednie pomieszczenie).'))return;const cells=s._cells;project.stairs=[];const [lo,up]=floors();if(cells){for(const [x,y] of cells.upper||[])if(up&&cellAt(up,x,y)==='schody')setCell(up,x,y,null);if(up)fillFromNeighbors(up,cells.upper||[])}renderAll();HouserStore.save(project,'schody')};
 
 // ---------- rzut
 function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
@@ -152,7 +163,7 @@ function renderPlan(){
   const main=document.querySelector('.main'),avail=Math.max(320,Math.min(main.clientWidth-70,(main.clientHeight-90)*(W+2*pad)/(H+2*pad)));svg.setAttribute('width',Math.round(avail));const k=(W+2*pad)*PX/Math.round(avail);
   $('planTitle').textContent=(project.definitionSnapshot?.floors?.[lo]?.name||'Parter')+' · kratka '+c.toFixed(2)+' m';
   const P=v=>v*PX;
-  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const id=cellAt(lo,x,y);if(!id||id==='schody')continue;const r=rooms(lo).find(q=>q.id===id);if(r?.kind==='exteriorVoid')continue;el('rect',{x:P(x),y:P(y),width:PX+.5,height:PX+.5,fill:r?.color||'#e5e7eb','fill-opacity':.25},svg)}
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const id=cellAt(lo,x,y);if(!id)continue;const r=rooms(lo).find(q=>q.id===id);if(r?.kind==='exteriorVoid')continue;el('rect',{x:P(x),y:P(y),width:PX+.5,height:PX+.5,fill:r?.color||'#e5e7eb','fill-opacity':.25},svg)}
   for(let x=0;x<=W;x++)el('line',{x1:P(x),y1:0,x2:P(x),y2:P(H),stroke:'rgba(15,23,42,.07)','stroke-width':1},svg);
   for(let y=0;y<=H;y++)el('line',{x1:0,y1:P(y),x2:P(W),y2:P(y),stroke:'rgba(15,23,42,.07)','stroke-width':1},svg);
   const isRoom=(x,y)=>{const id=cellAt(lo,x,y);return id&&id!=='schody'?id:(id==='schody'?'schody':null)};
@@ -178,8 +189,8 @@ function cellFromEvent(e){const svg=$('plan'),pt=svg.createSVGPoint();pt.x=e.cli
 document.addEventListener('pointerdown',e=>{const svg=$('plan');if(!project||!svg||!svg.contains(e.target))return;const m=cellFromEvent(e);let s=stair();
   if(!s){
     // schody narysowane wcześniej ręcznie (kratki „schody”) zastępujemy nowymi
-    const [lo,up]=floors(),g=grid(),old=[];for(const f of [lo,up])if(f)for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++)if(cellAt(f,x,y)==='schody')old.push([f,x,y]);
-    if(old.length){if(!confirm('Na rzucie są już kratki „Schody” narysowane ręcznie ('+old.length+'). Zastąpić je nowymi schodami? Zwolnione kratki dostaną sąsiednie pomieszczenie.'))return;for(const [f,x,y] of old)setCell(f,x,y,null);s={id:'st'+Date.now().toString(36),...S.defaults(pendingType,gh()),x:Math.floor(m.x),y:Math.floor(m.y)};project.stairs=[s];stamp();for(const f of [lo,up])if(f)fillFromNeighbors(f,old.filter(o=>o[0]===f).map(o=>[o[1],o[2]]));renderAll();HouserStore.save(project,'schody');return}
+    const [lo,up]=floors(),g=grid(),old=[];for(const f of [up])if(f)for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++)if(cellAt(f,x,y)==='schody')old.push([f,x,y]);
+    if(old.length){if(!confirm('Na piętrze jest już ręcznie narysowany otwór schodów ('+old.length+' kratek). Zastąpić go otworem wyliczonym dla nowych schodów? Zwolnione kratki dostaną sąsiednie pomieszczenie.'))return;for(const [f,x,y] of old)setCell(f,x,y,null);s={id:'st'+Date.now().toString(36),...S.defaults(pendingType,gh()),x:Math.floor(m.x),y:Math.floor(m.y)};project.stairs=[s];stamp();for(const f of [lo,up])if(f)fillFromNeighbors(f,old.filter(o=>o[0]===f).map(o=>[o[1],o[2]]));renderAll();HouserStore.save(project,'schody');return}
     s={id:'st'+Date.now().toString(36),...S.defaults(pendingType,gh()),x:Math.floor(m.x),y:Math.floor(m.y)};project.stairs=[s];commit();return}
   if(e.target.closest('#stairG')){drag={dx:m.x-s.x,dy:m.y-s.y,moved:false};return}
   s.x=Math.floor(m.x);s.y=Math.floor(m.y);commit()});
