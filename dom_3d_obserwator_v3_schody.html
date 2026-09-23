@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Dom 3D offline v3 - podgląd z obserwatora + schody</title>
+<style>
+:root{--bg:#0f172a;--panel:#111827;--panel2:#1f2937;--line:#334155;--text:#e5e7eb;--muted:#94a3b8;--accent:#22c55e;--danger:#ef4444;--warn:#f59e0b}
+*{box-sizing:border-box} html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select{font:inherit} button{cursor:pointer}
+#app{height:100%;display:grid;grid-template-rows:auto 1fr;overflow:hidden}
+.topbar{display:flex;gap:8px;align-items:center;padding:9px 12px;background:#0b1220;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.brand{font-weight:700;margin-right:8px}.pill{font-size:12px;color:var(--muted)}
+.btn{border:1px solid #475569;background:#182234;color:var(--text);padding:7px 10px;border-radius:8px}.btn:hover{background:#223149}.btn.primary{background:#166534;border-color:#22c55e}.btn.danger{background:#3b1117;border-color:#7f1d1d}.btn.small{padding:5px 8px;font-size:12px}
+.tabs{display:flex;gap:4px;margin-left:auto}.tabbtn.active{background:#334155;border-color:#64748b}
+.main{min-height:0;display:grid;grid-template-columns:350px 1fr}.side{overflow:auto;background:var(--panel);border-right:1px solid var(--line);padding:12px}.content{min-width:0;min-height:0;position:relative;background:#cbd5e1}
+.section{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;background:#0f172a}.section h3{font-size:13px;margin:0 0 9px;color:#cbd5e1}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}.row.one{grid-template-columns:1fr}.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}.field input,.field select{width:100%;background:#111827;color:var(--text);border:1px solid #475569;border-radius:7px;padding:6px}.hint{font-size:12px;color:var(--muted);line-height:1.45}.status{font-size:12px;padding:8px;border-radius:8px;background:#0b1220;border:1px solid var(--line)}
+#planWrap{height:100%;display:flex;align-items:center;justify-content:center;padding:14px;overflow:auto;background:#e2e8f0}.planCard{background:#fff;padding:12px;border-radius:12px;box-shadow:0 8px 25px #0002}.planTitle{color:#111827;font-weight:700;font-size:14px;margin-bottom:8px}.canvasWrap{position:relative}.planHelp{color:#475569;font-size:12px;margin-top:8px;max-width:760px}
+#planCanvas{display:block;max-width:80vw;max-height:78vh;cursor:crosshair;background:white}
+#view3d{height:100%;width:100%;display:none;position:relative;background:#a8b3c3}#threeHost{position:absolute;inset:0}#threeHost canvas{display:block;width:100%;height:100%}
+.overlay3d{position:absolute;left:12px;top:12px;z-index:5;background:#0f172add;color:#fff;border:1px solid #475569;border-radius:9px;padding:9px;font-size:12px;pointer-events:none;max-width:360px}
+.crosshair{position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%);z-index:5;pointer-events:none}.crosshair:before,.crosshair:after{content:"";position:absolute;background:#111827aa}.crosshair:before{left:8px;top:0;width:2px;height:18px}.crosshair:after{left:0;top:8px;width:18px;height:2px}
+#settingsPane{display:none;height:100%;overflow:auto;padding:22px;background:#e2e8f0;color:#111827}.settingsBox{max-width:850px;margin:auto;background:white;border-radius:12px;padding:18px;box-shadow:0 8px 25px #0002}.settingsBox h2{margin-top:0}.settingsGrid{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:12px}.settingsGrid .field input{background:#fff;color:#111827;border-color:#94a3b8}.checkline{display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 0}
+.viewpoint{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid #253247}.viewpoint:last-child{border-bottom:0}.viewpoint span{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:11px}.lg{display:flex;align-items:center;gap:6px}.sw{width:12px;height:12px;border-radius:3px;border:1px solid #64748b}
+.hidden{display:none!important}.banner{position:absolute;inset:12px 12px auto 12px;background:#7f1d1d;color:#fff;padding:10px;border-radius:9px;z-index:20;display:none}
+@media(max-width:850px){.main{grid-template-columns:1fr}.side{max-height:44vh;border-right:0;border-bottom:1px solid var(--line)}.content{min-height:56vh}.tabs{margin-left:0}.settingsGrid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="brand">Dom 3D offline v3 · widok z obserwatora + schody</div>
+    <label class="btn small">Wczytaj projekt JSON<input id="fileInput" type="file" accept="application/json,.json" hidden></label>
+    <button class="btn small" id="resetProject">Projekt wbudowany</button>
+    <span class="pill" id="projectName"></span>
+    <div class="tabs">
+      <button class="btn tabbtn active" data-tab="plan">Rzut</button>
+      <button class="btn tabbtn" data-tab="three">3D</button>
+      <button class="btn tabbtn" data-tab="settings">Ustawienia</button>
+    </div>
+  </div>
+  <div class="main">
+    <aside class="side">
+      <div class="section">
+        <h3>Obserwator</h3>
+        <div class="row">
+          <div class="field"><label>Kondygnacja</label><select id="floorSel"><option value="ground">Parter</option><option value="upper">Piętro</option></select></div>
+          <div class="field"><label>Wysokość oczu [m]</label><input id="eyeHeight" type="number" min="1.0" max="2.1" step="0.05" value="1.65"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Kąt patrzenia [°]</label><input id="angle" type="number" min="0" max="359" step="5" value="0"></div>
+          <div class="field"><label>FOV [°]</label><input id="fov" type="number" min="35" max="110" step="5" value="75"></div>
+        </div>
+        <div class="row">
+          <button class="btn small" id="rotL">↶ -15°</button><button class="btn small" id="rotR">+15° ↷</button>
+        </div>
+        <div class="row">
+          <button class="btn small dir" data-a="0">↑ góra</button><button class="btn small dir" data-a="180">↓ dół</button>
+        </div>
+        <div class="row">
+          <button class="btn small dir" data-a="270">← lewo</button><button class="btn small dir" data-a="90">prawo →</button>
+        </div>
+        <div class="hint">Na rzucie: <b>lewy klik</b> ustawia człowieka, <b>prawy klik</b> ustawia kierunek patrzenia. Strzałka pokazuje kierunek.</div>
+      </div>
+
+      <div class="section">
+        <h3>Podgląd 3D</h3>
+        <button class="btn primary" id="go3d" style="width:100%;margin-bottom:7px">Pokaż z pozycji człowieka</button>
+        <button class="btn" id="rebuild" style="width:100%;margin-bottom:7px">Przebuduj geometrię</button>
+        <div class="hint">W widoku 3D przeciągaj myszą, aby się rozglądać. <b>WASD</b> porusza obserwatorem. Jest podstawowa kolizja ze ścianami; przechodzisz tylko przez drzwi, HST i otwarte przejścia.</div>
+      </div>
+
+      <div class="section">
+        <h3>Punkty widokowe</h3>
+        <div class="row one"><div class="field"><label>Nazwa punktu</label><input id="vpName" placeholder="np. wejście → salon"></div></div>
+        <button class="btn small" id="saveVp" style="width:100%;margin-bottom:6px">Zapisz aktualny punkt</button>
+        <div id="vpList"></div>
+      </div>
+
+      <div class="section">
+        <h3>Legenda rzutu</h3>
+        <div class="legend" id="legend"></div>
+      </div>
+
+      <div class="section">
+        <h3>Status</h3>
+        <div class="status" id="status">Gotowe.</div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div id="libError" class="banner" style="display:none"></div>
+      <div id="planWrap">
+        <div class="planCard">
+          <div class="planTitle" id="planTitle">Rzut</div>
+          <div class="canvasWrap"><canvas id="planCanvas" width="720" height="720"></canvas></div>
+          <div class="planHelp">Kolor = pomieszczenie. Jasnoszare pole „wnęka” jest zewnętrznym wycięciem bryły. Na piętrze „pustka” i otwór schodów są traktowane jako otwory w stropie. Na parterze schody są rysowane jako rzeczywisty prosty bieg; strzałka pokazuje kierunek wchodzenia. Czarny okrąg ze strzałką = obserwator.</div>
+        </div>
+      </div>
+      <div id="view3d">
+        <div id="threeHost"></div>
+        <div class="overlay3d" id="overlay3d">Przeciągnij myszą = rozglądanie · WASD = ruch · rolka = FOV · podwójny klik = wyprostuj widok.</div>
+        <div class="crosshair"></div>
+      </div>
+      <div id="settingsPane">
+        <div class="settingsBox">
+          <h2>Ustawienia generatora 3D offline</h2>
+          <p>To są parametry wizualizacji, nie dane wykonawcze. Render działa całkowicie offline w jednym pliku HTML — bez Three.js/CDN. Po zmianie kliknij „Zastosuj i przebuduj”.</p>
+          <div class="settingsGrid">
+            <div class="field"><label>Grubość ściany [m]</label><input id="wallT" type="number" step="0.01" value="0.12"></div>
+            <div class="field"><label>Wysokość drzwi [m]</label><input id="doorH" type="number" step="0.05" value="2.10"></div>
+            <div class="field"><label>Wysokość HST [m]</label><input id="hstH" type="number" step="0.05" value="2.40"></div>
+            <div class="field"><label>Parapet okna [m]</label><input id="sillH" type="number" step="0.05" value="0.90"></div>
+            <div class="field"><label>Wysokość okna [m]</label><input id="windowH" type="number" step="0.05" value="1.20"></div>
+            <div class="field"><label>Wysokość balustrady [m]</label><input id="railH" type="number" step="0.05" value="1.05"></div>
+            <div class="field"><label>Liczba podstopnic schodów</label><input id="stairRisers" type="number" min="12" max="24" step="1" value="17"></div>
+          </div>
+          <div style="margin-top:14px">
+            <label class="checkline"><input id="showFloor" type="checkbox" checked> pokazuj podłogi / strop</label>
+            <label class="checkline"><input id="showGlass" type="checkbox" checked> pokazuj szkło w oknach/HST</label>
+            <label class="checkline"><input id="showRail" type="checkbox" checked> automatyczna balustrada przy pustce i otworze schodów</label>
+            <label class="checkline"><input id="showStairs" type="checkbox" checked> pokazuj proste schody 3D + kierunek na rzucie</label>
+            <label class="checkline"><input id="showChimney" type="checkbox" checked> pokazuj komin konstrukcyjny</label>
+          </div>
+          <button class="btn primary" id="applySettings">Zastosuj i przebuduj</button>
+          <p class="hint" style="color:#475569;margin-top:14px"><b>Schody:</b> generator automatycznie znajduje strefę <code>schody</code> na parterze. Kierunek biegu wykrywa z części parteru, która nie jest przykryta otworem schodowym piętra. W tym projekcie bieg startuje od strony północnej i idzie ku południu. Liczba podstopnic jest regulowana powyżej.</p>
+          <p class="hint" style="color:#475569;margin-top:10px">Obsługiwane typy otworów: <b>door</b>, <b>opening</b>, <b>window</b>, <b>hst</b>. Jeśli później dodasz typy <b>hiddenDoor</b> albo <b>slidingDoor</b>, generator potraktuje je jak drzwi bez rysowania łuku skrzydła.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<!-- Renderer 3D jest wbudowany; brak zależności sieciowych. -->
+<script>
+'use strict';
+const BUILTIN_PROJECT = {"version": 7, "definitionName": "Dom kompaktowy - v7 kierunki swiata + schody czesciowo przykryte", "definitionFingerprint": "47d697e2", "definitionSnapshot": {"version": 7, "name": "Dom kompaktowy - v7 kierunki swiata + schody czesciowo przykryte", "grid": {"width": 18, "height": 18, "cellMeters": 0.5}, "floorOrder": ["ground", "upper"], "floors": {"ground": {"name": "Parter", "subtitle": "orientacja robocza: ogrod u gory rzutu, wejscie na dole", "rooms": [{"id": "wiatrolap", "name": "Wiatrolap", "color": "#f59e0b", "kind": "room"}, {"id": "hol", "name": "Hol / komunikacja", "color": "#9ca3af", "kind": "room"}, {"id": "spizarnia", "name": "Spizarnia", "color": "#a78bfa", "kind": "room"}, {"id": "kuchnia", "name": "Kuchnia", "color": "#34d399", "kind": "room"}, {"id": "jadalnia", "name": "Jadalnia", "color": "#fbbf24", "kind": "room"}, {"id": "salon", "name": "Salon", "color": "#fb7185", "kind": "room"}, {"id": "lazienka_dol", "name": "Lazienka dol", "color": "#67e8f9", "kind": "room"}, {"id": "techniczne", "name": "Techniczne", "color": "#f97316", "kind": "room"}, {"id": "schody", "name": "Schody", "color": "#64748b", "kind": "room"}, {"id": "wneka", "name": "Wnęka zewnętrzna", "color": "#cbd5e1", "kind": "exteriorVoid"}]}, "upper": {"name": "Pietro / poddasze", "subtitle": "ten sam obrys; schody proste; brak osobnej szafy gospodarczej", "rooms": [{"id": "hol_gora", "name": "Hol pietra", "color": "#9ca3af", "kind": "room"}, {"id": "schody", "name": "Schody / otwor w stropie", "color": "#64748b", "kind": "room"}, {"id": "sypialnia", "name": "Sypialnia glowna", "color": "#3b82f6", "kind": "room"}, {"id": "pokoj_2", "name": "Pokoj 2", "color": "#22c55e", "kind": "room"}, {"id": "pokoj_3", "name": "Pokoj 3", "color": "#14b8a6", "kind": "room"}, {"id": "lazienka_gora", "name": "Lazienka gora", "color": "#06b6d4", "kind": "room"}, {"id": "pralnia", "name": "Pralnia", "color": "#8b5cf6", "kind": "room"}, {"id": "antresola", "name": "Antresola", "color": "#eab308", "kind": "room"}, {"id": "pustka", "name": "Pustka nad salonem", "color": "#e5e7eb", "kind": "room"}, {"id": "skosy", "name": "Skosy / schowki", "color": "#d1d5db", "kind": "room"}]}}, "conditions": [{"type": "minArea", "severity": "hard", "floor": "ground", "room": "wiatrolap", "value": 3.5, "label": "wiatrolap: absolutne minimum 3.5 m2", "group": "Powierzchnie - minimum absolutne"}, {"type": "minArea", "severity": "medium", "floor": "ground", "room": "wiatrolap", "value": 5, "label": "wiatrolap: cel min. 5 m2", "group": "Powierzchnie - cele"}, {"type": "minArea", "severity": "hard", "floor": "ground", "room": "hol", "value": 3, "label": "hol: absolutne minimum 3 m2", "group": "Powierzchnie - minimum absolutne"}, {"type": "minArea", "severity": "soft", "floor": "ground", "room": "hol", "value": 5, "label": "hol: cel min. 5 m2", "group": "Powierzchnie - cele"}, {"type": "minArea", "severity": "hard", "floor": "ground", "room": "spizarnia", "value": 1.5, "label": "spizarnia: absolutne minimum 1.5 m2", "group": "Powierzchnie - minimum absolutne"}, {"type": "minArea", "severity": "soft", "floor": "ground", "room": "spizarnia", "value": 2.5, "label": "spizarnia: cel min. 2.5 m2", "group": "Powierzchnie - cele"}, {"type": "minArea", "severity": "hard", "floor": "ground", "room": "kuchnia", "value": 8, "label": "kuchnia: absolutne minimum 8 m2", "group": "Powierzchnie - minimum absolutne"}, {"type": "minArea", "severity": "medium", "floor": "ground", "room": "kuchnia", "value": 10, "label": "kuchnia: cel min. 10 m2", "group": "Powierzchnie - cele"}, {"type": "minArea", "severity": "hard", "floor": "ground", "room": "jadalnia", "value": 7, "label": "jadalnia: absolutne minimum 7 m2", "group": "Powierzchnie - minimum absolutne"}, {"type": "minArea", "severity": "soft", "floor": "ground", "room": "jadalnia", "value": 10, "label": "jadalnia: cel min. 10 m2", "group": "Powierzchnie - cele"}, {"type": "minArea", "severity": "hard", "floor": "ground", "room": "salon", "value": 15, "label": "salon: absolutne minimum 15 m2", "group": "Powierzchnie - minimum absolutne"}, {"type": "minArea", "severity": "medium", "floor": "ground", "room": "salon", "value": 20, "label": "salon: cel min. 20 m2", "group": "Powierzchnie - cele"}, {"type": "minArea", "severity": "hard", "floor": "ground", "room": "lazienka_dol", "value": 3, "label": "lazienka_dol: absolutne minimum 3 m2", "group": "Powierzchnie - minimum absolutne"}, {"type": "minArea", "severity": "medium", "floor": "ground", "room": "lazienka_dol", "value": 4, "label": "lazienka_dol: cel min. 4 m2", "group": "Powierzchnie - cele"}, {"type": "minArea", "severity": "hard", "floor": "ground", "room": "techniczne", "value": 6, "label": "techniczne: absolutne minimum 6 m2", "group": "Powierzchnie - minimum absolutne"}, {"type": "minArea", "severity": "medium", "floor": "ground", "room": "techniczne", "value": 8, "label": "techniczne: cel min. 8 m2", "group": "Powierzchnie - cele"}, {"type": "minArea", "severity": "hard", "floor": "ground", "room": "schody", "value": 4, "label": "schody: absolutne minimum 4 m2", "group": "Powierzchnie - minimum absolutne"}, {"type": "minArea", "severity": "medium", "floor": "ground", "room": "schody", "value": 5, "label": "schody: cel min. 5 m2", "group": "Powierzchnie - cele"}, {"type": "minArea", "severity": "hard", "floor": "upper", "room": "hol_gora", "value": 3, "label": "hol_gora: absolutne minimum 3 m2", "group": "Powierzchnie - minimum absolutne"}, {"type": "minArea", "severity": "soft", "floor": "upper", "room": "hol_gora", "value": 4, "label": "hol_gora: cel min. 4 m2", "group": "Powierzchnie - cele"}, {"type": "minArea", "severity": "hard", "floor": "upper", "room": "schody", "value": 4, "label": "schody: absolutne minimum 4 m2", "group": "Powierzchnie - minimum absolutne"}, {"type": "minArea", "severity": "medium", "floor": "upper", "room": "schody", "value": 4, "label": "otwor schodow pietra: cel min. 4 m2", "group": "Powierzchnie - cele"}, {"type": "minArea", "severity": "hard", "floor": "upper", "room": "sypialnia", "value": 10, "label": "sypialnia: absolutne minimum 10 m2", "group": "Powierzchnie - minimum absolutne"}, {"type": "minArea", "severity": "medium", "floor": "upper", "room": "sypialnia", "value": 13, "label": "sypialnia: cel min. 13 m2", "group": "Powierzchnie - cele"}, {"type": "minArea", "severity": "hard", "floor": "upper", "room": "pokoj_2", "value": 8.5, "label": "pokoj_2: absolutne minimum 8.5 m2", "group": "Powierzchnie - minimum absolutne"}, {"type": "minArea", "severity": "medium", "floor": "upper", "room": "pokoj_2", "value": 10.5, "label": "pokoj_2: cel min. 10.5 m2", "group": "Powierzchnie - cele"}, {"type": "minArea", "severity": "hard", "floor": "upper", "room": "pokoj_3", "value": 8.5, "label": "pokoj_3: absolutne minimum 8.5 m2", "group": "Powierzchnie - minimum absolutne"}, {"type": "minArea", "severity": "medium", "floor": "upper", "room": "pokoj_3", "value": 10.5, "label": "pokoj_3: cel min. 10.5 m2", "group": "Powierzchnie - cele"}, {"type": "minArea", "severity": "hard", "floor": "upper", "room": "lazienka_gora", "value": 5, "label": "lazienka_gora: absolutne minimum 5 m2", "group": "Powierzchnie - minimum absolutne"}, {"type": "minArea", "severity": "medium", "floor": "upper", "room": "lazienka_gora", "value": 7, "label": "lazienka_gora: cel min. 7 m2", "group": "Powierzchnie - cele"}, {"type": "minArea", "severity": "hard", "floor": "upper", "room": "pralnia", "value": 3, "label": "pralnia: absolutne minimum 3 m2", "group": "Powierzchnie - minimum absolutne"}, {"type": "minArea", "severity": "medium", "floor": "upper", "room": "pralnia", "value": 4.5, "label": "pralnia: cel min. 4.5 m2", "group": "Powierzchnie - cele"}, {"type": "minArea", "severity": "hard", "floor": "upper", "room": "antresola", "value": 2.5, "label": "antresola: absolutne minimum 2.5 m2", "group": "Powierzchnie - minimum absolutne"}, {"type": "minArea", "severity": "soft", "floor": "upper", "room": "antresola", "value": 4, "label": "antresola: cel min. 4 m2", "group": "Powierzchnie - cele"}, {"type": "minArea", "severity": "hard", "floor": "upper", "room": "pustka", "value": 5, "label": "pustka: absolutne minimum 5 m2", "group": "Powierzchnie - minimum absolutne"}, {"type": "minArea", "severity": "soft", "floor": "upper", "room": "pustka", "value": 7, "label": "pustka: cel min. 7 m2", "group": "Powierzchnie - cele"}, {"type": "fullPainted", "severity": "soft", "floor": "ground", "label": "Parter: brak pustych kratek", "group": "Wypelnienie"}, {"type": "fullPainted", "severity": "soft", "floor": "upper", "label": "Pietro: brak pustych kratek", "group": "Wypelnienie"}, {"type": "contiguousAll", "severity": "hard", "floor": "ground", "label": "Parter: kazde pomieszczenie jest jednym spojnym obszarem", "group": "Ksztalt"}, {"type": "contiguousAll", "severity": "hard", "floor": "upper", "label": "Pietro: kazde pomieszczenie jest jednym spojnym obszarem", "group": "Ksztalt"}, {"type": "minRoomWidth", "severity": "hard", "floor": "ground", "room": "hol", "meters": 1, "label": "Hol parteru: brak przewężeń poniżej 1,0 m", "group": "Szerokosci"}, {"type": "minRoomWidth", "severity": "hard", "floor": "upper", "room": "hol_gora", "meters": 1, "label": "Hol pietra: brak przewężeń poniżej 1,0 m", "group": "Szerokosci"}, {"type": "minRoomWidth", "severity": "hard", "floor": "ground", "room": "wiatrolap", "meters": 1, "label": "Wiatrolap: minimalna lokalna szerokosc 1,0 m", "group": "Szerokosci"}, {"type": "minRoomWidth", "severity": "hard", "floor": "ground", "room": "schody", "meters": 1, "label": "Schody parter: obszar nie zweza sie ponizej 1,0 m", "group": "Szerokosci"}, {"type": "minRoomWidth", "severity": "hard", "floor": "upper", "room": "schody", "meters": 1, "label": "Schody pietro: obszar nie zweza sie ponizej 1,0 m", "group": "Szerokosci"}, {"type": "sharedEdgeMin", "severity": "hard", "floor": "ground", "a": "wiatrolap", "b": "hol", "meters": 1, "label": "Wiatrolap <-> hol: miejsce na przejscie min. 1,0 m", "group": "Polaczenia parter"}, {"type": "sharedEdgeMin", "severity": "hard", "floor": "ground", "a": "wiatrolap", "b": "spizarnia", "meters": 1, "label": "Wiatrolap <-> spizarnia: miejsce na drzwi min. 1,0 m", "group": "Polaczenia parter"}, {"type": "sharedEdgeMin", "severity": "hard", "floor": "ground", "a": "spizarnia", "b": "kuchnia", "meters": 1, "label": "Spizarnia <-> kuchnia: miejsce na drzwi min. 1,0 m", "group": "Polaczenia parter"}, {"type": "sharedEdgeMin", "severity": "hard", "floor": "ground", "a": "hol", "b": "lazienka_dol", "meters": 1, "label": "Hol <-> lazienka dol: miejsce na drzwi min. 1,0 m", "group": "Polaczenia parter"}, {"type": "sharedEdgeMin", "severity": "hard", "floor": "ground", "a": "hol", "b": "techniczne", "meters": 1, "label": "Hol <-> techniczne: miejsce na drzwi min. 1,0 m", "group": "Polaczenia parter"}, {"type": "sharedEdgeMin", "severity": "hard", "floor": "ground", "a": "hol", "b": "schody", "meters": 1, "label": "Hol <-> schody: szerokie dojscie min. 1,0 m", "group": "Polaczenia parter"}, {"type": "sharedEdgeMin", "severity": "hard", "floor": "ground", "a": "hol", "b": "salon", "meters": 1.5, "label": "Hol <-> salon: przejscie min. 1,5 m", "group": "Polaczenia parter"}, {"type": "sharedEdgeMin", "severity": "hard", "floor": "ground", "a": "kuchnia", "b": "jadalnia", "meters": 2, "label": "Kuchnia <-> jadalnia: otwarcie min. 2,0 m", "group": "Polaczenia parter"}, {"type": "sharedEdgeMin", "severity": "hard", "floor": "ground", "a": "jadalnia", "b": "salon", "meters": 2, "label": "Jadalnia <-> salon: otwarcie min. 2,0 m", "group": "Polaczenia parter"}, {"type": "sharedEdgeMin", "severity": "hard", "floor": "ground", "a": "salon", "b": "techniczne", "meters": 1.5, "label": "Salon <-> techniczne: wspolna sciana min. 1,5 m pod kominek", "group": "Polaczenia parter"}, {"type": "sharedEdgeMin", "severity": "hard", "floor": "upper", "a": "schody", "b": "hol_gora", "meters": 1, "label": "Schody <-> hol pietra: wyjscie min. 1,0 m", "group": "Polaczenia pietro"}, {"type": "sharedEdgeMin", "severity": "hard", "floor": "upper", "a": "hol_gora", "b": "sypialnia", "meters": 1, "label": "Hol <-> sypialnia glowna: miejsce na drzwi min. 1,0 m", "group": "Polaczenia pietro"}, {"type": "sharedEdgeMin", "severity": "hard", "floor": "upper", "a": "hol_gora", "b": "pokoj_2", "meters": 1, "label": "Hol <-> pokoj 2: miejsce na drzwi min. 1,0 m", "group": "Polaczenia pietro"}, {"type": "sharedEdgeMin", "severity": "hard", "floor": "upper", "a": "hol_gora", "b": "pokoj_3", "meters": 1, "label": "Hol <-> pokoj 3: miejsce na drzwi min. 1,0 m", "group": "Polaczenia pietro"}, {"type": "sharedEdgeMin", "severity": "hard", "floor": "upper", "a": "hol_gora", "b": "lazienka_gora", "meters": 1, "label": "Hol <-> lazienka gora: miejsce na drzwi min. 1,0 m", "group": "Polaczenia pietro"}, {"type": "sharedEdgeMin", "severity": "hard", "floor": "upper", "a": "hol_gora", "b": "pralnia", "meters": 1, "label": "Hol <-> pralnia: miejsce na drzwi min. 1,0 m", "group": "Polaczenia pietro"}, {"type": "sharedEdgeMin", "severity": "hard", "floor": "upper", "a": "hol_gora", "b": "antresola", "meters": 1.5, "label": "Hol <-> antresola: otwarcie min. 1,5 m", "group": "Polaczenia pietro"}, {"type": "sharedEdgeMin", "severity": "hard", "floor": "upper", "a": "antresola", "b": "pustka", "meters": 1.5, "label": "Antresola <-> pustka: wspolna krawedz min. 1,5 m", "group": "Polaczenia pietro"}, {"type": "edgeLengthMin", "severity": "hard", "floor": "ground", "room": "wiatrolap", "edge": "north", "meters": 1, "label": "Wiatrolap: min. 1,0 m elewacji polnocnej pod wejscie", "group": "Elewacje"}, {"type": "edgeLengthMin", "severity": "hard", "floor": "ground", "room": "techniczne", "edge": "any", "meters": 1, "label": "Techniczne: min. 1,0 m sciany zewnetrznej pod osobne drzwi", "group": "Elewacje"}, {"type": "edgeLengthMin", "severity": "medium", "floor": "ground", "room": "salon", "edge": "south", "meters": 2, "label": "Salon: min. 2,0 m elewacji poludniowej / ogrodowej", "group": "Elewacje"}, {"type": "edgeLengthMin", "severity": "medium", "floor": "ground", "room": "jadalnia", "edge": "south", "meters": 1.5, "label": "Jadalnia: min. 1,5 m elewacji poludniowej / ogrodowej", "group": "Elewacje"}, {"type": "overlapMin", "severity": "hard", "upperFloor": "upper", "upperRoom": "schody", "lowerFloor": "ground", "lowerRooms": ["schody"], "ratio": 1, "label": "Otwor schodow pietra w calosci lezy nad obrysem schodow parteru", "group": "Pion"}, {"type": "overlapMin", "severity": "medium", "upperFloor": "upper", "upperRoom": "pralnia", "lowerFloor": "ground", "lowerRooms": ["techniczne"], "ratio": 0.5, "label": "Min. 50% pralni jest nad technicznym", "group": "Pion"}, {"type": "overlapMin", "severity": "medium", "upperFloor": "upper", "upperRoom": "lazienka_gora", "lowerFloor": "ground", "lowerRooms": ["lazienka_dol", "techniczne"], "ratio": 0.5, "label": "Min. 50% gornej lazienki jest nad lazienka dolna lub technicznym", "group": "Pion"}, {"type": "overlapMin", "severity": "medium", "upperFloor": "upper", "upperRoom": "pustka", "lowerFloor": "ground", "lowerRooms": ["salon", "jadalnia"], "ratio": 0.6, "label": "Min. 60% pustki jest nad salonem lub jadalnia", "group": "Pion"}, {"type": "notAdjacent", "severity": "medium", "floor": "upper", "a": "sypialnia", "b": "pustka", "label": "Sypialnia glowna nie styka sie bezposrednio z pustka", "group": "Akustyka"}, {"type": "notAdjacent", "severity": "medium", "floor": "upper", "a": "pokoj_2", "b": "pustka", "label": "Pokoj 2 nie styka sie bezposrednio z pustka", "group": "Akustyka"}, {"type": "notAdjacent", "severity": "medium", "floor": "upper", "a": "pokoj_3", "b": "pustka", "label": "Pokoj 3 nie styka sie bezposrednio z pustka", "group": "Akustyka"}, {"type": "validOpenings", "severity": "hard", "floor": "ground", "label": "Parter: wszystkie drzwi i okna leza na prawidlowych scianach", "group": "Otwory - integralnosc"}, {"type": "validOpenings", "severity": "hard", "floor": "upper", "label": "Pietro: wszystkie drzwi i okna leza na prawidlowych scianach", "group": "Otwory - integralnosc"}, {"type": "openingBetween", "severity": "hard", "floor": "ground", "a": "wiatrolap", "b": "hol", "types": ["door"], "meters": 1, "label": "Wiatrolap <-> hol: rzeczywiste drzwi min. 1,0 m", "group": "Drzwi i przejscia - parter"}, {"type": "openingBetween", "severity": "hard", "floor": "ground", "a": "wiatrolap", "b": "spizarnia", "types": ["door"], "meters": 1, "label": "Wiatrolap <-> spizarnia: drzwi min. 1,0 m", "group": "Drzwi i przejscia - parter"}, {"type": "openingBetween", "severity": "hard", "floor": "ground", "a": "spizarnia", "b": "kuchnia", "types": ["door", "opening"], "meters": 1, "label": "Spizarnia <-> kuchnia: drzwi/przejscie min. 1,0 m", "group": "Drzwi i przejscia - parter"}, {"type": "openingBetween", "severity": "hard", "floor": "ground", "a": "hol", "b": "lazienka_dol", "types": ["door"], "meters": 1, "label": "Hol <-> lazienka dol: drzwi min. 1,0 m", "group": "Drzwi i przejscia - parter"}, {"type": "openingBetween", "severity": "hard", "floor": "ground", "a": "hol", "b": "techniczne", "types": ["door"], "meters": 1, "label": "Hol <-> techniczne: drzwi min. 1,0 m", "group": "Drzwi i przejscia - parter"}, {"type": "openingBetween", "severity": "hard", "floor": "ground", "a": "hol", "b": "schody", "types": ["opening"], "meters": 1, "label": "Hol <-> schody: otwarte dojscie min. 1,0 m", "group": "Drzwi i przejscia - parter"}, {"type": "openingBetween", "severity": "hard", "floor": "ground", "a": "hol", "b": "salon", "types": ["opening"], "meters": 1.5, "label": "Hol <-> salon: otwarte przejscie min. 1,5 m", "group": "Drzwi i przejscia - parter"}, {"type": "openingBetween", "severity": "hard", "floor": "ground", "a": "kuchnia", "b": "jadalnia", "types": ["opening"], "meters": 2, "label": "Kuchnia <-> jadalnia: otwarcie min. 2,0 m", "group": "Drzwi i przejscia - parter"}, {"type": "openingBetween", "severity": "hard", "floor": "ground", "a": "jadalnia", "b": "salon", "types": ["opening"], "meters": 2, "label": "Jadalnia <-> salon: otwarcie min. 2,0 m", "group": "Drzwi i przejscia - parter"}, {"type": "exteriorOpening", "severity": "hard", "floor": "ground", "room": "wiatrolap", "types": ["door"], "edge": "north", "meters": 1, "label": "Wiatrolap: drzwi wejsciowe od polnocy min. 1,0 m", "group": "Drzwi zewnetrzne"}, {"type": "exteriorOpening", "severity": "hard", "floor": "ground", "room": "techniczne", "types": ["door"], "edge": "any", "meters": 1, "label": "Techniczne: osobne drzwi zewnetrzne min. 1,0 m", "group": "Drzwi zewnetrzne"}, {"type": "exteriorOpening", "severity": "medium", "floor": "ground", "room": "salon", "types": ["hst"], "edge": "south", "meters": 2.5, "label": "Salon: HST od poludnia / ogrodu min. 2,5 m", "group": "Okna i przeszklenia"}, {"type": "exteriorOpening", "severity": "soft", "floor": "ground", "room": "kuchnia", "types": ["window"], "edge": "any", "meters": 1, "label": "Kuchnia: warto miec co najmniej 1,0 m okna", "group": "Okna i przeszklenia"}, {"type": "exteriorOpening", "severity": "soft", "floor": "ground", "room": "jadalnia", "types": ["window", "hst"], "edge": "south", "meters": 1.5, "label": "Jadalnia: przeszklenie od poludnia / ogrodu min. 1,5 m", "group": "Okna i przeszklenia"}, {"type": "openingBetween", "severity": "hard", "floor": "upper", "a": "schody", "b": "hol_gora", "types": ["opening"], "meters": 1, "label": "Schody <-> hol pietra: otwarte wyjscie min. 1,0 m", "group": "Drzwi i przejscia - pietro"}, {"type": "openingBetween", "severity": "hard", "floor": "upper", "a": "hol_gora", "b": "sypialnia", "types": ["door"], "meters": 1, "label": "Hol <-> sypialnia glowna: drzwi min. 1,0 m", "group": "Drzwi i przejscia - pietro"}, {"type": "openingBetween", "severity": "hard", "floor": "upper", "a": "hol_gora", "b": "pokoj_2", "types": ["door"], "meters": 1, "label": "Hol <-> pokoj 2: drzwi min. 1,0 m", "group": "Drzwi i przejscia - pietro"}, {"type": "openingBetween", "severity": "hard", "floor": "upper", "a": "hol_gora", "b": "pokoj_3", "types": ["door"], "meters": 1, "label": "Hol <-> pokoj 3: drzwi min. 1,0 m", "group": "Drzwi i przejscia - pietro"}, {"type": "openingBetween", "severity": "hard", "floor": "upper", "a": "hol_gora", "b": "lazienka_gora", "types": ["door"], "meters": 1, "label": "Hol <-> lazienka gora: drzwi min. 1,0 m", "group": "Drzwi i przejscia - pietro"}, {"type": "openingBetween", "severity": "hard", "floor": "upper", "a": "hol_gora", "b": "pralnia", "types": ["door"], "meters": 1, "label": "Hol <-> pralnia: drzwi min. 1,0 m", "group": "Drzwi i przejscia - pietro"}, {"type": "openingBetween", "severity": "hard", "floor": "upper", "a": "hol_gora", "b": "antresola", "types": ["opening"], "meters": 1.5, "label": "Hol <-> antresola: otwarte przejscie min. 1,5 m", "group": "Drzwi i przejscia - pietro"}, {"type": "exteriorOpening", "severity": "medium", "floor": "upper", "room": "sypialnia", "types": ["window"], "edge": "any", "meters": 1, "label": "Sypialnia glowna: okno min. 1,0 m", "group": "Okna i przeszklenia"}, {"type": "exteriorOpening", "severity": "medium", "floor": "upper", "room": "pokoj_2", "types": ["window"], "edge": "any", "meters": 1, "label": "Pokoj 2: okno min. 1,0 m", "group": "Okna i przeszklenia"}, {"type": "exteriorOpening", "severity": "medium", "floor": "upper", "room": "pokoj_3", "types": ["window"], "edge": "any", "meters": 1, "label": "Pokoj 3: okno min. 1,0 m", "group": "Okna i przeszklenia"}, {"type": "exteriorOpening", "severity": "soft", "floor": "upper", "room": "lazienka_gora", "types": ["window"], "edge": "any", "meters": 0.5, "label": "Lazienka gora: opcjonalne okno", "group": "Okna i przeszklenia"}, {"type": "reachableRooms", "severity": "hard", "floor": "upper", "startRoom": "schody", "rooms": ["hol_gora", "sypialnia", "pokoj_2", "pokoj_3", "lazienka_gora", "pralnia", "antresola"], "types": ["door", "opening"], "label": "Pietro: od schodow da sie dojsc do wszystkich pomieszczen", "group": "Komunikacja rzeczywista"}], "validationLevels": {"hard": {"name": "Twardy", "description": "Warunek funkcjonalny/geometryczny. Czerwony błąd - układ wymaga poprawy."}, "medium": {"name": "Wazny", "description": "Istotne zalozenie. Pomaranczowe ostrzezenie - warto poprawic."}, "soft": {"name": "Miekki", "description": "Cel/optymalizacja. Zolte ostrzezenie - niewielkie odchylenie jest akceptowalne."}}, "openingTypes": [{"id": "door", "name": "Drzwi", "color": "#111827", "placement": "anyWall"}, {"id": "opening", "name": "Przejscie otwarte", "color": "#16a34a", "placement": "anyWall"}, {"id": "window", "name": "Okno", "color": "#2563eb", "placement": "exterior"}, {"id": "hst", "name": "HST / drzwi tarasowe", "color": "#0891b2", "placement": "exterior"}]}, "grid": {"width": 18, "height": 18, "cellMeters": 0.5}, "savedAt": "2026-09-23T13:11:44.956Z", "state": {"ground": ["jadalnia", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "jadalnia", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "schody", "schody", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "salon", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "schody", "schody", "hol", "hol", "hol", "techniczne", "techniczne", "techniczne", "techniczne", "techniczne", "techniczne", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "schody", "schody", "hol", "hol", "hol", "techniczne", "techniczne", "techniczne", "techniczne", "techniczne", "techniczne", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "schody", "schody", "hol", "hol", "hol", "techniczne", "techniczne", "techniczne", "techniczne", "techniczne", "techniczne", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "kuchnia", "schody", "schody", "hol", "hol", "hol", "techniczne", "techniczne", "techniczne", "techniczne", "techniczne", "techniczne", "kuchnia", "kuchnia", "kuchnia", "spizarnia", "spizarnia", "spizarnia", "spizarnia", "schody", "schody", "hol", "hol", "hol", "techniczne", "techniczne", "techniczne", "techniczne", "techniczne", "techniczne", "wneka", "wneka", "wneka", "spizarnia", "spizarnia", "spizarnia", "spizarnia", "schody", "schody", "hol", "hol", "hol", "techniczne", "techniczne", "techniczne", "techniczne", "techniczne", "techniczne", "wneka", "wneka", "wneka", "spizarnia", "spizarnia", "spizarnia", "spizarnia", "schody", "schody", "hol", "hol", "hol", "techniczne", "techniczne", "techniczne", "techniczne", "techniczne", "techniczne", "wneka", "wneka", "wneka", "spizarnia", "spizarnia", "spizarnia", "spizarnia", "schody", "schody", "hol", "hol", "hol", "lazienka_dol", "lazienka_dol", "lazienka_dol", "lazienka_dol", "lazienka_dol", "lazienka_dol", "wiatrolap", "wiatrolap", "wiatrolap", "wiatrolap", "wiatrolap", "wiatrolap", "wiatrolap", "schody", "schody", "hol", "hol", "hol", "lazienka_dol", "lazienka_dol", "lazienka_dol", "lazienka_dol", "lazienka_dol", "lazienka_dol", "wiatrolap", "wiatrolap", "wiatrolap", "wiatrolap", "wiatrolap", "wiatrolap", "wiatrolap", "hol", "hol", "hol", "hol", "hol", "lazienka_dol", "lazienka_dol", "lazienka_dol", "lazienka_dol", "lazienka_dol", "lazienka_dol", "wiatrolap", "wiatrolap", "wiatrolap", "wiatrolap", "wiatrolap", "wiatrolap", "wiatrolap", "hol", "hol", "hol", "hol", "hol", "lazienka_dol", "lazienka_dol", "lazienka_dol", "lazienka_dol", "lazienka_dol", "lazienka_dol"], "upper": ["antresola", "antresola", "antresola", "antresola", "antresola", "antresola", "antresola", "pustka", "pustka", "pustka", "pustka", "pustka", "pustka", "pustka", "pralnia", "pralnia", "pralnia", "pralnia", "antresola", "antresola", "antresola", "antresola", "antresola", "antresola", "antresola", "pustka", "pustka", "pustka", "pustka", "pustka", "pustka", "pustka", "pralnia", "pralnia", "pralnia", "pralnia", "antresola", "antresola", "antresola", "antresola", "antresola", "antresola", "antresola", "pustka", "pustka", "pustka", "pustka", "pustka", "pustka", "pustka", "pralnia", "pralnia", "pralnia", "pralnia", "antresola", "antresola", "antresola", "antresola", "antresola", "antresola", "antresola", "pustka", "pustka", "pustka", "pustka", "pustka", "pustka", "pustka", "pralnia", "pralnia", "pralnia", "pralnia", "antresola", "antresola", "antresola", "antresola", "hol_gora", "hol_gora", "hol_gora", "hol_gora", "hol_gora", "hol_gora", "hol_gora", "hol_gora", "hol_gora", "hol_gora", "pralnia", "pralnia", "pralnia", "pralnia", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "hol_gora", "hol_gora", "hol_gora", "hol_gora", "hol_gora", "hol_gora", "hol_gora", "hol_gora", "hol_gora", "hol_gora", "pralnia", "pralnia", "pralnia", "pralnia", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "schody", "schody", "hol_gora", "hol_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "schody", "schody", "hol_gora", "hol_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "schody", "schody", "hol_gora", "hol_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "schody", "schody", "hol_gora", "hol_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "pokoj_2", "schody", "schody", "hol_gora", "hol_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "lazienka_gora", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "schody", "schody", "hol_gora", "hol_gora", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "schody", "schody", "hol_gora", "hol_gora", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "schody", "schody", "hol_gora", "hol_gora", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "hol_gora", "hol_gora", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "hol_gora", "hol_gora", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "hol_gora", "hol_gora", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "sypialnia", "hol_gora", "hol_gora", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3", "pokoj_3"]}, "openings": {"ground": {"v:7:16": "door", "v:7:17": "door", "v:12:12": "door", "v:12:11": "door", "v:12:16": "door", "v:12:15": "door", "v:18:12": "door", "v:18:11": "door", "v:18:15": "window", "v:18:16": "window", "h:10:18": "window", "h:9:18": "window", "v:0:9": "window", "v:0:10": "window", "h:3:0": "window", "h:2:0": "window", "h:14:0": "hst", "h:13:0": "hst", "h:12:0": "hst", "h:11:0": "hst", "h:10:0": "hst", "h:9:0": "hst", "h:8:0": "hst", "h:7:16": "opening", "h:8:16": "opening", "v:9:15": "opening", "v:9:14": "opening", "h:9:7": "opening", "h:10:7": "opening", "h:11:7": "opening", "h:2:15": "door", "h:1:15": "door", "v:6:0": "opening", "v:6:1": "opening", "v:6:2": "opening", "v:6:3": "opening", "h:6:4": "opening", "v:7:4": "opening", "v:7:5": "opening", "h:0:6": "opening", "h:1:6": "opening", "h:2:6": "opening", "h:3:6": "opening", "h:4:6": "opening", "h:5:6": "opening", "h:6:6": "opening", "h:6:15": "door", "h:5:15": "door", "v:0:16": "window", "h:1:0": "window", "h:6:11": "door", "h:5:11": "door"}, "upper": {"v:9:14": "door", "v:9:15": "door", "v:14:4": "door", "v:11:8": "door", "h:7:6": "opening", "h:8:6": "opening", "h:9:18": "window", "h:10:18": "window", "v:0:13": "window", "v:0:14": "window", "h:2:0": "window", "h:3:0": "window", "v:0:7": "window", "v:0:6": "window", "v:18:8": "window", "v:18:7": "window", "v:18:15": "window", "v:18:14": "window", "v:11:12": "door", "v:11:11": "door", "h:16:0": "window", "h:15:0": "window", "v:14:5": "door", "v:18:16": "window", "v:11:9": "door", "v:0:15": "window", "v:0:8": "window", "v:4:5": "door", "h:4:6": "door", "v:4:4": "opening", "h:4:4": "opening", "h:5:4": "opening", "h:6:4": "opening"}}, "orientation": {"top": "south"}, "structure": {"chimney": [120, 121]}, "furniture": {"ground": [], "upper": []}, "elevationSettings": {"groundHeight": 2.8, "upperHeight": 2.8, "roofHeight": 2.5, "ridge": "east-west"}};
+let project = structuredClone(BUILTIN_PROJECT);
+let observer = {floor:'ground', x:4.5, z:8.0, angle:0, eye:1.65, fov:75};
+const planCanvas=document.getElementById('planCanvas'), pctx=planCanvas.getContext('2d');
+const els=id=>document.getElementById(id);
+const ui={floor:els('floorSel'),eye:els('eyeHeight'),angle:els('angle'),fov:els('fov'),status:els('status'),name:els('projectName'),planTitle:els('planTitle')};
+let three={ready:false,canvas:null,ctx:null,keys:new Set(),lastT:0,drag:false,lastX:0,lastY:0,pitch:0,scenePolys:[],loopStarted:false};
+const settings={wallT:.12,doorH:2.10,hstH:2.40,sillH:.90,windowH:1.20,railH:1.05,stairRisers:17,showFloor:true,showGlass:true,showRail:true,showStairs:true,showChimney:true};
+
+function setStatus(s){ui.status.textContent=s}
+function grid(){return project.grid||project.definitionSnapshot?.grid||{width:18,height:18,cellMeters:.5}}
+function floorHeight(f){const e=project.elevationSettings||{};return f==='ground'?(e.groundHeight||2.8):(e.upperHeight||2.8)}
+function floorBase(f){return f==='ground'?0:(project.elevationSettings?.groundHeight||2.8)}
+function floorRooms(f){return project.definitionSnapshot?.floors?.[f]?.rooms||[]}
+function roomMap(f){const m={};for(const r of floorRooms(f))m[r.id]=r;return m}
+function idx(x,y){const g=grid();return y*g.width+x}
+function roomAt(f,x,y){const g=grid();if(x<0||y<0||x>=g.width||y>=g.height)return null;return project.state?.[f]?.[idx(x,y)]??null}
+function kindOf(f,id){if(!id)return 'outside';return roomMap(f)[id]?.kind||'room'}
+function isExteriorVoid(f,id){return kindOf(f,id)==='exteriorVoid'}
+function isHole(f,id){return f==='upper' && (id==='pustka'||id==='schody')}
+function canStand(f,id){return !!id && !isExteriorVoid(f,id) && !isHole(f,id)}
+function openKeyH(x,y){return 'h:'+x+':'+y} function openKeyV(x,y){return 'v:'+x+':'+y}
+function openingAt(f,key){return project.openings?.[f]?.[key]||null}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function normAngle(a){a%=360;if(a<0)a+=360;return a}
+function currentCell(){const g=grid();return {x:clamp(Math.floor(observer.x/g.cellMeters),0,g.width-1),y:clamp(Math.floor(observer.z/g.cellMeters),0,g.height-1)}}
+
+function syncUi(){ui.floor.value=observer.floor;ui.eye.value=observer.eye.toFixed(2);ui.angle.value=Math.round(observer.angle);ui.fov.value=Math.round(observer.fov);drawPlan();syncCameraFromObserver()}
+function readObserverUi(){observer.floor=ui.floor.value;observer.eye=parseFloat(ui.eye.value)||1.65;observer.angle=normAngle(parseFloat(ui.angle.value)||0);observer.fov=clamp(parseFloat(ui.fov.value)||75,35,110);drawPlan();syncCameraFromObserver()}
+
+function colorFor(f,id){const r=roomMap(f)[id];return r?.color||'#e5e7eb'}
+function roomCells(f,id){const g=grid(),out=[];for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++)if(roomAt(f,x,y)===id)out.push([x,y]);return out}
+function stairSpec(){
+  const g=grid(),c=g.cellMeters,lo=roomCells('ground','schody');if(!lo.length)return null;
+  const up=roomCells('upper','schody'),xs=lo.map(q=>q[0]),ys=lo.map(q=>q[1]);
+  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+  const axis=(maxY-minY)>=(maxX-minX)?'z':'x';let lowSide='max';
+  if(up.length){const ux=up.map(q=>q[0]),uy=up.map(q=>q[1]);const uminX=Math.min(...ux),umaxX=Math.max(...ux),uminY=Math.min(...uy),umaxY=Math.max(...uy);
+    if(axis==='z'){const extraMin=uminY-minY,extraMax=maxY-umaxY;lowSide=extraMax>=extraMin?'max':'min'}
+    else {const extraMin=uminX-minX,extraMax=maxX-umaxX;lowSide=extraMax>=extraMin?'max':'min'}
+  }
+  return {axis,lowSide,minX,maxX,minY,maxY,x0:minX*c,x1:(maxX+1)*c,z0:minY*c,z1:(maxY+1)*c,width:(axis==='z'?(maxX-minX+1):(maxY-minY+1))*c,run:(axis==='z'?(maxY-minY+1):(maxX-minX+1))*c};
+}
+function drawStairsOnPlan(ox,oy,s){
+  if(!settings.showStairs||observer.floor!=='ground')return;const sp=stairSpec();if(!sp)return;const c=grid().cellMeters,N=Math.max(12,Math.round(settings.stairRisers||17));
+  const x0=ox+sp.x0/c*s,x1=ox+sp.x1/c*s,z0=oy+sp.z0/c*s,z1=oy+sp.z1/c*s;
+  pctx.save();pctx.strokeStyle='#7c5b3b';pctx.lineWidth=1.2;pctx.globalAlpha=.9;
+  for(let i=1;i<N;i++){const t=i/N;pctx.beginPath();if(sp.axis==='z'){const yy=sp.lowSide==='max'?z1-(z1-z0)*t:z0+(z1-z0)*t;pctx.moveTo(x0+2,yy);pctx.lineTo(x1-2,yy)}else{const xx=sp.lowSide==='max'?x1-(x1-x0)*t:x0+(x1-x0)*t;pctx.moveTo(xx,z0+2);pctx.lineTo(xx,z1-2)}pctx.stroke()}
+  const sx=sp.axis==='z'?(x0+x1)/2:(sp.lowSide==='max'?x1-6:x0+6),sy=sp.axis==='z'?(sp.lowSide==='max'?z1-6:z0+6):(z0+z1)/2;
+  const ex=sp.axis==='z'?(x0+x1)/2:(sp.lowSide==='max'?x0+6:x1-6),ey=sp.axis==='z'?(sp.lowSide==='max'?z0+6:z1-6):(z0+z1)/2;
+  pctx.strokeStyle='#111827';pctx.fillStyle='#111827';pctx.lineWidth=3;pctx.beginPath();pctx.moveTo(sx,sy);pctx.lineTo(ex,ey);pctx.stroke();const a=Math.atan2(ey-sy,ex-sx);pctx.beginPath();pctx.moveTo(ex,ey);pctx.lineTo(ex-9*Math.cos(a-.55),ey-9*Math.sin(a-.55));pctx.lineTo(ex-9*Math.cos(a+.55),ey-9*Math.sin(a+.55));pctx.closePath();pctx.fill();pctx.restore();
+}
+function drawPlan(){
+  const g=grid(), W=planCanvas.width, H=planCanvas.height; const margin=28; const s=Math.min((W-2*margin)/g.width,(H-2*margin)/g.height); const ox=(W-g.width*s)/2, oy=(H-g.height*s)/2;
+  pctx.clearRect(0,0,W,H); pctx.fillStyle='#fff';pctx.fillRect(0,0,W,H);
+  const f=observer.floor, rm=roomMap(f);
+  for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){
+    const id=roomAt(f,x,y); pctx.fillStyle=id?colorFor(f,id):'#fff'; pctx.fillRect(ox+x*s,oy+y*s,s,s);
+    if(id==='pustka'||(f==='upper'&&id==='schody')){pctx.fillStyle='#ffffffaa';pctx.fillRect(ox+x*s,oy+y*s,s,s);pctx.strokeStyle='#94a3b8';pctx.beginPath();pctx.moveTo(ox+x*s,oy+y*s);pctx.lineTo(ox+(x+1)*s,oy+(y+1)*s);pctx.moveTo(ox+(x+1)*s,oy+y*s);pctx.lineTo(ox+x*s,oy+(y+1)*s);pctx.stroke()}
+  }
+  pctx.strokeStyle='#94a3b8';pctx.lineWidth=.7;for(let x=0;x<=g.width;x++){pctx.beginPath();pctx.moveTo(ox+x*s,oy);pctx.lineTo(ox+x*s,oy+g.height*s);pctx.stroke()}for(let y=0;y<=g.height;y++){pctx.beginPath();pctx.moveTo(ox,oy+y*s);pctx.lineTo(ox+g.width*s,oy+y*s);pctx.stroke()}
+  // mocniejsze granice pomieszczeń
+  pctx.strokeStyle='#334155';pctx.lineWidth=2;
+  for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){
+    const a=roomAt(f,x,y), r=roomAt(f,x+1,y), b=roomAt(f,x,y+1);
+    if(a!==r){pctx.beginPath();pctx.moveTo(ox+(x+1)*s,oy+y*s);pctx.lineTo(ox+(x+1)*s,oy+(y+1)*s);pctx.stroke()}
+    if(a!==b){pctx.beginPath();pctx.moveTo(ox+x*s,oy+(y+1)*s);pctx.lineTo(ox+(x+1)*s,oy+(y+1)*s);pctx.stroke()}
+  }
+  // otwory
+  const ops=project.openings?.[f]||{};for(const [k,t] of Object.entries(ops)){
+    const parts=k.split(':'), typ=parts[0], a=+parts[1], b=+parts[2];
+    pctx.lineWidth=4; pctx.strokeStyle=t==='window'?'#2563eb':t==='hst'?'#0891b2':t==='opening'?'#16a34a':'#111827';
+    pctx.beginPath(); if(typ==='h'){pctx.moveTo(ox+a*s+2,oy+b*s);pctx.lineTo(ox+(a+1)*s-2,oy+b*s)}else{pctx.moveTo(ox+a*s,oy+b*s+2);pctx.lineTo(ox+a*s,oy+(b+1)*s-2)} pctx.stroke();
+  }
+  drawStairsOnPlan(ox,oy,s);
+  // etykiety
+  pctx.font='11px system-ui';pctx.textAlign='center';pctx.textBaseline='middle';pctx.fillStyle='#111827';
+  const seen={};for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){const id=roomAt(f,x,y);if(!id)continue;(seen[id]??=[]).push([x,y])}
+  for(const [id,cells] of Object.entries(seen)){if(cells.length<2)continue;let sx=0,sy=0;for(const c of cells){sx+=c[0]+.5;sy+=c[1]+.5}sx/=cells.length;sy/=cells.length;pctx.fillText(rm[id]?.name||id,ox+sx*s,oy+sy*s)}
+  // observer
+  const px=ox+(observer.x/g.cellMeters)*s, py=oy+(observer.z/g.cellMeters)*s; const rad=observer.angle*Math.PI/180; const len=s*1.35;
+  pctx.fillStyle='#111827';pctx.strokeStyle='#fff';pctx.lineWidth=2;pctx.beginPath();pctx.arc(px,py,7,0,Math.PI*2);pctx.fill();pctx.stroke();
+  pctx.strokeStyle='#111827';pctx.lineWidth=4;pctx.beginPath();pctx.moveTo(px,py);pctx.lineTo(px+Math.sin(rad)*len,py-Math.cos(rad)*len);pctx.stroke();
+  const ex=px+Math.sin(rad)*len,ey=py-Math.cos(rad)*len;pctx.fillStyle='#111827';pctx.beginPath();pctx.moveTo(ex,ey);pctx.lineTo(ex-6*Math.sin(rad+0.65),ey+6*Math.cos(rad+0.65));pctx.lineTo(ex-6*Math.sin(rad-0.65),ey+6*Math.cos(rad-0.65));pctx.closePath();pctx.fill();
+  ui.planTitle.textContent=(project.definitionSnapshot?.floors?.[f]?.name||f)+' · '+g.width*g.cellMeters+' × '+g.height*g.cellMeters+' m';
+  planCanvas._geom={ox,oy,s};
+}
+
+planCanvas.addEventListener('click',e=>{const r=planCanvas.getBoundingClientRect(), q=planCanvas._geom,g=grid();const cx=(e.clientX-r.left)*planCanvas.width/r.width,cy=(e.clientY-r.top)*planCanvas.height/r.height;const x=(cx-q.ox)/q.s, y=(cy-q.oy)/q.s;if(x<0||y<0||x>=g.width||y>=g.height)return;const id=roomAt(observer.floor,Math.floor(x),Math.floor(y));if(!canStand(observer.floor,id)){setStatus('Tu nie można ustawić obserwatora: '+(id||'poza domem'));return}observer.x=x*g.cellMeters;observer.z=y*g.cellMeters;syncUi();setStatus('Ustawiono obserwatora w: '+(roomMap(observer.floor)[id]?.name||id))});
+planCanvas.addEventListener('contextmenu',e=>{e.preventDefault();const r=planCanvas.getBoundingClientRect(),q=planCanvas._geom,g=grid();const cx=(e.clientX-r.left)*planCanvas.width/r.width,cy=(e.clientY-r.top)*planCanvas.height/r.height;const x=(cx-q.ox)/q.s*g.cellMeters,z=(cy-q.oy)/q.s*g.cellMeters;const dx=x-observer.x,dz=z-observer.z;if(Math.hypot(dx,dz)<.05)return;observer.angle=normAngle(Math.atan2(dx,-dz)*180/Math.PI);syncUi();setStatus('Ustawiono kierunek patrzenia: '+Math.round(observer.angle)+'°')});
+
+function roomLegend(){const m=floorRooms(observer.floor),host=els('legend');host.innerHTML='';for(const r of m){const d=document.createElement('div');d.className='lg';d.innerHTML='<span class="sw" style="background:'+r.color+'"></span><span>'+escapeHtml(r.name)+'</span>';host.appendChild(d)}}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+function hexToRgb(hex){
+  if(typeof hex==='number')return {r:(hex>>16)&255,g:(hex>>8)&255,b:hex&255};
+  let h=String(hex||'#d1d5db').replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');
+  const n=parseInt(h,16)||0;return {r:(n>>16)&255,g:(n>>8)&255,b:n&255}
+}
+function rgba(col,a=1){const c=hexToRgb(col);return `rgba(${c.r},${c.g},${c.b},${a})`}
+function pushPoly(points,color,opts={}){three.scenePolys.push({points,color,alpha:opts.alpha??1,stroke:opts.stroke??'#334155',line:opts.line??0.7,kind:opts.kind||'solid'})}
+function addQuad(a,b,c,d,color,opts={}){pushPoly([a,b,c,d],color,opts)}
+function addBoxFaces(x0,y0,z0,x1,y1,z1,color,opts={}){
+  addQuad([x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],color,opts);
+  addQuad([x1,y0,z1],[x0,y0,z1],[x0,y1,z1],[x1,y1,z1],color,opts);
+  addQuad([x0,y0,z1],[x0,y0,z0],[x0,y1,z0],[x0,y1,z1],color,opts);
+  addQuad([x1,y0,z0],[x1,y0,z1],[x1,y1,z1],[x1,y1,z0],color,opts);
+  addQuad([x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1],color,opts);
+  addQuad([x0,y0,z1],[x1,y0,z1],[x1,y0,z0],[x0,y0,z0],color,opts)
+}
+function wallQuad(orient,x,z,len,base,y0,y1,color,opts={}){
+  if(y1<=y0+.001)return;
+  if(orient==='h')addQuad([x-len/2,base+y0,z],[x+len/2,base+y0,z],[x+len/2,base+y1,z],[x-len/2,base+y1,z],color,opts);
+  else addQuad([x,base+y0,z-len/2],[x,base+y0,z+len/2],[x,base+y1,z+len/2],[x,base+y1,z-len/2],color,opts)
+}
+function addWall2D(orient,x,z,len,height,base,opening,exterior){
+  const wallColor=exterior?'#dedbd7':'#f0f1f2';
+  if(opening==='opening')return;
+  if(['door','hiddenDoor','slidingDoor'].includes(opening)){
+    const dh=Math.min(settings.doorH,height-.05);wallQuad(orient,x,z,len,base,dh,height,wallColor);return;
+  }
+  if(opening==='hst'){
+    const dh=Math.min(settings.hstH,height-.05);wallQuad(orient,x,z,len,base,dh,height,wallColor);
+    if(settings.showGlass)wallQuad(orient,x,z,len*.94,base,.03,dh,'#6fb4de',{alpha:.24,stroke:'#4b93bd',kind:'glass'});return;
+  }
+  if(opening==='window'){
+    const sill=Math.min(settings.sillH,height-.35),wh=Math.min(settings.windowH,height-sill-.08),top=sill+wh;
+    wallQuad(orient,x,z,len,base,0,sill,wallColor);wallQuad(orient,x,z,len,base,top,height,wallColor);
+    if(settings.showGlass)wallQuad(orient,x,z,len*.94,base,sill,top,'#6fb4de',{alpha:.28,stroke:'#4b93bd',kind:'glass'});return;
+  }
+  wallQuad(orient,x,z,len,base,0,height,wallColor)
+}
+function addRailing2D(orient,x,z,len,base){
+  if(!settings.showRail)return;const h=settings.railH,dark='#27313d',bar=.055;
+  wallQuad(orient,x,z,len,base,h-bar,h,dark,{stroke:dark});
+  const offsets=[-len*.45,0,len*.45];for(const o of offsets){
+    if(orient==='h')addQuad([x+o-bar/2,base,z],[x+o+bar/2,base,z],[x+o+bar/2,base+h,z],[x+o-bar/2,base+h,z],dark,{stroke:dark});
+    else addQuad([x,base,z+o-bar/2],[x,base,z+o+bar/2],[x,base+h,z+o+bar/2],[x,base+h,z+o-bar/2],dark,{stroke:dark})
+  }
+}
+function addStairRail(sp,N,H){
+  if(!settings.showRail)return;const dark='#27313d',bar=.055,c=grid().cellMeters;
+  // wybierz stronę bardziej otwartą na podstawie liczby otworów wzdłuż biegu
+  let side='max',scoreMin=0,scoreMax=0;
+  if(sp.axis==='z'){
+    for(let y=sp.minY;y<=sp.maxY;y++){const a=openingAt('ground',openKeyV(sp.minX,y)),b=openingAt('ground',openKeyV(sp.maxX+1,y));if(a)scoreMin++;if(b)scoreMax++}side=scoreMax>=scoreMin?'max':'min';
+    const x=side==='max'?sp.x1-.035:sp.x0+.035,zLow=sp.lowSide==='max'?sp.z1:sp.z0,zHigh=sp.lowSide==='max'?sp.z0:sp.z1;
+    const yLow=settings.railH,yHigh=H+settings.railH;addQuad([x,yLow-.05,zLow],[x,yLow,zLow],[x,yHigh,zHigh],[x,yHigh-.05,zHigh],dark,{stroke:dark});
+    for(let i=0;i<=N;i+=2){const t=i/N,z=sp.lowSide==='max'?sp.z1-sp.run*t:sp.z0+sp.run*t,y=H*t;addQuad([x,y,z-.018],[x,y,z+.018],[x,y+settings.railH,z+.018],[x,y+settings.railH,z-.018],dark,{stroke:dark})}
+  }else{
+    for(let x=sp.minX;x<=sp.maxX;x++){const a=openingAt('ground',openKeyH(x,sp.minY)),b=openingAt('ground',openKeyH(x,sp.maxY+1));if(a)scoreMin++;if(b)scoreMax++}side=scoreMax>=scoreMin?'max':'min';
+    const z=side==='max'?sp.z1-.035:sp.z0+.035,xLow=sp.lowSide==='max'?sp.x1:sp.x0,xHigh=sp.lowSide==='max'?sp.x0:sp.x1;
+    const yLow=settings.railH,yHigh=H+settings.railH;addQuad([xLow,yLow-.05,z],[xLow,yLow,z],[xHigh,yHigh,z],[xHigh,yHigh-.05,z],dark,{stroke:dark});
+    for(let i=0;i<=N;i+=2){const t=i/N,x=sp.lowSide==='max'?sp.x1-sp.run*t:sp.x0+sp.run*t,y=H*t;addQuad([x-.018,y,z],[x+.018,y,z],[x+.018,y+settings.railH,z],[x-.018,y+settings.railH,z],dark,{stroke:dark})}
+  }
+}
+function addStraightStairs(){
+  if(!settings.showStairs)return;const sp=stairSpec();if(!sp)return;const H=floorHeight('ground'),N=Math.max(12,Math.min(24,Math.round(settings.stairRisers||17))),rise=H/N,run=sp.run/N,margin=.045,oak='#b8895b',edge='#805d3d';
+  for(let i=0;i<N;i++){const top=(i+1)*rise;
+    if(sp.axis==='z'){
+      const za=sp.lowSide==='max'?sp.z1-(i+1)*run:sp.z0+i*run,zb=sp.lowSide==='max'?sp.z1-i*run:sp.z0+(i+1)*run;
+      addBoxFaces(sp.x0+margin,0,Math.min(za,zb)+.008,sp.x1-margin,top,Math.max(za,zb)-.008,oak,{stroke:edge,line:.55});
+    }else{
+      const xa=sp.lowSide==='max'?sp.x1-(i+1)*run:sp.x0+i*run,xb=sp.lowSide==='max'?sp.x1-i*run:sp.x0+(i+1)*run;
+      addBoxFaces(Math.min(xa,xb)+.008,0,sp.z0+margin,Math.max(xa,xb)-.008,top,sp.z1-margin,oak,{stroke:edge,line:.55});
+    }
+  }
+  addStairRail(sp,N,H);
+}
+function cellClass(f,id){if(!id||isExteriorVoid(f,id))return 'outside';if(isHole(f,id))return 'hole';return 'room'}
+function build3D(){
+  three.scenePolys=[];const g=grid(),c=g.cellMeters;
+  for(const f of ['ground','upper']){
+    const base=floorBase(f),h=floorHeight(f);
+    for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){
+      const id=roomAt(f,x,y);if(cellClass(f,id)!=='room')continue;
+      if(settings.showFloor){
+        const fc=f==='ground'?'#cfc9c1':'#ddd8d0';
+        addQuad([x*c,base,(y+1)*c],[(x+1)*c,base,(y+1)*c],[(x+1)*c,base,y*c],[x*c,base,y*c],fc,{stroke:'#bbb4aa',line:.35});
+      }
+      let ceiling=true;
+      if(f==='ground'){
+        const up=roomAt('upper',x,y);if(up==='pustka'||up==='schody')ceiling=false;
+      }
+      if(ceiling)addQuad([x*c,base+h,y*c],[(x+1)*c,base+h,y*c],[(x+1)*c,base+h,(y+1)*c],[x*c,base+h,(y+1)*c],'#f7f7f5',{stroke:'#e5e7eb',line:.25});
+    }
+    for(let y=0;y<=g.height;y++)for(let x=0;x<g.width;x++){
+      const a=roomAt(f,x,y-1),b=roomAt(f,x,y),ca=cellClass(f,a),cb=cellClass(f,b);if(ca===cb&&a===b)continue;
+      const op=openingAt(f,openKeyH(x,y)),roomA=ca==='room',roomB=cb==='room',holeA=ca==='hole',holeB=cb==='hole';
+      if((holeA&&roomB)||(holeB&&roomA)){if(!op)addRailing2D('h',(x+.5)*c,y*c,c,base);continue}
+      if(!roomA&&!roomB)continue;if(roomA&&roomB&&a===b)continue;addWall2D('h',(x+.5)*c,y*c,c,h,base,op,!roomA||!roomB)
+    }
+    for(let x=0;x<=g.width;x++)for(let y=0;y<g.height;y++){
+      const a=roomAt(f,x-1,y),b=roomAt(f,x,y),ca=cellClass(f,a),cb=cellClass(f,b);if(ca===cb&&a===b)continue;
+      const op=openingAt(f,openKeyV(x,y)),roomA=ca==='room',roomB=cb==='room',holeA=ca==='hole',holeB=cb==='hole';
+      if((holeA&&roomB)||(holeB&&roomA)){if(!op)addRailing2D('v',x*c,(y+.5)*c,c,base);continue}
+      if(!roomA&&!roomB)continue;if(roomA&&roomB&&a===b)continue;addWall2D('v',x*c,(y+.5)*c,c,h,base,op,!roomA||!roomB)
+    }
+  }
+  addStraightStairs();
+  if(settings.showChimney&&Array.isArray(project.structure?.chimney)){
+    const H=floorHeight('ground')+floorHeight('upper')+.45,c=grid().cellMeters;
+    for(const n of project.structure.chimney){const x=n%grid().width,y=Math.floor(n/grid().width);addBoxFaces(x*c+.03,0,y*c+.03,(x+1)*c-.03,H,(y+1)*c-.03,'#77716c',{stroke:'#5e5955'})}
+  }
+  setStatus('Geometria 3D offline przebudowana — schody: '+(settings.showStairs?'włączone':'wyłączone')+'.');render3D()
+}
+function worldToCamera(p){
+  const yaw=observer.angle*Math.PI/180,dx=p[0]-observer.x,dy=p[1]-(floorBase(observer.floor)+observer.eye),dz=p[2]-observer.z;
+  const cx=dx*Math.cos(yaw)+dz*Math.sin(yaw),fz=dx*Math.sin(yaw)-dz*Math.cos(yaw);
+  const cp=Math.cos(three.pitch),sp=Math.sin(three.pitch);return {x:cx,y:dy*cp-fz*sp,z:dy*sp+fz*cp}
+}
+function clipNear(poly,near=.04){
+  const out=[];for(let i=0;i<poly.length;i++){const a=poly[(i+poly.length-1)%poly.length],b=poly[i],ai=a.z>near,bi=b.z>near;
+    if(ai!==bi){const t=(near-a.z)/(b.z-a.z);out.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:near})}if(bi)out.push(b)
+  }return out
+}
+function render3D(){
+  if(!three.ready||!three.ctx)return;resize3d(false);const cv=three.canvas,ctx=three.ctx,W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+  const sky=ctx.createLinearGradient(0,0,0,H*.56);sky.addColorStop(0,'#a9c5dd');sky.addColorStop(1,'#e7edf1');ctx.fillStyle=sky;ctx.fillRect(0,0,W,H*.58);
+  const grd=ctx.createLinearGradient(0,H*.45,0,H);grd.addColorStop(0,'#c8c3bb');grd.addColorStop(1,'#9f9b95');ctx.fillStyle=grd;ctx.fillRect(0,H*.58,W,H*.42);
+  const f=(W*.5)/Math.tan(observer.fov*Math.PI/360),draw=[];
+  for(const poly of three.scenePolys){let cp=poly.points.map(worldToCamera);cp=clipNear(cp);if(cp.length<3)continue;const pts=cp.map(q=>[W/2+q.x/q.z*f,H/2-q.y/q.z*f]);
+    if(pts.every(p=>p[0]<-W||p[0]>2*W||p[1]<-H||p[1]>2*H))continue;draw.push({poly,pts,depth:cp.reduce((a,b)=>a+b.z,0)/cp.length})
+  }
+  draw.sort((a,b)=>b.depth-a.depth);
+  for(const d of draw){const {poly,pts}=d;ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.closePath();ctx.globalAlpha=poly.alpha;ctx.fillStyle=poly.color;ctx.fill();if(poly.line>0){ctx.strokeStyle=poly.stroke;ctx.lineWidth=poly.line*Math.max(1,devicePixelRatio||1);ctx.stroke()}ctx.globalAlpha=1}
+  const cell=currentCell(),id=roomAt(observer.floor,cell.x,cell.y),name=roomMap(observer.floor)[id]?.name||id||'poza domem';els('overlay3d').innerHTML=`<b>${escapeHtml(name)}</b> · ${observer.floor==='ground'?'parter':'piętro'} · kierunek ${Math.round(observer.angle)}°<br>Przeciągnij myszą = rozglądanie · WASD = ruch · rolka = FOV`;
+}
+function initThree(){
+  const host=els('threeHost');host.innerHTML='';const cv=document.createElement('canvas');cv.id='offline3dCanvas';cv.style.width='100%';cv.style.height='100%';cv.style.display='block';cv.style.cursor='grab';host.appendChild(cv);three.canvas=cv;three.ctx=cv.getContext('2d');three.ready=true;
+  cv.addEventListener('mousedown',e=>{three.drag=true;three.lastX=e.clientX;three.lastY=e.clientY;cv.style.cursor='grabbing'});
+  window.addEventListener('mouseup',()=>{three.drag=false;if(three.canvas)three.canvas.style.cursor='grab'});
+  window.addEventListener('mousemove',e=>{if(!three.drag)return;const dx=e.clientX-three.lastX,dy=e.clientY-three.lastY;three.lastX=e.clientX;three.lastY=e.clientY;observer.angle=normAngle(observer.angle+dx*.28);three.pitch=clamp(three.pitch-dy*.0035,-1.05,1.05);ui.angle.value=Math.round(observer.angle);drawPlan();render3D()});
+  cv.addEventListener('dblclick',()=>{three.pitch=0;render3D()});
+  cv.addEventListener('wheel',e=>{e.preventDefault();observer.fov=clamp(observer.fov+Math.sign(e.deltaY)*3,35,110);ui.fov.value=Math.round(observer.fov);render3D()},{passive:false});
+  window.addEventListener('keydown',e=>{if(['KeyW','KeyA','KeyS','KeyD'].includes(e.code))three.keys.add(e.code)});
+  window.addEventListener('keyup',e=>three.keys.delete(e.code));
+  resize3d();build3D();syncCameraFromObserver();if(!three.loopStarted){three.loopStarted=true;requestAnimationFrame(loop3d)}return true
+}
+function resize3d(redraw=true){if(!three.ready||!three.canvas)return;const host=els('threeHost'),dpr=Math.min(devicePixelRatio||1,2),w=Math.max(1,Math.floor(host.clientWidth*dpr)),h=Math.max(1,Math.floor(host.clientHeight*dpr));if(three.canvas.width!==w||three.canvas.height!==h){three.canvas.width=w;three.canvas.height=h;if(redraw)render3D()}}
+window.addEventListener('resize',()=>resize3d());
+function syncCameraFromObserver(){if(three.ready)render3D()}
+function crossingAllowed(f,cx,cy,nx,ny){
+  if(nx<0||ny<0||nx>=grid().width||ny>=grid().height)return false;const a=roomAt(f,cx,cy),b=roomAt(f,nx,ny);if(!canStand(f,b))return false;if(a===b)return true;
+  const dx=nx-cx,dy=ny-cy;if(Math.abs(dx)+Math.abs(dy)!==1)return false;let key;if(dx===1)key=openKeyV(cx+1,cy);else if(dx===-1)key=openKeyV(cx,cy);else if(dy===1)key=openKeyH(cx,cy+1);else key=openKeyH(cx,cy);
+  return ['door','opening','hst','hiddenDoor','slidingDoor'].includes(openingAt(f,key))
+}
+function canStepTo(nx,nz){
+  const g=grid(),ox=observer.x,oz=observer.z,cx=Math.floor(ox/g.cellMeters),cy=Math.floor(oz/g.cellMeters),tx=Math.floor(nx/g.cellMeters),ty=Math.floor(nz/g.cellMeters);if(tx<0||ty<0||tx>=g.width||ty>=g.height)return false;if(!canStand(observer.floor,roomAt(observer.floor,tx,ty)))return false;if(cx===tx&&cy===ty)return true;
+  if(cx!==tx&&cy!==ty){return (crossingAllowed(observer.floor,cx,cy,tx,cy)&&crossingAllowed(observer.floor,tx,cy,tx,ty))||(crossingAllowed(observer.floor,cx,cy,cx,ty)&&crossingAllowed(observer.floor,cx,ty,tx,ty))}
+  return crossingAllowed(observer.floor,cx,cy,tx,ty)
+}
+function loop3d(t){
+  if(!three.ready){requestAnimationFrame(loop3d);return}const dt=Math.min(.05,(t-three.lastT)/1000||0);three.lastT=t;let fw=0,rt=0;if(three.keys.has('KeyW'))fw+=1;if(three.keys.has('KeyS'))fw-=1;if(three.keys.has('KeyD'))rt+=1;if(three.keys.has('KeyA'))rt-=1;
+  if(fw||rt){const L=Math.hypot(fw,rt)||1,y=observer.angle*Math.PI/180,s=Math.sin(y),c=Math.cos(y),speed=1.7;const dx=(s*fw+c*rt)/L*speed*dt,dz=(-c*fw+s*rt)/L*speed*dt;const nx=observer.x+dx,nz=observer.z+dz;if(canStepTo(nx,observer.z))observer.x=nx;if(canStepTo(observer.x,nz))observer.z=nz;drawPlan()}
+  render3D();requestAnimationFrame(loop3d)
+}
+
+function showTab(tab){for(const b of document.querySelectorAll('.tabbtn'))b.classList.toggle('active',b.dataset.tab===tab);els('planWrap').style.display=tab==='plan'?'flex':'none';els('view3d').style.display=tab==='three'?'block':'none';els('settingsPane').style.display=tab==='settings'?'block':'none';if(tab==='three'){if(!three.ready)initThree();resize3d();syncCameraFromObserver()} }
+for(const b of document.querySelectorAll('.tabbtn'))b.addEventListener('click',()=>showTab(b.dataset.tab));
+els('go3d').addEventListener('click',()=>showTab('three'));els('rebuild').addEventListener('click',()=>{if(!three.ready)initThree();build3D();syncCameraFromObserver()});
+ui.floor.addEventListener('change',()=>{readObserverUi();roomLegend()});ui.eye.addEventListener('change',readObserverUi);ui.angle.addEventListener('change',readObserverUi);ui.fov.addEventListener('change',readObserverUi);
+els('rotL').onclick=()=>{observer.angle=normAngle(observer.angle-15);syncUi()};els('rotR').onclick=()=>{observer.angle=normAngle(observer.angle+15);syncUi()};for(const b of document.querySelectorAll('.dir'))b.onclick=()=>{observer.angle=+b.dataset.a;syncUi()};
+
+function loadProject(p,label='projekt'){if(!p?.state||!p?.grid)throw new Error('Brak state/grid w JSON');project=p;const g=grid();observer.floor='ground';observer.x=g.width*g.cellMeters*.5;observer.z=g.height*g.cellMeters*.82;observer.angle=0;ui.name.textContent=(p.definitionName||p.definitionSnapshot?.name||label);roomLegend();drawPlan();if(three.ready){build3D();syncCameraFromObserver()}setStatus('Wczytano '+label)}
+els('fileInput').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{loadProject(JSON.parse(await f.text()),f.name)}catch(err){setStatus('Błąd JSON: '+err.message)}e.target.value=''});
+els('resetProject').onclick=()=>loadProject(structuredClone(BUILTIN_PROJECT),'projekt wbudowany');
+
+function vpKey(){return 'dom3d_viewpoints_v1'}
+function getVps(){try{return JSON.parse(localStorage.getItem(vpKey())||'[]')}catch{return []}}
+function saveVps(v){localStorage.setItem(vpKey(),JSON.stringify(v));renderVps()}
+function renderVps(){const host=els('vpList'),v=getVps();host.innerHTML='';if(!v.length){host.innerHTML='<div class="hint">Brak zapisanych punktów.</div>';return}v.forEach((p,i)=>{const d=document.createElement('div');d.className='viewpoint';d.innerHTML='<span title="'+escapeHtml(p.name)+'">'+escapeHtml(p.name)+'</span><button class="btn small">Pokaż</button><button class="btn small danger">×</button>';d.children[1].onclick=()=>{observer={...observer,...p.obs};syncUi();roomLegend();showTab('three')};d.children[2].onclick=()=>{const a=getVps();a.splice(i,1);saveVps(a)};host.appendChild(d)})}
+els('saveVp').onclick=()=>{const name=els('vpName').value.trim()||('Punkt '+(getVps().length+1));const v=getVps();v.push({name,obs:{floor:observer.floor,x:observer.x,z:observer.z,angle:observer.angle,eye:observer.eye,fov:observer.fov}});saveVps(v);els('vpName').value='';setStatus('Zapisano punkt widokowy: '+name)};
+
+els('applySettings').onclick=()=>{settings.wallT=parseFloat(els('wallT').value)||.12;settings.doorH=parseFloat(els('doorH').value)||2.1;settings.hstH=parseFloat(els('hstH').value)||2.4;settings.sillH=parseFloat(els('sillH').value)||.9;settings.windowH=parseFloat(els('windowH').value)||1.2;settings.railH=parseFloat(els('railH').value)||1.05;settings.stairRisers=Math.max(12,Math.min(24,Math.round(parseFloat(els('stairRisers').value)||17)));settings.showFloor=els('showFloor').checked;settings.showGlass=els('showGlass').checked;settings.showRail=els('showRail').checked;settings.showStairs=els('showStairs').checked;settings.showChimney=els('showChimney').checked;if(!three.ready)initThree();build3D();syncCameraFromObserver();drawPlan();showTab('three')};
+
+loadProject(structuredClone(BUILTIN_PROJECT),'projekt wbudowany');syncUi();renderVps();roomLegend();
+</script>
+</body>
+</html>

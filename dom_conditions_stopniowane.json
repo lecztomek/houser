@@ -1,0 +1,899 @@
+{
+  "version": 2,
+  "name": "Dom kompaktowy - walidacja stopniowana v2",
+  "grid": {
+    "width": 18,
+    "height": 20,
+    "cellMeters": 0.5
+  },
+  "floorOrder": [
+    "ground",
+    "upper"
+  ],
+  "floors": {
+    "ground": {
+      "name": "Parter",
+      "subtitle": "polnoc u gory - poludnie / ogrod na dole",
+      "rooms": [
+        {
+          "id": "wiatrolap",
+          "name": "Wiatrolap",
+          "color": "#f59e0b"
+        },
+        {
+          "id": "hol",
+          "name": "Hol / komunikacja",
+          "color": "#9ca3af"
+        },
+        {
+          "id": "gabinet",
+          "name": "Gabinet",
+          "color": "#60a5fa"
+        },
+        {
+          "id": "spizarnia",
+          "name": "Spizarnia",
+          "color": "#a78bfa"
+        },
+        {
+          "id": "kuchnia",
+          "name": "Kuchnia",
+          "color": "#34d399"
+        },
+        {
+          "id": "jadalnia",
+          "name": "Jadalnia",
+          "color": "#fbbf24"
+        },
+        {
+          "id": "salon",
+          "name": "Salon",
+          "color": "#fb7185"
+        },
+        {
+          "id": "lazienka_dol",
+          "name": "Lazienka dol",
+          "color": "#67e8f9"
+        },
+        {
+          "id": "techniczne",
+          "name": "Techniczne",
+          "color": "#f97316"
+        },
+        {
+          "id": "schody",
+          "name": "Schody",
+          "color": "#64748b"
+        }
+      ]
+    },
+    "upper": {
+      "name": "Pietro / poddasze",
+      "subtitle": "ten sam obrys budynku",
+      "rooms": [
+        {
+          "id": "hol_gora",
+          "name": "Hol pietra",
+          "color": "#9ca3af"
+        },
+        {
+          "id": "schody",
+          "name": "Schody",
+          "color": "#64748b"
+        },
+        {
+          "id": "sypialnia",
+          "name": "Sypialnia glowna",
+          "color": "#3b82f6"
+        },
+        {
+          "id": "pokoj_2",
+          "name": "Pokoj 2",
+          "color": "#22c55e"
+        },
+        {
+          "id": "pokoj_3",
+          "name": "Pokoj 3",
+          "color": "#14b8a6"
+        },
+        {
+          "id": "lazienka_gora",
+          "name": "Lazienka gora",
+          "color": "#06b6d4"
+        },
+        {
+          "id": "pralnia",
+          "name": "Pralnia",
+          "color": "#8b5cf6"
+        },
+        {
+          "id": "szafa_gosp",
+          "name": "Szafa gospodarcza",
+          "color": "#a855f7"
+        },
+        {
+          "id": "antresola",
+          "name": "Antresola",
+          "color": "#eab308"
+        },
+        {
+          "id": "pustka",
+          "name": "Pustka nad salonem",
+          "color": "#e5e7eb"
+        },
+        {
+          "id": "skosy",
+          "name": "Skosy / schowki",
+          "color": "#d1d5db"
+        }
+      ]
+    }
+  },
+  "conditions": [
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "ground",
+      "room": "wiatrolap",
+      "value": 3.5,
+      "label": "wiatrolap: absolutne minimum 3.5 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "medium",
+      "floor": "ground",
+      "room": "wiatrolap",
+      "value": 5,
+      "label": "wiatrolap: cel min. 5 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "ground",
+      "room": "hol",
+      "value": 3,
+      "label": "hol: absolutne minimum 3 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "soft",
+      "floor": "ground",
+      "room": "hol",
+      "value": 5,
+      "label": "hol: cel min. 5 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "ground",
+      "room": "gabinet",
+      "value": 7,
+      "label": "gabinet: absolutne minimum 7 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "medium",
+      "floor": "ground",
+      "room": "gabinet",
+      "value": 9,
+      "label": "gabinet: cel min. 9 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "ground",
+      "room": "spizarnia",
+      "value": 1.5,
+      "label": "spizarnia: absolutne minimum 1.5 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "soft",
+      "floor": "ground",
+      "room": "spizarnia",
+      "value": 2.5,
+      "label": "spizarnia: cel min. 2.5 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "ground",
+      "room": "kuchnia",
+      "value": 8,
+      "label": "kuchnia: absolutne minimum 8 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "medium",
+      "floor": "ground",
+      "room": "kuchnia",
+      "value": 10,
+      "label": "kuchnia: cel min. 10 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "ground",
+      "room": "jadalnia",
+      "value": 7,
+      "label": "jadalnia: absolutne minimum 7 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "soft",
+      "floor": "ground",
+      "room": "jadalnia",
+      "value": 10,
+      "label": "jadalnia: cel min. 10 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "ground",
+      "room": "salon",
+      "value": 15,
+      "label": "salon: absolutne minimum 15 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "medium",
+      "floor": "ground",
+      "room": "salon",
+      "value": 20,
+      "label": "salon: cel min. 20 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "ground",
+      "room": "lazienka_dol",
+      "value": 3,
+      "label": "lazienka_dol: absolutne minimum 3 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "medium",
+      "floor": "ground",
+      "room": "lazienka_dol",
+      "value": 4,
+      "label": "lazienka_dol: cel min. 4 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "ground",
+      "room": "techniczne",
+      "value": 6,
+      "label": "techniczne: absolutne minimum 6 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "medium",
+      "floor": "ground",
+      "room": "techniczne",
+      "value": 8,
+      "label": "techniczne: cel min. 8 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "ground",
+      "room": "schody",
+      "value": 4,
+      "label": "schody: absolutne minimum 4 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "medium",
+      "floor": "ground",
+      "room": "schody",
+      "value": 5,
+      "label": "schody: cel min. 5 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "upper",
+      "room": "hol_gora",
+      "value": 3,
+      "label": "hol_gora: absolutne minimum 3 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "soft",
+      "floor": "upper",
+      "room": "hol_gora",
+      "value": 4,
+      "label": "hol_gora: cel min. 4 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "upper",
+      "room": "schody",
+      "value": 4,
+      "label": "schody: absolutne minimum 4 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "medium",
+      "floor": "upper",
+      "room": "schody",
+      "value": 5,
+      "label": "schody: cel min. 5 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "upper",
+      "room": "sypialnia",
+      "value": 10,
+      "label": "sypialnia: absolutne minimum 10 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "medium",
+      "floor": "upper",
+      "room": "sypialnia",
+      "value": 13,
+      "label": "sypialnia: cel min. 13 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "upper",
+      "room": "pokoj_2",
+      "value": 8.5,
+      "label": "pokoj_2: absolutne minimum 8.5 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "medium",
+      "floor": "upper",
+      "room": "pokoj_2",
+      "value": 10.5,
+      "label": "pokoj_2: cel min. 10.5 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "upper",
+      "room": "pokoj_3",
+      "value": 8.5,
+      "label": "pokoj_3: absolutne minimum 8.5 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "medium",
+      "floor": "upper",
+      "room": "pokoj_3",
+      "value": 10.5,
+      "label": "pokoj_3: cel min. 10.5 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "upper",
+      "room": "lazienka_gora",
+      "value": 5,
+      "label": "lazienka_gora: absolutne minimum 5 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "medium",
+      "floor": "upper",
+      "room": "lazienka_gora",
+      "value": 7,
+      "label": "lazienka_gora: cel min. 7 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "upper",
+      "room": "pralnia",
+      "value": 3,
+      "label": "pralnia: absolutne minimum 3 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "medium",
+      "floor": "upper",
+      "room": "pralnia",
+      "value": 4.5,
+      "label": "pralnia: cel min. 4.5 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "upper",
+      "room": "szafa_gosp",
+      "value": 1,
+      "label": "szafa_gosp: absolutne minimum 1 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "soft",
+      "floor": "upper",
+      "room": "szafa_gosp",
+      "value": 1.5,
+      "label": "szafa_gosp: cel min. 1.5 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "upper",
+      "room": "antresola",
+      "value": 2.5,
+      "label": "antresola: absolutne minimum 2.5 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "soft",
+      "floor": "upper",
+      "room": "antresola",
+      "value": 4,
+      "label": "antresola: cel min. 4 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "minArea",
+      "severity": "hard",
+      "floor": "upper",
+      "room": "pustka",
+      "value": 5,
+      "label": "pustka: absolutne minimum 5 m2",
+      "group": "Powierzchnie - minimum absolutne"
+    },
+    {
+      "type": "minArea",
+      "severity": "soft",
+      "floor": "upper",
+      "room": "pustka",
+      "value": 7,
+      "label": "pustka: cel min. 7 m2",
+      "group": "Powierzchnie - cele"
+    },
+    {
+      "type": "fullPainted",
+      "severity": "soft",
+      "floor": "ground",
+      "label": "Parter: brak pustych kratek",
+      "group": "Wypelnienie"
+    },
+    {
+      "type": "fullPainted",
+      "severity": "soft",
+      "floor": "upper",
+      "label": "Pietro: brak pustych kratek",
+      "group": "Wypelnienie"
+    },
+    {
+      "type": "contiguousAll",
+      "severity": "hard",
+      "floor": "ground",
+      "label": "Parter: kazde pomieszczenie jest jednym spojnym obszarem",
+      "group": "Ksztalt"
+    },
+    {
+      "type": "contiguousAll",
+      "severity": "hard",
+      "floor": "upper",
+      "label": "Pietro: kazde pomieszczenie jest jednym spojnym obszarem",
+      "group": "Ksztalt"
+    },
+    {
+      "type": "minRoomWidth",
+      "severity": "hard",
+      "floor": "ground",
+      "room": "hol",
+      "meters": 1.0,
+      "label": "Hol parteru: brak przewężeń poniżej 1,0 m",
+      "group": "Szerokosci"
+    },
+    {
+      "type": "minRoomWidth",
+      "severity": "hard",
+      "floor": "upper",
+      "room": "hol_gora",
+      "meters": 1.0,
+      "label": "Hol pietra: brak przewężeń poniżej 1,0 m",
+      "group": "Szerokosci"
+    },
+    {
+      "type": "minRoomWidth",
+      "severity": "hard",
+      "floor": "ground",
+      "room": "wiatrolap",
+      "meters": 1.0,
+      "label": "Wiatrolap: minimalna lokalna szerokosc 1,0 m",
+      "group": "Szerokosci"
+    },
+    {
+      "type": "minRoomWidth",
+      "severity": "hard",
+      "floor": "ground",
+      "room": "schody",
+      "meters": 1.0,
+      "label": "Schody parter: obszar nie zweza sie ponizej 1,0 m",
+      "group": "Szerokosci"
+    },
+    {
+      "type": "minRoomWidth",
+      "severity": "hard",
+      "floor": "upper",
+      "room": "schody",
+      "meters": 1.0,
+      "label": "Schody pietro: obszar nie zweza sie ponizej 1,0 m",
+      "group": "Szerokosci"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "ground",
+      "a": "wiatrolap",
+      "b": "hol",
+      "meters": 1.0,
+      "label": "Wiatrolap <-> hol: miejsce na przejscie min. 1,0 m",
+      "group": "Polaczenia parter"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "ground",
+      "a": "wiatrolap",
+      "b": "spizarnia",
+      "meters": 1.0,
+      "label": "Wiatrolap <-> spizarnia: miejsce na drzwi min. 1,0 m",
+      "group": "Polaczenia parter"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "ground",
+      "a": "spizarnia",
+      "b": "kuchnia",
+      "meters": 1.0,
+      "label": "Spizarnia <-> kuchnia: miejsce na drzwi min. 1,0 m",
+      "group": "Polaczenia parter"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "ground",
+      "a": "hol",
+      "b": "gabinet",
+      "meters": 1.0,
+      "label": "Hol <-> gabinet: miejsce na drzwi min. 1,0 m",
+      "group": "Polaczenia parter"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "ground",
+      "a": "hol",
+      "b": "lazienka_dol",
+      "meters": 1.0,
+      "label": "Hol <-> lazienka dol: miejsce na drzwi min. 1,0 m",
+      "group": "Polaczenia parter"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "ground",
+      "a": "hol",
+      "b": "techniczne",
+      "meters": 1.0,
+      "label": "Hol <-> techniczne: miejsce na drzwi min. 1,0 m",
+      "group": "Polaczenia parter"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "ground",
+      "a": "hol",
+      "b": "schody",
+      "meters": 1.5,
+      "label": "Hol <-> schody: szerokie dojscie min. 1,5 m",
+      "group": "Polaczenia parter"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "ground",
+      "a": "hol",
+      "b": "salon",
+      "meters": 1.5,
+      "label": "Hol <-> salon: przejscie min. 1,5 m",
+      "group": "Polaczenia parter"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "ground",
+      "a": "kuchnia",
+      "b": "jadalnia",
+      "meters": 2.0,
+      "label": "Kuchnia <-> jadalnia: otwarcie min. 2,0 m",
+      "group": "Polaczenia parter"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "ground",
+      "a": "jadalnia",
+      "b": "salon",
+      "meters": 2.0,
+      "label": "Jadalnia <-> salon: otwarcie min. 2,0 m",
+      "group": "Polaczenia parter"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "ground",
+      "a": "salon",
+      "b": "techniczne",
+      "meters": 1.5,
+      "label": "Salon <-> techniczne: wspolna sciana min. 1,5 m pod kominek",
+      "group": "Polaczenia parter"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "upper",
+      "a": "schody",
+      "b": "hol_gora",
+      "meters": 1.5,
+      "label": "Schody <-> hol pietra: wyjscie min. 1,5 m",
+      "group": "Polaczenia pietro"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "upper",
+      "a": "hol_gora",
+      "b": "sypialnia",
+      "meters": 1.0,
+      "label": "Hol <-> sypialnia glowna: miejsce na drzwi min. 1,0 m",
+      "group": "Polaczenia pietro"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "upper",
+      "a": "hol_gora",
+      "b": "pokoj_2",
+      "meters": 1.0,
+      "label": "Hol <-> pokoj 2: miejsce na drzwi min. 1,0 m",
+      "group": "Polaczenia pietro"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "upper",
+      "a": "hol_gora",
+      "b": "pokoj_3",
+      "meters": 1.0,
+      "label": "Hol <-> pokoj 3: miejsce na drzwi min. 1,0 m",
+      "group": "Polaczenia pietro"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "upper",
+      "a": "hol_gora",
+      "b": "lazienka_gora",
+      "meters": 1.0,
+      "label": "Hol <-> lazienka gora: miejsce na drzwi min. 1,0 m",
+      "group": "Polaczenia pietro"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "upper",
+      "a": "hol_gora",
+      "b": "pralnia",
+      "meters": 1.0,
+      "label": "Hol <-> pralnia: miejsce na drzwi min. 1,0 m",
+      "group": "Polaczenia pietro"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "upper",
+      "a": "hol_gora",
+      "b": "szafa_gosp",
+      "meters": 1.0,
+      "label": "Hol <-> szafa gospodarcza: front/wejscie min. 1,0 m",
+      "group": "Polaczenia pietro"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "upper",
+      "a": "hol_gora",
+      "b": "antresola",
+      "meters": 1.5,
+      "label": "Hol <-> antresola: otwarcie min. 1,5 m",
+      "group": "Polaczenia pietro"
+    },
+    {
+      "type": "sharedEdgeMin",
+      "severity": "hard",
+      "floor": "upper",
+      "a": "antresola",
+      "b": "pustka",
+      "meters": 1.5,
+      "label": "Antresola <-> pustka: wspolna krawedz min. 1,5 m",
+      "group": "Polaczenia pietro"
+    },
+    {
+      "type": "edgeLengthMin",
+      "severity": "hard",
+      "floor": "ground",
+      "room": "wiatrolap",
+      "edge": "north",
+      "meters": 1.0,
+      "label": "Wiatrolap: min. 1,0 m sciany na polnocnej elewacji pod wejscie",
+      "group": "Elewacje"
+    },
+    {
+      "type": "edgeLengthMin",
+      "severity": "hard",
+      "floor": "ground",
+      "room": "techniczne",
+      "edge": "any",
+      "meters": 1.0,
+      "label": "Techniczne: min. 1,0 m sciany zewnetrznej pod osobne drzwi",
+      "group": "Elewacje"
+    },
+    {
+      "type": "edgeLengthMin",
+      "severity": "medium",
+      "floor": "ground",
+      "room": "salon",
+      "edge": "south",
+      "meters": 2.0,
+      "label": "Salon: min. 2,0 m poludniowej elewacji / ogrodu",
+      "group": "Elewacje"
+    },
+    {
+      "type": "edgeLengthMin",
+      "severity": "medium",
+      "floor": "ground",
+      "room": "jadalnia",
+      "edge": "south",
+      "meters": 1.5,
+      "label": "Jadalnia: min. 1,5 m poludniowej elewacji / ogrodu",
+      "group": "Elewacje"
+    },
+    {
+      "type": "exactOverlay",
+      "severity": "hard",
+      "upperFloor": "upper",
+      "upperRoom": "schody",
+      "lowerFloor": "ground",
+      "lowerRoom": "schody",
+      "label": "Schody pokrywaja sie dokladnie pionowo",
+      "group": "Pion"
+    },
+    {
+      "type": "overlapMin",
+      "severity": "medium",
+      "upperFloor": "upper",
+      "upperRoom": "pralnia",
+      "lowerFloor": "ground",
+      "lowerRooms": [
+        "techniczne"
+      ],
+      "ratio": 0.5,
+      "label": "Min. 50% pralni jest nad technicznym",
+      "group": "Pion"
+    },
+    {
+      "type": "overlapMin",
+      "severity": "medium",
+      "upperFloor": "upper",
+      "upperRoom": "lazienka_gora",
+      "lowerFloor": "ground",
+      "lowerRooms": [
+        "lazienka_dol",
+        "techniczne"
+      ],
+      "ratio": 0.5,
+      "label": "Min. 50% gornej lazienki jest nad lazienka dolna lub technicznym",
+      "group": "Pion"
+    },
+    {
+      "type": "overlapMin",
+      "severity": "medium",
+      "upperFloor": "upper",
+      "upperRoom": "pustka",
+      "lowerFloor": "ground",
+      "lowerRooms": [
+        "salon",
+        "jadalnia"
+      ],
+      "ratio": 0.6,
+      "label": "Min. 60% pustki jest nad salonem lub jadalnia",
+      "group": "Pion"
+    },
+    {
+      "type": "notAdjacent",
+      "severity": "medium",
+      "floor": "upper",
+      "a": "sypialnia",
+      "b": "pustka",
+      "label": "Sypialnia glowna nie styka sie bezposrednio z pustka",
+      "group": "Akustyka"
+    },
+    {
+      "type": "notAdjacent",
+      "severity": "medium",
+      "floor": "upper",
+      "a": "pokoj_2",
+      "b": "pustka",
+      "label": "Pokoj 2 nie styka sie bezposrednio z pustka",
+      "group": "Akustyka"
+    },
+    {
+      "type": "notAdjacent",
+      "severity": "medium",
+      "floor": "upper",
+      "a": "pokoj_3",
+      "b": "pustka",
+      "label": "Pokoj 3 nie styka sie bezposrednio z pustka",
+      "group": "Akustyka"
+    }
+  ],
+  "validationLevels": {
+    "hard": {
+      "name": "Twardy",
+      "description": "Warunek funkcjonalny/geometryczny. Czerwony błąd - układ wymaga poprawy."
+    },
+    "medium": {
+      "name": "Wazny",
+      "description": "Istotne zalozenie. Pomaranczowe ostrzezenie - warto poprawic."
+    },
+    "soft": {
+      "name": "Miekki",
+      "description": "Cel/optymalizacja. Zolte ostrzezenie - niewielkie odchylenie jest akceptowalne."
+    }
+  }
+}

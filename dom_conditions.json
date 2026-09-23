@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "name": "Dom kompaktowy - warstwa pomieszczen",
+  "grid": {
+    "width": 18,
+    "height": 20,
+    "cellMeters": 0.5
+  },
+  "floorOrder": ["ground", "upper"],
+  "floors": {
+    "ground": {
+      "name": "Parter",
+      "subtitle": "polnoc u gory - poludnie / ogrod na dole",
+      "rooms": [
+        {"id":"wiatrolap","name":"Wiatrolap","color":"#f59e0b"},
+        {"id":"hol","name":"Hol / komunikacja","color":"#9ca3af"},
+        {"id":"gabinet","name":"Gabinet","color":"#60a5fa"},
+        {"id":"spizarnia","name":"Spizarnia","color":"#a78bfa"},
+        {"id":"kuchnia","name":"Kuchnia","color":"#34d399"},
+        {"id":"jadalnia","name":"Jadalnia","color":"#fbbf24"},
+        {"id":"salon","name":"Salon","color":"#fb7185"},
+        {"id":"lazienka_dol","name":"Lazienka dol","color":"#67e8f9"},
+        {"id":"techniczne","name":"Techniczne","color":"#f97316"},
+        {"id":"schody","name":"Schody","color":"#64748b"}
+      ]
+    },
+    "upper": {
+      "name": "Pietro / poddasze",
+      "subtitle": "ten sam obrys budynku",
+      "rooms": [
+        {"id":"hol_gora","name":"Hol pietra","color":"#9ca3af"},
+        {"id":"schody","name":"Schody","color":"#64748b"},
+        {"id":"sypialnia","name":"Sypialnia glowna","color":"#3b82f6"},
+        {"id":"pokoj_2","name":"Pokoj 2","color":"#22c55e"},
+        {"id":"pokoj_3","name":"Pokoj 3","color":"#14b8a6"},
+        {"id":"lazienka_gora","name":"Lazienka gora","color":"#06b6d4"},
+        {"id":"pralnia","name":"Pralnia","color":"#8b5cf6"},
+        {"id":"szafa_gosp","name":"Szafa gospodarcza","color":"#a855f7"},
+        {"id":"antresola","name":"Antresola","color":"#eab308"},
+        {"id":"pustka","name":"Pustka nad salonem","color":"#e5e7eb"},
+        {"id":"skosy","name":"Skosy / schowki","color":"#d1d5db"}
+      ]
+    }
+  },
+  "conditions": [
+    {"type":"minArea","floor":"ground","room":"wiatrolap","value":5,"group":"Powierzchnie"},
+    {"type":"minArea","floor":"ground","room":"hol","value":5,"group":"Powierzchnie"},
+    {"type":"minArea","floor":"ground","room":"gabinet","value":9,"group":"Powierzchnie"},
+    {"type":"minArea","floor":"ground","room":"spizarnia","value":2.5,"group":"Powierzchnie"},
+    {"type":"minArea","floor":"ground","room":"kuchnia","value":10,"group":"Powierzchnie"},
+    {"type":"minArea","floor":"ground","room":"jadalnia","value":10,"group":"Powierzchnie"},
+    {"type":"minArea","floor":"ground","room":"salon","value":20,"group":"Powierzchnie"},
+    {"type":"minArea","floor":"ground","room":"lazienka_dol","value":4,"group":"Powierzchnie"},
+    {"type":"minArea","floor":"ground","room":"techniczne","value":8,"group":"Powierzchnie"},
+    {"type":"minArea","floor":"ground","room":"schody","value":5,"group":"Powierzchnie"},
+
+    {"type":"minArea","floor":"upper","room":"hol_gora","value":4,"group":"Powierzchnie"},
+    {"type":"minArea","floor":"upper","room":"schody","value":5,"group":"Powierzchnie"},
+    {"type":"minArea","floor":"upper","room":"sypialnia","value":13,"group":"Powierzchnie"},
+    {"type":"minArea","floor":"upper","room":"pokoj_2","value":10.5,"group":"Powierzchnie"},
+    {"type":"minArea","floor":"upper","room":"pokoj_3","value":10.5,"group":"Powierzchnie"},
+    {"type":"minArea","floor":"upper","room":"lazienka_gora","value":7,"group":"Powierzchnie"},
+    {"type":"minArea","floor":"upper","room":"pralnia","value":4.5,"group":"Powierzchnie"},
+    {"type":"minArea","floor":"upper","room":"szafa_gosp","value":1.5,"group":"Powierzchnie"},
+    {"type":"minArea","floor":"upper","room":"antresola","value":4,"group":"Powierzchnie"},
+    {"type":"minArea","floor":"upper","room":"pustka","value":7,"group":"Powierzchnie"},
+
+    {"type":"fullPainted","floor":"ground","label":"Parter: brak pustych kratek","group":"Wypelnienie"},
+    {"type":"fullPainted","floor":"upper","label":"Pietro: brak pustych kratek","group":"Wypelnienie"},
+    {"type":"contiguousAll","floor":"ground","label":"Parter: kazde pomieszczenie jest jednym spojnym obszarem","group":"Ksztalt"},
+    {"type":"contiguousAll","floor":"upper","label":"Pietro: kazde pomieszczenie jest jednym spojnym obszarem","group":"Ksztalt"},
+
+    {"type":"adjacent","floor":"ground","a":"wiatrolap","b":"hol","label":"Wiatrolap <-> hol","group":"Polaczenia parter"},
+    {"type":"adjacent","floor":"ground","a":"wiatrolap","b":"spizarnia","label":"Wiatrolap <-> spizarnia","group":"Polaczenia parter"},
+    {"type":"adjacent","floor":"ground","a":"spizarnia","b":"kuchnia","label":"Spizarnia <-> kuchnia","group":"Polaczenia parter"},
+    {"type":"adjacent","floor":"ground","a":"hol","b":"gabinet","label":"Hol <-> gabinet","group":"Polaczenia parter"},
+    {"type":"adjacent","floor":"ground","a":"hol","b":"lazienka_dol","label":"Hol <-> lazienka dol","group":"Polaczenia parter"},
+    {"type":"adjacent","floor":"ground","a":"hol","b":"techniczne","label":"Hol <-> techniczne","group":"Polaczenia parter"},
+    {"type":"adjacent","floor":"ground","a":"hol","b":"schody","label":"Hol <-> schody","group":"Polaczenia parter"},
+    {"type":"adjacent","floor":"ground","a":"hol","b":"salon","label":"Hol <-> salon","group":"Polaczenia parter"},
+    {"type":"adjacent","floor":"ground","a":"kuchnia","b":"jadalnia","label":"Kuchnia <-> jadalnia","group":"Polaczenia parter"},
+    {"type":"adjacent","floor":"ground","a":"jadalnia","b":"salon","label":"Jadalnia <-> salon","group":"Polaczenia parter"},
+    {"type":"adjacent","floor":"ground","a":"salon","b":"techniczne","label":"Salon <-> techniczne - wspolna sciana pod kominek","group":"Polaczenia parter"},
+
+    {"type":"adjacent","floor":"upper","a":"schody","b":"hol_gora","label":"Schody <-> hol pietra","group":"Polaczenia pietro"},
+    {"type":"adjacent","floor":"upper","a":"hol_gora","b":"sypialnia","label":"Hol <-> sypialnia glowna","group":"Polaczenia pietro"},
+    {"type":"adjacent","floor":"upper","a":"hol_gora","b":"pokoj_2","label":"Hol <-> pokoj 2","group":"Polaczenia pietro"},
+    {"type":"adjacent","floor":"upper","a":"hol_gora","b":"pokoj_3","label":"Hol <-> pokoj 3","group":"Polaczenia pietro"},
+    {"type":"adjacent","floor":"upper","a":"hol_gora","b":"lazienka_gora","label":"Hol <-> lazienka gora","group":"Polaczenia pietro"},
+    {"type":"adjacent","floor":"upper","a":"hol_gora","b":"pralnia","label":"Hol <-> pralnia","group":"Polaczenia pietro"},
+    {"type":"adjacent","floor":"upper","a":"hol_gora","b":"szafa_gosp","label":"Hol <-> szafa gospodarcza","group":"Polaczenia pietro"},
+    {"type":"adjacent","floor":"upper","a":"hol_gora","b":"antresola","label":"Hol <-> antresola","group":"Polaczenia pietro"},
+    {"type":"adjacent","floor":"upper","a":"antresola","b":"pustka","label":"Antresola <-> pustka nad salonem","group":"Polaczenia pietro"},
+
+    {"type":"edge","floor":"ground","room":"wiatrolap","edge":"north","label":"Wiatrolap dochodzi do polnocnej elewacji","group":"Elewacje"},
+    {"type":"edge","floor":"ground","room":"techniczne","edge":"any","label":"Techniczne dochodzi do elewacji - miejsce na drzwi zewnetrzne","group":"Elewacje"},
+    {"type":"edge","floor":"ground","room":"salon","edge":"south","label":"Salon dochodzi do poludniowej elewacji / ogrodu","group":"Elewacje"},
+    {"type":"edge","floor":"ground","room":"jadalnia","edge":"south","label":"Jadalnia dochodzi do poludniowej elewacji / ogrodu","group":"Elewacje"},
+
+    {"type":"exactOverlay","upperFloor":"upper","upperRoom":"schody","lowerFloor":"ground","lowerRoom":"schody","label":"Schody pokrywaja sie dokladnie pionowo","group":"Pion"},
+    {"type":"overlapMin","upperFloor":"upper","upperRoom":"pralnia","lowerFloor":"ground","lowerRooms":["techniczne"],"ratio":0.5,"label":"Min. 50% pralni jest nad technicznym","group":"Pion"},
+    {"type":"overlapMin","upperFloor":"upper","upperRoom":"lazienka_gora","lowerFloor":"ground","lowerRooms":["lazienka_dol","techniczne"],"ratio":0.5,"label":"Min. 50% gornej lazienki jest nad lazienka dolna lub technicznym","group":"Pion"},
+    {"type":"overlapMin","upperFloor":"upper","upperRoom":"pustka","lowerFloor":"ground","lowerRooms":["salon","jadalnia"],"ratio":0.6,"label":"Min. 60% pustki jest nad salonem lub jadalnia","group":"Pion"},
+
+    {"type":"notAdjacent","floor":"upper","a":"sypialnia","b":"pustka","label":"Sypialnia glowna nie styka sie bezposrednio z pustka","group":"Akustyka"},
+    {"type":"notAdjacent","floor":"upper","a":"pokoj_2","b":"pustka","label":"Pokoj 2 nie styka sie bezposrednio z pustka","group":"Akustyka"},
+    {"type":"notAdjacent","floor":"upper","a":"pokoj_3","b":"pustka","label":"Pokoj 3 nie styka sie bezposrednio z pustka","group":"Akustyka"}
+  ]
+}
