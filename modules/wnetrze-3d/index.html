@@ -71,6 +71,9 @@ button,input,select{font:inherit} button{cursor:pointer}
         <h3>Podgląd 3D</h3>
         <button class="btn primary" id="go3d" style="width:100%;margin-bottom:7px">Pokaż z pozycji człowieka</button>
         <button class="btn" id="rebuild" style="width:100%;margin-bottom:7px">Przebuduj geometrię</button>
+        <label style="display:block;font-size:12px;color:#64748b;margin:4px 0 3px">Drzwi</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:7px"><label style="font-size:12px;color:#64748b">Ściany działowe [cm]<input id="wallIn" type="number" min="6" max="40" step="1" style="width:100%"></label><label style="font-size:12px;color:#64748b">Ściany zewnętrzne [cm]<input id="wallExt" type="number" min="10" max="70" step="1" style="width:100%"></label></div>
+        <div id="doorModeRow" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:7px"><button class="btn small" data-m="closed" title="Skrzydła zamknięte w ścianie">Zamknięte</button><button class="btn small" data-m="open" title="Skrzydła otwarte o 90° (wg kierunku z modułu Drzwi wewnętrzne)">Otwarte</button><button class="btn small" data-m="none" title="Sam otwór w ścianie, bez skrzydeł">Otwór</button></div>
         <div class="hint">W widoku 3D przeciągaj myszą, aby się rozglądać. <b>Strzałki</b> (lub WASD) – chodzenie, <b>←/→</b> lub Q/E – obrót. Jest podstawowa kolizja ze ścianami; przechodzisz tylko przez drzwi, HST i otwarte przejścia.</div>
       </div>
 
@@ -160,7 +163,8 @@ const planCanvas=document.getElementById('planCanvas'), pctx=planCanvas.getConte
 const els=id=>document.getElementById(id);
 const ui={floor:els('floorSel'),eye:els('eyeHeight'),angle:els('angle'),fov:els('fov'),status:els('status'),name:els('projectName'),planTitle:els('planTitle'),furnitureInfo:els('furnitureInfo')};
 let three={ready:false,canvas:null,ctx:null,keys:new Set(),lastT:0,drag:false,lastX:0,lastY:0,pitch:0,scenePolys:[],loopStarted:false};
-const settings={wallT:.12,doorH:2.10,hstH:2.40,sillH:.90,windowH:1.20,railH:1.05,stairRisers:17,showFloor:true,showGlass:true,showRail:true,showStairs:true,showChimney:true,showRoof:true};
+const settings={wallT:.12,doorH:2.10,hstH:2.40,sillH:.90,windowH:1.20,railH:1.05,stairRisers:17,showFloor:true,showGlass:true,showRail:true,showStairs:true,showChimney:true,showRoof:true,doorMode:'open'};
+try{const m=localStorage.getItem('houser:door-mode');if(['open','closed','none'].includes(m))settings.doorMode=m}catch(_){}
 
 function setStatus(s){ui.status.textContent=s}
 function grid(){return project.grid||project.definitionSnapshot?.grid||{width:18,height:18,cellMeters:.5}}
@@ -384,24 +388,55 @@ function wallQuad(orient,x,z,len,base,y0,y1,color,opts={}){
 let curOpInfo=null; // wariant bieżącego otworu z modułu Okna i drzwi (shared/openings.js)
 // Ściany mają grubość: działowe 12 cm po osi siatki, zewnętrzne 30 cm na zewnątrz od linii (wnętrze bez zmian, głębokie ościeża okien).
 // Renderer nie cieniuje, więc czoła, wierzch/spód i ościeża mają ciemniejszy kolor – dzięki temu widać grubość.
-const WALL_IN=.12,WALL_EXT=.30;let curOut=0,wallNodes=null;
+let WALL_IN=.18,WALL_EXT=.40;
+try{const w=JSON.parse(localStorage.getItem('houser:wall-t')||'null');if(w){WALL_IN=+w.i||WALL_IN;WALL_EXT=+w.e||WALL_EXT}}catch(_){}let curOut=0,wallNodes=null;
 function wallSlab(orient,x,z,len,base,y0,y1,color,exterior){
   if(y1<=y0+.001)return;const t=exterior?WALL_EXT:WALL_IN,o0=exterior&&curOut?Math.min(0,curOut*t):-t/2,o1=exterior&&curOut?Math.max(0,curOut*t):t/2;
-  const cap=exterior?'#c2bbb2':'#c9ccd1',edge=exterior?'#a79f95':'#b1b5bb',A=base+y0,B=base+y1,face={stroke:color,line:0},side={stroke:edge,line:.6},end={stroke:cap,line:0};
+  const cap=exterior?'#b4aca2':'#babec5',edge=exterior?'#968d82':'#9ea3aa',A=base+y0,B=base+y1,face={stroke:color,line:0},side={stroke:edge,line:.6},end={stroke:cap,line:0};
   let x0,x1,z0,z1;if(orient==='h'){x0=x-len/2;x1=x+len/2;z0=z+o0;z1=z+o1}else{x0=x+o0;x1=x+o1;z0=z-len/2;z1=z+len/2}
   if(orient==='h'){addQuad([x0,A,z0],[x1,A,z0],[x1,B,z0],[x0,B,z0],color,face);addQuad([x1,A,z1],[x0,A,z1],[x0,B,z1],[x1,B,z1],color,face);
     addQuad([x0,A,z1],[x0,A,z0],[x0,B,z0],[x0,B,z1],cap,end);addQuad([x1,A,z0],[x1,A,z1],[x1,B,z1],[x1,B,z0],cap,end)}
   else{addQuad([x0,A,z1],[x0,A,z0],[x0,B,z0],[x0,B,z1],color,face);addQuad([x1,A,z0],[x1,A,z1],[x1,B,z1],[x1,B,z0],color,face);
     addQuad([x0,A,z0],[x1,A,z0],[x1,B,z0],[x0,B,z0],cap,end);addQuad([x1,A,z1],[x0,A,z1],[x0,B,z1],[x1,B,z1],cap,end)}
   addQuad([x0,B,z0],[x1,B,z0],[x1,B,z1],[x0,B,z1],cap,side);addQuad([x0,A,z1],[x1,A,z1],[x1,A,z0],[x0,A,z0],cap,side);
-  // węzły ścian działowych – słupek w narożnikach i na końcach ścian (nie na prostym przedłużeniu)
+  // węzły ścian działowych – słupek tylko w narożnikach/rozgałęzieniach (koniec ściany zamyka czoło)
   if(!exterior&&wallNodes&&y0<.01){const H=y1,ends=orient==='h'?[[x-len/2,z,'r'],[x+len/2,z,'l']]:[[x,z-len/2,'d'],[x,z+len/2,'u']];
     for(const [px,pz,dir] of ends){const k=base.toFixed(2)+':'+px.toFixed(3)+':'+pz.toFixed(3),n=wallNodes[k]||(wallNodes[k]={x:px,z:pz,base,h:H,dirs:new Set()});n.dirs.add(dir);n.h=Math.min(n.h,H)}}
 }
 function flushWallNodes(){if(!wallNodes)return;const t=WALL_IN/2-.004;
-  for(const n of Object.values(wallNodes)){const d=n.dirs;if(d.size===2&&((d.has('l')&&d.has('r'))||(d.has('u')&&d.has('d'))))continue;
+  for(const n of Object.values(wallNodes)){const d=n.dirs;if(d.size<2)continue;if(d.size===2&&((d.has('l')&&d.has('r'))||(d.has('u')&&d.has('d'))))continue;
     addBoxFaces(n.x-t,n.base,n.z-t,n.x+t,n.base+n.h,n.z+t,'#f0f1f2',{stroke:'#c3c6ca',line:.6})}
   wallNodes=null}
+// Skrzydła drzwi: łączymy sąsiednie krawędzie z drzwiami w jeden otwór; kierunek (swing) i zawiasy z modułu Drzwi wewnętrzne.
+// swing 'a' = do pomieszczenia po stronie mniejszych współrzędnych (A), 'b' = do B; hinge 'start'/'end' = początek/koniec otworu.
+const DOOR_BASES=['door','hiddenDoor','slidingDoor'];
+function doorGroups(f){const c=grid().cellMeters,groups={},out=[];
+  for(const [key,base] of Object.entries(project.openings?.[f]||{})){if(!DOOR_BASES.includes(base))continue;const [o,aS,bS]=key.split(':'),a=+aS,b=+bS;
+    const A=o==='h'?roomAt(f,a,b-1):roomAt(f,a-1,b),B=roomAt(f,a,b),inA=cellClass(f,A)==='room',inB=cellClass(f,B)==='room';if(!inA&&!inB)continue;
+    const line=o==='h'?b:a,along=o==='h'?a:b,gk=[o,line,A,B,base].join('|');(groups[gk]=groups[gk]||{o,line,A,B,inA,inB,base,items:[]}).items.push({key,along})}
+  for(const g of Object.values(groups)){g.items.sort((p,q)=>p.along-q.along);let cur=null;
+    for(const it of g.items){if(cur&&it.along===cur.to+1&&cur.keys.length<4){cur.to=it.along;cur.keys.push(it.key)}else{if(cur)out.push(cur);cur={...g,from:it.along,to:it.along,keys:[it.key]}}}if(cur)out.push(cur)}
+  for(const d of out){const v=project.openingVariants?.[f]?.[d.keys[0]]||{};d.info=HouserOpenings.resolve(project,f,d.keys[0],'door');
+    d.exterior=!(d.inA&&d.inB);d.swing=d.exterior?(d.inA?'a':'b'):(v.swing==='b'?'b':'a');d.hinge=v.hinge==='end'?'end':'start';
+    d.sliding=!!d.info.sliding||d.base==='slidingDoor';d.leaves=d.info.leaves===2?2:1;d.s0=d.from*c;d.s1=(d.to+1)*c;d.L=d.line*c;
+    const [,kx,ky]=d.keys[0].split(':');d.h=Math.min(d.info.height??settings.doorH,(f==='upper'?upperEdgeHeight(d.o,+kx,+ky,c):floorHeight(f))-.05)}
+  return out}
+function doorBox(d,base,s0,s1,o0,o1,y0,y1,color,opts){if(d.o==='h')addBoxFaces(Math.min(s0,s1),base+y0,d.L+Math.min(o0,o1),Math.max(s0,s1),base+y1,d.L+Math.max(o0,o1),color,opts);
+  else addBoxFaces(d.L+Math.min(o0,o1),base+y0,Math.min(s0,s1),d.L+Math.max(o0,o1),base+y1,Math.max(s0,s1),color,opts)}
+function addDoorLeaves(){if(settings.doorMode==='none')return;
+  for(const f of ['ground','upper']){const base=floorBase(f);for(const d of doorGroups(f)){
+    const th=.045,col=d.exterior?'#7c5a3e':'#f4f2ee',edge=d.exterior?'#4b3726':'#a8a29e',op={stroke:edge,line:.6},hc='#3f3f46',ho={stroke:hc,line:.4};
+    const sg=d.swing==='a'?-1:1,mid=d.exterior?(d.inA?1:-1)*WALL_EXT*.25:0,face=d.exterior?(d.inA?0:0):WALL_IN/2,W=d.s1-d.s0,y1=d.h;
+    const leaf=(hp,dir,w)=>{ // hp – oś zawiasu, dir – w którą stronę otworu leży skrzydło (+1/-1), w – szerokość skrzydła
+      if(settings.doorMode==='closed'){doorBox(d,base,hp,hp+dir*w,mid-th/2,mid+th/2,0,y1,col,op);
+        const hx=hp+dir*(w-.08);doorBox(d,base,hx-.06,hx+.06,mid-th/2-.05,mid+th/2+.05,1.0,1.04,hc,ho)}
+      else{const o0=sg*face;doorBox(d,base,hp,hp+dir*th,o0,o0+sg*w,0,y1,col,op);
+        doorBox(d,base,hp+dir*th/2-.05,hp+dir*th/2+.05,o0+sg*(w-.14),o0+sg*(w-.08),1.0,1.04,hc,ho)}};
+    if(d.sliding){const o=settings.doorMode==='open'?(sg*(face+th)):mid,sh=settings.doorMode==='open'?(d.hinge==='end'?-W:W)*.92:0;
+      doorBox(d,base,d.s0+sh,d.s1+sh,o-th/2,o+th/2,0,y1,col,op);continue}
+    if(d.leaves===2){leaf(d.s0,1,W/2);leaf(d.s1,-1,W/2)}
+    else if(d.hinge==='end')leaf(d.s1,-1,W);else leaf(d.s0,1,W);
+  }}}
 function addWall2D(orient,x,z,len,height,base,opening,exterior){const info=opening?curOpInfo:null;
   const go=exterior&&curOut?curOut*WALL_EXT*.4:0,gx=orient==='v'?x+go:x,gz=orient==='h'?z+go:z; // szyba w głębi muru
   const wallColor=exterior?'#dedbd7':'#f0f1f2';
@@ -516,7 +551,7 @@ function build3D(){
       if(!insideA&&!insideB)continue;if(insideA&&insideB&&a===b&&ca===cb)continue;addWall2D('v',x*c,(y+.5)*c,c,edgeH,base,op,!insideA||!insideB)
     }
   }
-  flushWallNodes();addRoof3D();
+  flushWallNodes();addDoorLeaves();addRoof3D();
   if(modelStairs().length)addStairsFromModel();else addStraightStairs();
   if(settings.showChimney&&Array.isArray(project.structure?.chimney)){
     const c=grid().cellMeters;
@@ -576,6 +611,11 @@ els('snap').addEventListener('click',async()=>{ if(!three.ready){showTab('three'
   await HouserSnapshots.add(img,'wnetrze-3d',{kind:'interior',floor:observer.floor,roomId:id||null,roomName:rm?.name||null,angle:Math.round(observer.angle),fov:Math.round(observer.fov),eye:observer.eye,legend:legend.length?legend:undefined}); snapToast(); });
 (()=>{const cb=els('snapCoded');if(!cb)return;try{const v=localStorage.getItem('houser:snap-coded');if(v!==null&&cb.checked!==(v==='1')){cb.checked=v==='1';if(three.ready)build3D()}}catch(_){}
   cb.addEventListener('change',()=>{try{localStorage.setItem('houser:snap-coded',cb.checked?'1':'0')}catch(_){}_legendKey='x';build3D()})})();
+(()=>{const i=els('wallIn'),e=els('wallExt');if(!i||!e)return;i.value=Math.round(WALL_IN*100);e.value=Math.round(WALL_EXT*100);
+  const upd=()=>{const vi=Math.max(6,Math.min(40,+i.value||18))/100,ve=Math.max(10,Math.min(70,+e.value||40))/100;WALL_IN=vi;WALL_EXT=ve;try{localStorage.setItem('houser:wall-t',JSON.stringify({i:vi,e:ve}))}catch(_){}build3D()};
+  i.addEventListener('change',upd);e.addEventListener('change',upd)})();
+(()=>{const row=els('doorModeRow');if(!row)return;const paint=()=>{for(const b of row.children)b.classList.toggle('primary',b.dataset.m===settings.doorMode)};paint();
+  for(const b of row.children)b.onclick=()=>{settings.doorMode=b.dataset.m;try{localStorage.setItem('houser:door-mode',settings.doorMode)}catch(_){}paint();build3D()}})();
 window.addEventListener('resize',()=>resize3d());
 if(window.ResizeObserver) new ResizeObserver(()=>{ if(three.ready&&els('threeHost').clientWidth>0){resize3d(false);render3D()} }).observe(els('threeHost'));
 function syncCameraFromObserver(){if(three.ready)render3D()}
