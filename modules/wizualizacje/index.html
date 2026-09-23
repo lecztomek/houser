@@ -154,6 +154,11 @@ function projectFacts(s){
     out.push(G.upperType==='attic'?'Ground floor plus a usable attic under a '+G.roofPitch+' degree gable roof (knee wall '+G.kneeWall.toFixed(1)+' m).':'Two full storeys with a '+G.roofPitch+' degree gable roof.');
     {const eo=Math.round(G.eaveOverhang*100),go=Math.round(G.gableOverhang*100),sf={wood:'natural wood soffit boards',white:'white soffit',graphite:'dark graphite soffit',none:'exposed rafter ends under the eaves'}[G.soffit]||'soffit';
       out.push('Roof overhang: about '+eo+' cm beyond the eaves walls and '+go+' cm beyond the gable walls'+(eo+go>0?', with '+sf+' and fascia boards':'')+' – keep these overhangs as in the render.');}
+    {const kind=(f,id)=>(p.definitionSnapshot?.floors?.[f]?.rooms||[]).find(r=>r.id===id)?.kind,flat=f=>{const st=p.state?.[f]||[];return Array.isArray(st[0])?st.flat():st};
+      const up=flat('upper'),gr=flat('ground'),occ=(f,id)=>id&&kind(f,id)!=='exteriorVoid';let loggia=0,porch=0;
+      for(let i=0;i<Math.max(up.length,gr.length);i++){if(kind('upper',up[i])==='exteriorVoid'&&occ('ground',gr[i]))loggia++;if(occ('upper',up[i])&&kind('ground',gr[i])==='exteriorVoid')porch++}
+      if(loggia)out.push('A recessed loggia cut into the upper floor (deeper, shaded area with a glass railing) – keep it recessed, with a real floor, ceiling and glass balustrade.');
+      if(porch)out.push('A recessed covered area on the ground floor under the upper floor (e.g. covered entrance) – keep it recessed and shaded.');}
     const ov=p.openingVariants||{},vals=Object.values(ov).flatMap(o=>Object.values(o));
     if(vals.some(v=>v.variant==='roof'))out.push('Roof windows (skylights) in the roof slope.');
     if(Object.values(p.openings||{}).some(o=>Object.values(o).includes('hst')))out.push('Large floor-to-ceiling sliding glass terrace doors.');

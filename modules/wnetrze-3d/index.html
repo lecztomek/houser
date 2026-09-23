@@ -521,6 +521,12 @@ function addWall2D(orient,x,z,len,height,base,opening,exterior){const info=openi
   }
   wallSlab(orient,x,z,len,base,0,height,wallColor,exterior)
 }
+// balustrada wnęki (loggii) na piętrze: krawędź komórki-wnęki od strony, gdzie nie ma już budynku
+function addLoggiaRails(){const f='upper',g=grid(),c=g.cellMeters,base=floorBase(f),isV=(x,y)=>{const id=roomAt(f,x,y);return !!id&&isExteriorVoid(f,id)},
+  out=(x,y)=>{const id=roomAt(f,x,y);return !id||(cellClass(f,id)==='outside'&&!isExteriorVoid(f,id))},gOcc=(x,y)=>cellClass('ground',roomAt('ground',x,y))!=='outside';
+  for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){if(!isV(x,y)||!gOcc(x,y))continue;
+    if(out(x,y-1))addRailing2D('h',(x+.5)*c,y*c,c,base);if(out(x,y+1))addRailing2D('h',(x+.5)*c,(y+1)*c,c,base);
+    if(out(x-1,y))addRailing2D('v',x*c,(y+.5)*c,c,base);if(out(x+1,y))addRailing2D('v',(x+1)*c,(y+.5)*c,c,base)}}
 function addRailing2D(orient,x,z,len,base){
   if(!settings.showRail)return;const h=settings.railH,dark='#27313d',bar=.055;
   wallQuad(orient,x,z,len,base,h-bar,h,dark,{stroke:dark});
@@ -574,7 +580,10 @@ function build3D(){
   for(const f of ['ground','upper']){
     const base=floorBase(f),h=floorHeight(f);
     for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){
-      const id=roomAt(f,x,y),cls=cellClass(f,id);if(cls==='outside')continue;
+      const id=roomAt(f,x,y),cls=cellClass(f,id);
+      if(cls==='outside'){ // wnęka na piętrze nad parterem: sufit (przy pełnym piętrze)
+        if(f==='upper'&&isExteriorVoid(f,id)&&cellClass('ground',roomAt('ground',x,y))!=='outside'&&!roofEnabled()){const cy=base+h;addQuad([x*c,cy,y*c],[(x+1)*c,cy,y*c],[(x+1)*c,cy,(y+1)*c],[x*c,cy,(y+1)*c],'#ece8e1',{stroke:'#ece8e1'})}
+        continue}
       if(cls==='room'&&settings.showFloor){
         const fc=f==='ground'?'#cfc9c1':'#ddd8d0';
         addQuad([x*c,base,(y+1)*c],[(x+1)*c,base,(y+1)*c],[(x+1)*c,base,y*c],[x*c,base,y*c],fc,{stroke:'#bbb4aa',line:.35});
@@ -618,7 +627,7 @@ function build3D(){
       if(!insideA&&!insideB)continue;if(insideA&&insideB&&a===b&&ca===cb)continue;addWall2D('v',x*c,(y+.5)*c,c,edgeH,base,op,!insideA||!insideB)
     }
   }
-  flushWallNodes();addDoorLeaves();addRoof3D();
+  flushWallNodes();addDoorLeaves();addLoggiaRails();addRoof3D();
   if(modelStairs().length)addStairsFromModel();else addStraightStairs();
   if(settings.showChimney&&Array.isArray(project.structure?.chimney)){
     const c=grid().cellMeters;
