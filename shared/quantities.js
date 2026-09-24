@@ -66,7 +66,7 @@
     for(const n of ch){if(seen.has(n))continue;chimneys++;const stack=[n];while(stack.length){const k=stack.pop();if(seen.has(k)||!ch.has(k))continue;seen.add(k);const x=k%W;if(x>0)stack.push(k-1);if(x<W-1)stack.push(k+1);stack.push(k-W,k+W)}}
     const stairs=(project.stairs||[]).length?project.stairs.map(s=>s.type):(rooms(lo).some(r=>r.id==='schody')?['straight']:[]);
     let baths=0,wcs=0;for(const r of Object.values(R)){const nm=(r.name||'').toLowerCase();if(/łazien|lazien/.test(nm))baths++;else if(/\bwc\b|toalet/.test(nm))wcs++}
-    const out={terrace:0,coveredTerrace:0,pergola:0};for(const o of project.outdoorStructures||[]){const cells=(o.cells||[]).length||((+o.w||0)*(+o.h||0));if(out[o.type]!=null)out[o.type]+=cells*c2}
+    const out={terrace:0,coveredTerrace:0,pergola:0};for(const o of project.outdoorStructures||[]){let a=0;try{a=HouserModel.outdoorCells(o,c).length*c2}catch(_){a=(o.cells||[]).length*c2};if(out[o.type]!=null)out[o.type]+=a} // x,y,w,h są w metrach
     const plaster=extLen[lo]*hWall[lo]+extLen[up]*(attic?G.kneeWall:hWall[up])+2*q.partA+net[lo]+(attic?q.roofInnerA*.55:net[up]);
     Object.assign(q,{chimneys,stairs,baths,wcs,out,plaster,rooms:Object.values(R)});
     return q;
