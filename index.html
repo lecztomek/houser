@@ -10,27 +10,33 @@
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
 body{display:grid;grid-template-rows:auto auto 1fr;grid-template-columns:minmax(0,1fr)}
-header{display:flex;align-items:center;gap:10px;background:var(--hs-panel);border-bottom:1px solid var(--hs-line);padding:6px 10px}
-.brand{font-weight:800;font-size:15px;white-space:nowrap;color:var(--hs-text);text-decoration:none;align-self:stretch;display:flex;align-items:center;padding:0 10px;border-radius:9px;border:1px solid transparent}
-.brand:hover{border-color:var(--hs-line)}
-.brand.active{background:#475569;color:#fff}
-@media(max-width:700px){.brand span{display:none}}
-#tabs{flex:1;min-width:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:5px}
+/* górny blok (kafelki + pasek projektu) – wyraźnie odcięty od modułu: szare tło, białe kafelki, cień na dole */
+header{display:flex;align-items:center;gap:10px;background:#e9eef4;padding:8px 10px 6px;position:relative;z-index:5}
+.brand{font-weight:750;font-size:15.5px;letter-spacing:-.01em;white-space:nowrap;color:#0f172a;text-decoration:none;align-self:stretch;display:flex;align-items:center;gap:9px;padding:0 12px 0 6px;border-radius:11px;border:1px solid transparent}
+.brand .mark{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;box-shadow:0 2px 6px rgba(37,99,235,.35)}
+.brand .mark svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.brand{background:#fff;border-color:#dbe2ea!important;box-shadow:0 1px 2px rgba(15,23,42,.05)}
+.brand:hover{border-color:#b8c4d2!important}
+.brand.active{background:#eff6ff;border-color:#60a5fa!important;box-shadow:0 0 0 2px rgba(59,130,246,.18)}
+@media(max-width:700px){.brand>span:last-child{display:none}}
+#tabs{flex:1;min-width:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:6px}
 @media(min-width:1150px){#tabs{grid-template-columns:repeat(8,minmax(0,1fr))}}
 @media(max-width:700px){#tabs{display:flex;overflow-x:auto;scrollbar-width:thin;padding-bottom:3px}#tabs .tab{flex:0 0 132px}header{padding:6px 8px}}
-/* kafelek modułu: ikona + numer kroku + krótka nazwa, pasek u góry w kolorze etapu */
-.tab{--gc:#64748b;display:flex;align-items:center;gap:7px;height:40px;padding:0 8px;border:1px solid var(--hs-line);border-top:3px solid var(--gc);border-radius:9px;background:#fff;color:var(--hs-text);cursor:pointer;font:650 12px/1.15 var(--hs-font);text-align:left;min-width:0;transition:box-shadow .12s,border-color .12s}
-.tab .ic{font-size:17px;flex:0 0 auto;width:20px;text-align:center}
+/* kafelek modułu: ikona liniowa w delikatnym kwadracie (odcień etapu) + numer i nazwa */
+.tab{--gc:#64748b;--gt:#f1f5f9;display:flex;align-items:center;gap:7px;height:42px;padding:0 6px 0 5px;border:1px solid #dbe2ea;border-radius:11px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.05);color:#1e293b;cursor:pointer;font:600 12px/1.15 var(--hs-font);letter-spacing:-.005em;text-align:left;min-width:0;transition:background .15s,border-color .15s,color .15s}
+.tab .ic{flex:0 0 auto;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:var(--gt);color:var(--gc);transition:background .15s,color .15s}
+.tab .ic svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tab .tx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tab .tx small{display:block;font-size:10px;font-weight:700;color:var(--hs-muted);letter-spacing:.02em}
-.tab:hover{border-color:var(--gc);box-shadow:0 2px 8px rgba(15,23,42,.10)}
-.tab.active{background:var(--gc);border-color:var(--gc);color:#fff}
-.tab.active .tx small{color:rgba(255,255,255,.85)}
+.tab .tx small{display:block;font-size:10.5px;font-weight:600;color:#94a3b8;font-variant-numeric:tabular-nums;margin-bottom:1px}
+.tab:hover{border-color:#b8c4d2;box-shadow:0 3px 8px rgba(15,23,42,.10)}
+.tab.active{background:#eff6ff;border-color:#60a5fa;color:#1d4ed8;box-shadow:0 0 0 2px rgba(59,130,246,.18)}
+.tab.active .ic{background:#2563eb;color:#fff}
+.tab.active .tx small{color:#60a5fa}
 .tab .soon{font-size:10px;font-weight:600;background:var(--hs-bg);color:var(--hs-muted);border:1px solid var(--hs-line);border-radius:999px;padding:1px 6px;margin-left:5px;vertical-align:middle}
 .spacer{flex:1}
 .ext{color:var(--hs-accent);font-size:12px;text-decoration:none;white-space:nowrap;padding:0 6px}
 main{position:relative;min-height:0}
-.projbar{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow:hidden;background:var(--hs-panel-2,#f8fafc);border-bottom:1px solid var(--hs-line);padding:6px 12px;font-size:13px}
+.projbar{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow:hidden;background:#e9eef4;border-bottom:1px solid #cfd8e3;box-shadow:0 8px 16px -12px rgba(15,23,42,.5);padding:2px 12px 8px;font-size:13px;position:relative;z-index:4}
 .projbar .name{font-weight:700;max-width:300px;min-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:0 1 auto}
 .projbar .meta{color:var(--hs-muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1 1 auto}
 .projbar>.pbtn,.projbar>label{flex:0 0 auto}
@@ -42,7 +48,7 @@ main{position:relative;min-height:0}
 .pbtn.primary{background:var(--hs-accent);border-color:var(--hs-accent);color:#fff}
 .projbar label.chk{display:inline-flex;align-items:center;gap:4px;color:var(--hs-muted);font-size:12px;white-space:nowrap}
 .projmsg{position:fixed;right:16px;bottom:16px;z-index:50;background:#0f172a;color:#fff;border-radius:10px;padding:10px 14px;font:600 13px var(--hs-font);box-shadow:0 8px 24px rgba(0,0,0,.25)}
-.view{position:absolute;inset:0;display:none}
+.view{position:absolute;inset:0;display:none;outline:none}
 .view.active{display:block}
 iframe{width:100%;height:100%;border:0;display:block;background:#fff}
 #start{overflow:auto;padding:28px 16px}
@@ -55,7 +61,9 @@ h1{margin:0 0 6px;font-size:26px}
 .card:hover{border-color:var(--accent);box-shadow:0 4px 14px rgba(37,99,235,.12)}
 .card h2{margin:0;font-size:17px}
 .card p{margin:0;color:var(--muted);font-size:14px;line-height:1.45}
-.card .num{font-size:12px;font-weight:700;color:var(--accent)}
+.card .num{font-size:12px;font-weight:600;color:#94a3b8}
+.card .cic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center}
+.card .cic svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .card.disabled{opacity:.6}
 .box{background:var(--panel);border:1px solid var(--line);border-radius:var(--hs-radius-lg);box-shadow:var(--hs-shadow);padding:16px 18px;margin-top:22px;line-height:1.55;font-size:14px}
 .box h3{margin:0 0 8px;font-size:15px}
@@ -66,7 +74,7 @@ a{color:var(--accent)}
 </head>
 <body>
 <header>
-  <a class="brand" id="brand" href="#start" title="Strona startowa – lista modułów">🏠<span>&nbsp;Houser</span></a>
+  <a class="brand" id="brand" href="#start" title="Strona startowa – lista modułów"><span class="mark"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></svg></span><span>Houser</span></a>
   <nav id="tabs"></nav>
 </header>
 <div class="projbar" id="projbar">
@@ -120,20 +128,37 @@ const MODULES=[
   {id:'wycena',group:'Analizy',name:'Wycena',src:'modules/wycena/',desc:'Orientacyjny koszt budowy z projektu: ilości (ściany, strop, dach, okna, drzwi, instalacje, wykończenie) × ceny jednostkowe, które możesz zmienić.'},
 ];
 MODULES.forEach((m,i)=>m.step=i+1);
-const ICON={pomieszczenia:'🧩',warunki:'✅',obrys:'✏️',projektowanie:'🗺️','kondygnacje-dach':'🏠',schody:'🪜','okna-drzwi':'🪟','drzwi-wewnetrzne':'🚪',tarasy:'🌿',meblowanie:'🛋️','wnetrze-3d':'👁️','zewnatrz-3d':'🏡',wizualizacje:'✨',przepisy:'📋',energia:'🔥',wycena:'💰'};
+const ICON_PATH={pomieszczenia:'<rect x="3" y="3" width="7.5" height="7.5" rx="1.8"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.8"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.8"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.8"/>',
+  warunki:'<path d="m3.5 7 2 2 3.5-4"/><path d="m3.5 16.5 2 2 3.5-4"/><path d="M13 7h8M13 12h8M13 17h8"/>',
+  obrys:'<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
+  projektowanie:'<rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M3 12h8v9M11 3v5M15 12h6"/>',
+  'kondygnacje-dach':'<path d="M2.5 11.5 12 4l9.5 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M5.5 14.5h13"/>',
+  schody:'<path d="M3 20h5v-5h5v-5h5V5h3"/>',
+  'okna-drzwi':'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 3v18M4 12h16"/>',
+  'drzwi-wewnetrzne':'<path d="M6 21V4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21"/><path d="M3 21h18"/><path d="M14.5 12h.01"/>',
+  tarasy:'<path d="M5 20c0-8.5 5.5-14 15-15-1 9.5-6.5 15-15 15z"/><path d="M5 20 13 12"/>',
+  meblowanie:'<path d="M5 11V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3"/><path d="M3 13a2 2 0 0 1 4 0v1.5h10V13a2 2 0 0 1 4 0v5H3z"/><path d="M6 18v2M18 18v2"/>',
+  'wnetrze-3d':'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  'zewnatrz-3d':'<path d="M12 2.5 3.5 7.2v9.6l8.5 4.7 8.5-4.7V7.2z"/><path d="m3.5 7.2 8.5 4.7 8.5-4.7M12 11.9v9.6"/>',
+  wizualizacje:'<path d="M11 3.5 12.9 8l4.6 1.9-4.6 1.9L11 16.5l-1.9-4.7L4.5 9.9 9.1 8z"/><path d="m18.5 14.5.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z"/>',
+  przepisy:'<rect x="5" y="4" width="14" height="17" rx="2.2"/><path d="M9 4V2.8h6V4"/><path d="m9 12.5 2 2 4-4"/>',
+  energia:'<path d="M12 2.8c.9 3.2 5.5 5.6 5.5 10.2a5.5 5.5 0 0 1-11 0c0-2.6 1.4-4.3 2.6-5.3.2 1.6 1 2.6 2.1 3.1-.2-3.2-.7-5.6.8-8z"/>',
+  wycena:'<ellipse cx="9" cy="6.5" rx="6" ry="2.8"/><path d="M3 6.5v5c0 1.6 2.7 2.8 6 2.8s6-1.2 6-2.8v-5"/><path d="M9.5 17.2c.8 1.2 3.1 2 5.5 2 3.3 0 6-1.2 6-2.8v-5c0-1.5-2.3-2.7-5.3-2.8"/>'};
+const icon=id=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+(ICON_PATH[id]||'<circle cx="12" cy="12" r="4"/>')+'</svg>';
 const SHORT={'kondygnacje-dach':'Dach i piętra','okna-drzwi':'Okna i drzwi','drzwi-wewnetrzne':'Drzwi wewn.',projektowanie:'Układ',wizualizacje:'Wizualizacje',tarasy:'Tarasy',meblowanie:'Meble',obrys:'Obrys'};
-const GROUP_COL={'Założenia':'#7c3aed','Projekt':'#2563eb','Wnętrza':'#d97706','Podgląd':'#0d9488','Analizy':'#16a34a'};
+// odcień etapu: kolor ikony i bardzo jasne tło pod nią
+const GROUP_COL={'Założenia':'#7c3aed','Projekt':'#2563eb','Wnętrza':'#d97706','Podgląd':'#0891b2','Analizy':'#059669'},GROUP_TINT={'Założenia':'#f5f3ff','Projekt':'#eff6ff','Wnętrza':'#fffbeb','Podgląd':'#ecfeff','Analizy':'#ecfdf5'};
 const tabs=document.getElementById('tabs'),cards=document.getElementById('cards'),views=document.getElementById('views'),openExt=document.getElementById('openExt');
 const frames={};
 function tabBtn(id,label,soon,m){const b=document.createElement('button');b.className='tab';b.dataset.id=id;b.title=m?m.step+'. '+m.name+' – '+m.desc:'Strona startowa';
-  b.style.setProperty('--gc',m?GROUP_COL[m.group]||'#64748b':'#475569');
-  b.innerHTML='<span class="ic">'+(m?ICON[m.id]||'•':'⌂')+'</span><span class="tx"><small>'+(m?'krok '+m.step:'Houser')+'</small>'+label+'</span>';b.onclick=()=>{location.hash=id;};tabs.appendChild(b);}
+  b.style.setProperty('--gc',GROUP_COL[m.group]||'#64748b');b.style.setProperty('--gt',GROUP_TINT[m.group]||'#f1f5f9');
+  b.innerHTML='<span class="ic">'+icon(m.id)+'</span><span class="tx"><small>'+String(m.step).padStart(2,'0')+'</small>'+label+'</span>';b.onclick=()=>{location.hash=id;};tabs.appendChild(b);}
 let lastGroup='';
 MODULES.forEach(m=>{
   tabBtn(m.id,SHORT[m.id]||m.name,m.soon,m);
   if(m.group!==lastGroup){lastGroup=m.group;const h=document.createElement('h3');h.className='group';h.textContent=m.group;cards.appendChild(h);}
   const c=document.createElement('button');c.className='card'+(m.soon?' disabled':'');
-  c.innerHTML='<span class="num" style="color:'+(GROUP_COL[m.group]||'')+'">'+(ICON[m.id]||'')+'  '+(m.soon?'wkrótce':'Krok '+m.step)+'</span><h2></h2><p></p>';
+  c.innerHTML='<span class="cic" style="color:'+(GROUP_COL[m.group]||'')+';background:'+(GROUP_TINT[m.group]||'')+'">'+icon(m.id)+'</span><span class="num">Krok '+m.step+'</span><h2></h2><p></p>';
   c.querySelector('h2').textContent=m.name;c.querySelector('p').textContent=m.desc;
   c.onclick=()=>{location.hash=m.id;};cards.appendChild(c);
 });
