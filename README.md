@@ -16,6 +16,7 @@ modules/
   przepisy/index.html       uproszczone sprawdzenie z warunkami technicznymi (WT 2021)
   codziennosc/              scenariusze codzienności (zakupy, pranie, palenie w piecu, goście, noc…): trasy po domu i ocena
   naslonecznienie/          zyski od słońca latem i zimą per pomieszczenie, ryzyko przegrzania, mapa ciepła
+  hydraulika/               łatwość i koszt wod-kan: odległości od źródła ciepłej wody, piony parter–piętro, dopłata za układ
   akustyka/                 cisza w sypialniach: co za ścianą, nad i pod pokojem, ulica, antresola – ocena i podpowiedzi
   porownanie/               2–4 domy obok siebie (koszt z etapami, energia, codzienność, słońce, akustyka) + ocena ogólna wg wag
   energia/index.html        bilans cieplny, moc grzewcza, koszt ogrzewania

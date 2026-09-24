@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hydraulika</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:330px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
+h1{font-size:19px;margin:0 0 4px}
+.lead,.hint{font-size:12.5px;color:var(--hs-muted);line-height:1.5;margin:0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.field{display:grid;gap:4px;margin-bottom:9px}
+.field label{font-size:12px;color:var(--hs-muted)}
+.field select{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.tile .l{font-size:12px;color:var(--hs-muted);font-weight:600}
+.tile .v{font-size:28px;font-weight:800;letter-spacing:-.02em;margin-top:4px}
+.tile .v small{font-size:14px;color:var(--hs-muted);font-weight:600}
+.tile .s{font-size:12.5px;color:var(--hs-muted);margin-top:4px;line-height:1.4}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.card h2{font-size:15px;margin:0 0 3px}
+.note{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:9px 12px;font-size:12.5px;color:#92400e}
+.plans{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.plan{flex:1 1 320px;min-width:0}
+.plan h4{margin:6px 0;font-size:12px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.06em}
+.plan svg{width:100%;height:auto;display:block;max-height:460px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#475569;margin-top:8px;align-items:center}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:5px}
+.rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.rc{background:var(--hs-panel);border:1px solid var(--hs-line);border-left:5px solid #cbd5e1;border-radius:var(--hs-radius-lg);padding:12px 14px;box-shadow:var(--hs-shadow)}
+.rc.ok{border-left-color:#16a34a}.rc.mid{border-left-color:#d97706}.rc.bad{border-left-color:#dc2626}.rc.src{border-left-color:#2563eb}
+.rc .hd{display:flex;gap:10px;align-items:baseline}
+.rc .num{font-size:24px;font-weight:800;min-width:44px}
+.c-ok{color:#15803d}.c-mid{color:#b45309}.c-bad{color:#b91c1c}
+.rc .t{font-weight:700;font-size:14.5px}
+.rc .d{font-size:12px;color:var(--hs-muted)}
+.facts{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;margin-top:6px}
+.facts small{display:block;color:var(--hs-muted);font-size:11px}
+.pill{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 8px;margin-left:auto;white-space:nowrap}
+.pill.ok{background:#dcfce7;color:#166534}.pill.mid{background:#fef3c7;color:#92400e}.pill.bad{background:#fee2e2;color:#991b1b}.pill.src{background:#dbeafe;color:#1e40af}
+.iss{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:7px}
+.iss li{font-size:12.5px;line-height:1.45;border-top:1px solid #eef2f6;padding-top:7px}
+.iss .pen{float:right;font-weight:700;color:#b91c1c;font-size:12px;margin-left:8px}
+.iss .tip{display:block;color:#475569;margin-top:2px}
+.iss .tip:before{content:'→ ';color:#2563eb;font-weight:700}
+.good{font-size:12.5px;color:#15803d;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #eef2f6;vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+th{font-size:11.5px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.04em}
+tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
+.empty{padding:40px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){html,body{overflow:auto;height:auto}.wrap{height:auto;grid-template-rows:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{overflow:visible}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1>Hydraulika</h1>
+  <p class="lead">Nie prowadzimy rur – oceniamy, jak łatwo i tanio będzie zrobić instalację wodno-kanalizacyjną przy tym układzie: jak daleko są łazienki, WC, kuchnia i pralnia od źródła ciepłej wody, czy mokre pomieszczenia na piętrze stoją nad mokrymi na parterze i ile trzeba pionów.</p>
+  <div class="section">
+    <h3>Źródło wody</h3>
+    <div class="field"><label>Skąd idzie woda (przyłącze, zasobnik ciepłej wody)</label><select id="source"></select></div>
+    <div class="field"><label>Cyrkulacja ciepłej wody</label>
+      <select id="circulation"><option value="auto">automatycznie (gdy najdłuższa rura &gt; 10 m)</option><option value="yes">tak</option><option value="no">nie</option></select></div>
+    <p class="hint">Ustawienia zapisują się w projekcie.</p>
+  </div>
+  <div class="section">
+    <h3>Jak liczymy</h3>
+    <p class="hint">Długość połączenia to odległość po rzucie od ściany źródła do ściany pomieszczenia plus ok. 1,5 m do przyborów, a przy zmianie kondygnacji dodatkowo wysokość piętra. Ciepła woda: ok. 2 s czekania na każdy metr rury (PEX 20 mm, 0,2 l/m). Mokre pomieszczenie na piętrze powinno stać nad mokrym na parterze – wtedy wystarczy wspólny pion kanalizacyjny. Jeśli nie, rura (od WC 110 mm) idzie poziomo w stropie ze spadkiem 2%, a pion schodzi przez suchy pokój i trzeba go obudować.</p>
+    <p class="hint" style="margin-top:8px">Koszt to tylko część zależna od układu (rury od źródła, kanalizacja, piony, przesunięcia, obudowy, cyrkulacja) – orientacyjnie, z robocizną. Całą instalację wod-kan szacuje moduł Wycena.</p>
+  </div>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="engine.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let project=null,res=null;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const zl=v=>Math.round(v/100)*100>0?(Math.round(v/100)*100).toLocaleString('pl-PL')+' zł':'0 zł';
+const VERD={ok:'łatwo',mid:'do poprawy',bad:'trudno'},verdict=s=>s>=8?'ok':s>=6?'mid':'bad';
+const CL=['#bfdbfe','#a5f3fc','#c7d2fe','#99f6e4','#ddd6fe','#bae6fd'];
+function settings(){return {...HouserPlumbing.DEF,...(project?.plumbingSettings||{})}}
+function save(patch){const s={...settings(),...patch};project.plumbingSettings=s;HouserStore.update(p=>{p.plumbingSettings=s},'hydraulika');render()}
+$('source').onchange=()=>save({source:$('source').value});
+$('circulation').onchange=()=>save({circulation:$('circulation').value});
+
+function planSVG(f){
+  const {W,H,c,rooms,points,source,lo,up}=res,S=22;
+  const inRoom={};for(const r of rooms)if(r.f===f)for(const [x,y] of r.cells)inRoom[x+','+y]=r;
+  if(!Object.keys(inRoom).length)return '';
+  const P=Object.fromEntries(points.map(p=>[p.key,p]));let h='',xs=W,ys=H,xe=0,ye=0;
+  for(const k in inRoom){const [x,y]=k.split(',').map(Number);xs=Math.min(xs,x);ys=Math.min(ys,y);xe=Math.max(xe,x+1);ye=Math.max(ye,y+1)}
+  for(const k in inRoom){const [x,y]=k.split(',').map(Number),r=inRoom[k],p=P[r.key];let fill='#f8fafc';
+    if(source&&r.key===source.key)fill='#93c5fd';else if(p)fill=p.score<6?'#fecaca':CL[p.cluster%CL.length];
+    h+='<rect x="'+x*S+'" y="'+y*S+'" width="'+S+'" height="'+S+'" fill="'+fill+'"/>'}
+  const ln=(x1,y1,x2,y2,col,w)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="square"/>';
+  const E=(a,b,x1,y1,x2,y2)=>{const A=inRoom[a],B=inRoom[b];if(!!A!==!!B)return ln(x1,y1,x2,y2,'#334155',3);if(A&&B&&A!==B)return ln(x1,y1,x2,y2,'#94a3b8',1);return ''};
+  for(let y=ys;y<=ye;y++)for(let x=xs;x<xe;x++)h+=E(x+','+(y-1),x+','+y,x*S,y*S,(x+1)*S,y*S);
+  for(let x=xs;x<=xe;x++)for(let y=ys;y<ye;y++)h+=E((x-1)+','+y,x+','+y,x*S,y*S,x*S,(y+1)*S);
+  // orientacyjne połączenia od źródła (linia prosta – kierunek, nie trasa rury)
+  if(source)for(const p of points){if(p.isSrc||!p.pa||p.f!==f)continue;const [ax,ay]=p.pa,[bx,by]=p.pb;
+    h+='<path d="M'+((bx+.5)*S)+' '+((by+.5)*S)+' L'+((bx+.5)*S)+' '+((ay+.5)*S)+' L'+((ax+.5)*S)+' '+((ay+.5)*S)+'" fill="none" stroke="'+(p.len>10?'#dc2626':p.len>5?'#d97706':'#2563eb')+'" stroke-width="3" stroke-dasharray="7 5" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>'}
+  // piony
+  for(const p of points){if(p.f!==up||!res.hasUp)continue;let cx,cy,col;
+    if(p.stackOver){const s=new Set(p.stackOver.cells.map(a=>a.join(',')));const cell=p.cells.find(([x,y])=>s.has(x+','+y));if(!cell)continue;[cx,cy]=cell;col='#1d4ed8'}else{[cx,cy]=p.cells[Math.floor(p.cells.length/2)];col='#dc2626'}
+    const X=(cx+.5)*S,Y=(cy+.5)*S;h+='<circle cx="'+X+'" cy="'+Y+'" r="7" fill="#fff" stroke="'+col+'" stroke-width="3"/><circle cx="'+X+'" cy="'+Y+'" r="2.5" fill="'+col+'"/>'}
+  // etykiety
+  for(const r of rooms){if(r.f!==f||r.cells.length<6)continue;const cx=r.cells.reduce((a,p)=>a+p[0],0)/r.cells.length,cy=r.cells.reduce((a,p)=>a+p[1],0)/r.cells.length,p=P[r.key],X=(cx+.5)*S,Y=(cy+.5)*S;
+    h+='<text x="'+X+'" y="'+(Y-2)+'" text-anchor="middle" font-size="11" font-weight="700" fill="'+(p||source?.key===r.key?'#0f172a':'#94a3b8')+'" pointer-events="none">'+esc(r.name.length>16?r.name.slice(0,15)+'…':r.name)+'</text>';
+    if(source&&r.key===source.key)h+='<text x="'+X+'" y="'+(Y+12)+'" text-anchor="middle" font-size="10.5" fill="#1e3a8a">💧 źródło</text>';
+    else if(p&&p.len!=null)h+='<text x="'+X+'" y="'+(Y+12)+'" text-anchor="middle" font-size="10.5" fill="#334155">'+fmt(p.len)+' m</text>'}
+  return '<div class="plan"><h4>'+(f===lo?'Parter':'Piętro / poddasze')+'</h4><svg viewBox="'+[xs*S-6,ys*S-6,(xe-xs)*S+12,(ye-ys)*S+12].join(' ')+'">'+h+'</svg></div>'}
+
+function card(p){
+  if(p.isSrc)return '<div class="rc src"><div class="hd"><div class="num" style="color:#1d4ed8">💧</div><div><div class="t">'+esc(p.name)+'</div><div class="d">'+(p.f===res.lo?'Parter':'Piętro')+' · źródło wody</div></div><span class="pill src">źródło</span></div><div class="good">Tu wchodzi przyłącze i stoi zasobnik ciepłej wody – od tego miejsca liczymy odległości.</div></div>';
+  const v=verdict(p.score);
+  return '<div class="rc '+v+'"><div class="hd"><div class="num c-'+v+'">'+fmt(p.score)+'</div><div><div class="t">'+esc(p.name)+'</div><div class="d">'+(p.f===res.lo?'Parter':'Piętro')+' · '+esc(p.kind.need)+'</div></div><span class="pill '+v+'">'+VERD[v]+'</span></div>'+
+    '<div class="facts">'+(p.len!=null?'<span><small>Do źródła</small><b>'+fmt(p.len)+' m</b></span><span><small>Ciepła woda po</small><b>'+(res.circ?'od razu (cyrkulacja)':'ok. '+p.wait+' s')+'</b></span>':'')+
+      (p.f===res.up&&res.hasUp?'<span><small>Pion</small><b class="'+(p.stackOver?'c-ok':'c-bad')+'">'+(p.stackOver?'nad „'+esc(p.stackOver.name)+'”':'przesunięty')+'</b></span>':'')+'</div>'+
+    (p.issues.length?'<ul class="iss">'+p.issues.map(i=>'<li><span class="pen">−'+fmt(i.p)+'</span>'+esc(i.text)+'<span class="tip">'+esc(i.tip)+'</span></li>').join('')+'</ul>':'')+
+    ((p.good||[]).length?'<div class="good">✓ '+p.good.map(esc).join(' ')+'</div>':'')+(!p.issues.length&&!(p.good||[]).length?'<div class="good">✓ Blisko źródła, krótkie podejścia.</div>':'')+'</div>'}
+
+function render(){
+  const s=settings(),M=$('main');
+  if(!project||!(project.grid||project.definitionSnapshot?.grid)){M.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej albo narysuj rzut w <b>Układzie pomieszczeń</b>.</div>';return}
+  try{res=HouserPlumbing.evaluate(project,s)}catch(e){console.error(e);M.innerHTML='<div class="empty">Nie udało się przeanalizować rzutu.</div>';return}
+  // lista źródeł
+  const opts=['<option value="auto">automatycznie'+(res.sourceAuto&&res.source?' ('+esc(res.source.name)+')':'')+'</option>'].concat(res.rooms.filter(r=>r.area>=1).map(r=>'<option value="'+esc(r.key)+'"'+(s.source===r.key?' selected':'')+'>'+esc(r.name)+' – '+(r.f===res.lo?'parter':'piętro')+'</option>'));
+  if($('source').dataset.v!==opts.join('')){$('source').innerHTML=opts.join('');$('source').dataset.v=opts.join('')}$('source').value=s.source==='auto'||!res.rooms.some(r=>r.key===s.source)?'auto':s.source;$('circulation').value=s.circulation;
+  const wetPts=res.points.filter(p=>!p.isSrc);
+  if(!wetPts.length){M.innerHTML='<div class="empty">Na rzucie nie ma łazienki, WC, kuchni ani pralni. Nazwij pomieszczenia w module <b>Pomieszczenia</b> (np. „Łazienka”, „Kuchnia”).</div>';return}
+  const v=res.verdict,far=[...wetPts].sort((a,b)=>(b.len||0)-(a.len||0))[0],offs=res.risers.filter(r=>!r.stacked);
+  let h='';
+  if(res.sourceAuto&&res.source&&res.source.kind?.k!=='utility')h+='<div class="note">W projekcie nie ma pomieszczenia technicznego – jako źródło wody przyjęliśmy „'+esc(res.source.name)+'”. Zmień to po lewej, jeśli przyłącze i zasobnik będą gdzie indziej.</div>';
+  h+='<div class="tiles"><div class="tile"><div class="l">Łatwość instalacji</div><div class="v c-'+v+'">'+fmt(res.overall)+' <small>/ 10</small></div><div class="s"><span class="pill '+v+'" style="margin:0">'+VERD[v]+'</span> średnia pomieszczeń '+fmt(res.avg)+(res.extraPen>=.05?' − '+fmt(res.extraPen)+' za dopłatę':'')+'</div></div>'+
+    '<div class="tile"><div class="l">Koszt zależny od układu</div><div class="v">'+zl(res.cost.total)+'</div><div class="s">'+(res.extra>=500?'<b class="c-bad">+'+zl(res.extra)+'</b> więcej niż układ zwarty':'<span class="c-ok">tyle co układ zwarty</span>')+'</div></div>'+
+    '<div class="tile"><div class="l">Najdłuższa ciepła woda</div><div class="v">'+fmt(res.maxLen)+' <small>m</small></div><div class="s">'+esc(far.name)+' · '+(res.circ?'z cyrkulacją':'czekanie ok. '+far.wait+' s')+'</div></div>'+
+    (res.hasUp?'<div class="tile"><div class="l">Piony kanalizacyjne</div><div class="v">'+res.risers.length+'</div><div class="s">'+(offs.length?'<b class="c-bad">'+offs.length+' przesunięte</b> – mokre na piętrze nie nad mokrym':'<span class="c-ok">wszystkie proste – piętro nad parterem</span>')+'</div></div>':'<div class="tile"><div class="l">Grupy mokrych pomieszczeń</div><div class="v">'+res.clusters.length+'</div><div class="s">mniej = krótsza kanalizacja</div></div>')+'</div>';
+  h+='<div class="card"><h2>Schemat</h2><p class="hint">Mokre pomieszczenia w kolorach grup (jedna grupa = wspólna ściana instalacyjna / pion), na czerwono – z problemem. Przerywane linie to kierunek połączenia od źródła (nie trasa rury): niebieska do 5 m, pomarańczowa do 10 m, czerwona dalej. Kółka to piony kanalizacyjne z piętra: niebieskie – nad mokrym pomieszczeniem, czerwone – przesunięte (na parterze widać, przez który pokój zejdą).</p><div class="plans">'+[res.lo,res.up].map(planSVG).join('')+'</div>'+
+    '<div class="legend"><span><i style="background:#93c5fd"></i>źródło wody</span><span><i style="background:'+CL[0]+'"></i>mokre pomieszczenia (grupa)</span><span><i style="background:#fecaca"></i>z problemem</span><span><i style="background:#f8fafc;border:1px solid #cbd5e1"></i>suche</span></div></div>';
+  const sorted=[...res.points].sort((a,b)=>(a.isSrc?-1:0)-(b.isSrc?-1:0)||(a.score??11)-(b.score??11));
+  h+='<div><h2 style="font-size:15px;margin:4px 0 8px">Mokre pomieszczenia – od najtrudniejszego</h2><div class="rooms">'+sorted.map(card).join('')+'</div></div>';
+  const C=res.cost,rows=[['Podejścia do przyborów',C.points],['Rury wody od źródła (ciepła + zimna)',C.supply],['Kanalizacja pozioma',C.drain],['Piony kanalizacyjne',C.risers],['Przesunięcia na piętrze (rury w stropie)',C.offsets],['Obudowy pionów w suchych pokojach',C.boxing],['Cyrkulacja ciepłej wody',C.circ]].filter(r=>r[1]>0);
+  h+='<div class="card"><h2>Koszt zależny od układu</h2><p class="hint">Orientacyjnie, z robocizną. Układ zwarty = te same przybory, każde mokre pomieszczenie ok. 3 m od źródła, a piętro nad parterem.</p><table><thead><tr><th>Pozycja</th><th class="n">Koszt</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+esc(r[0])+'</td><td class="n">'+zl(r[1])+'</td></tr>').join('')+
+    '<tr class="sum"><td>Razem</td><td class="n">'+zl(C.total)+'</td></tr><tr><td>Układ zwarty</td><td class="n">'+zl(res.baseCost)+'</td></tr><tr><td><b>Dopłata za ten układ</b></td><td class="n"><b class="'+(res.extra>=500?'c-bad':'c-ok')+'">'+zl(res.extra)+'</b></td></tr></tbody></table></div>';
+  M.innerHTML=h;
+}
+const rec=HouserStore.load();project=rec?rec.project:null;render();
+HouserStore.subscribe(r=>{project=r.project;render()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>
