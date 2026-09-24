@@ -7,10 +7,11 @@
 <link rel="stylesheet" href="../../shared/theme.css">
 <style>
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
-.wrap{height:100%;display:grid;grid-template-columns:320px 1fr}
-.side{padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
-.main{padding:16px;overflow:auto;display:grid;gap:14px;align-content:start}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:320px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
 .section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
 .section h3{font-size:13px;margin:0 0 10px}
 .field{display:grid;gap:4px;margin-bottom:10px}
@@ -46,10 +47,14 @@ tr.off td input.price{opacity:.5}
 td .how{display:block;font-size:11.5px;color:var(--hs-muted);margin-top:1px}
 input.price{width:92px;text-align:right;border:1px solid var(--hs-line-strong);border-radius:6px;padding:4px 6px;font:inherit}
 input.price.changed{border-color:#f59e0b;background:#fffbeb}
+th.mat,td.mat{background:#f0fdf4}th.lab,td.lab{background:#fff7ed}tr.stage td.mat{background:#dcfce7}tr.stage td.lab{background:#ffedd5}
+input.price.mat{border-color:#86efac}input.price.lab{border-color:#fdba74}input.price.changed{border-color:#f59e0b;background:#fffbeb}
+.tile.mat .v{color:#15803d}.tile.lab .v{color:#c2410c}
+input.price{width:78px}
 tr.total td{font-weight:800;font-size:15px;background:#eff6ff;border-top:2px solid var(--hs-accent)}
 .empty{padding:40px 24px;text-align:center;color:var(--hs-muted)}
-@media(max-width:900px){.wrap{grid-template-columns:1fr;height:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}}
-@media print{.side{display:none}.wrap{display:block}input.price{border:0;background:none}}
+@media(max-width:900px){html,body{overflow:auto}.wrap{grid-template-columns:1fr;grid-template-rows:auto;height:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}}
+@media print{html,body{overflow:visible;height:auto}.main{overflow:visible}.side{display:none}.wrap{display:block;height:auto}input.price{border:0;background:none}}
 </style>
 </head>
 <body>
@@ -191,17 +196,22 @@ const ITEMS=[
   ['manager','Inne','Kierownik budowy, geodeta','kpl',()=>1,10000,0,'ryczałt'],
 ];
 const STD={eco:.85,std:1,high:1.35};
-function cs(){const s=project.costSettings||{};return {std:STD[s.std]?s.std:'std',factor:Number.isFinite(+s.factor)&&+s.factor>0?+s.factor:1,prices:s.prices||{},off:s.off||{},on:s.on||{},reserve:Number.isFinite(+s.reserve)?+s.reserve:10}}
+// udział materiałów w cenie jednostkowej (reszta = robocizna / usługa)
+const MAT={found:.6,groundslab:.6,utilities:.7,extwalls:.55,partwalls:.5,slab:.6,stairs:.65,chimney:.6,roof:.6,gutters:.55,soffit:.5,windows:.85,roofwin:.8,hst:.88,extdoor:.85,
+  elec:.45,plumb:.45,heatsrc:.8,floorheat:.55,vent:.65,facade:.45,plaster:.35,screed:.5,floors:.6,paint:.3,intdoor:.75,baths:.6,wc:.6,kitchen:.85,terrace:.6,covterrace:.6,pergola:.6,design:0,manager:0};
+function cs(){const s=project.costSettings||{};return {std:STD[s.std]?s.std:'std',factor:Number.isFinite(+s.factor)&&+s.factor>0?+s.factor:1,prices:s.prices||{},mat:s.mat||{},lab:s.lab||{},off:s.off||{},on:s.on||{},reserve:Number.isFinite(+s.reserve)?+s.reserve:10}}
 let saveT=null;function saveCs(s){project.costSettings=s;clearTimeout(saveT);saveT=setTimeout(()=>HouserStore.update(p=>{p.costSettings=s},'wycena'),300)}
 
 function compute(){
   const q=quantities(),s=cs(),rows=[];
   for(const [id,stage,name,unit,qf,defPrice,fin,how,defOn] of ITEMS){
     const qty=Math.max(0,qf(q)||0);let base=defPrice;if(id==='stairs')base=q.stairs.length?q.stairs.reduce((a,t)=>a+(STAIR_PRICE[t]||18000),0)/q.stairs.length:18000;
-    const def=base*(fin?STD[s.std]:1)*s.factor,custom=s.prices[id]!=null,price=custom?+s.prices[id]:def,on=s.off[id]?false:(defOn===false?!!s.on[id]:true);
-    rows.push({id,stage,name,unit,qty,price,def,custom,on,how:typeof how==='function'?how(q):how,value:on?qty*price:0})}
-  const sub=rows.reduce((a,r)=>a+r.value,0),reserve=sub*s.reserve/100;
-  return {q,s,rows,sub,reserve,total:sub+reserve};
+    const def=base*(fin?STD[s.std]:1)*s.factor,share=MAT[id]??.6,old=s.prices[id]!=null?+s.prices[id]:null; // starsze zapisy: jedna cena -> dzielona wg udziału
+    const defMat=def*share,defLab=def*(1-share),mat=s.mat[id]!=null?+s.mat[id]:(old!=null?old*share:defMat),lab=s.lab[id]!=null?+s.lab[id]:(old!=null?old*(1-share):defLab);
+    const on=s.off[id]?false:(defOn===false?!!s.on[id]:true),vm=on?qty*mat:0,vl=on?qty*lab:0;
+    rows.push({id,stage,name,unit,qty,mat,lab,defMat,defLab,customMat:s.mat[id]!=null||old!=null,customLab:s.lab[id]!=null||old!=null,on,how:typeof how==='function'?how(q):how,vm,vl,value:vm+vl})}
+  const subM=rows.reduce((a,r)=>a+r.vm,0),subL=rows.reduce((a,r)=>a+r.vl,0),sub=subM+subL,k=s.reserve/100;
+  return {q,s,rows,subM,subL,sub,reserve:sub*k,reserveM:subM*k,reserveL:subL*k,total:sub*(1+k),totalM:subM*(1+k),totalL:subL*(1+k)};
 }
 
 // ---------- widok
@@ -213,31 +223,38 @@ function render(){
   $('stats').innerHTML=[['Powierzchnia użytkowa',n1(q.usableTotal)+' m²'],['– parter',n1(Object.values(q.usable)[0]||0)+' m²'],['– piętro'+(q.G.upperType==='attic'?' (wg wysokości)':''),n1(Object.values(q.usable)[1]||0)+' m²'],['Powierzchnia zabudowy',n1(q.foot)+' m²'],
     ['Ściany zewnętrzne netto',n1(q.extNet)+' m²'],['Ściany działowe',n1(q.partA)+' m²'],['Dach',n1(q.roofA)+' m²'],['Okna / HST',n1(q.ops.winA+q.ops.hstA)+' m² ('+(q.ops.win+q.ops.hst)+' szt.)'],['Okna dachowe',q.ops.roofWin+' szt.'],['Drzwi zewn. / wewn.',q.ops.extDoor+' / '+q.ops.intDoor+' szt.'],['Łazienki / WC',q.baths+' / '+q.wcs]]
     .map(([a,b])=>'<span>'+a+'</span><span>'+b+'</span>').join('');
-  const stageSum={};for(const r of R.rows)stageSum[r.stage]=(stageSum[r.stage]||0)+r.value;
-  const ssoBase=['Stan zerowy','Stan surowy otwarty'],sso=ssoBase.reduce((a,k)=>a+(stageSum[k]||0),0),ssz=sso+(stageSum['Stan surowy zamknięty']||0);
-  let html='<div class="tiles"><div class="tile main"><div class="l">Szacunkowy koszt budowy</div><div class="v">'+zl(R.total)+'</div><div class="s">z rezerwą '+s.reserve+'% · brutto</div></div>'+
-    '<div class="tile"><div class="l">Za m² powierzchni użytkowej</div><div class="v">'+zl(perM)+'</div><div class="s">'+n1(q.usableTotal)+' m² użytkowej</div></div>'+
-    '<div class="tile"><div class="l">Stan surowy otwarty</div><div class="v">'+zl(sso)+'</div><div class="s">fundamenty, ściany, strop, dach</div></div>'+
-    '<div class="tile"><div class="l">Stan surowy zamknięty</div><div class="v">'+zl(ssz)+'</div><div class="s">+ okna i drzwi zewnętrzne</div></div></div>';
-  html+='<div class="card"><table><thead><tr><th style="width:28px"></th><th>Pozycja</th><th class="num">Ilość</th><th>j.m.</th><th class="num">Cena jedn. [zł]</th><th class="num">Wartość</th></tr></thead><tbody>';
-  let last='';for(const r of R.rows){if(r.stage!==last){last=r.stage;html+='<tr class="stage"><td></td><td colspan="4">'+esc(r.stage)+'</td><td class="num">'+zl(stageSum[r.stage])+'</td></tr>'}
+  const stage={};for(const r of R.rows){const t=stage[r.stage]||(stage[r.stage]={m:0,l:0});t.m+=r.vm;t.l+=r.vl}
+  const sum=k=>(stage[k]?.m||0)+(stage[k]?.l||0),sso=sum('Stan zerowy')+sum('Stan surowy otwarty'),ssz=sso+sum('Stan surowy zamknięty');
+  const pct=v=>R.total>0?Math.round(v/R.total*100)+'%':'';
+  let html='<div class="tiles"><div class="tile main"><div class="l">Szacunkowy koszt budowy</div><div class="v">'+zl(R.total)+'</div><div class="s">z rezerwą '+s.reserve+'% · '+zl(perM)+' / m² użytkowej</div></div>'+
+    '<div class="tile mat"><div class="l">Materiały</div><div class="v">'+zl(R.totalM)+'</div><div class="s">'+pct(R.totalM)+' kosztu</div></div>'+
+    '<div class="tile lab"><div class="l">Robocizna i usługi</div><div class="v">'+zl(R.totalL)+'</div><div class="s">'+pct(R.totalL)+' kosztu</div></div>'+
+    '<div class="tile"><div class="l">Stan surowy zamknięty</div><div class="v">'+zl(ssz)+'</div><div class="s">w tym surowy otwarty '+zl(sso)+'</div></div></div>';
+  html+='<div class="card"><table><thead><tr><th style="width:28px"></th><th>Pozycja</th><th class="num">Ilość</th><th>j.m.</th><th class="num mat">Materiał<br>zł / j.m.</th><th class="num lab">Robocizna<br>zł / j.m.</th><th class="num mat">Materiały</th><th class="num lab">Robocizna</th><th class="num">Razem</th></tr></thead><tbody>';
+  const pin=(id,kind,v,custom,def)=>'<input class="price '+kind+(custom?' changed':'')+'" type="number" step="5" min="0" data-'+kind+'="'+id+'" value="'+Math.round(v)+'" title="'+(custom?'Twoja cena (domyślnie '+Math.round(def)+' zł)':'Cena domyślna – wpisz swoją')+'">';
+  let last='';for(const r of R.rows){if(r.stage!==last){last=r.stage;const t=stage[r.stage];html+='<tr class="stage"><td></td><td colspan="5">'+esc(r.stage)+'</td><td class="num mat">'+zl(t.m)+'</td><td class="num lab">'+zl(t.l)+'</td><td class="num">'+zl(t.m+t.l)+'</td></tr>'}
     html+='<tr class="'+(r.on?'':'off')+'"><td><input type="checkbox" data-on="'+r.id+'"'+(r.on?' checked':'')+' title="Uwzględnij w wycenie"></td><td>'+esc(r.name)+'<span class="how">'+esc(r.how)+'</span></td><td class="num">'+(r.unit==='szt'||r.unit==='kpl'?Math.round(r.qty):n1(r.qty))+'</td><td>'+r.unit+'</td>'+
-      '<td class="num"><input class="price'+(r.custom?' changed':'')+'" type="number" step="10" min="0" data-price="'+r.id+'" value="'+Math.round(r.price)+'" title="'+(r.custom?'Twoja cena (domyślnie '+Math.round(r.def)+' zł)':'Cena domyślna – wpisz swoją')+'"></td><td class="num">'+(r.on?zl(r.value):'—')+'</td></tr>'}
-  html+='<tr class="stage"><td></td><td colspan="4">Rezerwa na nieprzewidziane <input class="price" type="number" step="1" min="0" max="50" id="reserve" value="'+s.reserve+'" style="width:60px"> %</td><td class="num">'+zl(R.reserve)+'</td></tr>';
-  html+='<tr class="total"><td></td><td colspan="4">Razem</td><td class="num">'+zl(R.total)+'</td></tr></tbody></table></div>';
-  html+='<p class="hint">Ilości liczone z rzutu: ściany po obwodzie kratek, okna i drzwi z modułów Okna i drzwi, dach z Kondygnacji i dachu (z okapami), powierzchnia użytkowa poddasza wg wysokości (≥2,2 m – 100%, 1,4–2,2 m – 50%). Pozycje z pomarańczową ramką mają Twoją cenę.</p>';
+      '<td class="num">'+pin(r.id,'mat',r.mat,r.customMat,r.defMat)+'</td><td class="num">'+pin(r.id,'lab',r.lab,r.customLab,r.defLab)+'</td>'+
+      '<td class="num mat">'+(r.on?zl(r.vm):'—')+'</td><td class="num lab">'+(r.on?zl(r.vl):'—')+'</td><td class="num"><b>'+(r.on?zl(r.value):'—')+'</b></td></tr>'}
+  html+='<tr class="stage"><td></td><td colspan="5">Rezerwa na nieprzewidziane <input class="price" type="number" step="1" min="0" max="50" id="reserve" value="'+s.reserve+'" style="width:60px"> %</td><td class="num mat">'+zl(R.reserveM)+'</td><td class="num lab">'+zl(R.reserveL)+'</td><td class="num">'+zl(R.reserve)+'</td></tr>';
+  html+='<tr class="total"><td></td><td colspan="5">Razem</td><td class="num mat">'+zl(R.totalM)+'</td><td class="num lab">'+zl(R.totalL)+'</td><td class="num">'+zl(R.total)+'</td></tr></tbody></table></div>';
+  html+='<p class="hint">Każda pozycja ma osobno cenę materiału i robocizny za jednostkę (domyślnie podział typowy dla danej pracy – np. okna ok. 85% materiał, malowanie ok. 70% robocizna). Ilości liczone z rzutu: ściany po obwodzie kratek, okna i drzwi z modułów Okna i drzwi, dach z Kondygnacji i dachu (z okapami), powierzchnia użytkowa poddasza wg wysokości (≥2,2 m – 100%, 1,4–2,2 m – 50%). Pola z pomarańczową ramką mają Twoją cenę.</p>';
   M.innerHTML=html;
   M.querySelectorAll('[data-on]').forEach(cb=>cb.onchange=()=>{const s2=cs(),id=cb.dataset.on,def=ITEMS.find(i=>i[0]===id)[8]!==false;if(def){if(cb.checked)delete s2.off[id];else s2.off[id]=true}else{if(cb.checked)s2.on[id]=true;else delete s2.on[id];delete s2.off[id]}saveCs(s2);render()});
-  M.querySelectorAll('[data-price]').forEach(inp=>inp.onchange=()=>{const s2=cs(),v=Number(inp.value);if(Number.isFinite(v)&&v>=0)s2.prices[inp.dataset.price]=v;else delete s2.prices[inp.dataset.price];saveCs(s2);render()});
+  // edycja ceny materiału / robocizny; pierwsza zmiana przenosi starą łączną cenę na obie części
+  const setPart=(id,kind,v)=>{const s2=cs(),r=R.rows.find(x=>x.id===id);if(s2.prices[id]!=null){s2.mat[id]=r.mat;s2.lab[id]=r.lab;delete s2.prices[id]}
+    if(Number.isFinite(v)&&v>=0)s2[kind][id]=v;else delete s2[kind][id];saveCs(s2);render()};
+  M.querySelectorAll('[data-mat]').forEach(inp=>inp.onchange=()=>setPart(inp.dataset.mat,'mat',Number(inp.value)));
+  M.querySelectorAll('[data-lab]').forEach(inp=>inp.onchange=()=>setPart(inp.dataset.lab,'lab',Number(inp.value)));
   $('reserve').onchange=()=>{const s2=cs(),v=Number($('reserve').value);if(Number.isFinite(v))s2.reserve=Math.max(0,Math.min(50,v));saveCs(s2);render()};
 }
 for(const b of $('stdSeg').children)b.onclick=()=>{if(!project)return;const s=cs();s.std=b.dataset.v;saveCs(s);render()};
 $('factor').onchange=()=>{if(!project)return;const s=cs(),v=Number($('factor').value);if(Number.isFinite(v)&&v>0)s.factor=v;saveCs(s);render()};
-$('reset').onclick=()=>{if(!project||!confirm('Przywrócić wszystkie ceny domyślne (Twoje zmiany cen zostaną usunięte)?'))return;const s=cs();s.prices={};saveCs(s);render()};
+$('reset').onclick=()=>{if(!project||!confirm('Przywrócić wszystkie ceny domyślne (Twoje zmiany cen zostaną usunięte)?'))return;const s=cs();s.prices={};s.mat={};s.lab={};saveCs(s);render()};
 $('print').onclick=()=>window.print();
-$('csv').onclick=()=>{if(!project)return;const R=compute(),L=[['Etap','Pozycja','Ilość','j.m.','Cena jedn. [zł]','Wartość [zł]']];
-  for(const r of R.rows)if(r.on)L.push([r.stage,r.name,(Math.round(r.qty*100)/100+'').replace('.',','),r.unit,Math.round(r.price),Math.round(r.value)]);
-  L.push(['','Rezerwa '+R.s.reserve+'%','','','',Math.round(R.reserve)],['','RAZEM','','','',Math.round(R.total)]);
+$('csv').onclick=()=>{if(!project)return;const R=compute(),L=[['Etap','Pozycja','Ilość','j.m.','Materiał [zł/j.m.]','Robocizna [zł/j.m.]','Materiały [zł]','Robocizna [zł]','Razem [zł]']];
+  for(const r of R.rows)if(r.on)L.push([r.stage,r.name,(Math.round(r.qty*100)/100+'').replace('.',','),r.unit,Math.round(r.mat),Math.round(r.lab),Math.round(r.vm),Math.round(r.vl),Math.round(r.value)]);
+  L.push(['','Rezerwa '+R.s.reserve+'%','','','','',Math.round(R.reserveM),Math.round(R.reserveL),Math.round(R.reserve)],['','RAZEM','','','','',Math.round(R.totalM),Math.round(R.totalL),Math.round(R.total)]);
   const csv='﻿'+L.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n'),a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='wycena-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove()};
 
