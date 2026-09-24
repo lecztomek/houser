@@ -56,21 +56,33 @@
     for(let y=0;y<H;y++)for(let x=0;x<W;x++){const g=id(lo,x,y),u=id(up,x,y);if(isVoid(lo,g)||isVoid(up,u)||isHole(up,u))continue;const rg=R(lo,g),ru=R(up,u);if(!rg||!ru)continue;
       rg.above[ru.key]=(rg.above[ru.key]||0)+c*c;ru.below[rg.key]=(ru.below[rg.key]||0)+c*c}
     // antresola / pustka nad salonem – dźwięk z parteru idzie prosto na piętro
-    let voidOverLiving=false;for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(id(up,x,y)==='pustka'){const g=R(lo,id(lo,x,y));if(g&&(g.src>=1.5))voidOverLiving=true}}
+    let voidOverLiving=false,voidSrc=null;for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(id(up,x,y)==='pustka'){const g=R(lo,id(lo,x,y));if(g&&g.src>=1.5){voidOverLiving=true;if(!voidSrc||g.src>voidSrc.src)voidSrc=g}}}
     const soft=set.walls==='acoustic'?.55:1; // ściany akustyczne (Rw ≥ 50 dB) tłumią lepiej
+    // strefy otwarte: pomieszczenia połączone otwartymi przejściami (np. hol + salon + kuchnia) – hałas rozchodzi się po całej strefie
+    const zone={};let zi=0;for(const r of Object.values(rooms)){if(zone[r.key]!=null)continue;const stk=[r.key];zone[r.key]=zi;while(stk.length){const k=stk.pop();for(const o of Object.keys(rooms[k].opens))if(zone[o]==null&&rooms[o]){zone[o]=zi;stk.push(o)}}zi++}
+    const zoneLoud={};for(const r of Object.values(rooms)){const z=zone[r.key];if(!r.quiet&&r.src>(zoneLoud[z]?.src||0))zoneLoud[z]=r}
+    // piętro otwarte na parter przez pustkę nad głośnym pomieszczeniem: pokoje przy pustce i cała ich strefa otwarta
+    const upOpen=new Set();if(voidOverLiving)for(const r of Object.values(rooms))if(r.f===up&&r.voidEdge>0&&!r.quiet)for(const k of Object.keys(zone))if(zone[k]===zone[r.key])upOpen.add(k);
+    // pomieszczenie otwarte na głośne (w tej samej strefie albo przez pustkę) „dziedziczy” połowę jego hałasu
+    const eff=o=>{if(o.quiet)return {src:o.src||0,via:null};let L=zoneLoud[zone[o.key]],vv=false;if(L===o)L=null;if(upOpen.has(o.key)&&voidSrc&&(!L||voidSrc.src>L.src)){L=voidSrc;vv=true}
+      const inh=L?.5*L.src:0;return {src:Math.max(o.src||0,inh),via:inh>(o.src||0)?L:null,vv}};
 
     const conflicts=[];
     for(const r of Object.values(rooms)){if(!r.quiet)continue;let pen=0;const add=(p,type,text,tip,other,len)=>{p=Math.round(p*100)/100;if(p<=0)return;pen+=p;const it={p,type,text,tip,other,len};r.issues.push(it);if(other)conflicts.push({a:r.key,b:other,p,type,len})};
-      for(const [k,len] of Object.entries(r.walls)){const o=rooms[k];if(!o||o.buffer)continue;
-        if(o.src){const p=o.src*Math.min(1,len/3)*soft;add(p,'wall','Wspólna ściana z pomieszczeniem „'+o.name+'” ('+fmtM(len)+') – '+o.cls.why+'.',
+      for(const [k,len] of Object.entries(r.walls)){const o=rooms[k];if(!o||o.buffer)continue;const E=eff(o);
+        if(E.src){const p=E.src*Math.min(1,len/3)*soft;add(p,'wall',E.via?'Wspólna ściana z pomieszczeniem „'+o.name+'” ('+fmtM(len)+'), otwartym '+(E.vv?'przez pustkę ':'')+'na „'+E.via.name+'” – '+E.via.cls.why+'.':'Wspólna ściana z pomieszczeniem „'+o.name+'” ('+fmtM(len)+') – '+o.cls.why+'.',
           o.cls.k==='bath'||o.cls.k==='wc'?'Pion kanalizacyjny prowadź z dala od tej ściany (w bruździe z izolacją), ściana z bloczków silikatowych lub podwójna płyta g-k z wełną.':o.cls.k==='garage'?'Ściana z garażem powinna być masywna (Rw ≥ 55 dB), najlepiej oddzielona garderobą lub korytarzem.':'Ściana akustyczna (np. silikat 18 cm albo podwójna płyta g-k z wełną) albo szafa wnękowa na całej ścianie jako bufor.',k,len)}
         else if(o.quiet&&len>=1)add(.3*soft,'wall','Ściana z pokojem „'+o.name+'” – rozmowy i muzyka zza ściany.','Między sypialniami ściana pełna (bez gniazdek na wprost siebie) albo szafy wnękowe.',k,len)}
-      for(const [k,len] of Object.entries(r.opens)){const o=rooms[k];if(!o||!o.src)continue;add(o.src*1.6,'open','Otwarte przejście do pomieszczenia „'+o.name+'” – nic nie tłumi hałasu.','Zamiast otwartego przejścia daj drzwi (najlepiej z uszczelką).',k,len)}
-      for(const k of Object.keys(r.doors)){const o=rooms[k];if(!o||o.src<1.5||o.cls.k==='bath'||o.cls.k==='wc')continue;add(1.2,'door','Drzwi otwierają się prosto do pomieszczenia „'+o.name+'” (bez holu).','Wejście do sypialni z holu lub korytarza, a nie wprost z salonu czy kuchni.',k)}
+      for(const [k,len] of Object.entries(r.opens)){const o=rooms[k];if(!o)continue;const E=eff(o);if(!E.src)continue;add(E.src*1.6,'open','Otwarte przejście do pomieszczenia „'+o.name+'” – nic nie tłumi hałasu.','Zamiast otwartego przejścia daj drzwi (najlepiej z uszczelką).',k,len)}
+      for(const k of Object.keys(r.doors)){const o=rooms[k];if(!o||o.cls.k==='bath'||o.cls.k==='wc')continue;const E=eff(o);
+        if(o.src>=1.5)add(1.2,'door','Drzwi otwierają się prosto do pomieszczenia „'+o.name+'” (bez holu).','Wejście do sypialni z holu lub korytarza, a nie wprost z salonu czy kuchni.',k);
+        else if(E.via&&E.src>=1&&!upOpen.has(k))add(.9,'door','Drzwi wychodzą na „'+o.name+'”, otwarty na „'+E.via.name+'” – hałas dochodzi pod drzwi.','Oddziel hol od strefy dziennej drzwiami (np. przeszklonymi) albo daj do sypialni drzwi z uszczelką i progiem.',k)}
       for(const [k,a] of Object.entries(r.above)){const o=rooms[k];if(!o||!o.src)continue;const wet=o.cls.k==='bath'||o.cls.k==='wc'||o.cls.k==='laundry';
         add((wet?1.2:o.src*.5)*Math.min(1,a/4),'above','Nad pokojem jest „'+o.name+'” ('+fmtA(a)+') – '+(wet?'woda i odpływy w stropie.':'kroki i dudnienie przez strop.'),wet?'Łazienkę na piętrze układaj nad łazienką lub kuchnią na parterze, piony w obudowie z izolacją.':'Strop z pływającą wylewką na wełnie (izolacja od kroków).',k)}
       for(const [k,a] of Object.entries(r.below)){const o=rooms[k];if(!o||!o.src)continue;add(o.src*.6*Math.min(1,a/4),'below','Pod pokojem jest „'+o.name+'” ('+fmtA(a)+') – '+o.cls.why+'.',o.cls.k==='garage'?'Nad garażem strop z dobrą izolacją akustyczną i cieplną, albo przenieś sypialnię.':'Strop z pływającą wylewką; w salonie pod sypialnią – głośniki z dala od sufitu.',k)}
-      if(r.f===up&&set.nightVoid&&(r.voidEdge>0||Object.keys(r.opens).some(k=>rooms[k]?.cls.k==='hall'))&&voidOverLiving)add(1.5,'void','Pokój przy antresoli / pustce nad salonem – dźwięki z parteru idą prosto na piętro.','Drzwi do pokoju z uszczelką, a przy pustce szklana balustrada do sufitu albo zasłona akustyczna.');
+      if(r.f===up&&set.nightVoid&&voidOverLiving){const viaOpen=r.voidEdge>0||Object.keys(r.opens).some(k=>upOpen.has(k)),door=Object.keys(r.doors).find(k=>upOpen.has(k));
+        if(viaOpen)add(1.5,'void','Pokój otwarty na antresolę / pustkę nad salonem – dźwięki z parteru idą prosto na piętro.','Oddziel pokój od antresoli ścianą i drzwiami z uszczelką; przy pustce szklana balustrada do sufitu albo zasłona akustyczna.');
+        else if(door)add(1,'void','Drzwi pokoju wychodzą na „'+rooms[door].name+'” przy pustce nad salonem – dźwięki z parteru idą prosto pod drzwi.','Drzwi z uszczelką i progiem (Rw ≥ 32 dB), a przy pustce szklana balustrada do sufitu – albo przesuń wejście do pokoju dalej od pustki.',door)}
       if(set.street!=='none'&&r.winSides[set.street]){add(1.5*r.quiet,'street','Okno od ulicy ('+SIDE_PL[set.street]+').','Okna akustyczne (Rw ≥ 38 dB), nawiewniki akustyczne albo przenieś sypialnię na stronę ogrodu.')}
       r.score=Math.max(0,Math.min(10,10-pen));r.pen=pen;r.issues.sort((a,b)=>b.p-a.p)}
     const quiet=Object.values(rooms).filter(r=>r.quiet).sort((a,b)=>a.score-b.score);
