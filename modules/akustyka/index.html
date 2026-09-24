@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Akustyka</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:330px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
+h1{font-size:19px;margin:0 0 4px}
+.lead,.hint{font-size:12.5px;color:var(--hs-muted);line-height:1.5;margin:0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.field{display:grid;gap:4px;margin-bottom:9px}
+.field label{font-size:12px;color:var(--hs-muted)}
+.field select{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.4}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.tile .l{font-size:12px;color:var(--hs-muted);font-weight:600}
+.tile .v{font-size:30px;font-weight:800;letter-spacing:-.02em;margin-top:4px}
+.tile .v small{font-size:15px;color:var(--hs-muted);font-weight:600}
+.tile .s{font-size:12.5px;color:var(--hs-muted);margin-top:4px}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.card h2{font-size:15px;margin:0 0 3px}
+.plans{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.plan{flex:1 1 320px;min-width:0}
+.plan h4{margin:6px 0;font-size:12px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.06em}
+.plan svg{width:100%;height:auto;display:block;max-height:460px}
+.plan svg .rm{cursor:pointer}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#475569;margin-top:8px;align-items:center}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:5px}
+.rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.rc{background:var(--hs-panel);border:1px solid var(--hs-line);border-left:5px solid #cbd5e1;border-radius:var(--hs-radius-lg);padding:12px 14px;box-shadow:var(--hs-shadow);cursor:pointer}
+.rc.sel{outline:2px solid #2563eb;outline-offset:1px}
+.rc.ok{border-left-color:#16a34a}.rc.mid{border-left-color:#d97706}.rc.bad{border-left-color:#dc2626}
+.rc .hd{display:flex;gap:10px;align-items:baseline}
+.rc .num{font-size:24px;font-weight:800;min-width:44px}
+.c-ok{color:#15803d}.c-mid{color:#b45309}.c-bad{color:#b91c1c}
+.rc .t{font-weight:700;font-size:14.5px}
+.rc .d{font-size:12px;color:var(--hs-muted)}
+.pill{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 8px;margin-left:auto;white-space:nowrap}
+.pill.ok{background:#dcfce7;color:#166534}.pill.mid{background:#fef3c7;color:#92400e}.pill.bad{background:#fee2e2;color:#991b1b}
+.iss{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:7px}
+.iss li{font-size:12.5px;line-height:1.45;border-top:1px solid #eef2f6;padding-top:7px}
+.iss .pen{float:right;font-weight:700;color:#b91c1c;font-size:12px;margin-left:8px}
+.iss .tip{display:block;color:#475569;margin-top:2px}
+.iss .tip:before{content:'→ ';color:#2563eb;font-weight:700}
+.good{font-size:12.5px;color:#15803d;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #eef2f6;vertical-align:top}
+th{font-size:11.5px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.04em}
+.bar{height:8px;border-radius:4px;background:#f97316;display:inline-block;vertical-align:middle}
+.empty{padding:40px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){html,body{overflow:auto;height:auto}.wrap{height:auto;grid-template-rows:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{overflow:visible}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1>Akustyka i spokój</h1>
+  <p class="lead">Czy w sypialniach i gabinecie będzie cicho: co jest za ścianą, nad i pod pokojem, skąd idzie hałas i co z tym zrobić. Proste reguły na rzucie – do porównywania wariantów, nie zastępuje projektu akustycznego.</p>
+  <div class="section">
+    <h3>Otoczenie</h3>
+    <div class="field"><label>Po której stronie jest ulica (hałas z zewnątrz)</label>
+      <select id="street"><option value="none">nie wiem / cicha okolica</option><option value="north">północ</option><option value="east">wschód</option><option value="south">południe</option><option value="west">zachód</option></select></div>
+  </div>
+  <div class="section">
+    <h3>Konstrukcja</h3>
+    <div class="field"><label>Ściany działowe przy sypialniach</label>
+      <select id="walls"><option value="standard">zwykłe (np. bloczek 12 cm, g-k pojedyncza)</option><option value="acoustic">akustyczne (silikat 18 cm, g-k podwójna z wełną)</option></select></div>
+    <label class="chk"><input type="checkbox" id="nightVoid"> Antresola / pustka nad salonem przenosi dźwięk na piętro</label>
+    <p class="hint" style="margin-top:8px">Ustawienia zapisują się w projekcie.</p>
+  </div>
+  <div class="section">
+    <h3>Jak liczymy</h3>
+    <p class="hint">Każdy cichy pokój (sypialnia, pokój, gabinet) zaczyna od 10 punktów. Odejmujemy za: wspólną ścianę z głośnym pomieszczeniem (garaż, pralnia, technika, salon, kuchnia, łazienka, schody – im dłuższa ściana i głośniejsze źródło, tym więcej), otwarte przejście do takiego pomieszczenia, drzwi prosto do strefy dziennej, głośne pomieszczenie nad lub pod pokojem, antresolę nad salonem i okno od ulicy. Garderoba lub schowek między pokojami działa jak bufor. Ocena domu to średnia cichych pokoi ważona powierzchnią.</p>
+  </div>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="engine.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let project=null,sel=null,res=null;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const VERD={ok:'cicho',mid:'do poprawy',bad:'głośno'};
+const verdict=s=>s>=8?'ok':s>=6?'mid':'bad';
+const FILL={ok:'#bbf7d0',mid:'#fde68a',bad:'#fecaca'};
+function settings(){return {...HouserAcoustics.DEF,...(project?.acousticSettings||{})}}
+function save(patch){const s={...settings(),...patch};project.acousticSettings=s;HouserStore.update(p=>{p.acousticSettings=s},'akustyka');render()}
+$('street').onchange=()=>save({street:$('street').value});
+$('walls').onchange=()=>save({walls:$('walls').value});
+$('nightVoid').onchange=()=>save({nightVoid:$('nightVoid').checked});
+
+function planSVG(f){
+  const {W,H,c,st,defs,rooms}=res,S=22,id=(x,y)=>x<0||y<0||x>=W||y>=H?null:(st[f][y*W+x]||null),room=v=>rooms[f+'|'+v];
+  const inside=v=>v&&defs[f][v]?.kind!=='exteriorVoid'&&!(f===res.up&&(v==='pustka'||v==='schody'));
+  let used=false,h='',xs=W,ys=H,xe=0,ye=0;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const v=id(x,y);if(!inside(v))continue;used=true;xs=Math.min(xs,x);ys=Math.min(ys,y);xe=Math.max(xe,x+1);ye=Math.max(ye,y+1)}
+  if(!used)return '';
+  const conflictKeys=new Set(res.conflicts.filter(k=>(k.type==='wall'||k.type==='open')&&k.p>=.5).map(k=>[k.a,k.b].sort().join('~')));
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const v=id(x,y);if(!inside(v)){if(f===res.up&&(v==='pustka'||v==='schody'))h+='<rect x="'+x*S+'" y="'+y*S+'" width="'+S+'" height="'+S+'" fill="#f1f5f9"/>';continue}
+    const r=room(v);let fill='#f8fafc';if(r){if(r.quiet)fill=FILL[verdict(r.score)];else if(r.src>=1.2)fill='url(#hatch)';else if(r.buffer)fill='#e0f2fe'}
+    h+='<rect class="rm" data-k="'+esc(f+'|'+v)+'" x="'+x*S+'" y="'+y*S+'" width="'+S+'" height="'+S+'" fill="'+fill+'"/>'}
+  // ściany: zewnętrzne, między pomieszczeniami, konfliktowe (czerwone)
+  const ln=(x1,y1,x2,y2,col,w)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="square"/>';
+  const E=(ax,ay,bx,by,x1,y1,x2,y2)=>{const va=id(ax,ay),vb=id(bx,by),A=inside(va),B=inside(vb);if(A!==B)return ln(x1,y1,x2,y2,'#334155',3);if(!A||va===vb)return '';
+    const key=[f+'|'+va,f+'|'+vb].sort().join('~');const sel_=sel&&(key.includes(sel));return conflictKeys.has(key)?ln(x1,y1,x2,y2,sel_?'#b91c1c':'#ef4444',sel_?5:3.5):ln(x1,y1,x2,y2,'#64748b',1.2)};
+  for(let y=0;y<=H;y++)for(let x=0;x<W;x++)h+=E(x,y-1,x,y,x*S,y*S,(x+1)*S,y*S);
+  for(let x=0;x<=W;x++)for(let y=0;y<H;y++)h+=E(x-1,y,x,y,x*S,y*S,x*S,(y+1)*S);
+  // etykiety
+  for(const r of Object.values(rooms)){if(r.f!==f||!r.cells.length)continue;const cx=r.cells.reduce((a,p)=>a+p[0],0)/r.cells.length,cy=r.cells.reduce((a,p)=>a+p[1],0)/r.cells.length;
+    const X=(cx+.5)*S,Y=(cy+.5)*S,big=r.cells.length>=6;if(!big)continue;
+    const vert=[Object.keys(r.above).some(k=>res.rooms[k]?.src>=1.2)&&r.quiet?'↑':'',Object.keys(r.below).some(k=>res.rooms[k]?.src>=1.2)&&r.quiet?'↓':''].join('');
+    h+='<text x="'+X+'" y="'+(Y-2)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#0f172a" pointer-events="none">'+esc(r.name.length>16?r.name.slice(0,15)+'…':r.name)+'</text>';
+    h+='<text x="'+X+'" y="'+(Y+12)+'" text-anchor="middle" font-size="10.5" fill="#334155" pointer-events="none">'+(r.quiet?fmt(r.score)+' / 10'+(vert?' '+vert:''):r.src>=1.2?'🔊':'')+'</text>'}
+  if(sel&&rooms[sel]&&rooms[sel].f===f){const r=rooms[sel];for(const p of r.cells)h+='<rect x="'+p[0]*S+'" y="'+p[1]*S+'" width="'+S+'" height="'+S+'" fill="none" stroke="#2563eb" stroke-width="1" stroke-opacity=".35" pointer-events="none"/>'}
+  const vb=[xs*S-6,ys*S-6,(xe-xs)*S+12,(ye-ys)*S+12].join(' ');
+  return '<div class="plan"><h4>'+(f===res.lo?'Parter':'Piętro / poddasze')+'</h4><svg viewBox="'+vb+'"><defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#e2e8f0"/><line x1="0" y1="0" x2="0" y2="6" stroke="#94a3b8" stroke-width="2"/></pattern></defs>'+h+'</svg></div>'}
+
+function roomCard(r){const v=verdict(r.score);
+  return '<div class="rc '+v+(sel===r.key?' sel':'')+'" data-k="'+esc(r.key)+'"><div class="hd"><div class="num c-'+v+'">'+fmt(r.score)+'</div><div><div class="t">'+esc(r.name)+'</div><div class="d">'+(r.f===res.lo?'Parter':'Piętro')+' · '+fmt(r.area)+' m²</div></div><span class="pill '+v+'">'+VERD[v]+'</span></div>'+
+    (r.issues.length?'<ul class="iss">'+r.issues.map(i=>'<li><span class="pen">−'+fmt(i.p)+'</span>'+esc(i.text)+'<span class="tip">'+esc(i.tip)+'</span></li>').join('')+'</ul>':'<div class="good">Nic głośnego za ścianą, nad ani pod pokojem.</div>')+'</div>'}
+
+function render(){
+  const s=settings();$('street').value=s.street;$('walls').value=s.walls;$('nightVoid').checked=!!s.nightVoid;
+  const M=$('main');
+  if(!project||!(project.grid||project.definitionSnapshot?.grid)){M.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej albo narysuj rzut w <b>Układzie pomieszczeń</b>.</div>';return}
+  try{res=HouserAcoustics.evaluate(project,s)}catch(e){console.error(e);M.innerHTML='<div class="empty">Nie udało się przeanalizować rzutu.</div>';return}
+  if(!res.quiet.length){M.innerHTML='<div class="empty">Na rzucie nie ma sypialni, pokoi ani gabinetu – nie ma czego chronić przed hałasem. Nazwij pomieszczenia w module <b>Pomieszczenia</b> (np. „Sypialnia”).</div>';return}
+  const v=res.verdict,worst=res.quiet[0],bad=res.quiet.filter(r=>r.score<6).length;
+  let h='<div class="tiles"><div class="tile"><div class="l">Spokój w domu</div><div class="v c-'+v+'">'+fmt(res.overall)+' <small>/ 10</small></div><div class="s"><span class="pill '+v+'" style="margin:0">'+VERD[v]+'</span> średnia cichych pokoi</div></div>'+
+    '<div class="tile"><div class="l">Pokoje z problemem</div><div class="v">'+bad+' <small>z '+res.quiet.length+'</small></div><div class="s">ocena poniżej 6</div></div>'+
+    '<div class="tile"><div class="l">Najgłośniejszy pokój</div><div class="v c-'+verdict(worst.score)+'" style="font-size:22px">'+esc(worst.name)+'</div><div class="s">'+fmt(worst.score)+' / 10'+(worst.issues[0]?' · '+esc(worst.issues[0].text.split(' – ')[0].replace(/ \(.*$/,'')):'')+'</div></div></div>';
+  h+='<div class="card"><h2>Mapa hałasu</h2><p class="hint">Kolor cichych pokoi to ich ocena, szare kreskowane – źródła hałasu, niebieskie – bufory (garderoba, schowek). Czerwone ściany dzielą cichy pokój ze źródłem hałasu. ↑ / ↓ – głośne pomieszczenie nad / pod pokojem. Kliknij pokój.</p><div class="plans">'+[res.lo,res.up].map(planSVG).join('')+'</div>'+
+    '<div class="legend"><span><i style="background:'+FILL.ok+'"></i>cicho (8–10)</span><span><i style="background:'+FILL.mid+'"></i>do poprawy (6–8)</span><span><i style="background:'+FILL.bad+'"></i>głośno (&lt; 6)</span><span><i style="background:repeating-linear-gradient(45deg,#e2e8f0 0 3px,#94a3b8 3px 5px)"></i>źródło hałasu</span><span><i style="background:#e0f2fe"></i>bufor</span><span><i style="background:#ef4444;height:4px"></i>ściana konfliktowa</span></div></div>';
+  h+='<div><h2 style="font-size:15px;margin:4px 0 8px">Ciche pokoje – od najgłośniejszego</h2><div class="rooms">'+res.quiet.map(roomCard).join('')+'</div></div>';
+  if(res.sources.length){const mx=Math.max(...res.sources.map(r=>r.src));
+    h+='<div class="card"><h2>Źródła hałasu</h2><table><thead><tr><th>Pomieszczenie</th><th>Głośność</th><th>Dlaczego</th><th>Sąsiaduje z</th></tr></thead><tbody>'+
+      res.sources.map(r=>'<tr><td><b>'+esc(r.name)+'</b><br><span class="hint">'+(r.f===res.lo?'Parter':'Piętro')+'</span></td><td><span class="bar" style="width:'+Math.round(r.src/mx*70)+'px"></span></td><td>'+esc(r.cls.why||'')+'</td><td>'+(r.near.length?r.near.map(esc).join(', '):'<span class="c-ok">z cichymi pokojami nie</span>')+'</td></tr>').join('')+'</tbody></table></div>'}
+  M.innerHTML=h;
+  M.querySelectorAll('.rc,[data-k].rm').forEach(el=>el.onclick=()=>{const k=el.dataset.k;const r=res.rooms[k];sel=sel===k?null:k;render();if(r?.quiet&&el.classList.contains('rm'))M.querySelector('.rc[data-k="'+CSS.escape(k)+'"]')?.scrollIntoView({block:'nearest',behavior:'smooth'})});
+}
+const rec=HouserStore.load();project=rec?rec.project:null;render();
+HouserStore.subscribe(r=>{project=r.project;render()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

@@ -22,7 +22,11 @@
   const PL=/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/;
 
   const look=s=>{if(s in D)return D[s];const nums=[];const tpl=s.replace(NUM,m=>{nums.push(m);return '{n}'});
-    if(nums.length&&tpl in D){let i=0;return D[tpl].replace(/\{n\}/g,()=>enNum(nums[i++]??''))}return null};
+    if(nums.length&&tpl in D){let i=0;return D[tpl].replace(/\{n\}/g,()=>enNum(nums[i++]??''))}
+    // nazwy w cudzysłowie („Salon”) jako {q} – nazwę tłumaczymy osobno
+    if(s.includes('„')){const qs=[],n2=[];const t2=s.replace(/„([^”]*)”/g,(m,x)=>{qs.push(x);return '„{q}”'}).replace(NUM,m=>{n2.push(m);return '{n}'});
+      if(t2 in D){let i=0,j=0;return D[t2].replace(/\{q\}/g,()=>core(qs[j++]??'')).replace(/\{n\}/g,()=>enNum(n2[i++]??''))}}
+    return null};
   // rozbij tekst na dwie części przy pierwszym albo ostatnim separatorze i przetłumacz każdą osobno (wybór: mniej polskich znaków w wyniku)
   const plLeft=r=>(r.match(/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g)||[]).length;
   const split=(s,re)=>{const all=[...s.matchAll(re)].filter(m=>m.index>0&&m.index+m[0].length<s.length);if(!all.length)return null;
@@ -47,7 +51,7 @@
   api.t=t;
 
   const SKIP=new Set(['SCRIPT','STYLE','TEXTAREA','CODE','PRE','NOSCRIPT']);
-  const ATTRS=['title','placeholder','aria-label','alt'];
+  const ATTRS=['title','placeholder','aria-label','alt','label'];
   const done=new WeakMap(); // węzeł -> ostatnio wstawione tłumaczenie (żeby nie tłumaczyć dwa razy)
   const skipEl=el=>{for(let e=el;e;e=e.parentElement){if(SKIP.has(e.tagName)||e.isContentEditable||e.hasAttribute?.('data-noi18n'))return true}return false};
   function textNode(n){const v=n.data;if(done.get(n)===v)return;const pe=n.parentElement;if(!pe||skipEl(pe))return;const r=t(v);done.set(n,r);if(r!==v){if(pe.tagName==='OPTION'&&!pe.hasAttribute('value'))pe.setAttribute('value',pe.value);n.data=r}}

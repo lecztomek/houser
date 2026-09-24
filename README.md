@@ -16,6 +16,8 @@ modules/
   przepisy/index.html       uproszczone sprawdzenie z warunkami technicznymi (WT 2021)
   codziennosc/              scenariusze codzienności (zakupy, pranie, palenie w piecu, goście, noc…): trasy po domu i ocena
   naslonecznienie/          zyski od słońca latem i zimą per pomieszczenie, ryzyko przegrzania, mapa ciepła
+  akustyka/                 cisza w sypialniach: co za ścianą, nad i pod pokojem, ulica, antresola – ocena i podpowiedzi
+  porownanie/               2–4 domy obok siebie (koszt z etapami, energia, codzienność, słońce, akustyka) + ocena ogólna wg wag
   energia/index.html        bilans cieplny, moc grzewcza, koszt ogrzewania
   wycena/index.html         orientacyjny koszt budowy z ilości w projekcie (ceny do edycji)
   wnetrze-3d/index.html     podgląd 3D wnętrza z punktu obserwatora (meble z JSON)
@@ -70,7 +72,7 @@ Dopóki `shared/firebase-config.js` ma `null`, logowanie jest ukryte.
 
 ### Wersje językowe (PL / EN)
 
-Strona jest pisana po polsku. Przełącznik **PL | EN** na pasku projektu zapisuje język w przeglądarce (`houser:lang`) i przeładowuje całość. W trybie EN `shared/i18n.js` tłumaczy w locie teksty strony i modułów (także te dopisywane później), podpowiedzi, okna dialogowe i napisy na rzutach według słownika `shared/i18n-en.js`. Klucze to polskie teksty, a liczby zapisuje się jako `{n}`, np. `"Salon: {n} m²": "Living room: {n} m²"`. Dłuższe teksty są dzielone na zdania i części (` – `, ` · `, `: `), a nazwy pomieszczeń są podmieniane także wewnątrz innych zdań. Element z atrybutem `data-noi18n` nie jest tłumaczony. Dane projektu (nazwy wpisane przez użytkownika, plik JSON) się nie zmieniają.
+Strona jest pisana po polsku. Przełącznik **PL | EN** na pasku projektu zapisuje język w przeglądarce (`houser:lang`) i przeładowuje całość. W trybie EN `shared/i18n.js` tłumaczy w locie teksty strony i modułów (także te dopisywane później), podpowiedzi, okna dialogowe i napisy na rzutach według słownika `shared/i18n-en.js`. Klucze to polskie teksty, liczby zapisuje się jako `{n}`, a nazwy w cudzysłowie jako `„{q}”`, np. `"Salon: {n} m²": "Living room: {n} m²"`. Dłuższe teksty są dzielone na zdania i części (` – `, ` · `, `: `), a nazwy pomieszczeń są podmieniane także wewnątrz innych zdań. Element z atrybutem `data-noi18n` nie jest tłumaczony. Dane projektu (nazwy wpisane przez użytkownika, plik JSON) się nie zmieniają.
 
 ## Publikacja
 

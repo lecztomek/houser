@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Porównanie domów</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:var(--hs-bg,#f1f5f9)}
+.wrap{max-width:1400px;margin:0 auto;padding:18px 16px 40px}
+h1{font-size:21px;margin:0 0 4px}
+.lead,.hint{font-size:13px;color:var(--hs-muted);line-height:1.5;margin:0}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:14px 0}
+.sum .t{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:11px 14px;box-shadow:var(--hs-shadow)}
+.sum .l{font-size:12px;color:var(--hs-muted);font-weight:600}
+.sum .v{font-size:15px;font-weight:800;margin-top:3px}
+.sum .s{font-size:12px;color:var(--hs-muted)}
+.tbl{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);box-shadow:var(--hs-shadow);overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+th,td{padding:7px 10px;border-bottom:1px solid #eef2f6;text-align:right;vertical-align:middle;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--hs-panel);z-index:1;min-width:190px;max-width:240px}
+thead th{vertical-align:top;text-align:left;border-bottom:1px solid var(--hs-line)}
+.col{display:flex;flex-direction:column;gap:6px;min-width:190px}
+.col .thumb{background:#f8fafc;border:1px solid #e8edf3;border-radius:10px;height:110px;display:grid;place-items:center;padding:6px;overflow:hidden}
+.col .thumb svg{width:100%;height:100%}
+.col select{width:100%;border:1px solid var(--hs-line-strong);border-radius:8px;padding:5px 6px;font:inherit;font-size:12.5px;background:#fff}
+.col .nm{font-weight:800;font-size:14px;line-height:1.25}
+.col .src{font-size:11.5px;color:var(--hs-muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.col .acts{display:flex;gap:6px;flex-wrap:wrap}
+.btn{border:1px solid var(--hs-line-strong);background:#fff;border-radius:8px;padding:4px 9px;font:600 12px var(--hs-font);cursor:pointer;color:var(--hs-text);text-decoration:none}
+.btn:hover{border-color:#94a3b8}
+.btn.primary{background:#2563eb;border-color:#2563eb;color:#fff}
+.add{display:grid;place-items:center;min-height:180px;border:2px dashed #cbd5e1;border-radius:12px;color:#64748b;font-weight:700;cursor:pointer;min-width:160px;background:transparent;font:700 13px var(--hs-font)}
+.add:hover{border-color:#2563eb;color:#2563eb}
+tr.grp td{background:#f8fafc;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:#64748b;font-weight:800;text-align:left;padding-top:12px}
+tr.grp td:first-child{background:#f8fafc}
+td .best{color:#15803d;font-weight:800}
+td .worst{color:#b91c1c;font-weight:700}
+td .best:after{content:' ✓'}
+td small{display:block;color:var(--hs-muted);font-size:11.5px;font-weight:400}
+.lbl small{display:block;color:var(--hs-muted);font-size:11.5px;font-weight:400}
+.ov{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:14px 0 8px}
+.ov .o{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px 14px;box-shadow:var(--hs-shadow);display:flex;gap:12px;align-items:center}
+.ov .o.win{border-color:#86efac;background:#f0fdf4}
+.ov .rk{font-size:13px;font-weight:800;color:#fff;background:#64748b;border-radius:999px;min-width:28px;height:28px;display:grid;place-items:center}
+.ov .win .rk{background:#16a34a}
+.ov .sc{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.ov .sc small{font-size:13px;color:var(--hs-muted);font-weight:600}
+.ov .nm{font-weight:700;font-size:13.5px;line-height:1.25}
+.ov .ex{font-size:11.5px;color:var(--hs-muted)}
+.wts{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:10px 14px;margin-bottom:6px}
+.wts summary{cursor:pointer;font-weight:700;font-size:13px}
+.wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px 16px;margin:10px 0}
+.wgrid label{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:12.5px}
+.wgrid select{border:1px solid var(--hs-line-strong);border-radius:8px;padding:3px 6px;font:inherit;font-size:12.5px;background:#fff}
+tr.tot td{background:#f8fafc;font-weight:800;font-size:14px}
+.empty{padding:40px;text-align:center;color:var(--hs-muted)}
+.load{color:var(--hs-muted);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Porównanie domów</h1>
+  <p class="lead">Postaw obok siebie 2–4 projekty – swoje (z tej przeglądarki lub z chmury), bieżący albo gotowe domy. Wszystkie liczby są liczone tak samo jak w modułach Wycena, Energia, Codzienność, Nasłonecznienie i Akustyka. Najlepsza wartość w wierszu jest zielona, najsłabsza czerwona.</p>
+  <div id="overall" class="ov"></div>
+  <details class="wts" id="wtsBox"><summary>Co jest dla Ciebie ważne w ocenie ogólnej</summary><div class="wgrid" id="wts"></div><p class="hint">Każde kryterium daje 0–10 punktów: koszt za m² względem najtańszego z porównywanych, energia wg zapotrzebowania (15 kWh/m² = 10 pkt, 120 = 0), codzienność i akustyka – ich oceny, przegrzewanie – odsetek pokoi bez wysokiego ryzyka, metraż – względem największego. Ocena ogólna to średnia ważona.</p></details>
+  <div id="sum" class="sum"></div>
+  <div class="tbl" id="tbl"><div class="empty">Wczytuję projekty…</div></div>
+  <p class="hint" style="margin-top:10px">Wybór porównywanych domów pamięta ta przeglądarka. Koszty i energia biorą ustawienia zapisane w każdym projekcie (ceny, U ścian itd.), więc różnice mogą wynikać także z ustawień.</p>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/stairs.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="../../shared/library.js"></script>
+<script src="../../shared/energy.js"></script>
+<script src="../../shared/cost.js"></script>
+<script src="../codziennosc/engine.js"></script>
+<script src="../naslonecznienie/sun.js"></script>
+<script src="../naslonecznienie/calc.js"></script>
+<script src="../akustyka/engine.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nf=(v,d=0)=>v==null||!Number.isFinite(v)?'–':(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const zl=v=>v==null?'–':Math.round(v).toLocaleString('pl-PL')+' zł';
+const KEY='houser:compare',MAXC=4;
+const top_=(()=>{try{return window.top!==window&&window.top.HouserStore?window.top:null}catch(_){return null}})();
+const cloud=()=>{try{return top_?.HouserCloud?.user?.()?top_.HouserCloud:null}catch(_){return null}};
+let options=[],sel=[],cache={};
+const lsGet=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch(_){return null}},lsSet=v=>{try{localStorage.setItem(KEY,JSON.stringify(v))}catch(_){}};
+const projName=p=>p?.definitionSnapshot?.name||p?.definitionName||p?.name||'bez nazwy';
+
+// ---------- źródła projektów
+async function loadOptions(){const out=[];const cur=HouserStore.load()?.project;
+  if(cur)out.push({src:'current',id:'current',name:projName(cur),group:'Bieżący projekt'});
+  try{for(const m of await HouserLibrary.list())if(!cur||m.id!==cur.projectId)out.push({src:'local',id:m.id,name:m.name,group:'Na tym urządzeniu'})}catch(_){}
+  const C=cloud();if(C){try{const seen=new Set(out.map(o=>o.id));for(const m of await C.listMine())if(!seen.has(m.id)&&m.id!==cur?.projectId)out.push({src:'cloud',id:m.id,name:m.name,group:'W chmurze'})}catch(_){}}
+  try{const man=await (await fetch('../../examples/index.json')).json();for(const m of man)out.push({src:'sample',id:m.file,name:m.name,group:'Gotowe domy'})}catch(_){}
+  options=out}
+async function getProject(o){const k=o.src+':'+o.id;if(o.src==='current')return HouserStore.load()?.project||null;if(cache[k])return cache[k];
+  let p=null;if(o.src==='local')p=(await HouserLibrary.get(o.id))?.project;else if(o.src==='cloud')p=(await cloud()?.fetchProject(o.id))?.project;else if(o.src==='sample')p=await (await fetch('../../examples/'+o.id)).json();
+  return cache[k]=p||null}
+// wpis z listy porównania -> opcja (bieżący projekt może być zapisany jako 'local'/'cloud' z jego identyfikatorem)
+function findOpt(x){const o=options.find(o=>o.src===x.src&&o.id===x.id);if(o)return o;const cur=HouserStore.load()?.project;return cur&&x.id===cur.projectId?options.find(o=>o.src==='current'):null}
+const SRC_PL={current:'bieżący',local:'💻 w tej przeglądarce',cloud:'☁ w chmurze',sample:'gotowy dom'};
+
+// ---------- miniaturka rzutu
+function pastel(hex){const n=parseInt((hex||'#cbd5e1').slice(1),16),m=v=>Math.round(v+(255-v)*.45);return 'rgb('+m(n>>16&255)+','+m(n>>8&255)+','+m(n&255)+')'}
+function planSvg(p){const g=p.grid||p.definitionSnapshot?.grid;if(!g)return '';const W=g.width,H=g.height,fl=p.definitionSnapshot?.floorOrder||['ground','upper'];
+  const flat=f=>{const st=p.state?.[f]||[];return Array.isArray(st[0])?st.flat():st},rooms=f=>Object.fromEntries((p.definitionSnapshot?.floors?.[f]?.rooms||[]).map(r=>[r.id,r]));
+  const used=fl.filter(f=>flat(f).some(v=>v&&rooms(f)[v]?.kind!=='exteriorVoid'));if(!used.length)return '';
+  const S=10,gap=20;let h='';
+  used.forEach((f,i)=>{const st=flat(f),R=rooms(f),ox=i*(W*S+gap);for(let y=0;y<H;y++)for(let x=0;x<W;x++){const v=st[y*W+x];if(!v||R[v]?.kind==='exteriorVoid')continue;const hole=i>0&&(v==='pustka'||v==='schody');h+='<rect x="'+(ox+x*S)+'" y="'+y*S+'" width="'+S+'" height="'+S+'" fill="'+(hole?'#f1f5f9':pastel(R[v]?.color))+'"/>'}});
+  return '<svg viewBox="-2 -2 '+(used.length*W*S+(used.length-1)*gap+4)+' '+(H*S+4)+'" preserveAspectRatio="xMidYMid meet">'+h+'</svg>'}
+
+// ---------- wskaźniki jednego domu
+function metrics(p){const m={};const tryc=(k,fn)=>{try{m[k]=fn()}catch(e){console.error(k,e);m[k]=null}};
+  tryc('q',()=>HouserQuantities.compute(p));const q=m.q;if(!q)return m;
+  tryc('E',()=>HouserEnergy.compute(p));tryc('C',()=>HouserCost.compute(p));tryc('D',()=>HouserDaily.evaluate(p,p.dailySettings));tryc('S',()=>HouserSolar.compute(p));tryc('A',()=>HouserAcoustics.evaluate(p,p.acousticSettings));
+  const rooms=q.rooms.filter(r=>r.area>=2),name=r=>(r.name||'').toLowerCase();
+  m.beds=rooms.filter(r=>/sypial|pokój|pokoj|gabinet/.test(name(r))).length;m.wet=q.baths+q.wcs;m.nrooms=rooms.length;
+  m.floors=q.net[q.up]>0?(q.attic?'parter + poddasze':'parter + piętro'):'parterowy';
+  m.glaz=q.ops.winA+q.ops.hstA+q.ops.roofWinA;
+  if(m.S){const L=m.S.list.filter(r=>r.wins?.length||r.peak>=.5);m.hot=L.filter(r=>r.risk>=2).length;m.hotOf=L.length;m.worstSun=[...L].sort((a,b)=>b.peak-a.peak)[0]}
+  if(m.D){const ap=m.D.scenarios.filter(s=>s.applicable&&s.enabled!==false);m.worstDaily=[...ap].sort((a,b)=>a.score-b.score)[0]}
+  if(m.A){m.loud=m.A.quiet.filter(r=>r.score<6).length;m.loudOf=m.A.quiet.length;m.worstA=m.A.quiet[0]}
+  return m}
+
+// ---------- wiersze: [etykieta, podpis, wartość(m), format, lepsze: 'low'|'high'|null, dopisek(m)]
+const ROWS=[
+  ['Dom'],
+  ['Powierzchnia użytkowa','',m=>m.q?.usableTotal,v=>nf(v,1)+' m²',null],
+  ['Powierzchnia zabudowy','ślad domu na działce',m=>m.q?.foot,v=>nf(v,1)+' m²',null],
+  ['Kubatura ogrzewana','',m=>m.q?.volume,v=>nf(v)+' m³',null],
+  ['Kondygnacje','',m=>m.floors,v=>v||'–',null],
+  ['Pomieszczenia','w tym sypialnie / łazienki i WC',m=>m.nrooms,v=>nf(v),null,m=>m.beds+' syp. · '+m.wet+' łaz./WC'],
+  ['Dach','kąt nachylenia',m=>m.q?.G?.roofPitch,v=>nf(v)+'°',null],
+  ['Przeszklenia','okna, drzwi tarasowe, okna dachowe',m=>m.glaz,v=>nf(v,1)+' m²',null,m=>m.q?.usableTotal?nf(m.glaz/m.q.usableTotal*100)+'% pow. użytkowej':''],
+  ['Koszt budowy'],
+  ['Szacunkowy koszt','z rezerwą, wg Wyceny',m=>m.C?.total,zl,'low'],
+  ['Koszt za m²','powierzchni użytkowej',m=>m.C&&m.q?.usableTotal?m.C.total/m.q.usableTotal:null,v=>zl(v)+'/m²','low'],
+  ['Materiały / robocizna','',m=>m.C?.totalM,zl,null,m=>m.C?'robocizna '+zl(m.C.totalL):''],
+  ['– Stan zerowy','',m=>stageSum(m,'Stan zerowy'),zl,null],
+  ['– Stan surowy otwarty','',m=>stageSum(m,'Stan surowy otwarty'),zl,null],
+  ['– Stan surowy zamknięty','',m=>stageSum(m,'Stan surowy zamknięty'),zl,null],
+  ['– Instalacje','',m=>stageSum(m,'Instalacje'),zl,null],
+  ['– Elewacja i wykończenie','',m=>stageSum(m,'Elewacja i wykończenie'),zl,null],
+  ['– Na zewnątrz','',m=>stageSum(m,'Na zewnątrz'),zl,null],
+  ['– Inne','',m=>stageSum(m,'Inne'),zl,null],
+  ['Rezerwa na nieprzewidziane','',m=>m.C?.reserve,zl,null,m=>m.C?m.C.s.reserve+'%':''],
+  ['Energia'],
+  ['Zapotrzebowanie na ogrzewanie','kWh na m² rocznie',m=>m.E?.EU,v=>nf(v)+' kWh/m²','low',m=>m.E?HouserEnergy.klass(m.E.EU)[0]:''],
+  ['Ciepło rocznie','ogrzewanie + ciepła woda',m=>m.E?m.E.Qh+m.E.Qw:null,v=>nf(v)+' kWh','low'],
+  ['Moc grzewcza','przy temperaturze obliczeniowej',m=>m.E?.load,v=>nf(v,1)+' kW','low'],
+  ['Koszt ogrzewania','pompa ciepła, rocznie',m=>m.E?.src?.[0]?.cost,v=>zl(v)+'/rok','low'],
+  ['Codzienność'],
+  ['Ocena codzienności','0–10, wyżej = wygodniej',m=>m.D?.overall,v=>nf(v,1)+' / 10','high',m=>m.worstDaily?'najsłabiej: '+m.worstDaily.name+' ('+nf(m.worstDaily.score,1)+')':''],
+  ['Nasłonecznienie'],
+  ['Pokoje z ryzykiem przegrzania','wysokie i bardzo wysokie',m=>m.hot,v=>nf(v),'low',m=>m.hotOf!=null?'z '+m.hotOf+(m.worstSun?' · najgoręcej: '+m.worstSun.name:''):''],
+  ['Słońce w lipcowy dzień','zyski ciepła całego domu',m=>m.S?.house?.sumDay,v=>nf(v,1)+' kWh','low'],
+  ['Słońce zimą','zyski w sezonie grzewczym',m=>m.S?.house?.season,v=>nf(v)+' kWh','high'],
+  ['Akustyka'],
+  ['Spokój w domu','0–10, wyżej = ciszej',m=>m.A?.overall,v=>nf(v,1)+' / 10','high',m=>m.worstA?'najgłośniej: '+m.worstA.name+' ('+nf(m.worstA.score,1)+')':''],
+  ['Pokoje z problemem akustycznym','ocena poniżej 6',m=>m.loud,v=>nf(v),'low',m=>m.loudOf!=null?'z '+m.loudOf:''],
+];
+
+const stageSum=(m,st)=>m.C?m.C.rows.filter(r=>r.stage===st).reduce((a,r)=>a+r.value,0)*(m.C.s.factor?1:1):null;
+const CRIT=[['cost','Koszt budowy za m²',2],['energy','Energia (ogrzewanie)',2],['daily','Codzienność',2],['sun','Przegrzewanie latem',1],['quiet','Akustyka',1],['area','Metraż (większy = lepiej)',0]];
+const WKEY='houser:compare-weights',WOPT=[[0,'nieważne'],[1,'ważne'],[2,'bardzo ważne']];
+let W=(()=>{try{return {...Object.fromEntries(CRIT.map(c=>[c[0],c[2]])),...JSON.parse(localStorage.getItem(WKEY)||'{}')}}catch(_){return Object.fromEntries(CRIT.map(c=>[c[0],c[2]]))}})();
+const clamp=v=>Math.max(0,Math.min(10,v));
+function overallScores(cols){const cpm=cols.map(c=>c.m.C&&c.m.q?.usableTotal?c.m.C.total/c.m.q.usableTotal:null),minC=Math.min(...cpm.filter(v=>v!=null)),maxA=Math.max(...cols.map(c=>c.m.q?.usableTotal||0));
+  return cols.map((c,i)=>{const m=c.m,part={cost:cpm[i]!=null?clamp(10*minC/cpm[i]):null,energy:m.E?clamp(10*(120-m.E.EU)/105):null,daily:m.D?.overall??null,
+      sun:m.hotOf?clamp(10*(1-m.hot/m.hotOf)):null,quiet:m.A?.overall??null,area:maxA?clamp(10*(m.q?.usableTotal||0)/maxA):null};
+    let sw=0,sv=0;for(const [k] of CRIT){const w=+W[k]||0;if(w&&part[k]!=null){sw+=w;sv+=w*part[k]}}
+    return {part,score:sw?sv/sw:null}})}
+let cols=[];
+async function render(){
+  const T=$('tbl');
+  if(!options.length){T.innerHTML='<div class="empty">Nie ma jeszcze projektów do porównania. Wczytaj gotowy dom na stronie głównej albo zapisz projekt.</div>';$('sum').innerHTML='';return}
+  cols=[];for(const s of sel){const o=findOpt(s);if(!o)continue;const p=await getProject(o);if(p)cols.push({o,p,m:metrics(p)})}
+  const optHtml=cur=>{let h='',g='';for(const o of options){if(o.group!==g){if(g)h+='</optgroup>';g=o.group;h+='<optgroup label="'+esc(g)+'">'}h+='<option value="'+esc(o.src+'|'+o.id)+'"'+(cur&&cur.src===o.src&&cur.id===o.id?' selected':'')+'>'+esc(o.name)+'</option>'}return h+(g?'</optgroup>':'')};
+  let h='<table><thead><tr><th><span class="hint">Porównywane domy</span></th>';
+  cols.forEach((c,i)=>{const openable=top_&&(c.o.src==='local'||c.o.src==='cloud');
+    h+='<th><div class="col"><div class="thumb">'+planSvg(c.p)+'</div><div class="nm">'+esc(projName(c.p))+'</div><div class="src">'+SRC_PL[c.o.src]+'</div>'+
+      '<select data-i="'+i+'">'+optHtml(c.o)+'</select><div class="acts">'+(openable?'<button class="btn primary" data-open="'+i+'">Otwórz</button>':c.o.src==='current'?'<a class="btn" href="#" data-go="'+i+'">Przejdź do projektu</a>':'')+'<button class="btn" data-rm="'+i+'" title="Usuń z porównania">✕</button></div></div></th>'});
+  if(cols.length<MAXC)h+='<th><button class="add" id="add">＋ Dodaj dom</button></th>';
+  h+='</tr></thead><tbody>';
+  const OV=cols.length?overallScores(cols):[],rank=OV.map((o,i)=>i).sort((a,b)=>(OV[b].score??-1)-(OV[a].score??-1));
+  h+='<tr class="tot"><td class="lbl">Ocena ogólna<small>wg Twoich wag</small></td>'+OV.map((o,i)=>'<td><span class="'+(cols.length>1&&rank[0]===i?'best':'')+'">'+nf(o.score,1)+' / 10</span><small>miejsce '+(rank.indexOf(i)+1)+'</small></td>').join('')+(cols.length<MAXC?'<td></td>':'')+'</tr>';
+  for(const [k,name] of CRIT){if(!(+W[k]))continue;h+='<tr><td class="lbl">'+esc(name)+'<small>punkty 0–10 do oceny ogólnej</small></td>'+OV.map(o=>'<td>'+nf(o.part[k],1)+'</td>').join('')+(cols.length<MAXC?'<td></td>':'')+'</tr>'}
+  const sumItems=[];
+  for(const row of ROWS){
+    if(row.length===1){h+='<tr class="grp"><td colspan="'+(cols.length+2)+'">'+esc(row[0])+'</td></tr>';continue}
+    const [lab,sub,get,fmt,better,note]=row,vals=cols.map(c=>{try{return get(c.m)}catch(_){return null}});
+    const nums=vals.filter(v=>typeof v==='number'&&Number.isFinite(v));let best=null,worst=null;
+    if(better&&nums.length>=2){const mx=Math.max(...nums),mn=Math.min(...nums);if(mx-mn>Math.abs(mx)*.02+1e-9){best=better==='low'?mn:mx;worst=better==='low'?mx:mn}}
+    h+='<tr><td class="lbl"><b>'+esc(lab)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</td>';
+    vals.forEach((v,i)=>{const cls=v===best?'best':v===worst?'worst':'';let n='';try{n=note?note(cols[i].m):''}catch(_){}h+='<td><span class="'+cls+'">'+esc(fmt(v))+'</span>'+(n?'<small>'+esc(n)+'</small>':'')+'</td>'});
+    if(cols.length<MAXC)h+='<td></td>';h+='</tr>';
+    if(best!=null&&['Szacunkowy koszt','Zapotrzebowanie na ogrzewanie','Ocena codzienności','Spokój w domu','Pokoje z ryzykiem przegrzania'].includes(lab)){const i=vals.indexOf(best);sumItems.push([lab,projName(cols[i].p),fmt(best)])}}
+  h+='</tbody></table>';T.innerHTML=h;
+  const SUM_PL={'Szacunkowy koszt':'Najtańszy w budowie','Zapotrzebowanie na ogrzewanie':'Najmniej energii','Ocena codzienności':'Najwygodniejszy na co dzień','Spokój w domu':'Najciszej','Pokoje z ryzykiem przegrzania':'Najmniej przegrzewania'};
+  $('sum').innerHTML=cols.length<2?'<div class="t"><div class="l">Dodaj drugi dom</div><div class="s">Porównanie ma sens od dwóch projektów – kliknij „＋ Dodaj dom”.</div></div>':sumItems.map(([k,n,v])=>'<div class="t"><div class="l">'+esc(SUM_PL[k])+'</div><div class="v">'+esc(n)+'</div><div class="s">'+esc(v)+'</div></div>').join('');
+  $('overall').innerHTML=cols.length<2?'':rank.map((i,r)=>{const o=OV[i],best=Object.entries(o.part).filter(([k,v])=>v!=null&&+W[k]).sort((a,b)=>b[1]-a[1])[0];
+      return '<div class="o'+(r===0?' win':'')+'"><div class="rk">'+(r+1)+'</div><div><div class="sc">'+nf(o.score,1)+' <small>/ 10</small></div><div class="nm">'+esc(projName(cols[i].p))+'</div>'+(r===0?'<div class="ex">najlepszy wybór wg Twoich wag</div>':best?'<div class="ex">najmocniej: '+esc(CRIT.find(c=>c[0]===best[0])[1].toLowerCase())+'</div>':'')+'</div></div>'}).join('');
+  $('wts').innerHTML=CRIT.map(([k,name])=>'<label>'+esc(name)+'<select data-w="'+k+'">'+WOPT.map(([v,t])=>'<option value="'+v+'"'+(+W[k]===v?' selected':'')+'>'+t+'</option>').join('')+'</select></label>').join('');
+  $('wts').querySelectorAll('[data-w]').forEach(s=>s.onchange=()=>{W[s.dataset.w]=+s.value;try{localStorage.setItem(WKEY,JSON.stringify(W))}catch(_){}render()});
+  T.querySelectorAll('select[data-i]').forEach(s=>s.onchange=()=>{const [src,...r]=s.value.split('|');sel[+s.dataset.i]={src,id:r.join('|')};lsSet(sel);render()});
+  T.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{sel.splice(+b.dataset.rm,1);lsSet(sel);render()});
+  T.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{const c=cols[+b.dataset.open];try{c.o.src==='local'?top_.openLocal(c.o.id):top_.openCloud(c.o.id)}catch(e){alert(e.message)}});
+  T.querySelectorAll('[data-go]').forEach(b=>b.onclick=e=>{e.preventDefault();try{top_.location.hash='projekty'}catch(_){}});
+  if($('add'))$('add').onclick=()=>{const used=new Set(sel.map(s=>{const o=findOpt(s);return o?o.src+'|'+o.id:''})),o=options.find(x=>!used.has(x.src+'|'+x.id));if(!o)return;sel.push({src:o.src,id:o.id});lsSet(sel);render()};
+}
+async function init(){await loadOptions();
+  const saved=lsGet();sel=Array.isArray(saved)?saved.filter(s=>findOpt(s)).slice(0,MAXC):[];
+  if(!sel.length){sel=options.filter(o=>o.src==='current').concat(options.filter(o=>o.src==='local'),options.filter(o=>o.src==='cloud'),options.filter(o=>o.src==='sample')).slice(0,3).map(o=>({src:o.src,id:o.id}));lsSet(sel)}
+  render()}
+init();
+HouserStore.subscribe(()=>{if(sel.some(s=>s.src==='current'))render()});
+window.addEventListener('storage',async e=>{if(e.key===KEY){await loadOptions();const v=lsGet();if(Array.isArray(v)){sel=v.slice(0,MAXC);render()}}});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>
