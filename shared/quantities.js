@@ -20,16 +20,16 @@
     const q={c,W,H,lo,up,span,length,G,attic,across};
 
     // pomieszczenia i powierzchnie
-    const R={};let foot=0,slab=0,volume=0,loggiaA=0,overhangA=0;const usable={[lo]:0,[up]:0},net={[lo]:0,[up]:0};
+    const R={},GARAGE=/garaż|garaz/i;let foot=0,slab=0,volume=0,loggiaA=0,overhangA=0,garageA=0;const usable={[lo]:0,[up]:0},net={[lo]:0,[up]:0};
     for(let y=0;y<H;y++)for(let x=0;x<W;x++){
       const gO=occ(lo,x,y),uO=occ(up,x,y);if(gO||uO)foot+=c2;
       if(gO&&isVoid(up,x,y))loggiaA+=c2; if(uO&&!gO)overhangA+=c2;
       if(uO&&!isHole(up,id(up,x,y)))slab+=c2;
-      for(const f of [lo,up]){if(!occ(f,x,y))continue;const v=id(f,x,y);if(isHole(f,v))continue;const h=clearH(f,x,y),u=h>=2.2?c2:h>=1.4?c2/2:0;
-        net[f]+=c2;usable[f]+=u;volume+=c2*h;
+      for(const f of [lo,up]){if(!occ(f,x,y))continue;const v=id(f,x,y);if(isHole(f,v))continue;const h=clearH(f,x,y),garage=GARAGE.test(def[f]?.[v]?.name||v),u=garage?0:h>=2.2?c2:h>=1.4?c2/2:0;
+        net[f]+=c2;usable[f]+=u;if(!garage)volume+=c2*h;else garageA+=c2; // garaż: poza powierzchnią użytkową i kubaturą ogrzewaną
         const r=R[f+'|'+v]||(R[f+'|'+v]={f,id:v,name:def[f]?.[v]?.name||v,area:0,usable:0,cells:[],minH:99,maxH:0,areaH22:0,winA:0,roofWinA:0,wins:0,roofWins:0,hstA:0,doors:[],extEdges:0});
         r.area+=c2;r.usable+=u;r.cells.push([x,y]);r.minH=Math.min(r.minH,h);r.maxH=Math.max(r.maxH,h);if(h>=2.2)r.areaH22+=c2}}
-    Object.assign(q,{foot,slab,volume,loggiaA,overhangA,usable,net,usableTotal:usable[lo]+usable[up]});
+    Object.assign(q,{foot,slab,volume,loggiaA,overhangA,garageA,usable,net,usableTotal:usable[lo]+usable[up]});
 
     // ściany zewnętrzne i działowe
     const hWall={[lo]:G.groundHeight,[up]:G.upperWall},hPart={[lo]:G.groundHeight,[up]:attic?Math.max(G.kneeWall,(G.kneeWall+G.upperHeight)/2):G.upperHeight};

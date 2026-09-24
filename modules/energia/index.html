@@ -108,8 +108,9 @@ let tS=null;function save(patch){const s={...es(),...patch};project.energySettin
 function compute(){
   const q=HouserQuantities.compute(project),s=es(),Z=ZONES[s.zone],dT=s.ti-Z.te,G=q.G;
   // przegrody zewnętrzne (powierzchnie z projektu)
-  const wall=q.wallNet+(q.attic?q.gable*.75:0);                               // na poddaszu część szczytów jest ogrzewana
-  const roof=(q.attic?q.roofInnerA:q.slab)+q.loggiaA+q.overhangA;               // dach skośny / strop pod strychem + nad wnęką i nadwieszeniem
+  const heatedUp=q.net[q.up]>0;                                                    // dom parterowy: nad parterem nieogrzewany strych
+  const wall=q.wallNet+(q.attic&&heatedUp?q.gable*.75:0);                        // na poddaszu część szczytów jest ogrzewana
+  const roof=(heatedUp?(q.attic?q.roofInnerA:q.slab):q.net[q.lo])+q.loggiaA+q.overhangA; // skosy / strop pod strychem + nad wnęką i nadwieszeniem
   const floor=q.net[q.lo],bFloor=.6;                                            // grunt jest cieplejszy od powietrza – współczynnik redukcji
   const A={wall,roof,floor,win:q.ops.winA+q.ops.hstA,roofwin:q.ops.roofWinA,door:q.ops.extDoorA};
   const rows=PARTS.map(([k,name])=>{const u=s.U[k]+s.bridge*(k==='wall'||k==='roof'||k==='floor'?1:0),H=A[k]*u*(k==='floor'?bFloor:1);return {k,name,A:A[k],U:s.U[k],H}}).filter(r=>r.A>0);

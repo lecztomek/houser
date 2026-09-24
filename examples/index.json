@@ -1,0 +1,22 @@
+[
+ {
+  "file": "dom-parterowy.json",
+  "name": "Dom parterowy z garażem",
+  "desc": "Wszystko na jednym poziomie: 3 sypialnie, salon z kominkiem otwarty na kuchnię, garaż w bryle, zadaszony taras od południa."
+ },
+ {
+  "file": "dom-z-poddaszem.json",
+  "name": "Dom z poddaszem użytkowym",
+  "desc": "Kostka 10 × 10 m: dzienna strefa na parterze, 4 pokoje na poddaszu z oknami dachowymi, schody w holu."
+ },
+ {
+  "file": "nowoczesna-stodola.json",
+  "name": "Nowoczesna stodoła",
+  "desc": "Wąska bryła 15 × 7 m, dach 45° bez okapów, przeszklony szczyt, antresola nad salonem."
+ },
+ {
+  "file": "uklad-domu-v7.json",
+  "name": "Dom kompaktowy z piętrem",
+  "desc": "9 × 9 m, pełne piętro, antresola i pustka nad salonem, zadaszony taras."
+ }
+]

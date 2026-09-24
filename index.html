@@ -73,6 +73,30 @@ iframe{width:100%;height:100%;border:0;display:block;background:#fff}
 .wrap{max-width:1000px;margin:0 auto}
 h1{margin:0 0 6px;font-size:26px}
 .lead{color:var(--muted);margin:0 0 22px;line-height:1.5}
+.sec{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:#64748b;margin:30px 0 12px;font-weight:700}
+.lead.small{margin:-6px 0 14px;font-size:14px}
+.cur{display:grid;grid-template-columns:320px 1fr;gap:18px;background:#fff;border:1px solid #dbe2ea;border-radius:16px;padding:16px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.cur .thumb,.hcard .thumb{background:#f8fafc;border:1px solid #e8edf3;border-radius:12px;display:grid;place-items:center;padding:10px;min-height:150px}
+.thumb svg{width:100%;height:auto;max-height:190px;display:block}
+.cur h3{margin:2px 0 4px;font-size:20px;letter-spacing:-.01em}
+.cur .meta{color:#64748b;font-size:13.5px;line-height:1.55}
+.cur .meta b{color:#0f172a}
+.cur .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.btn2{border:1px solid #cbd5e1;background:#fff;color:#0f172a;padding:9px 14px;border-radius:10px;font:600 13.5px var(--hs-font);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn2:hover{border-color:#94a3b8}
+.btn2.primary{background:#2563eb;border-color:#2563eb;color:#fff}
+.btn2.primary:hover{background:#1d4ed8}
+.chip{display:inline-block;font-size:12px;font-weight:600;color:#334155;background:#f1f5f9;border-radius:999px;padding:3px 9px;margin:0 4px 4px 0}
+.dirty2{color:#b45309;font-weight:600}
+.empty2{grid-column:1/-1;text-align:center;color:#64748b;padding:18px}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:14px}
+.hcard{background:#fff;border:1px solid #dbe2ea;border-radius:16px;padding:12px;cursor:pointer;text-align:left;font:inherit;color:inherit;display:flex;flex-direction:column;gap:10px;transition:border-color .15s,box-shadow .15s,transform .15s}
+.hcard:hover{border-color:#60a5fa;box-shadow:0 8px 24px rgba(37,99,235,.14);transform:translateY(-2px)}
+.hcard h3{margin:0;font-size:16px}
+.hcard p{margin:0;color:#64748b;font-size:13px;line-height:1.45}
+.hcard .go{margin-top:auto;font-weight:700;font-size:13px;color:#2563eb}
+.hcard.loaded{border-color:#86efac}
+@media(max-width:760px){.cur{grid-template-columns:1fr}}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
 .group{grid-column:1/-1;margin:10px 0 -4px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--hs-muted)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--hs-radius-lg);box-shadow:var(--hs-shadow);padding:16px;cursor:pointer;text-align:left;font:inherit;color:inherit;display:flex;flex-direction:column;gap:8px}
@@ -106,32 +130,29 @@ a{color:var(--accent)}
   <button class="pbtn" id="pbUndo" title="Cofnij ostatnią zmianę (Ctrl+Z)" disabled>↶ Cofnij</button>
   <button class="pbtn" id="pbRedo" title="Ponów cofniętą zmianę (Ctrl+Y / Ctrl+Shift+Z)" disabled>↷ Ponów</button>
   <button class="pbtn primary" id="pbSave" title="Zapisuje cały projekt (pomieszczenia, warunki, rzut, okna, drzwi, schody, dach, tarasy, meble, ustawienia 3D) do jednego pliku JSON. Zdjęcia i wizualizacje AI zostają tylko w przeglądarce.">💾 Zapisz do pliku</button>
-  <label class="pbtn" title="Wczytuje plik projektu JSON – zastępuje bieżący projekt w przeglądarce">📂 Otwórz plik<input type="file" id="pbFile" accept="application/json,.json" hidden></label>
-  <button class="pbtn" id="pbNew" title="Pusty projekt – zaczynasz od modułu Pomieszczenia">Nowy</button>
   <a id="openExt" class="ext" href="#" target="_blank" rel="noopener" hidden title="Otwórz bieżący moduł w osobnej karcie">↗</a>
-  <button class="pbtn" id="pbSample" title="Wczytuje przykładowy dom (z meblami), żeby zobaczyć, jak działają moduły">Przykład</button>
 </div>
 <main id="views">
   <section id="start" class="view">
     <div class="wrap">
-      <h1>Projektowanie domu w przeglądarce</h1>
-      <p class="lead">Wszystko działa lokalnie w Twojej przeglądarce – bez kont i bez serwera. Bieżący projekt jest trzymany w pamięci przeglądarki i wspólny dla wszystkich modułów: zmianę w jednym od razu widać w pozostałych, także po odświeżeniu strony. Na swój dysk zapisujesz go jednym plikiem JSON z paska u góry.</p>
+      <h1>Twoje projekty</h1>
+      <p class="lead">Wszystko działa w przeglądarce, bez kont i serwera. Wybierz gotowy dom albo zacznij od zera – potem idziesz po kolei przez moduły z menu po lewej. Projekt zapisujesz na dysk jednym plikiem.</p>
+      <h2 class="sec">Bieżący projekt</h2>
+      <div id="curProj"></div>
+      <h2 class="sec">Zacznij od gotowego domu</h2>
+      <p class="lead small">Kliknij dom, żeby go wczytać – potem możesz zmieniać wszystko: pomieszczenia, dach, okna, meble.</p>
+      <div class="gallery" id="gallery"></div>
+      <h2 class="sec">Kroki projektowania</h2>
       <div class="cards" id="cards"></div>
-      <div class="box">
-        <h3>Jak pracować</h3>
-        <ol>
-          <li>Przejdź kroki po kolei – każdy moduł zajmuje się jedną rzeczą i zapisuje ją do wspólnego bieżącego projektu.</li>
-          <li>Kliknij <b>Nowy</b> (albo <b>Przykład</b>, żeby zobaczyć gotowy dom), zacznij od <b>Pomieszczeń</b>, potem ustaw <b>Warunki</b> i narysuj rzut w <b>Układzie pomieszczeń</b>.</li>
-          <li>Kolejne moduły (dach, tarasy, meble) biorą ten rzut i dokładają swoje elementy; podglądy 3D odświeżają się same.</li>
-          <li>Projekt zostaje w przeglądarce po odświeżeniu strony. Na dysk zapisujesz go przyciskiem <b>💾 Zapisz do pliku</b> na pasku u góry – <b>jeden plik JSON zawiera cały projekt</b> (zdjęcia i wizualizacje AI zostają w przeglądarce; pobierasz je w module Wizualizacje). Tym samym plikiem wracasz do pracy przez <b>📂 Otwórz plik</b>.</li>
-        </ol>
-      </div>
     </div>
   </section>
 </main>
 </div>
 <script src="shared/project-store.js"></script>
 <script src="shared/definition.js"></script>
+<script src="shared/house-model.js"></script>
+<script src="shared/openings.js"></script>
+<script src="shared/quantities.js"></script>
 <script>
 // Moduły w kolejności projektowania. group: etap, step: numer kroku na karcie.
 const MODULES=[
@@ -198,6 +219,7 @@ function show(id){
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v===(m?frames[id]:document.getElementById('start'))));
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.id===id));
   document.getElementById('brand').classList.toggle('active',!m);
+  if(m){try{localStorage.setItem('houser:last-module',m.id)}catch(_){}}else setTimeout(()=>{try{renderHome()}catch(_){}},0);
   openExt.hidden=!m;if(m)openExt.href=m.src;
   document.title=(m?m.name+' – ':'')+'Houser';
 }
@@ -217,7 +239,7 @@ const lsGet=k=>{try{return localStorage.getItem(k)}catch(_){return null}},lsSet=
 function projName(p){return p?.definitionSnapshot?.name||p?.definitionName||p?.name||'bez nazwy'}
 function fmtTime(iso){if(!iso)return '';const d=new Date(iso),today=d.toDateString()===new Date().toDateString();return today?d.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'}):d.toLocaleString('pl-PL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
 const modName=id=>MODULES.find(m=>m.id===id)?.name||({plik:'wczytanie pliku / nowy projekt',cofnij:'cofnij/ponów'})[id]||'';
-function renderBar(){const rec=HouserStore.load();$('pbName').textContent=rec?projName(rec.project):'brak – kliknij „Nowy”, „Przykład” albo otwórz plik';
+function renderBar(){const rec=HouserStore.load();$('pbName').textContent=rec?projName(rec.project):'brak – wybierz dom na stronie startowej';
   const saved=lsGet(LAST_SAVE),dirty=rec&&(!saved||saved<rec.updatedAt);
   $('pbMeta').innerHTML=rec?((dirty?'<span class="dirty">● niezapisane w pliku</span>':'✓ zapisany w pliku '+fmtTime(saved))+' · zmiana '+fmtTime(rec.updatedAt)+(modName(rec.source)?' ('+modName(rec.source)+')':'')):'';
   $('pbMeta').title='Projekt jest zawsze trzymany w tej przeglądarce; plik JSON zapisujesz przyciskiem obok.';
@@ -246,12 +268,41 @@ async function openProject(obj,label){
   pushUndo(before,'plik');curJSON=JSON.stringify(project);lastPush={t:0,src:''};echoUntil=Date.now()+3000;
   reloadModules();renderBar();toast('Wczytano projekt „'+projName(project)+'”')}
 $('pbSave').onclick=()=>saveFile().catch(e=>alert('Nie udało się zapisać: '+e.message));
-$('pbFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f||!confirmReplace())return;
-  try{await openProject(JSON.parse(await f.text()),'file')}catch(err){alert('Nie udało się wczytać pliku: '+err.message)}};
-$('pbNew').onclick=async()=>{if(!confirmReplace())return;
-  try{await openProject(HouserDefinition.projectFromDefinition(HouserDefinition.emptyDefinition()),'new');location.hash='pomieszczenia'}catch(err){alert(err.message)}};
-$('pbSample').onclick=async()=>{if(!confirmReplace())return;
-  try{const r=await fetch('examples/uklad-domu-v7.json');await openProject(await r.json(),'sample')}catch(err){alert('Nie udało się wczytać przykładu: '+err.message)}};
+// ---------- strona startowa: bieżący projekt i galeria gotowych domów
+function pastel(hex){const n=parseInt((hex||'#cbd5e1').slice(1),16),m=v=>Math.round(v+(255-v)*.45);return 'rgb('+m(n>>16&255)+','+m(n>>8&255)+','+m(n&255)+')'}
+// miniaturka rzutu: parter i piętro obok siebie, pomieszczenia w kolorach z projektu, ściany na granicach
+function planSvg(p){const g=p.grid||p.definitionSnapshot?.grid;if(!g)return '';const W=g.width,H=g.height,fl=(p.definitionSnapshot?.floorOrder||['ground','upper']);
+  const flat=f=>{const st=p.state?.[f]||[];return Array.isArray(st[0])?st.flat():st},rooms=f=>Object.fromEntries((p.definitionSnapshot?.floors?.[f]?.rooms||[]).map(r=>[r.id,r]));
+  const used=fl.filter(f=>flat(f).some(v=>v&&rooms(f)[v]?.kind!=='exteriorVoid'));if(!used.length)return '<svg viewBox="0 0 100 60"><text x="50" y="34" text-anchor="middle" font-size="7" fill="#94a3b8">pusty rzut</text></svg>';
+  const S=10,gap=24,totalW=used.length*W*S+(used.length-1)*gap;let h='';
+  used.forEach((f,i)=>{const st=flat(f),R=rooms(f),ox=i*(W*S+gap),id=(x,y)=>x<0||y<0||x>=W||y>=H?null:(st[y*W+x]||null),occ=(x,y)=>{const v=id(x,y);return v&&R[v]?.kind!=='exteriorVoid'};
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){const v=id(x,y);if(!occ(x,y))continue;const hole=f!==fl[0]&&(v==='pustka'||v==='schody');{const fc=hole?'#f1f5f9':pastel(R[v]?.color);h+='<rect x="'+(ox+x*S)+'" y="'+y*S+'" width="'+S+'" height="'+S+'" fill="'+fc+'" stroke="'+fc+'" stroke-width="0.8"/>'}}
+    const ln=(x1,y1,x2,y2,ext)=>'<line x1="'+(ox+x1)+'" y1="'+y1+'" x2="'+(ox+x2)+'" y2="'+y2+'" stroke="#334155" stroke-width="'+(ext?2.6:1.2)+'" stroke-linecap="square"/>';
+    for(let y=0;y<=H;y++)for(let x=0;x<W;x++){const a=occ(x,y-1),b=occ(x,y);if(a!==b)h+=ln(x*S,y*S,(x+1)*S,y*S,1);else if(a&&id(x,y-1)!==id(x,y))h+=ln(x*S,y*S,(x+1)*S,y*S,0)}
+    for(let x=0;x<=W;x++)for(let y=0;y<H;y++){const a=occ(x-1,y),b=occ(x,y);if(a!==b)h+=ln(x*S,y*S,x*S,(y+1)*S,1);else if(a&&id(x-1,y)!==id(x,y))h+=ln(x*S,y*S,x*S,(y+1)*S,0)}
+    h+='<text x="'+(ox+W*S/2)+'" y="'+(H*S+16)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#64748b">'+(i===0?'Parter':(p.elevationSettings?.upperType==='attic'?'Poddasze':'Piętro'))+'</text>'});
+  return '<svg viewBox="-4 -4 '+(totalW+8)+' '+(H*S+26)+'">'+h+'</svg>'}
+function stats(p){try{const q=HouserQuantities.compute(p),fl=q.net[q.up]>0?(q.attic?'parter + poddasze':'dwie kondygnacje'):'parterowy';return {area:q.usableTotal,foot:q.foot,fl,rooms:q.rooms.filter(r=>r.area>=2).length,roof:q.G.roofPitch}}catch(_){return null}}
+const chips=st=>st?'<span class="chip">'+Math.round(st.area)+' m² użytkowej</span><span class="chip">'+st.fl+'</span><span class="chip">'+st.rooms+' pomieszczeń</span><span class="chip">dach '+Math.round(st.roof)+'°</span>':'';
+const LAST_MOD='houser:last-module';
+function renderCur(){const rec=HouserStore.load(),el=$('curProj');if(!el)return;
+  if(!rec){el.innerHTML='<div class="cur"><div class="thumb">'+planSvg({})+'</div><div><h3>Nie masz jeszcze projektu</h3><div class="meta">Wybierz gotowy dom poniżej, zacznij od pustego projektu albo otwórz swój plik.</div><div class="acts"><button class="btn2 primary" id="hNew">＋ Nowy pusty projekt</button><label class="btn2">Otwórz z pliku<input type="file" id="hFile" accept="application/json,.json" hidden></label></div></div></div>';}
+  else{const p=rec.project,st=stats(p),saved=lsGet(LAST_SAVE),dirty=!saved||saved<rec.updatedAt,last=MODULES.find(m=>m.id===lsGet(LAST_MOD))||MODULES.find(m=>m.id==='projektowanie');
+    el.innerHTML='<div class="cur"><div class="thumb">'+planSvg(p)+'</div><div><h3>'+esc(projName(p))+'</h3><div>'+chips(st)+'</div><div class="meta">'+(rec.source==='plik'?'Wczytany '+fmtTime(rec.updatedAt):'Ostatnia zmiana '+fmtTime(rec.updatedAt)+(modName(rec.source)?' w module <b>'+esc(modName(rec.source))+'</b>':''))+' · '+(dirty?'<span class="dirty2">● niezapisane w pliku</span>':'✓ zapisany w pliku '+fmtTime(saved))+'</div>'+
+      '<div class="acts"><a class="btn2 primary" href="#'+last.id+'">Kontynuuj: '+esc(last.name)+' →</a><button class="btn2" id="hSave">Zapisz do pliku</button><label class="btn2">Otwórz z pliku<input type="file" id="hFile" accept="application/json,.json" hidden></label><button class="btn2" id="hNew">Nowy pusty</button></div></div></div>';
+    $('hSave').onclick=()=>saveFile().catch(e=>alert('Nie udało się zapisać: '+e.message));}
+  $('hFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f||!confirmReplace())return;try{await openProject(JSON.parse(await f.text()),'file')}catch(err){alert('Nie udało się wczytać pliku: '+err.message)}};
+  $('hNew').onclick=async()=>{if(!confirmReplace())return;try{await openProject(HouserDefinition.projectFromDefinition(HouserDefinition.emptyDefinition()),'new');location.hash='pomieszczenia'}catch(err){alert(err.message)}};
+}
+const esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let SAMPLES=[];
+async function renderGallery(){const el=$('gallery');if(!el)return;
+  if(!SAMPLES.length){try{const man=await (await fetch('examples/index.json')).json();SAMPLES=await Promise.all(man.map(async m=>({...m,project:await (await fetch('examples/'+m.file)).json()})))}catch(e){el.innerHTML='<div class="empty2">Nie udało się wczytać przykładów.</div>';return}}
+  const cur=HouserStore.load()?.project?.definitionFingerprint;
+  el.innerHTML=SAMPLES.map((m,i)=>'<button class="hcard'+(cur&&cur===m.project.definitionFingerprint?' loaded':'')+'" data-i="'+i+'"><div class="thumb">'+planSvg(m.project)+'</div><h3>'+esc(m.name)+'</h3><div>'+chips(stats(m.project))+'</div><p>'+esc(m.desc)+'</p><span class="go">'+(cur&&cur===m.project.definitionFingerprint?'✓ wczytany – kliknij, żeby wczytać od nowa':'Wczytaj ten dom →')+'</span></button>').join('');
+  el.querySelectorAll('.hcard').forEach(b=>b.onclick=async()=>{const m=SAMPLES[+b.dataset.i];if(!confirmReplace())return;try{await openProject(JSON.parse(JSON.stringify(m.project)),'sample');renderHome()}catch(err){alert('Nie udało się wczytać: '+err.message)}});
+}
+function renderHome(){renderCur();renderGallery()}
 // ---------- Cofnij / Ponów – wspólne dla wszystkich modułów
 // Historia bieżącego projektu (w pamięci tej karty). Szybkie kolejne zapisy z tego samego modułu (np. malowanie) łączymy w jeden krok.
 const undoStack=[],redoStack=[],HIST_MAX=60;let curJSON=(()=>{const r=HouserStore.load();return r?JSON.stringify(r.project):null})(),lastPush={t:0,src:''};
@@ -270,7 +321,7 @@ $('pbUndo').onclick=HouserUndo.undo;$('pbRedo').onclick=HouserUndo.redo;
 window.addEventListener('keydown',e=>{if(!(e.ctrlKey||e.metaKey)||e.altKey)return;const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;
   const k=e.key.toLowerCase();if(k==='z'&&!e.shiftKey){e.preventDefault();HouserUndo.undo()}else if(k==='y'||(k==='z'&&e.shiftKey)){e.preventDefault();HouserUndo.redo()}});
 HouserStore.subscribe(onStoreChange);
-HouserStore.subscribe(renderBar);renderBar();renderUndo();setInterval(renderBar,30000);
+HouserStore.subscribe(renderBar);HouserStore.subscribe(()=>{if(!location.hash||location.hash==='#start')renderHome()});renderBar();renderHome();renderUndo();setInterval(renderBar,30000);
 show(location.hash.slice(1)||'start');
 </script>
 </body>
