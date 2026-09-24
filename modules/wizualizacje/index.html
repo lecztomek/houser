@@ -151,7 +151,7 @@ function projectFacts(s){
   const floors=p.definitionSnapshot?.floorOrder||['ground','upper'];
   if(kindOf(s)==='exterior'){
     out.push('Single-family house, footprint about '+(g.width*c).toFixed(0)+' x '+(g.height*c).toFixed(0)+' m.');
-    out.push(G.upperType==='attic'?'Ground floor plus a usable attic under a '+G.roofPitch+' degree gable roof (knee wall '+G.kneeWall.toFixed(1)+' m).':'Two full storeys with a '+G.roofPitch+' degree gable roof.');
+    out.push(G.upperType==='none'?'Single-storey house (bungalow) under a '+G.roofPitch+' degree gable roof, no upper floor.':G.upperType==='attic'?'Ground floor plus a usable attic under a '+G.roofPitch+' degree gable roof (knee wall '+G.kneeWall.toFixed(1)+' m).':'Two full storeys with a '+G.roofPitch+' degree gable roof.');
     {const eo=Math.round(G.eaveOverhang*100),go=Math.round(G.gableOverhang*100),sf={wood:'natural wood soffit boards',white:'white soffit',graphite:'dark graphite soffit',none:'exposed rafter ends under the eaves'}[G.soffit]||'soffit';
       out.push('Roof overhang: about '+eo+' cm beyond the eaves walls and '+go+' cm beyond the gable walls'+(eo+go>0?', with '+sf+' and fascia boards':'')+' – keep these overhangs as in the render.');}
     {const kind=(f,id)=>(p.definitionSnapshot?.floors?.[f]?.rooms||[]).find(r=>r.id===id)?.kind,flat=f=>{const st=p.state?.[f]||[];return Array.isArray(st[0])?st.flat():st};

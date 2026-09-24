@@ -3,7 +3,7 @@
 //
 // elevationSettings w JSON-ie:
 //   groundHeight  wysokość parteru [m]
-//   upperType     'full' = pełne piętro, 'attic' = poddasze użytkowe
+//   upperType     'none' = dom parterowy (nad parterem nieużytkowy strych), 'attic' = poddasze użytkowe, 'full' = pełne piętro
 //   upperHeight   wysokość pełnego piętra [m] (dla poddasza: wysokość do stropu/jętek)
 //   kneeWall      ścianka kolankowa poddasza [m]
 //   roofPitch     kąt nachylenia połaci [°]
@@ -24,7 +24,7 @@
     }
     return {
       groundHeight:clamp(num(e.groundHeight,DEF.groundHeight),2.2,4.5),
-      upperType:e.upperType==='attic'?'attic':'full',
+      upperType:['attic','none'].includes(e.upperType)?e.upperType:'full',
       upperHeight:clamp(num(e.upperHeight,DEF.upperHeight),2.2,4.5),
       kneeWall:clamp(num(e.kneeWall,DEF.kneeWall),0,2),
       roofPitch:clamp(Math.round(pitch*10)/10,5,60),
@@ -38,7 +38,7 @@
   // Wymiary bryły dla danej rozpiętości: okap, kalenica, wysokość ścian piętra.
   function geometry(e,span){
     const n=normalize(e,span),half=Math.max(.5,(span||9)/2);
-    const upperWall=n.upperType==='attic'?n.kneeWall:n.upperHeight; // ściana zewnętrzna piętra pod okapem
+    const upperWall=n.upperType==='none'?0:n.upperType==='attic'?n.kneeWall:n.upperHeight; // ściana zewnętrzna piętra pod okapem (parterowy: okap nad parterem)
     const eave=n.groundHeight+upperWall;
     const rise=Math.tan(n.roofPitch*Math.PI/180)*half;
     return {...n,span:half*2,upperWall,eave,rise,ridgeY:eave+rise,roofHeight:Math.round(rise*100)/100};

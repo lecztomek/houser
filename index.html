@@ -142,8 +142,6 @@ a{color:var(--accent)}
       <h2 class="sec">Zacznij od gotowego domu</h2>
       <p class="lead small">Kliknij dom, żeby go wczytać – potem możesz zmieniać wszystko: pomieszczenia, dach, okna, meble.</p>
       <div class="gallery" id="gallery"></div>
-      <h2 class="sec">Kroki projektowania</h2>
-      <div class="cards" id="cards"></div>
     </div>
   </section>
 </main>
@@ -203,11 +201,11 @@ let lastGroup='',navGroup='';
 MODULES.forEach(m=>{
   if(m.group!==navGroup){navGroup=m.group;const g=document.createElement('div');g.className='grp';g.textContent=m.group;tabs.appendChild(g)}
   tabBtn(m.id,m.name,m.soon,m);
-  if(m.group!==lastGroup){lastGroup=m.group;const h=document.createElement('h3');h.className='group';h.textContent=m.group;cards.appendChild(h);}
+if(cards){  if(m.group!==lastGroup){lastGroup=m.group;const h=document.createElement('h3');h.className='group';h.textContent=m.group;cards.appendChild(h);}
   const c=document.createElement('button');c.className='card'+(m.soon?' disabled':'');
   c.innerHTML='<span class="cic" style="color:'+(GROUP_COL[m.group]||'')+';background:'+(GROUP_TINT[m.group]||'')+'">'+icon(m.id)+'</span><span class="num">Krok '+m.step+'</span><h2></h2><p></p>';
   c.querySelector('h2').textContent=m.name;c.querySelector('p').textContent=m.desc;
-  c.onclick=()=>{location.hash=m.id;};cards.appendChild(c);
+  c.onclick=()=>{location.hash=m.id;};cards.appendChild(c);}
 });
 function show(id){
   const m=MODULES.find(x=>x.id===id);if(!m)id='start';
