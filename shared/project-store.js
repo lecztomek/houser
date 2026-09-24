@@ -28,6 +28,9 @@
     for(const cb of listeners){try{cb(rec);}catch(err){console.error(err);}}
   });
   function clear(){try{localStorage.removeItem(KEY);}catch(_){}}
+  // stały identyfikator projektu (np. do galerii zdjęć) – nie zmienia się przy edycji pomieszczeń
+  function newId(){return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+  function projectId(){const rec=load();if(!rec)return null;if(rec.project.projectId)return rec.project.projectId;const id=newId();rec.project.projectId=id;save(rec.project,rec.source||'');return id}
 
-  global.HouserStore={KEY,load,save,update,subscribe,clear};
+  global.HouserStore={KEY,load,save,update,subscribe,clear,newId,projectId};
 })(window);

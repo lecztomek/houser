@@ -97,6 +97,7 @@ textarea{min-height:150px;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,mo
 <script src="../../shared/openings.js"></script>
 <script src="../../shared/project-store.js"></script>
 <script src="../../shared/snapshots.js"></script>
+<script src="../../shared/gallery.js"></script>
 <script>
 const $=id=>document.getElementById(id), S=HouserSnapshots, API='https://generativelanguage.googleapis.com/v1beta';
 const KEY_LS='houser:gemini-key', MODEL_LS='houser:gemini-models', HF_LS='houser:hf-token', HFM_LS='houser:hf-model', PROV_LS='houser:ai-provider';
@@ -320,7 +321,11 @@ function renderMain(keepPrompt){
   const legAll=[...(cur.meta?.legend||[]),...(cur.meta?.chimney&&cur.meta.chimney.color!=='grey'?[{color:'#800000',name:'Komin'}]:[])];
   if(legAll.length){const d=document.createElement('div');d.className='hint';d.style.cssText='display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:6px';d.innerHTML=legAll.map(l=>'<span style="display:inline-flex;align-items:center;gap:4px"><i style="width:12px;height:12px;border-radius:3px;border:1px solid #0003;background:'+l.color+'"></i>'+esc(l.name)+'</span>').join('');$('orig').after(d)}
   $('resBox').innerHTML=res?'<img alt="">':'<div class="ph">Tu pojawi się wizualizacja.<br>Ustaw opcje i kliknij „Generuj”.</div>';if(res)$('resBox').querySelector('img').src=res.image;
-  if(res){const a=document.createElement('a');a.className='btn';a.textContent='⬇ Pobierz';a.href=res.image;a.download='wizualizacja-'+res.id+'.png';const del=document.createElement('button');del.className='btn danger';del.textContent='Usuń';del.onclick=async()=>{cur.results.splice(resultIdx,1);resultIdx=0;await S.put(cur);renderAll()};$('resActs').append(a,' ',del)}
+  if(res){const a=document.createElement('a');a.className='btn';a.textContent='⬇ Pobierz';a.href=res.image;a.download='wizualizacja-'+res.id+'.png';const del=document.createElement('button');del.className='btn danger';del.textContent='Usuń';del.onclick=async()=>{cur.results.splice(resultIdx,1);resultIdx=0;await S.put(cur);renderAll()};const gal=document.createElement('button');gal.className='btn';gal.textContent='⭐ Do galerii';gal.title='Dodaj tę wizualizację do galerii domu (moduł Galeria)';
+    const key='snap:'+cur.id+':'+res.id,pidG=HouserStore.projectId();
+    HouserGallery.hasRef(pidG,key).then(has=>{if(has){gal.textContent='✓ W galerii';gal.disabled=true}});
+    gal.onclick=async()=>{try{await HouserGallery.add(pidG,res.image,{source:'ai',before:cur.image,caption:cur.meta?.roomName||(kindOf(cur)==='exterior'?'Widok z zewnątrz':''),ref:{key}});gal.textContent='✓ W galerii';gal.disabled=true;setTimeout(()=>renderMain(true),50)}catch(e){alert(e.message)}};
+    $('resActs').append(gal,' ',a,' ',del)}
   const O=$('opts');for(const [k,g] of Object.entries(groupsFor(kind))){const f=document.createElement('div');f.className='field';f.innerHTML='<label>'+g.label+'</label>';const s=document.createElement('select');for(const [id,[pl]] of Object.entries(g.items)){const o=document.createElement('option');o.value=id;o.textContent=pl;s.appendChild(o)}s.value=opts[k]||Object.keys(g.items)[0];s.onchange=()=>{opts[k]=s.value;cur.opts={...opts};S.put(cur);$('prompt').value=buildPrompt()};f.appendChild(s);O.appendChild(f)}
   $('extra').value=keepPrompt?(prevExtra||''):(cur.extra||'');$('extra').oninput=()=>{cur.extra=$('extra').value;$('prompt').value=buildPrompt()};$('extra').onchange=()=>S.put(cur);
   $('prompt').value=keepPrompt&&prevPrompt?prevPrompt:(res?.prompt&&resultIdx===0&&keepPrompt?res.prompt:buildPrompt());

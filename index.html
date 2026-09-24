@@ -78,6 +78,10 @@ h1{margin:0 0 6px;font-size:26px}
 .cur{display:grid;grid-template-columns:320px 1fr;gap:18px;background:#fff;border:1px solid #dbe2ea;border-radius:16px;padding:16px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
 .cur .thumb,.hcard .thumb{background:#f8fafc;border:1px solid #e8edf3;border-radius:12px;display:grid;place-items:center;padding:10px;min-height:150px}
 .thumb svg{width:100%;height:auto;max-height:190px;display:block}
+.thumb.hasCover{position:relative;padding:0;overflow:hidden}
+.thumb .coverImg{width:100%;height:100%;min-height:180px;object-fit:cover;display:block}
+.thumb .miniPlan{position:absolute;left:8px;bottom:8px;width:44%;background:rgba(255,255,255,.92);border-radius:8px;padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.thumb .galLink{position:absolute;right:8px;top:8px;background:rgba(15,23,42,.75);color:#fff;font-size:12px;font-weight:700;border-radius:999px;padding:4px 10px;text-decoration:none}
 .cur h3{margin:2px 0 4px;font-size:20px;letter-spacing:-.01em}
 .cur .meta{color:#64748b;font-size:13.5px;line-height:1.55}
 .cur .meta b{color:#0f172a}
@@ -151,6 +155,7 @@ a{color:var(--accent)}
 <script src="shared/house-model.js"></script>
 <script src="shared/openings.js"></script>
 <script src="shared/quantities.js"></script>
+<script src="shared/gallery.js"></script>
 <script>
 // Moduły w kolejności projektowania. group: etap, step: numer kroku na karcie.
 const MODULES=[
@@ -167,6 +172,7 @@ const MODULES=[
   {id:'wnetrze-3d',group:'Podgląd',name:'Wnętrze 3D',src:'modules/wnetrze-3d/',desc:'Spacer po domu z punktu obserwatora (strzałki), schody, skosy dachu, meble.'},
   {id:'zewnatrz-3d',group:'Podgląd',name:'Zewnątrz 3D',src:'modules/zewnatrz-3d/',desc:'Bryła domu z zewnątrz: dach, okna, drzwi, tarasy i pergole.'},
   {id:'wizualizacje',group:'Podgląd',name:'Wizualizacje AI',src:'modules/wizualizacje/',desc:'Zdjęcie z podglądu 3D zamienione przez AI (Gemini) na realistyczną wizualizację – prompt tworzy się sam z projektu.'},
+  {id:'galeria',group:'Podgląd',name:'Galeria',src:'modules/galeria/',desc:'Wybrane zdjęcia domu: najlepsze wizualizacje AI, ujęcia z 3D i Twoje własne zdjęcia – okładka, podpisy, kolejność, pokaz i porównanie przed / po.'},
   {id:'przepisy',group:'Analizy',name:'Przepisy',src:'modules/przepisy/',desc:'Sprawdzenie z warunkami technicznymi: okna do podłogi 1:8, wysokości, drzwi, schody, powierzchnie pokoi – z mapą pomieszczeń.'},
   {id:'energia',group:'Analizy',name:'Energia',src:'modules/energia/',desc:'Bilans cieplny: straty przez przegrody i wentylację, moc grzewcza, zapotrzebowanie kWh/m² i koszt ogrzewania różnymi źródłami.'},
   {id:'wycena',group:'Analizy',name:'Wycena',src:'modules/wycena/',desc:'Orientacyjny koszt budowy z projektu: ilości (ściany, strop, dach, okna, drzwi, instalacje, wykończenie) × ceny jednostkowe, które możesz zmienić.'},
@@ -185,6 +191,7 @@ const ICON_PATH={pomieszczenia:'<rect x="3" y="3" width="7.5" height="7.5" rx="1
   'wnetrze-3d':'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   'zewnatrz-3d':'<path d="M12 2.5 3.5 7.2v9.6l8.5 4.7 8.5-4.7V7.2z"/><path d="m3.5 7.2 8.5 4.7 8.5-4.7M12 11.9v9.6"/>',
   wizualizacje:'<path d="M11 3.5 12.9 8l4.6 1.9-4.6 1.9L11 16.5l-1.9-4.7L4.5 9.9 9.1 8z"/><path d="m18.5 14.5.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z"/>',
+  galeria:'<rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="m4 18 5.5-5.5 3.5 3.5 2.5-2.5L21 18"/>',
   przepisy:'<rect x="5" y="4" width="14" height="17" rx="2.2"/><path d="M9 4V2.8h6V4"/><path d="m9 12.5 2 2 4-4"/>',
   energia:'<path d="M12 2.8c.9 3.2 5.5 5.6 5.5 10.2a5.5 5.5 0 0 1-11 0c0-2.6 1.4-4.3 2.6-5.3.2 1.6 1 2.6 2.1 3.1-.2-3.2-.7-5.6.8-8z"/>',
   wycena:'<ellipse cx="9" cy="6.5" rx="6" ry="2.8"/><path d="M3 6.5v5c0 1.6 2.7 2.8 6 2.8s6-1.2 6-2.8v-5"/><path d="M9.5 17.2c.8 1.2 3.1 2 5.5 2 3.3 0 6-1.2 6-2.8v-5c0-1.5-2.3-2.7-5.3-2.8"/>'};
@@ -260,6 +267,8 @@ async function openProject(obj,label){
   let project={...obj};delete project.visualizations;delete project.houserFile; // obrazy nie są częścią pliku (starsze pliki mogły je mieć – pomijamy)
   if(!project.state&&!project.definitionSnapshot&&HouserDefinition.isDefinition(project))project=HouserDefinition.projectFromDefinition(project);
   if(!project.definitionSnapshot&&!project.state)throw new Error('Nie rozpoznaję pliku – brak definicji pomieszczeń i rzutu.');
+  // gotowy dom i nowy projekt to zawsze nowy projekt (własna galeria); plik zachowuje swój identyfikator
+  if(label==='sample'||label==='new'||!project.projectId)project.projectId=HouserStore.newId();
   const before=curJSON;
   if(!HouserStore.save(project,'plik'))throw new Error('Nie udało się zapisać projektu w przeglądarce (za mało miejsca?).');
   lsSet(LAST_SAVE,label==='file'?new Date().toISOString():'');
@@ -286,9 +295,11 @@ const LAST_MOD='houser:last-module';
 function renderCur(){const rec=HouserStore.load(),el=$('curProj');if(!el)return;
   if(!rec){el.innerHTML='<div class="cur"><div class="thumb">'+planSvg({})+'</div><div><h3>Nie masz jeszcze projektu</h3><div class="meta">Wybierz gotowy dom poniżej, zacznij od pustego projektu albo otwórz swój plik.</div><div class="acts"><button class="btn2 primary" id="hNew">＋ Nowy pusty projekt</button><label class="btn2">Otwórz z pliku<input type="file" id="hFile" accept="application/json,.json" hidden></label></div></div></div>';}
   else{const p=rec.project,st=stats(p),saved=lsGet(LAST_SAVE),dirty=!saved||saved<rec.updatedAt,last=MODULES.find(m=>m.id===lsGet(LAST_MOD))||MODULES.find(m=>m.id==='projektowanie');
-    el.innerHTML='<div class="cur"><div class="thumb">'+planSvg(p)+'</div><div><h3>'+esc(projName(p))+'</h3><div>'+chips(st)+'</div><div class="meta">'+(rec.source==='plik'?'Wczytany '+fmtTime(rec.updatedAt):'Ostatnia zmiana '+fmtTime(rec.updatedAt)+(modName(rec.source)?' w module <b>'+esc(modName(rec.source))+'</b>':''))+' · '+(dirty?'<span class="dirty2">● niezapisane w pliku</span>':'✓ zapisany w pliku '+fmtTime(saved))+'</div>'+
+    el.innerHTML='<div class="cur"><div class="thumb" id="curThumb">'+planSvg(p)+'</div><div><h3>'+esc(projName(p))+'</h3><div>'+chips(st)+'</div><div class="meta">'+(rec.source==='plik'?'Wczytany '+fmtTime(rec.updatedAt):'Ostatnia zmiana '+fmtTime(rec.updatedAt)+(modName(rec.source)?' w module <b>'+esc(modName(rec.source))+'</b>':''))+' · '+(dirty?'<span class="dirty2">● niezapisane w pliku</span>':'✓ zapisany w pliku '+fmtTime(saved))+'</div>'+
       '<div class="acts"><a class="btn2 primary" href="#'+last.id+'">Kontynuuj: '+esc(last.name)+' →</a><button class="btn2" id="hSave">Zapisz do pliku</button><label class="btn2">Otwórz z pliku<input type="file" id="hFile" accept="application/json,.json" hidden></label><button class="btn2" id="hNew">Nowy pusty</button></div></div></div>';
-    $('hSave').onclick=()=>saveFile().catch(e=>alert('Nie udało się zapisać: '+e.message));}
+    $('hSave').onclick=()=>saveFile().catch(e=>alert('Nie udało się zapisać: '+e.message));
+    // okładka z Galerii zamiast rzutu (rzut zostaje mniejszy w rogu)
+    if(p.projectId)HouserGallery.cover(p.projectId).then(c=>{const t=$('curThumb');if(!c||!t)return;t.classList.add('hasCover');t.innerHTML='<img class="coverImg" alt="" src="'+c.thumb+'"><div class="miniPlan">'+planSvg(p)+'</div><a class="galLink" href="#galeria">Galeria →</a>'}).catch(()=>{});}
   $('hFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f||!confirmReplace())return;try{await openProject(JSON.parse(await f.text()),'file')}catch(err){alert('Nie udało się wczytać pliku: '+err.message)}};
   $('hNew').onclick=async()=>{if(!confirmReplace())return;try{await openProject(HouserDefinition.projectFromDefinition(HouserDefinition.emptyDefinition()),'new');location.hash='pomieszczenia'}catch(err){alert(err.message)}};
 }
@@ -319,6 +330,7 @@ $('pbUndo').onclick=HouserUndo.undo;$('pbRedo').onclick=HouserUndo.redo;
 window.addEventListener('keydown',e=>{if(!(e.ctrlKey||e.metaKey)||e.altKey)return;const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;
   const k=e.key.toLowerCase();if(k==='z'&&!e.shiftKey){e.preventDefault();HouserUndo.undo()}else if(k==='y'||(k==='z'&&e.shiftKey)){e.preventDefault();HouserUndo.redo()}});
 HouserStore.subscribe(onStoreChange);
+try{HouserStore.projectId()}catch(_){}
 HouserStore.subscribe(renderBar);HouserStore.subscribe(()=>{if(!location.hash||location.hash==='#start')renderHome()});renderBar();renderHome();renderUndo();setInterval(renderBar,30000);
 show(location.hash.slice(1)||'start');
 </script>
