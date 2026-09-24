@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nasłonecznienie i przegrzewanie</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:320px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.field{display:grid;gap:4px;margin-bottom:9px}
+.field label{font-size:12px;color:var(--hs-muted)}
+.field input,.field select{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+.hint{font-size:12px;color:var(--hs-muted);line-height:1.45}
+.irr{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;display:table!important}
+.irr th,.irr td{padding:3px 4px;border-bottom:1px solid var(--hs-line);text-align:right}
+.irr th{text-transform:none;letter-spacing:0;font-size:11px;white-space:normal}
+.irr th:first-child,.irr td:first-child{text-align:left}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow);min-width:0}
+.tile .l{font-size:12px;color:var(--hs-muted);font-weight:600}
+.tile .v{font-size:24px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums}
+.tile .s{font-size:12px;color:var(--hs-muted);margin-top:3px;line-height:1.4}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);box-shadow:var(--hs-shadow);padding:14px 16px;min-width:0}
+.card h2{font-size:14px;margin:0 0 2px}.card p.sub{margin:0 0 10px;font-size:12px;color:var(--hs-muted)}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.seg{display:inline-flex;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);overflow:hidden}
+.seg button{border:0;background:#fff;color:var(--hs-text);font:600 12px var(--hs-font);padding:6px 10px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--hs-line-strong)}
+.seg button.on{background:var(--hs-accent);color:#fff}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.plan h4{margin:0 0 6px;font-size:12.5px;color:var(--hs-muted);font-weight:700}
+.plan svg{display:block;width:100%;height:auto;max-height:520px}
+.plan svg .rc{cursor:pointer}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:#52514e;margin-top:8px;align-items:center}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-2px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:7px 9px;border-bottom:1px solid var(--hs-line);text-align:left}
+th{font-size:11.5px;color:var(--hs-muted);font-weight:700;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+th.sort{cursor:pointer}th.sort.on{color:var(--hs-text)}
+td.num,th.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+#rooms tbody tr{cursor:pointer}
+#rooms tbody tr:hover td{background:var(--hs-panel-2)}
+#rooms tbody tr.sel td{background:var(--hs-accent-soft)}
+.badge{display:inline-block;font-weight:700;font-size:11.5px;border-radius:999px;padding:2px 9px;white-space:nowrap;border:1px solid rgba(0,0,0,.08)}
+.stats{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:13px;margin:6px 0 10px}
+.stats b{font-variant-numeric:tabular-nums}
+.tips{margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.5}
+.tips li{margin-bottom:4px}
+.viz{position:relative}
+.viz svg{display:block;width:100%;height:auto}
+.viz .ax{font-size:11px;fill:#898781}
+.viz .grid{stroke:#e1e0d9;stroke-width:1}
+.viz .base{stroke:#c3c2b7;stroke-width:1}
+.tip{position:fixed;z-index:20;pointer-events:none;background:#0f172a;color:#fff;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.45;box-shadow:0 8px 20px rgba(0,0,0,.2);display:none;max-width:260px}
+.tip i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+.empty{padding:40px 24px;text-align:center;color:var(--hs-muted)}
+.cols2{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px}
+@media(max-width:1200px){.cols2{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:900px){html,body{overflow:auto;height:auto}.wrap{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;height:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line);overflow:visible}.main{padding:12px;overflow:visible}.tile .v{font-size:21px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1 class="hs-title">Nasłonecznienie i przegrzewanie</h1>
+  <p class="hs-sub">Ile ciepła od słońca wpada przez okna do każdego pomieszczenia latem i zimą. Pokazuje, które pokoje mogą się przegrzewać i co pomoże: okap, rolety, markiza. Ustawienia zapisują się w projekcie.</p>
+  <div class="section">
+    <h3>Szyby</h3>
+    <div class="field"><label>Współczynnik g szyby (przepuszczalność energii słońca)</label>
+      <select id="g"><option value="0.6">0,6 – szyba dwukomorowa zwykła</option><option value="0.5">0,5 – trzyszybowa (typowa)</option><option value="0.35">0,35 – szyba przeciwsłoneczna</option><option value="0.25">0,25 – mocno przeciwsłoneczna</option></select></div>
+  </div>
+  <div class="section">
+    <h3>Osłony latem</h3>
+    <div class="field"><label>Osłony okien w słoneczne dni</label>
+      <select id="blinds"><option value="none">brak osłon</option><option value="internal">rolety / żaluzje wewnętrzne</option><option value="external">rolety zewnętrzne / markizy</option></select></div>
+    <p class="hint">Osłony wewnętrzne zatrzymują ok. 35% zysków (ciepło i tak jest już w pokoju), zewnętrzne – ok. 75%. Zimą liczone są okna odsłonięte.</p>
+  </div>
+  <div class="section">
+    <h3>Pogoda i użytkowanie</h3>
+    <div class="field"><label>Dzień do oceny przegrzewania</label>
+      <select id="weather"><option value="sunny">słoneczny dzień lipca (do oceny ryzyka)</option><option value="avg">przeciętny dzień lipca (z chmurami)</option></select></div>
+    <div class="field"><label>Zyski wewnętrzne (ludzie, urządzenia)</label>
+      <select id="internal"><option value="0">nie doliczaj</option><option value="3">3 W/m² – typowo</option><option value="5">5 W/m² – dużo urządzeń</option></select></div>
+  </div>
+  <div class="section">
+    <h3>Promieniowanie słońca – ok. 52°N</h3>
+    <div id="irr"></div>
+    <p class="hint" style="margin:8px 0 0">Dzienna suma na 1 m² płaszczyzny [kWh/m²]. Model: pozycja słońca co 15 minut dla połowy miesiąca, niebo bezchmurne wg Meinela; dzień przeciętny dopasowany do średnich wieloletnich dla środkowej Polski.</p>
+  </div>
+  <p class="hint" style="margin-top:12px">Metoda uproszczona – do porównywania pomieszczeń i wariantów okien, nie zastępuje symulacji cieplnej budynku.</p>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<div class="tip" id="tip"></div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="sun.js"></script>
+<script>
+const $=id=>document.getElementById(id),S=HouserSun,D2R=Math.PI/180;
+let project=null,mode='summer',selKey=null,sortBy='risk';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=0)=>(Math.round((+v||0)*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const ORD=['north','east','south','west'],AZ={north:0,east:90,south:180,west:270};
+const FAC={north:{short:'Pn',adj:'północne',fem:'północna',on:'Na północy'},east:{short:'Wsch',adj:'wschodnie',fem:'wschodnia',on:'Na wschodzie'},south:{short:'Pd',adj:'południowe',fem:'południowa',on:'Na południu'},west:{short:'Zach',adj:'zachodnie',fem:'zachodnia',on:'Na zachodzie'}};
+const BLIND={none:1,internal:.65,external:.25};
+const RISK=[{n:'niskie',bg:'#fbe7cf',fg:'#0f172a'},{n:'umiarkowane',bg:'#f5b77a',fg:'#0f172a'},{n:'wysokie',bg:'#e2753a',fg:'#fff'},{n:'bardzo wysokie',bg:'#a8421a',fg:'#fff'}];
+const NOWIN='#f1efea';
+const WINT=['#e3eefc','#b7d3f6','#86b6ef','#3987e5','#1c5cab'],WINT_T=[5,15,30,50]; // kWh/m² podłogi w sezonie
+// serie wykresu godzinowego – kolor przypisany do źródła (stały, niezależny od kolejności)
+const SRC=[['south','Okna południowe','#2a78d6'],['west','Okna zachodnie','#eb6834'],['east','Okna wschodnie','#1baf7a'],['north','Okna północne','#eda100'],['roof','Okna dachowe','#e87ba4'],['roofHeat','Ciepło przez dach','#008300'],['internal','Zyski wewnętrzne','#4a3aa7']];
+const SEASON={10:.8,11:.95,12:1,1:1,2:.95,3:.85,4:.6}; // miesiące sezonu grzewczego i współczynnik wykorzystania zysków
+const MONTHS=['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'];
+const LOCAL_SHIFT=.75; // czas letni (CEST) ≈ czas słoneczny + 45 min dla środkowej Polski
+
+function ss(){const s=project?.solarSettings||{},num=(v,d)=>Number.isFinite(+v)&&v!==''&&v!=null?+v:d;
+  return {g:Math.max(.1,Math.min(.9,num(s.g,.5))),blinds:BLIND[s.blinds]?s.blinds:'none',weather:s.weather==='avg'?'avg':'sunny',internal:Math.max(0,Math.min(10,num(s.internal,0)))}}
+let tS=null;function save(patch){const s={...ss(),...patch};project.solarSettings=s;clearTimeout(tS);tS=setTimeout(()=>HouserStore.update(p=>{p.solarSettings=s},'naslonecznienie'),300);render()}
+for(const id of ['g','blinds','weather','internal'])$(id).addEventListener('change',()=>{const v=$(id).value;save({[id]:id==='g'||id==='internal'?Number(v):v})});
+
+function sideMap(){const top=project?.orientation?.top,i=Math.max(0,ORD.indexOf(top));return {top:ORD[i],right:ORD[(i+1)%4],bottom:ORD[(i+2)%4],left:ORD[(i+3)%4]}}
+
+// ---------------------------------------------------------------- obliczenia
+function compute(){
+  const q=HouserQuantities.compute(project),G=q.G,c=q.c,W=q.W,H=q.H,lo=q.lo,up=q.up,s=ss(),sm=sideMap(),tan=Math.tan(G.roofPitch*D2R),cosP=Math.cos(G.roofPitch*D2R);
+  const dsn=project.definitionSnapshot||{},def={};for(const f of [lo,up])def[f]=Object.fromEntries((dsn.floors?.[f]?.rooms||[]).map(r=>[r.id,r]));
+  const flat=f=>{const st=project.state?.[f]||[];return Array.isArray(st[0])?st.flat():st},st={[lo]:flat(lo),[up]:flat(up)};
+  const id=(f,x,y)=>x<0||y<0||x>=W||y>=H?null:(st[f]?.[y*W+x]||null);
+  const occ=(f,x,y)=>{const v=id(f,x,y);return !!v&&def[f]?.[v]?.kind!=='exteriorVoid'};
+  const upAbove=(x,y)=>{const v=id(up,x,y);return !!v&&v!=='pustka'&&v!=='schody'};
+  const hasUp=q.rooms.some(r=>r.f===up);
+  const out=HouserModel.outdoorMap(project.outdoorStructures||[],c);
+  const kind=s.weather==='sunny'?'clear':'avg',blind=BLIND[s.blinds];
+  const rooms={};for(const r of q.rooms){if(r.area<.5)continue;rooms[r.f+'|'+r.id]={...r,key:r.f+'|'+r.id,floorName:dsn.floors?.[r.f]?.name||(r.f===lo?'Parter':'Piętro'),wins:[],fac:{north:0,east:0,south:0,west:0,roof:0},src:{}}}
+  const slopeSide=(x,y)=>q.across?((x+.5)*c<q.span/2?'left':'right'):((y+.5)*c<q.span/2?'top':'bottom');
+  const isEave=side=>q.across?(side==='left'||side==='right'):(side==='top'||side==='bottom');
+  const wins=[];
+  for(const r of q.runs){
+    if(r.base!=='window'&&r.base!=='hst')continue;const roof=r.info.shape==='roof';if(!r.ext&&!roof)continue;
+    const ids=[...new Set([r.ra,r.rb].filter(Boolean))].map(v=>rooms[r.f+'|'+v]).filter(Boolean);if(!ids.length)continue;
+    const [o,aS,bS]=r.keys[Math.floor(r.keys.length/2)].split(':'),a=+aS,b=+bS,cellA=o==='h'?[a,b-1]:[a-1,b],cellB=[a,b];
+    const w={f:r.f,rooms:ids,base:r.base,info:r.info,A:r.area,g:s.g,roof,keys:r.keys,o:r.o,line:r.line,from:r.from,to:r.to};
+    if(roof){const cell=r.ra?cellA:cellB;w.side=slopeSide(cell[0],cell[1]);w.tilt=G.roofPitch;w.ff=.65;w.hB=0;w.hT=1;w.cols=[{shades:[]}];w.cell=cell}
+    else{
+      const side=w.side=o==='h'?(r.ra?'bottom':'top'):(r.ra?'right':'left'),L=r.line,base=r.f===lo?0:G.groundHeight;
+      w.tilt=90;w.ff=r.base==='hst'?.8:.7;w.hB=+r.info.sill||0;w.hT=w.hB+(+r.info.height||1.2);w.eave=isEave(side);
+      const dist=(side==='top'||side==='left'?L:(side==='bottom'?H-L:W-L))*c;
+      const outCell=(i,k)=>side==='top'?[i,L-k]:side==='bottom'?[i,L+k-1]:side==='left'?[L-k,i]:[L+k-1,i];
+      w.cols=[];w.roofP=w.eave?dist+G.eaveOverhang:dist+G.gableOverhang;
+      for(let i=r.from;i<=r.to;i++){const sh=[];
+        let hO;if(w.eave)hO=G.eave-G.eaveOverhang*tan-base;else{const a=(i+.5)*c,t=Math.max(0,1-Math.abs(a-q.span/2)/(q.span/2));hO=G.eave+G.rise*t-base}
+        sh.push({kind:'roof',P:w.roofP,hO:Math.max(hO,w.hT+.05)});
+        let pergola=false;
+        if(r.f===lo){
+          if(hasUp){let k=1;while(k<30){const [x,y]=outCell(i,k);if(!upAbove(x,y))break;k++}if(k>1)sh.push({kind:'upper',P:(k-1)*c,hO:Math.max(G.groundHeight,w.hT+.05)})}
+          let k=1;while(k<40){const [x,y]=outCell(i,k);if(out.get(x+','+y)!=='coveredTerrace')break;k++}
+          if(k>1)sh.push({kind:'terrace',P:(k-1)*c,hO:Math.max(Math.min(G.groundHeight,2.7),w.hT+.05)});
+          const [x1,y1]=outCell(i,1);pergola=out.get(x1+','+y1)==='pergola';
+        }
+        w.cols.push({shades:sh,pergola})}
+      w.shadedBy={upper:w.cols.some(c=>c.shades.some(x=>x.kind==='upper')),terrace:w.cols.some(c=>c.shades.some(x=>x.kind==='terrace')),pergola:w.cols.some(c=>c.pergola)};
+      w.roofHO=w.cols[0].shades[0].hO;
+    }
+    w.facing=sm[w.side];w.az=AZ[w.facing];
+    // zyski
+    w.sum=S.windowSteps(w,7,kind,{blind,pergolaT:.5});
+    w.sumDay=w.sum.reduce((a,v)=>a+v,0)*S.STEP/1000;
+    w.janDay=S.windowSteps(w,1,kind,{pergolaT:.8}).reduce((a,v)=>a+v,0)*S.STEP/1000;
+    w.month=[];for(let m=1;m<=12;m++){const summer=m>=5&&m<=9;w.month.push(S.windowSteps(w,m,'avg',{blind:summer?blind:1,pergolaT:summer?.5:.8}).reduce((a,v)=>a+v,0)*S.STEP/1000*S.MDAYS[m-1])}
+    w.season=Object.entries(SEASON).reduce((a,[m,eta])=>a+w.month[m-1]*eta*(m>=5&&m<=9?1:1),0);
+    // (zima bez osłon – miesiące sezonu nie mają rolet, bo SEASON nie obejmuje maja–września)
+    w.part=1/ids.length;wins.push(w);
+    for(const m of ids){m.wins.push(w);m.fac[roof?'roof':w.facing]+=w.A*w.part}
+  }
+  // ciepło przez dach (lato): poddasze – połać nad pokojem, pod strychem – strop (część wpływu połaci)
+  const Uroof=Number.isFinite(+project.energySettings?.U?.roof)&&+project.energySettings.U.roof>0?+project.energySettings.U.roof:.13;
+  const prof=S.day(7,kind),n=prof.length,lag=Math.round(3/S.STEP),slopeI={};
+  for(const side of ['top','bottom','left','right']){const az=AZ[sm[side]];slopeI[side]=prof.map(p=>{const r=S.onPlane(p,G.roofPitch,az);return r.dir+r.sky+r.gnd})}
+  const toBin=t=>Math.floor((t+LOCAL_SHIFT)%24);
+  for(const R of Object.values(rooms)){
+    const steps={},add=(k,arr)=>{const a=steps[k]||(steps[k]=new Float64Array(n));for(let i=0;i<n;i++)a[i]+=arr[i]};
+    for(const w of R.wins){const k=w.roof?'roof':w.facing,arr=w.part===1?w.sum:w.sum.map(v=>v*w.part);add(k,arr)}
+    let roofUA={top:0,bottom:0,left:0,right:0},attic=0,any=false;
+    for(const [x,y] of R.cells){const side=slopeSide(x,y);
+      if(R.f===up&&G.upperType==='attic'){roofUA[side]+=c*c/cosP;attic++;any=true}
+      else if(R.f===up||(R.f===lo&&!upAbove(x,y))){roofUA[side]+=c*c*.35;any=true}}
+    R.light=attic>R.cells.length/2; // lekka konstrukcja pod skosami – mniejsza bezwładność cieplna
+    R.attic=attic>0;
+    if(any){const arr=new Float64Array(n);for(const side in roofUA){if(!roofUA[side])continue;const I=slopeI[side];
+        for(let i=0;i<n;i++){const j=(i-lag+n)%n,dT=.7*I[j]/18+S.tOut(prof[j].t,kind)-24;if(dT>0)arr[i]+=Uroof*roofUA[side]*dT}}
+      if(arr.some(v=>v>0))add('roofHeat',arr)}
+    if(s.internal>0)add('internal',new Float64Array(n).fill(s.internal*R.area));
+    // godziny zegarowe (czas letni)
+    const bins={};R.hours=new Array(24).fill(0);
+    for(const k in steps){const b=bins[k]=new Array(24).fill(0);for(let i=0;i<n;i++)b[toBin(prof[i].t)]+=steps[k][i]*S.STEP}
+    for(const k in bins)for(let h=0;h<24;h++)R.hours[h]+=bins[k][h];
+    R.bins=bins;R.srcDay={};for(const k in bins)R.srcDay[k]=bins[k].reduce((a,v)=>a+v,0)/1000;
+    R.sumDay=R.hours.reduce((a,v)=>a+v,0)/1000;
+    R.solarDay=R.wins.reduce((a,w)=>a+w.sumDay*w.part,0);
+    R.peakW=Math.max(...R.hours);R.peakH=R.hours.indexOf(R.peakW);R.peak=R.peakW/R.area;
+    const th=[15,30,50].map(v=>R.light?v*.8:v);R.risk=R.peak<th[0]?0:R.peak<th[1]?1:R.peak<th[2]?2:3;R.th=th;
+    R.season=R.wins.reduce((a,w)=>a+w.season*w.part,0);R.janDay=R.wins.reduce((a,w)=>a+w.janDay*w.part,0);
+    R.month=Array.from({length:12},(_,m)=>R.wins.reduce((a,w)=>a+w.month[m]*w.part,0));
+    R.glazA=R.wins.reduce((a,w)=>a+w.A*w.part,0);
+  }
+  const list=Object.values(rooms);
+  const house={sumDay:list.reduce((a,r)=>a+r.solarDay,0),season:list.reduce((a,r)=>a+r.season,0),janDay:list.reduce((a,r)=>a+r.janDay,0),month:Array.from({length:12},(_,m)=>wins.reduce((a,w)=>a+w.month[m],0))};
+  const facSum={};for(const w of wins){const k=w.roof?'roof':w.facing;facSum[k]=(facSum[k]||0)+w.sumDay}
+  house.facSum=facSum;
+  return {q,G,s,sm,rooms,list,wins,house,kind,blind,out,occ,W,H,c,lo,up};
+}
+
+// ---------------------------------------------------------------- porady
+function tips(R,C){
+  const T=[],s=C.s,byFac={};
+  if(!R.wins.length){T.push('Brak okien – nasłonecznienie nie wpływa na to pomieszczenie');if(R.srcDay.roofHeat>.05)T.push('Pomieszczenie pod dachem – latem ogrzewa je nagrzany dach; pomoże dobra izolacja i wietrzenie nocą');return T}
+  for(const w of R.wins){if(w.roof)continue;(byFac[w.facing]=byFac[w.facing]||[]).push(w)}
+  const ext=s.blinds==='external',cut=Math.round((1-BLIND.external/BLIND[s.blinds])*100);
+  const summerOf=(w,cols)=>S.windowSteps({...w,cols},7,C.kind,{blind:C.blind,pergolaT:.5}).reduce((a,v)=>a+v,0);
+  const winterOf=(w,cols)=>Object.entries(SEASON).reduce((a,[m,eta])=>a+eta*S.MDAYS[m-1]*S.windowSteps({...w,cols},+m,'avg',{pergolaT:.8}).reduce((x,v)=>x+v,0),0);
+  // okna W / E / S bez zewnętrznych osłon
+  if(R.risk>=1&&!ext)for(const f of ['west','south','east']){const ws=byFac[f];if(!ws)continue;const A=ws.reduce((a,w)=>a+w.A*w.part,0);if(A<.6)continue;
+    const cap={west:'Okna zachodnie',south:'Okna południowe',east:'Okna wschodnie'}[f];
+    T.push(cap+' '+fmt(A,1)+' m² bez osłon zewnętrznych – rolety zewnętrzne zmniejszą zyski o ~'+cut+'%')}
+  // okap nad oknami południowymi
+  const south=(byFac.south||[]);if(south.length&&R.risk>=1){
+    let s0=0,s1=0,w0=0,w1=0,best=null;
+    for(const w of south){const near=w.roofHO-w.hT<1.2&&w.eave,cols1=w.cols.map(col=>({...col,shades:[...col.shades,near?{kind:'x',P:Math.max(.8,w.roofP),hO:w.roofHO}:{kind:'x',P:.8,hO:w.hT+.3}]}));
+      s0+=summerOf(w,w.cols)*w.part;s1+=summerOf(w,cols1)*w.part;w0+=winterOf(w,w.cols)*w.part;w1+=winterOf(w,cols1)*w.part;best=best||{near,P:w.roofP}}
+    const a=Math.round((1-s1/Math.max(1e-6,s0))*100),b=Math.round((1-w1/Math.max(1e-6,w0))*100);
+    if(a>=8){if(best.near&&best.P<.8)T.push('Okap nad oknami południowymi ma '+fmt(best.P,1)+' m – wysunięcie do 0,8 m zmniejszy zyski latem o ~'+a+'%, a zimą tylko o ~'+b+'%');
+      else if(!best.near)T.push('Nad oknami południowymi przyda się daszek lub stała markiza (wysięg ok. 0,8 m) – latem zyski mniejsze o ~'+a+'%, zimą tylko o ~'+b+'%')}}
+  if(R.risk>=1)for(const f of ['west','east'])if(byFac[f])T.push(FAC[f].on+' słońce świeci nisko – okap niewiele da, skuteczne są rolety, żaluzje fasadowe lub zieleń');
+  // okna dachowe
+  const rw={};for(const w of R.wins)if(w.roof)rw[w.facing]=(rw[w.facing]||0)+w.A*w.part;
+  for(const f in rw)if(f!=='north'&&!ext)T.push('Okno dachowe (połać '+FAC[f].fem+') '+fmt(rw[f],1)+' m² – markiza zewnętrzna zmniejszy zyski o ~'+cut+'%');
+  if(rw.north&&!rw.south&&!rw.west&&!rw.east)T.push('Okna dachowe tylko na północnej połaci – latem nagrzewają się niewiele');
+  // taras, piętro nad oknem
+  for(const kind of ['terrace','upper']){const ws=R.wins.filter(w=>w.shadedBy?.[kind]);if(!ws.length)continue;let a=0,b=0;
+    for(const w of ws){a+=summerOf(w,w.cols)*w.part;b+=summerOf(w,w.cols.map(col=>({...col,shades:col.shades.filter(x=>x.kind!==kind)})))*w.part}
+    const p=Math.round((1-a/Math.max(1e-6,b))*100);if(p>=3)T.push((kind==='terrace'?'Zadaszony taras przed oknem zmniejsza zyski latem o ~':'Wysunięte piętro nad oknem zmniejsza zyski latem o ~')+p+'%')}
+  if(R.srcDay.roofHeat>.05&&R.attic)T.push('Pomieszczenie pod skosami – ciepło przez dach dokłada ok. '+fmt(Math.max(...(R.bins.roofHeat||[0]))/R.area,1)+' W/m² w szczycie; pomoże dobra izolacja dachu i wietrzenie nocą');
+  const ratio=R.glazA/R.area*100;if(ratio>20&&R.risk>=2)T.push('Przeszklenia to '+fmt(ratio)+'% powierzchni podłogi – powyżej ~20% trudno uniknąć przegrzewania bez osłon');
+  if(R.risk===0)T.push('Ryzyko przegrzewania niskie – wystarczy wietrzenie nocą');
+  const sw=R.wins.filter(w=>w.facing==='south').reduce((a,w)=>a+w.season*w.part,0);if(sw>50)T.push('Okna południowe dają zimą ok. '+fmt(sw)+' kWh ciepła w sezonie – odsłaniaj je w słoneczne dni');
+  if(R.wins.every(w=>w.facing==='north'))T.push('Okna tylko od północy – latem chłodno, zimą mało darmowego ciepła');
+  return T;
+}
+
+// ---------------------------------------------------------------- rzut
+function winterColor(v){for(let i=0;i<WINT_T.length;i++)if(v<WINT_T[i])return WINT[i];return WINT[4]}
+function roomFill(R){if(mode==='summer')return R.peak<.5?NOWIN:RISK[R.risk].bg;const v=R.season/R.area;return v<.3?NOWIN:winterColor(v)}
+function roomInk(R){if(mode==='summer')return R.peak<.5?'#0f172a':RISK[R.risk].fg;const v=R.season/R.area;return v>=WINT_T[2]?'#fff':'#0f172a'}
+function planSVG(C,f){
+  const U=20,{W,H,c}=C,cells=[];let x0=0,y0=0,x1=W,y1=H;
+  for(const [k] of C.out){const [x,y]=k.split(',').map(Number);if(x>=-12&&y>=-12&&x<W+12&&y<H+12){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x+1);y1=Math.max(y1,y+1)}}
+  const pad=1.6;x0-=pad;y0-=pad;x1+=pad;y1+=pad;
+  const vw=(x1-x0)*U,vh=(y1-y0)*U,fs=Math.max(11,Math.min(22,vw/34));
+  let h='<svg viewBox="'+(x0*U)+' '+(y0*U)+' '+vw+' '+vh+'" role="img" aria-label="Rzut: '+esc(f)+'">';
+  h+='<defs><pattern id="pg" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#f3efe7"/><line x1="0" y1="0" x2="0" y2="6" stroke="#c9bfae" stroke-width="2"/></pattern></defs>';
+  if(f===C.lo)for(const [k,t] of C.out){const [x,y]=k.split(',').map(Number);h+='<rect x="'+x*U+'" y="'+y*U+'" width="'+U+'" height="'+U+'" fill="'+(t==='coveredTerrace'?'#e4ddd0':t==='pergola'?'url(#pg)':'#f3efe7')+'" stroke="#fff" stroke-width=".6"/>'}
+  const rooms=C.list.filter(r=>r.f===f),byCell={};for(const R of rooms)for(const [x,y] of R.cells)byCell[x+','+y]=R;
+  for(const R of rooms){const fill=roomFill(R);for(const [x,y] of R.cells)h+='<rect class="rc" data-k="'+esc(R.key)+'" x="'+x*U+'" y="'+y*U+'" width="'+U+'" height="'+U+'" fill="'+fill+'" stroke="'+fill+'" stroke-width=".6"/>'}
+  // ściany
+  const occ=(x,y)=>C.occ(f,x,y),rid=(x,y)=>byCell[x+','+y]?.key||(occ(x,y)?'?':null);let wi='',we='';
+  for(let y=0;y<=H;y++)for(let x=0;x<W;x++){const a=rid(x,y-1),b=rid(x,y);if(a===b)continue;const ext=!occ(x,y-1)||!occ(x,y);const l='M'+x*U+' '+y*U+'h'+U;if(ext)we+=l;else wi+=l}
+  for(let x=0;x<=W;x++)for(let y=0;y<H;y++){const a=rid(x-1,y),b=rid(x,y);if(a===b)continue;const ext=!occ(x-1,y)||!occ(x,y);const l='M'+x*U+' '+y*U+'v'+U;if(ext)we+=l;else wi+=l}
+  h+='<path d="'+wi+'" stroke="#8a94a6" stroke-width="1.2" fill="none"/><path d="'+we+'" stroke="#334155" stroke-width="3" fill="none" stroke-linecap="square"/>';
+  // zaznaczone pomieszczenie
+  const sel=rooms.find(r=>r.key===selKey);if(sel){let p='';const own=(x,y)=>byCell[x+','+y]===sel;
+    for(const [x,y] of sel.cells){if(!own(x,y-1))p+='M'+x*U+' '+y*U+'h'+U;if(!own(x,y+1))p+='M'+x*U+' '+(y+1)*U+'h'+U;if(!own(x-1,y))p+='M'+x*U+' '+y*U+'v'+U;if(!own(x+1,y))p+='M'+(x+1)*U+' '+y*U+'v'+U}
+    h+='<path d="'+p+'" stroke="#0f172a" stroke-width="3.5" fill="none" stroke-linecap="square" pointer-events="none"/>'}
+  // okna ze strzałkami kierunku
+  for(const w of C.wins.filter(w=>w.f===f)){
+    if(w.roof){for(const k of w.keys){const [o,a,b]=k.split(':').map((v,i)=>i?+v:v);const pa=o==='h'?[a,b-1]:[a-1,b],cell=C.occ(f,pa[0],pa[1])&&!C.occ(f,a,b)?pa:[a,b];
+        h+='<rect x="'+(cell[0]*U+4)+'" y="'+(cell[1]*U+4)+'" width="'+(U-8)+'" height="'+(U-8)+'" fill="#fff" fill-opacity=".75" stroke="#2a78d6" stroke-width="2" pointer-events="none"/>'}
+      continue}
+    const L=w.line*U,A0=w.from*U,A1=(w.to+1)*U,mid=(A0+A1)/2,dir={top:[0,-1],bottom:[0,1],left:[-1,0],right:[1,0]}[w.side];
+    const [xa,ya,xb,yb]=w.o==='h'?[A0,L,A1,L]:[L,A0,L,A1];
+    h+='<line x1="'+xa+'" y1="'+ya+'" x2="'+xb+'" y2="'+yb+'" stroke="#fff" stroke-width="5"/><line x1="'+xa+'" y1="'+ya+'" x2="'+xb+'" y2="'+yb+'" stroke="#2a78d6" stroke-width="3.2"/>';
+    const [cx,cy]=w.o==='h'?[mid,L]:[L,mid],t1=[cx+dir[0]*7,cy+dir[1]*7],t2=[cx+dir[0]*17,cy+dir[1]*17],pr=[-dir[1],dir[0]];
+    h+='<path d="M'+(t1[0]+pr[0]*5)+' '+(t1[1]+pr[1]*5)+'L'+t2[0]+' '+t2[1]+'L'+(t1[0]-pr[0]*5)+' '+(t1[1]-pr[1]*5)+'Z" fill="#2a78d6" opacity=".85"/>'}
+  // etykiety
+  for(const R of rooms){if(R.cells.length<4)continue;const mx=R.cells.reduce((a,p)=>a+p[0],0)/R.cells.length,my=R.cells.reduce((a,p)=>a+p[1],0)/R.cells.length;
+    const cc=R.cells.reduce((b,p)=>(p[0]-mx)**2+(p[1]-my)**2<(b[0]-mx)**2+(b[1]-my)**2?p:b,R.cells[0]),px=(cc[0]+.5)*U,py=(cc[1]+.5)*U;
+    const xs=R.cells.map(p=>p[0]),wpx=(Math.max(...xs)-Math.min(...xs)+1)*U,maxCh=Math.max(3,Math.floor(wpx/(fs*.56)));
+    let nm=R.name;if(nm.length>maxCh)nm=nm.slice(0,maxCh-1)+'…';
+    const val=mode==='summer'?(R.peak<.5?'':fmt(R.peak)+' W/m²'):(R.season<1?'':fmt(R.season)+' kWh');
+    h+='<text x="'+px+'" y="'+(py-(val?fs*.15:-fs*.35))+'" text-anchor="middle" font-size="'+fs+'" font-weight="650" fill="'+roomInk(R)+'" pointer-events="none">'+esc(nm)+'</text>';
+    if(val&&R.cells.length>=6)h+='<text x="'+px+'" y="'+(py+fs*.95)+'" text-anchor="middle" font-size="'+fs*.85+'" fill="'+roomInk(R)+'" pointer-events="none">'+val+'</text>'}
+  // róża kierunków – strzałka północy
+  const sides=['top','right','bottom','left'],k=sides.indexOf(Object.keys(C.sm).find(s=>C.sm[s]==='north')),rx=x1*U-U*.9,ry=y0*U+U*.9;
+  h+='<g transform="translate('+rx+' '+ry+') rotate('+k*90+')" pointer-events="none"><circle r="'+U*.75+'" fill="#fff" stroke="#cbd5e1"/><path d="M0 '+(-U*.6)+'L'+U*.28+' '+U*.3+'L0 '+U*.12+'L'+(-U*.28)+' '+U*.3+'Z" fill="#0f172a"/></g>';
+  h+='<text x="'+rx+'" y="'+(ry+U*1.45)+'" text-anchor="middle" font-size="'+fs*.8+'" fill="#52514e" pointer-events="none">N</text>';
+  return h+'</svg>';
+}
+
+// ---------------------------------------------------------------- wykres godzinowy (słupki skumulowane)
+function hourlyChart(R){
+  const keys=SRC.filter(([k])=>R.bins[k]&&R.bins[k].some(v=>v>.5)),h0=4,h1=23,hrs=[];for(let h=h0;h<h1;h++)hrs.push(h);
+  if(!keys.length)return '<p class="hint">Brak zysków od słońca w tym pomieszczeniu.</p>';
+  const mx=Math.max(...hrs.map(h=>R.hours[h])),step=[50,100,200,250,500,1000,2000,2500,5000].find(s=>mx/s<=5)||10000,top=Math.max(step,Math.ceil(mx/step)*step);
+  const Wd=620,Ht=230,l=46,r=8,t=10,b=28,pw=Wd-l-r,ph=Ht-t-b,bw=pw/hrs.length,y=v=>t+ph-v/top*ph;
+  let s='<svg viewBox="0 0 '+Wd+' '+Ht+'" role="img" aria-label="Zyski ciepła w ciągu dnia">';
+  for(let v=0;v<=top+1e-9;v+=step)s+='<line class="'+(v?'grid':'base')+'" x1="'+l+'" x2="'+(Wd-r)+'" y1="'+y(v)+'" y2="'+y(v)+'"/><text class="ax" x="'+(l-6)+'" y="'+(y(v)+4)+'" text-anchor="end">'+fmt(v)+'</text>';
+  hrs.forEach((h,i)=>{let acc=0;const x=l+i*bw+2,w=bw-4;
+    keys.forEach(([k,,col],j)=>{const v=R.bins[k][h];if(v<=0)return;const y0=y(acc),y1=y(acc+v);acc+=v;const hh=Math.max(0,y0-y1-(acc<R.hours[h]-1e-6?0:0));
+      s+='<rect x="'+x+'" y="'+y1+'" width="'+w+'" height="'+Math.max(0,hh-(j?0:0)-1)+'" fill="'+col+'"'+(acc>=R.hours[h]-1e-6?' rx="2"':'')+'/>'});
+    if(h%2===0)s+='<text class="ax" x="'+(x+w/2)+'" y="'+(Ht-b+15)+'" text-anchor="middle">'+h+'</text>';
+    s+='<rect class="hb" data-h="'+h+'" x="'+(l+i*bw)+'" y="'+t+'" width="'+bw+'" height="'+ph+'" fill="transparent"/>'});
+  s+='<text class="ax" x="'+(Wd-r)+'" y="'+(Ht-2)+'" text-anchor="end">godzina (czas letni)</text></svg>';
+  return '<div class="legend" style="margin:0 0 6px">'+keys.map(([k,n,col])=>'<span><i style="background:'+col+'"></i>'+n+'</span>').join('')+'</div><div class="viz" id="hourly">'+s+'</div>';
+}
+function monthlyChart(C){
+  const v=C.house.month,mx=Math.max(...v),step=[50,100,200,250,500,1000,2000,2500,5000].find(s=>mx/s<=5)||10000,top=Math.max(step,Math.ceil(mx/step)*step);
+  const Wd=620,Ht=210,l=50,r=8,t=10,b=30,pw=Wd-l-r,ph=Ht-t-b,bw=pw/12,y=x=>t+ph-x/top*ph;
+  let s='<svg viewBox="0 0 '+Wd+' '+Ht+'" role="img" aria-label="Zyski od słońca w miesiącach">';
+  for(let a=0;a<=top+1e-9;a+=step)s+='<line class="'+(a?'grid':'base')+'" x1="'+l+'" x2="'+(Wd-r)+'" y1="'+y(a)+'" y2="'+y(a)+'"/><text class="ax" x="'+(l-6)+'" y="'+(y(a)+4)+'" text-anchor="end">'+fmt(a)+'</text>';
+  v.forEach((a,i)=>{const x=l+i*bw+5,w=bw-10,heat=SEASON[i+1]!=null;
+    s+='<rect x="'+x+'" y="'+y(a)+'" width="'+w+'" height="'+Math.max(0,y(0)-y(a))+'" fill="'+(heat?'#2a78d6':'#9ec5f4')+'" rx="3"/><text class="ax" x="'+(x+w/2)+'" y="'+(Ht-b+15)+'" text-anchor="middle">'+MONTHS[i]+'</text><rect class="mb" data-m="'+i+'" x="'+(l+i*bw)+'" y="'+t+'" width="'+bw+'" height="'+ph+'" fill="transparent"/>'});
+  s+='</svg>';
+  return '<div class="legend" style="margin:0 0 6px"><span><i style="background:#2a78d6"></i>sezon grzewczy (zysk pomaga ogrzewać)</span><span><i style="background:#9ec5f4"></i>poza sezonem (z osłonami wg ustawień)</span></div><div class="viz" id="monthly">'+s+'</div>';
+}
+
+// ---------------------------------------------------------------- widok
+function facText(R){return [['south','Pd'],['west','Zach'],['east','Wsch'],['north','Pn'],['roof','dach']].filter(([k])=>R.fac[k]>.01).map(([k,n])=>n+' '+fmt(R.fac[k],1)).join(' · ')||'—'}
+function badge(R){if(R.peak<.5&&!R.wins.length)return '<span class="badge" style="background:'+NOWIN+'">bez okien</span>';const k=RISK[R.risk];return '<span class="badge" style="background:'+k.bg+';color:'+k.fg+'">'+k.n+'</span>'}
+function winLabel(w){if(w.roof)return 'Okno dachowe – połać '+FAC[w.facing].fem;return (w.base==='hst'?'Drzwi tarasowe ':'Okno ')+FAC[w.facing].adj}
+function shadeText(w){if(w.roof)return 'bez okapu';const p=[];const near=w.roofHO-w.hT<1.2;
+  if(near)p.push((w.eave?'okap ':'dach ')+fmt(w.roofP,1)+' m');if(w.shadedBy.upper)p.push('piętro nad oknem');if(w.shadedBy.terrace)p.push('zadaszony taras');if(w.shadedBy.pergola)p.push('pergola');return p.join(' · ')||'bez osłon'}
+
+function renderSide(){const s=ss(),act=document.activeElement,set=(id,v)=>{const el=$(id);if(el===act)return;const o=[...el.options].find(o=>Math.abs(+o.value-v)<1e-6||o.value===String(v));if(!o){const n=document.createElement('option');n.value=v;n.textContent=String(v).replace('.',',');el.appendChild(n)}el.value=o?o.value:v};
+  set('g',s.g);set('blinds',s.blinds);set('weather',s.weather);set('internal',s.internal);
+  }
+function renderIrr(pitch){pitch=Math.round(pitch);if($('irr').dataset.p!==String(pitch)){$('irr').dataset.p=pitch;
+    const rows=[['Południe',90,180],['Wschód / zachód',90,90],['Północ',90,0],['Dach '+fmt(pitch)+'° – południe',pitch,180],['Dach '+fmt(pitch)+'° – północ',pitch,0],['Poziomo',0,180]];
+    $('irr').innerHTML='<table class="irr"><thead><tr><th>Płaszczyzna</th><th>lipiec ☀</th><th>lipiec</th><th>styczeń</th></tr></thead><tbody>'+rows.map(([n,t,a])=>'<tr><td>'+n+'</td><td>'+fmt(S.dailyOn(7,'clear',t,a),1)+'</td><td>'+fmt(S.dailyOn(7,'avg',t,a),1)+'</td><td>'+fmt(S.dailyOn(1,'avg',t,a),1)+'</td></tr>').join('')+'</tbody></table><p class="hint" style="margin:6px 0 0">☀ – dzień bezchmurny, pozostałe – dzień przeciętny.</p>'}}
+
+let C=null;
+function render(){
+  const M=$('main');if(!project||!(project.grid||project.definitionSnapshot?.grid)){M.innerHTML='<div class="empty">Brak projektu. Narysuj rzut w <b>Układzie pomieszczeń</b> albo kliknij „Przykład” na pasku u góry.</div>';renderIrr(40);return}
+  renderSide();
+  try{C=compute()}catch(e){console.error(e);M.innerHTML='<div class="empty">Nie udało się policzyć nasłonecznienia dla tego projektu.</div>';return}
+  renderIrr(C.G.roofPitch);
+  const list=C.list;if(!list.length){M.innerHTML='<div class="empty">W projekcie nie ma jeszcze pomieszczeń.</div>';return}
+  const withWin=list.filter(r=>r.peak>=.5),hi=list.filter(r=>r.risk>=2&&r.peak>=.5),worst=withWin.reduce((a,b)=>!a||b.peak>a.peak?b:a,null);
+  if(!selKey||!C.rooms[selKey])selKey=(worst||list[0]).key;
+  const R=C.rooms[selKey],facTop=Object.entries(C.house.facSum).sort((a,b)=>b[1]-a[1])[0];
+  const facName=k=>k==='roof'?'okna dachowe':{north:'północ',east:'wschód',south:'południe',west:'zachód'}[k];
+  let h='<div class="tiles">'+
+    '<div class="tile"><div class="l">Przegrzewanie latem</div><div class="v">'+hi.length+' z '+list.length+'</div><div class="s">pomieszczeń z wysokim ryzykiem</div>'+(worst?'<div class="s">najgorzej: <b>'+esc(worst.name)+'</b> · '+fmt(worst.peak)+' W/m²</div>':'')+'</div>'+
+    '<div class="tile"><div class="l">'+(C.kind==='clear'?'Słoneczny dzień lipca':'Przeciętny dzień lipca')+'</div><div class="v">'+fmt(C.house.sumDay,1)+' kWh</div><div class="s">ciepła od słońca w całym domu w ciągu dnia</div>'+(facTop?'<div class="s">najwięcej: '+facName(facTop[0])+' · '+fmt(facTop[1]/Math.max(1e-6,C.house.sumDay)*100)+'%</div>':'')+'</div>'+
+    '<div class="tile"><div class="l">Ciepło od słońca zimą</div><div class="v">'+fmt(C.house.season)+' kWh</div><div class="s">w sezonie grzewczym (paź–kwi), wykorzystane do ogrzewania</div><div class="s">styczeń: '+fmt(C.house.janDay,1)+' kWh/dzień</div></div>'+
+  '</div>';
+  // rzuty
+  const floors=[C.lo,C.up].filter(f=>list.some(r=>r.f===f));
+  h+='<div class="card"><div class="head"><div><h2>'+(mode==='summer'?'Ryzyko przegrzewania latem':'Zyski od słońca zimą')+'</h2><p class="sub" style="margin:0">'+(mode==='summer'?'Szczytowe zyski ciepła na 1 m² podłogi w najgorętszej godzinie':'Ciepło od słońca w sezonie grzewczym')+'. Kliknij pomieszczenie.</p></div>'+
+    '<div class="seg"><button data-mode="summer" class="'+(mode==='summer'?'on':'')+'">Lato</button><button data-mode="winter" class="'+(mode==='winter'?'on':'')+'">Zima</button></div></div>'+
+    '<div class="plans">'+floors.map(f=>'<div class="plan"><h4>'+esc(list.find(r=>r.f===f).floorName)+'</h4>'+planSVG(C,f)+'</div>').join('')+'</div>';
+  h+='<div class="legend">'+(mode==='summer'?RISK.map(k=>'<span><i style="background:'+k.bg+'"></i>'+k.n+'</span>').join('')+'<span><i style="background:'+NOWIN+';border:1px solid #ddd"></i>bez okien</span>':
+    ['poniżej 5','5–15','15–30','30–50','powyżej 50'].map((n,i)=>'<span><i style="background:'+WINT[i]+'"></i>'+n+'</span>').join('')+'<span>kWh/m² podłogi w sezonie</span>')+
+    '<span><i style="background:#2a78d6"></i>okno i kierunek, w który patrzy</span></div></div>';
+  // szczegóły pomieszczenia
+  h+='<div class="card"><div class="head"><div><h2>'+esc(R.name)+'</h2><p class="sub" style="margin:0">'+esc(R.floorName)+' · '+fmt(R.area,1)+' m²'+(R.attic?' · pod skosami':'')+'</p></div>'+badge(R)+'</div>'+
+    '<div class="stats"><span>Latem: <b>'+fmt(R.sumDay,1)+' kWh/dzień</b></span><span>Szczyt: <b>'+fmt(R.peak)+' W/m²</b> o '+R.peakH+':00</span><span>Zimą: <b>'+fmt(R.season)+' kWh</b> w sezonie</span><span>Styczeń: <b>'+fmt(R.janDay,2)+' kWh/dzień</b></span></div>'+
+    '<div class="cols2"><div><h2 style="font-size:13px;margin:0 0 6px">Zyski ciepła w ciągu dnia [W] – '+(C.kind==='clear'?'słoneczny dzień lipca':'przeciętny dzień lipca')+'</h2>'+hourlyChart(R)+'</div>'+
+    '<div><h2 style="font-size:13px;margin:0 0 4px">Co można zrobić</h2><ul class="tips">'+tips(R,C).map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul></div></div>';
+  if(R.wins.length)h+='<h2 style="font-size:13px;margin:14px 0 4px">Okna w pomieszczeniu</h2><table><thead><tr><th>Okno</th><th class="num">Powierzchnia</th><th>Osłona</th><th class="num">Lato kWh/dzień</th><th class="num">Zima kWh/sezon</th></tr></thead><tbody>'+
+    R.wins.map(w=>'<tr><td>'+winLabel(w)+'</td><td class="num">'+fmt(w.A*w.part,2)+' m²</td><td>'+shadeText(w)+'</td><td class="num">'+fmt(w.sumDay*w.part,2)+'</td><td class="num">'+fmt(w.season*w.part)+'</td></tr>').join('')+'</tbody></table>';
+  h+='</div>';
+  // tabela pomieszczeń
+  const sorted=[...list].sort(sortBy==='name'?(a,b)=>a.name.localeCompare(b.name,'pl'):sortBy==='winter'?(a,b)=>b.season-a.season:sortBy==='summer'?(a,b)=>b.sumDay-a.sumDay:(a,b)=>b.risk-a.risk||b.peak-a.peak);
+  const th=(k,n,cl)=>'<th class="sort'+(cl?' '+cl:'')+(sortBy===k?' on':'')+'" data-sort="'+k+'">'+n+(sortBy===k?' ↓':'')+'</th>';
+  h+='<div class="card"><h2>Pomieszczenia</h2><p class="sub">Okna w m² wg kierunku (Pd – południe, Zach – zachód, Wsch – wschód, Pn – północ, dach – okna dachowe). Kliknij nagłówek, żeby posortować.</p><table id="rooms"><thead><tr>'+th('name','Pomieszczenie')+'<th>Kondygnacja</th><th>Okna [m²]</th>'+th('summer','Lato kWh/dzień','num')+th('risk','Szczyt W/m²','num')+'<th>Ryzyko</th>'+th('winter','Zima kWh/sezon','num')+'</tr></thead><tbody>'+
+    sorted.map(r=>'<tr data-k="'+esc(r.key)+'" class="'+(r.key===selKey?'sel':'')+'"><td>'+esc(r.name)+'</td><td>'+esc(r.floorName)+'</td><td>'+facText(r)+'</td><td class="num">'+fmt(r.sumDay,1)+'</td><td class="num">'+fmt(r.peak)+'</td><td>'+badge(r)+'</td><td class="num">'+fmt(r.season)+'</td></tr>').join('')+
+    '<tr><td><b>Cały dom</b></td><td></td><td></td><td class="num"><b>'+fmt(list.reduce((a,r)=>a+r.sumDay,0),1)+'</b></td><td></td><td></td><td class="num"><b>'+fmt(C.house.season)+'</b></td></tr></tbody></table></div>';
+  // miesiące
+  h+='<div class="card"><h2>Zyski od słońca w ciągu roku</h2><p class="sub">Cały dom, przeciętna pogoda, kWh w miesiącu</p>'+monthlyChart(C)+'</div>';
+  // metoda
+  h+='<div class="card"><h2>Jak to jest liczone</h2><p class="hint" style="margin:4px 0 0"><span>Zysk przez okno = powierzchnia × udział szyby (okna 0,7, drzwi tarasowe 0,8, dachowe 0,65) × g × promieniowanie na płaszczyznę okna × zacienienie × osłony.</span> <span>Pozycja słońca liczona co 15 minut (szerokość 52°N, deklinacja +21° w lipcu, −21° w styczniu). Okap, wysunięte piętro i zadaszony taras rzucają cień zależny od wysokości słońca i kierunku ściany; pergola przepuszcza ok. 50% słońca latem i 80% zimą.</span> <span>Poddasze: dodatkowe ciepło przez nagrzany dach (temperatura słoneczna połaci, U dachu z modułu Energia albo 0,13, opóźnienie 3 h); pod strychem – ok. 1/3 tego.</span> <span>Ryzyko wg szczytowych zysków na m² podłogi: poniżej 15 W/m² niskie, 15–30 umiarkowane, 30–50 wysokie, powyżej 50 bardzo wysokie (pod skosami progi o 20% niższe – lekka konstrukcja szybciej się nagrzewa).</span> <span>Zimą: przeciętne dni miesięcy październik–kwiecień, zysk pomniejszony o część, której nie da się wykorzystać (w kwietniu i październiku więcej).</span></p></div>';
+  M.innerHTML=h;
+  // zdarzenia
+  M.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;render()});
+  M.querySelectorAll('.plan svg').forEach(svg=>svg.addEventListener('click',e=>{const k=e.target.closest?.('.rc')?.dataset.k;if(k){selKey=k;render()}}));
+  M.querySelectorAll('#rooms tbody tr[data-k]').forEach(tr=>tr.onclick=()=>{selKey=tr.dataset.k;render();$('main').querySelector('.plans')?.scrollIntoView({block:'nearest'})});
+  M.querySelectorAll('th[data-sort]').forEach(t=>t.onclick=()=>{sortBy=t.dataset.sort;render()});
+  const tip=$('tip'),show=(e,html)=>{tip.style.display='block';tip.innerHTML=html;tip.style.left=Math.min(e.clientX+14,innerWidth-270)+'px';tip.style.top=(e.clientY+14)+'px'},hide=()=>{tip.style.display='none'};
+  M.querySelectorAll('#hourly .hb').forEach(el=>{const hr=+el.dataset.h;el.onmousemove=e=>show(e,'<b>'+hr+':00–'+(hr+1)+':00</b><br>'+SRC.filter(([k])=>R.bins[k]&&R.bins[k][hr]>.5).map(([k,n,col])=>'<i style="background:'+col+'"></i>'+n+': '+fmt(R.bins[k][hr])+' W').join('<br>')+'<br>Razem: '+fmt(R.hours[hr])+' W · '+fmt(R.hours[hr]/R.area)+' W/m²');el.onmouseleave=hide});
+  M.querySelectorAll('#monthly .mb').forEach(el=>{const m=+el.dataset.m;el.onmousemove=e=>show(e,'<b>'+MONTHS[m]+'</b><br>'+fmt(C.house.month[m])+' kWh w miesiącu'+(SEASON[m+1]!=null?'<br>do ogrzewania: '+fmt(C.house.month[m]*SEASON[m+1])+' kWh':''));el.onmouseleave=hide});
+  M.querySelectorAll('.plan .rc').forEach(el=>{const r=C.rooms[el.dataset.k];if(!r)return;el.onmousemove=e=>show(e,'<b>'+esc(r.name)+'</b><br>Szczyt: '+fmt(r.peak)+' W/m²<br>Latem: '+fmt(r.sumDay,1)+' kWh/dzień<br>Zimą: '+fmt(r.season)+' kWh w sezonie');el.onmouseleave=hide});
+}
+const rec=HouserStore.load();project=rec?rec.project:null;render();
+HouserStore.subscribe(r=>{project=r.project;render()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>
