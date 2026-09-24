@@ -2,6 +2,8 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
+<script src="shared/i18n-en.js"></script>
+<script src="shared/i18n.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Houser – projektowanie domu</title>
 <link rel="stylesheet" href="shared/theme.css">
@@ -59,6 +61,10 @@ main{position:relative;min-height:0}
 .projbar .meta{color:var(--hs-muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1 1 auto}
 .projbar>.pbtn,.projbar>label{flex:0 0 auto}
 @media(max-width:900px){.projbar{flex-wrap:wrap}.projbar .meta{flex-basis:100%;order:9}}
+.lang{display:inline-flex;flex:0 0 auto;border:1px solid var(--hs-line-strong,#cbd5e1);border-radius:var(--hs-radius,8px);overflow:hidden;background:var(--hs-panel)}
+.lang button{border:0;background:transparent;padding:5px 8px;font:700 11.5px var(--hs-font);color:var(--hs-muted);cursor:pointer;letter-spacing:.04em}
+.lang button+button{border-left:1px solid var(--hs-line,#e2e8f0)}
+.lang button.on{background:#2563eb;color:#fff}
 .projbar .dirty{color:#b45309;font-weight:600}
 .pbtn{border:1px solid var(--hs-line-strong,#cbd5e1);background:var(--hs-panel);color:var(--hs-text);padding:5px 10px;border-radius:var(--hs-radius,8px);font:600 12.5px var(--hs-font);cursor:pointer;white-space:nowrap}
 .pbtn:hover{border-color:var(--hs-accent)}
@@ -134,6 +140,7 @@ a{color:var(--accent)}
   <button class="pbtn" id="pbUndo" title="Cofnij ostatnią zmianę (Ctrl+Z)" disabled>↶ Cofnij</button>
   <button class="pbtn" id="pbRedo" title="Ponów cofniętą zmianę (Ctrl+Y / Ctrl+Shift+Z)" disabled>↷ Ponów</button>
   <button class="pbtn primary" id="pbSave" title="Zapisuje cały projekt (pomieszczenia, warunki, rzut, okna, drzwi, schody, dach, tarasy, meble, ustawienia 3D) do jednego pliku JSON. Zdjęcia i wizualizacje AI zostają tylko w przeglądarce.">💾 Zapisz do pliku</button>
+  <span class="lang" id="lang" data-noi18n title="Język / Language"><button data-l="pl">PL</button><button data-l="en">EN</button></span>
   <a id="openExt" class="ext" href="#" target="_blank" rel="noopener" hidden title="Otwórz bieżący moduł w osobnej karcie">↗</a>
 </div>
 <main id="views">
@@ -274,6 +281,8 @@ async function openProject(obj,label){
   lsSet(LAST_SAVE,label==='file'?new Date().toISOString():'');
   pushUndo(before,'plik');curJSON=JSON.stringify(project);lastPush={t:0,src:''};echoUntil=Date.now()+3000;
   reloadModules();renderBar();toast('Wczytano projekt „'+projName(project)+'”')}
+// język strony (PL / EN) – zmiana przeładowuje całą aplikację razem z modułami
+for(const b of document.querySelectorAll('#lang button')){b.classList.toggle('on',b.dataset.l===HouserI18n.lang);b.onclick=()=>{if(b.dataset.l!==HouserI18n.lang)HouserI18n.set(b.dataset.l)}}
 $('pbSave').onclick=()=>saveFile().catch(e=>alert('Nie udało się zapisać: '+e.message));
 // ---------- strona startowa: bieżący projekt i galeria gotowych domów
 function pastel(hex){const n=parseInt((hex||'#cbd5e1').slice(1),16),m=v=>Math.round(v+(255-v)*.45);return 'rgb('+m(n>>16&255)+','+m(n>>8&255)+','+m(n&255)+')'}

@@ -46,8 +46,13 @@ Zasada: każda funkcja to osobny, prosty moduł – lepiej dodać nowy moduł ni
 
 ### Dodanie nowego modułu
 
-1. Utwórz `modules/<nazwa>/index.html`: w `<head>` dodaj `<link rel="stylesheet" href="../../shared/theme.css">`, a przed `</body>` `<script src="../../shared/nav.js"></script>`.
+1. Utwórz `modules/<nazwa>/index.html`: na początku `<head>` dodaj `<script src="../../shared/i18n-en.js"></script>` i `<script src="../../shared/i18n.js"></script>`, potem `<link rel="stylesheet" href="../../shared/theme.css">`, a przed `</body>` `<script src="../../shared/nav.js"></script>`.
 2. Dopisz moduł do tablicy `MODULES` w `index.html`.
+3. Nowe teksty dopisz po angielsku do `shared/i18n-en.js`.
+
+### Wersje językowe (PL / EN)
+
+Strona jest pisana po polsku. Przełącznik **PL | EN** na pasku projektu zapisuje język w przeglądarce (`houser:lang`) i przeładowuje całość. W trybie EN `shared/i18n.js` tłumaczy w locie teksty strony i modułów (także te dopisywane później), podpowiedzi, okna dialogowe i napisy na rzutach według słownika `shared/i18n-en.js`. Klucze to polskie teksty, a liczby zapisuje się jako `{n}`, np. `"Salon: {n} m²": "Living room: {n} m²"`. Dłuższe teksty są dzielone na zdania i części (` – `, ` · `, `: `), a nazwy pomieszczeń są podmieniane także wewnątrz innych zdań. Element z atrybutem `data-noi18n` nie jest tłumaczony. Dane projektu (nazwy wpisane przez użytkownika, plik JSON) się nie zmieniają.
 
 ## Publikacja
 
