@@ -34,3 +34,11 @@ html,body{font-family:var(--hs-font);font-size:14px;background:var(--hs-bg);colo
 .hs-btn:hover{background:var(--hs-panel-2);border-color:#94a3b8}
 .hs-btn.primary{background:var(--hs-accent);border-color:var(--hs-accent);color:#fff}
 .hs-btn.primary:hover{background:var(--hs-accent-hover)}
+
+/* Telefon / wąski ekran: moduły z panelem bocznym przechodzą na jedną kolumnę, szerokie tabele i rzuty przewijają się w swoim polu */
+@media (max-width:900px){
+  .wrap{grid-template-columns:minmax(0,1fr)!important}
+  .wrap>*{min-width:0}
+  table{display:block;max-width:100%;overflow-x:auto}
+  .planCard{max-width:100%;overflow:auto}
+}

@@ -46,12 +46,17 @@ body.navopen .brand{flex:1}
 body.navopen .scrim{display:block}
 .content{grid-column:2;min-width:0;height:100vh;display:grid;grid-template-rows:auto minmax(0,1fr)}
 .burger.mobile{display:none}
-@media(max-width:800px){
+@media(max-width:800px),(hover:none) and (pointer:coarse) and (max-width:1100px){
   body{grid-template-columns:minmax(0,1fr)}
   .content{grid-column:1}
   #nav{transform:translateX(-105%);transition:transform .2s ease;width:min(320px,88vw)!important}
   body.navopen #nav{transform:none}
   .burger.mobile{display:grid;width:32px;height:32px}
+  .projbar{flex-wrap:nowrap!important;gap:5px;padding:6px 8px}
+  .projbar .plabel,.projbar #pbMeta,.projbar #openExt,.projbar .lbl{display:none!important}
+  .projbar .name{max-width:none;flex:1 1 auto;min-width:0}
+  .pbcloud .vis,#pbUser span{display:none}
+  .pbtn{padding:5px 8px}
 }
 .spacer{flex:1}
 .ext{color:var(--hs-accent);font-size:12px;text-decoration:none;white-space:nowrap;padding:0 6px}
@@ -88,6 +93,7 @@ main{position:relative;min-height:0}
 #pbUser{display:inline-flex;align-items:center;gap:6px}
 #pbUser img,.umenu img,.owner img{width:20px;height:20px;border-radius:50%;object-fit:cover;display:block}
 .gmark{width:14px;height:14px;display:block}
+.umenu[hidden]{display:none}
 .umenu{position:fixed;min-width:240px;background:#fff;border:1px solid #dbe2ea;border-radius:12px;box-shadow:0 12px 32px rgba(15,23,42,.18);padding:10px;z-index:60;display:flex;flex-direction:column;gap:6px}
 .umenu .who{display:flex;gap:8px;align-items:center;padding:2px 2px 8px;border-bottom:1px solid #eef2f6}
 .umenu .who img{width:32px;height:32px}
@@ -117,7 +123,7 @@ main{position:relative;min-height:0}
 .view{position:absolute;inset:0;display:none;outline:none}
 .view.active{display:block}
 iframe{width:100%;height:100%;border:0;display:block;background:#fff}
-#start{overflow:auto;padding:28px 16px}
+#start,#projekty{overflow:auto;padding:28px 16px}
 .wrap{max-width:1000px;margin:0 auto}
 h1{margin:0 0 6px;font-size:26px}
 .lead{color:var(--muted);margin:0 0 22px;line-height:1.5}
@@ -178,9 +184,9 @@ a{color:var(--accent)}
 <div class="content">
 <div class="projbar" id="projbar">
   <button class="burger mobile" id="burgerM" title="Menu modułów"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-  <span>Projekt:</span><span class="name" id="pbName">—</span><span class="meta" id="pbMeta"></span><span id="pbCloud" class="pbcloud" hidden></span>
-  <button class="pbtn" id="pbUndo" title="Cofnij ostatnią zmianę (Ctrl+Z)" disabled>↶ Cofnij</button>
-  <button class="pbtn" id="pbRedo" title="Ponów cofniętą zmianę (Ctrl+Y / Ctrl+Shift+Z)" disabled>↷ Ponów</button>
+  <span class="plabel">Projekt:</span><span class="name" id="pbName">—</span><span class="meta" id="pbMeta"></span><span id="pbCloud" class="pbcloud" hidden></span>
+  <button class="pbtn" id="pbUndo" title="Cofnij ostatnią zmianę (Ctrl+Z)" disabled>↶<span class="lbl"> Cofnij</span></button>
+  <button class="pbtn" id="pbRedo" title="Ponów cofniętą zmianę (Ctrl+Y / Ctrl+Shift+Z)" disabled>↷<span class="lbl"> Ponów</span></button>
   <span class="acct" id="acct" hidden><button class="pbtn" id="pbUser"></button><div class="umenu" id="umenu" hidden></div></span>
   <span class="lang" id="lang" data-noi18n title="Język / Language"><button data-l="pl">PL</button><button data-l="en">EN</button></span>
   <a id="openExt" class="ext" href="#" target="_blank" rel="noopener" hidden title="Otwórz bieżący moduł w osobnej karcie">↗</a>
@@ -400,10 +406,10 @@ function renderCloudBar(){const el=$('pbCloud'),acct=$('acct');if(!el)return;con
   if(st.enabled){$('pbUser').innerHTML=u?avatar(u)+'<span>'+esc(firstName(u.name))+'</span>':GICON+'<span>Zaloguj</span>';
     $('pbUser').title=u?'Konto: '+u.name+(u.email?' ('+u.email+')':''):'Zaloguj się przez Google – projekty w chmurze na każdym urządzeniu'}
   el.hidden=!rec;if(!rec)return;
-  let h;
-  if(!u||st.off)h='<span class="wait" title="Projekt zapisuje się sam w tej przeglądarce. Po zalogowaniu – także w chmurze. Plik: moduł Projekty → Eksportuj.">💻 zapisany w tej przeglądarce</span>';
-  else h={pending:'<span class="wait">☁ zapisuję…</span>',saving:'<span class="wait">☁ zapisuję…</span>',saved:'<span class="ok">☁ zapisano '+fmtTime(st.at)+'</span>',
-    error:'<button class="pbtn" id="pbCloudRetry" title="'+esc(st.msg)+'">⚠ nie zapisano – ponów</button>',conflict:'<span class="bad">⚠ konflikt wersji</span>'}[st.state]||(st.linked?'<span class="ok">☁ w chmurze'+(st.savedAt?' '+fmtTime(st.savedAt):'')+'</span>':'<span class="wait" title="Zapisze się w chmurze przy pierwszej zmianie">☁ zapisze się przy zmianie</span>');
+  const L=(cls,ic,t,ti)=>'<span class="'+cls+'"'+(ti?' title="'+ti+'"':'')+'>'+ic+'<span class="lbl"> '+t+'</span></span>';let h;
+  if(!u||st.off)h=L('wait','💻','zapisany w tej przeglądarce','Projekt zapisuje się sam w tej przeglądarce. Po zalogowaniu – także w chmurze. Plik: moduł Projekty → Eksportuj.');
+  else h={pending:L('wait','☁','zapisuję…'),saving:L('wait','☁','zapisuję…'),saved:L('ok','☁','zapisano '+fmtTime(st.at)),
+    error:'<button class="pbtn" id="pbCloudRetry" title="'+esc(st.msg)+'">⚠<span class="lbl"> nie zapisano – ponów</span></button>',conflict:L('bad','⚠','konflikt wersji')}[st.state]||(st.linked?L('ok','☁','w chmurze'+(st.savedAt?' '+fmtTime(st.savedAt):'')):L('wait','☁','zapisze się przy zmianie','Zapisze się w chmurze przy pierwszej zmianie'));
   if(u&&st.linked)h+=' <span class="vis'+(st.vis==='public'?' pub':'')+'">'+(VIS_LABEL[st.vis]||VIS_LABEL.private)+'</span>';
   el.innerHTML='<a href="#projekty" class="pblink" title="Projekty – eksport, import, duplikaty, udostępnianie">'+h+'</a>';
   if($('pbCloudRetry'))$('pbCloudRetry').onclick=e=>{e.preventDefault();HouserCloud.saveNow()}}

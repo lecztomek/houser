@@ -1,5 +1,6 @@
 // Słownik PL → EN dla shared/i18n.js (klucze: tekst polski, liczby jako {n}).
-window.HOUSER_I18N_EN={"autor":"author",
+window.HOUSER_I18N_EN={"zapisany w tej przeglądarce":"saved in this browser","zapisuję…":"saving…","zapisano {n}:{n}":"saved {n}:{n}","nie zapisano – ponów":"not saved – retry","konflikt wersji":"version conflict","w chmurze":"in the cloud","w chmurze {n}:{n}":"in the cloud {n}:{n}","zapisze się przy zmianie":"will save on the next change",
+"autor":"author",
 "Usunąć projekt z chmury (razem ze zdjęciami w chmurze)?":"Delete the project from the cloud (with its photos in the cloud)?",
 "Kopia w tej przeglądarce, jeśli jest otwarta, zostaje.":"The copy in this browser, if open, stays.",
 "i":"and",
