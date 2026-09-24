@@ -52,7 +52,7 @@ Zasada: każda funkcja to osobny, prosty moduł – lepiej dodać nowy moduł ni
 
 ### Konta i chmura (Firebase)
 
-Po zalogowaniu przez Google projekt zapisuje się na koncie: najpierw przyciskiem **☁ Zapisz w chmurze**, a potem każda zmiana zapisuje się sama po kilku sekundach, także zdjęcia z Galerii. Na stronie głównej są **Moje projekty w chmurze** (otwieranie na dowolnym urządzeniu, udostępnianie, usuwanie) i **Projekty publiczne** innych osób (otwiera się kopia). Gdy ten sam projekt zmieni się na dwóch urządzeniach, strona pyta, którą wersję zostawić. Bez logowania wszystko działa jak dotąd, tylko w przeglądarce.
+Projekt zapisuje się sam po każdej zmianie: bez logowania w tej przeglądarce (lista projektów w IndexedDB, `shared/library.js`), a po zalogowaniu przez Google także w chmurze, razem ze zdjęciami z Galerii. Moduł **Projekty** (na górze menu) zbiera wszystko w jednym miejscu: nowy projekt, import i eksport pliku JSON, zmiana nazwy, duplikat, udostępnianie, usuwanie, listy „W chmurze” i „Na tym urządzeniu”. Na stronie głównej są ostatnie projekty i **Projekty publiczne** innych osób (otwiera się kopia). Gdy ten sam projekt zmieni się na dwóch urządzeniach, strona pyta, którą wersję zostawić. Bez logowania wszystko działa jak dotąd, tylko w przeglądarce.
 
 Kod jest w `shared/cloud.js`, a dane w Firestore (wystarczy darmowy plan Spark, bez Storage): `projects/{id}` (opis, miniaturka, prywatny/publiczny), `projects/{id}/content/main` (projekt JSON) i `projects/{id}/photos/{id}` (zdjęcia). Reguły dostępu są w `firestore.rules`: czyta właściciel albo każdy, jeśli projekt jest publiczny; zapisuje tylko właściciel.
 

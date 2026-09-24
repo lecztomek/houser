@@ -19,9 +19,11 @@
   const emit=()=>statusCbs.forEach(cb=>{try{cb(status())}catch(e){console.error(e)}});
   const setOp=(state,msg)=>{op={state,at:state==='saved'?new Date().toISOString():op.at,msg:msg||''};emit()};
   const curPid=()=>HouserStore.load()?.project?.projectId||null;
-  function linkOf(pid){const L=pid&&links()[pid];return L&&user&&L.owner===user.uid?L:null}
+  function linkOf(pid){const L=pid&&links()[pid];return L&&!L.off&&user&&L.owner===user.uid?L:null}
+  // czy projekt ma się zapisywać w chmurze (po zalogowaniu – każdy, chyba że użytkownik go z chmury usunął)
+  const eligible=pid=>!!(user&&pid&&!links()[pid]?.off);
   // stan dla paska projektu
-  function status(){const pid=curPid(),L=linkOf(pid);return {enabled,ready:!!fb,user,pid,linked:!!L,vis:L?.vis||null,savedAt:L?.at||null,...op}}
+  function status(){const pid=curPid(),L=linkOf(pid);return {enabled,ready:!!fb,user,pid,linked:!!L,off:!!(pid&&links()[pid]?.off),vis:L?.vis||null,savedAt:L?.at||null,...op}}
 
   function init(){
     if(!enabled)return Promise.resolve(false);if(readyP)return readyP;
@@ -33,7 +35,7 @@
       fb={U,F,auth,db};
       await new Promise(res=>{let first=true;U.onAuthStateChanged(auth,u=>{
         user=u?{uid:u.uid,name:u.displayName||u.email||'',email:u.email||'',photo:u.photoURL||''}:null;
-        if(first){first=false;res()}authCbs.forEach(cb=>{try{cb(user)}catch(e){console.error(e)}});emit();if(user)touch('project')})});
+        if(first){first=false;res()}authCbs.forEach(cb=>{try{cb(user)}catch(e){console.error(e)}});emit()})});
       return true})().catch(e=>{console.error('Firebase:',e);readyP=null;throw e});
     return readyP}
 
@@ -116,18 +118,31 @@
   async function setVisibility(pid,vis){await init();need();await fb.F.setDoc(D('projects',pid),{visibility:vis},{merge:true});if(links()[pid])setLink(pid,{vis});emit()}
   async function remove(pid){await init();need();
     const ph=await fb.F.getDocs(fb.F.collection(fb.db,'projects',pid,'photos'));for(const d of ph.docs)await fb.F.deleteDoc(d.ref);
-    await fb.F.deleteDoc(D('projects',pid,'content','main'));await fb.F.deleteDoc(D('projects',pid));setLink(pid,null);
+    await fb.F.deleteDoc(D('projects',pid,'content','main'));await fb.F.deleteDoc(D('projects',pid));const l=links();l[pid]={off:true};try{localStorage.setItem(LINKS,JSON.stringify(l))}catch(_){}
     for(const r of await HouserGallery.list(pid))if(r.cloudUp)await HouserGallery.put({...r,cloudUp:false,cloudSig:''});emit()}
   function unlink(pid){setLink(pid,null);emit()}
+  // ponowne włączenie zapisu w chmurze dla projektu usuniętego wcześniej z chmury
+  function enable(pid){setLink(pid,null);touch('project')}
+  // projekt z chmury bez otwierania (eksport, duplikat)
+  async function fetchProject(pid){await init();const meta=await getData('projects',pid);const c=await getData('projects',pid,'content','main');if(!meta||!c?.json)throw new Error('Nie ma takiego projektu w chmurze.');return {meta,project:JSON.parse(c.json)}}
+  // kopia projektu w chmurze (nowy identyfikator, te same zdjęcia), bez zmiany bieżącego projektu
+  async function duplicate(pid,name,newId){await init();need();const {meta,project}=await fetchProject(pid);
+    project.projectId=newId;if(project.definitionSnapshot)project.definitionSnapshot.name=name;project.definitionName=name;
+    const now=new Date().toISOString(),rev=Math.random().toString(36).slice(2,10);
+    await fb.F.setDoc(D('projects',newId),{owner:user.uid,ownerName:user.name,ownerPhoto:user.photo,name,visibility:'private',createdAt:now,updatedAt:now,rev,stats:meta.stats||null,plan:meta.plan||'',cover:meta.cover||'',photoIds:[]});
+    await fb.F.setDoc(D('projects',newId,'content','main'),{json:JSON.stringify(forCloud(project)),updatedAt:now});
+    const ph=await fb.F.getDocs(fb.F.collection(fb.db,'projects',pid,'photos')),ids=[];
+    for(const d of ph.docs){const id='g'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);await fb.F.setDoc(D('projects',newId,'photos',id),d.data());ids.push(id)}
+    await fb.F.setDoc(D('projects',newId),{photoIds:ids},{merge:true});return newId}
 
   // automatyczny zapis powiązanego projektu po zmianach (projekt: 3 s, zdjęcia: 1,5 s od ostatniej zmiany)
   let timer=null,want={project:false,photos:false},busy=false;
-  function touch(what){if(!enabled||!user)return;const pid=curPid();if(!linkOf(pid)){emit();return}
+  function touch(what){if(!enabled||!user)return;const pid=curPid();if(!eligible(pid)){emit();return}
     want[what==='photos'?'photos':'project']=true;if(op.state==='conflict')return;clearTimeout(timer);setOp('pending');timer=setTimeout(flush,want.project?3000:1500)}
   async function flush(){if(busy){clearTimeout(timer);timer=setTimeout(flush,1000);return}
-    const rec=HouserStore.load(),pid=rec?.project?.projectId;if(!user||!linkOf(pid)){setOp('idle');return}
+    const rec=HouserStore.load(),pid=rec?.project?.projectId;if(!eligible(pid)){setOp('idle');return}
     busy=true;setOp('saving');const w=want;want={project:false,photos:false};
-    try{if(w.project){const r=await saveProject(rec.project);if(r.conflict){setOp('conflict');hooks.conflict?.(r.conflict);return}}
+    try{if(w.project||!linkOf(pid)){const r=await saveProject(rec.project);if(r.conflict){setOp('conflict');hooks.conflict?.(r.conflict);return}}
       if(w.photos)await pushPhotos(curPid());setOp('saved')}
     catch(e){console.error(e);want={project:want.project||w.project,photos:want.photos||w.photos};setOp('error',e.message||String(e))}
     finally{busy=false}}
@@ -137,6 +152,6 @@
   const hooks={};
   global.HouserCloud={enabled,init,signIn,signOut,_testSignIn,user:()=>user,onAuth:cb=>authCbs.push(cb),onStatus:cb=>statusCbs.push(cb),status,
     configure(o){if(o.describe)describe=o.describe;Object.assign(hooks,o.hooks||{})},
-    saveProject,open,listMine,listPublic,setVisibility,remove,unlink,touch,saveNow,isLinked:pid=>!!linkOf(pid),
+    saveProject,open,listMine,listPublic,setVisibility,remove,unlink,enable,fetchProject,duplicate,touch,saveNow,isLinked:pid=>!!linkOf(pid),isOff:pid=>!!(pid&&links()[pid]?.off),
     resolveConflict:async keepLocal=>{op={state:'idle',at:null,msg:''};if(keepLocal){const rec=HouserStore.load();await saveProject(rec.project,{force:true});await pushPhotos(rec.project.projectId);setOp('saved')}else emit()}};
 })(window);

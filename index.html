@@ -65,6 +65,23 @@ main{position:relative;min-height:0}
 .lang button{border:0;background:transparent;padding:5px 8px;font:700 11.5px var(--hs-font);color:var(--hs-muted);cursor:pointer;letter-spacing:.04em}
 .lang button+button{border-left:1px solid var(--hs-line,#e2e8f0)}
 .lang button.on{background:#2563eb;color:#fff}
+.pblink{text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:6px}
+.seclink{float:right;text-transform:none;letter-spacing:0;font-size:13px;color:#2563eb;text-decoration:none}
+.hcard img,.prow img{display:block}
+.rcard .thumb img{width:100%;height:130px;object-fit:cover;border-radius:8px}
+.hcard .thumb img.plan,.prow .pth img.plan{object-fit:contain;background:#f8fafc}
+.pmbar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}
+.plist{display:flex;flex-direction:column;gap:8px}
+.prow{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:14px;align-items:center;background:#fff;border:1px solid #dbe2ea;border-radius:14px;padding:10px}
+.prow.cur1{border-color:#86efac}
+.prow .pth{width:96px;height:64px;border-radius:8px;background:#f1f5f9;overflow:hidden}
+.prow .pth img{width:100%;height:100%;object-fit:cover}
+.pinfo{display:flex;flex-direction:column;gap:3px;min-width:0}
+.pinfo b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pinfo small{color:#64748b;font-size:12.5px}
+.pinfo .vis{align-self:flex-start}
+.pacts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+@media(max-width:760px){.prow{grid-template-columns:72px minmax(0,1fr)}.prow .pth{width:72px;height:52px}.pacts{grid-column:1/-1;justify-content:flex-start}}
 .pbcloud{flex:0 0 auto;font-size:12px;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
 .pbcloud .ok{color:#15803d;font-weight:600}.pbcloud .wait{color:#64748b}.pbcloud .bad{color:#b91c1c;font-weight:600}
 .acct{position:relative;flex:0 0 auto}
@@ -164,7 +181,6 @@ a{color:var(--accent)}
   <span>Projekt:</span><span class="name" id="pbName">—</span><span class="meta" id="pbMeta"></span><span id="pbCloud" class="pbcloud" hidden></span>
   <button class="pbtn" id="pbUndo" title="Cofnij ostatnią zmianę (Ctrl+Z)" disabled>↶ Cofnij</button>
   <button class="pbtn" id="pbRedo" title="Ponów cofniętą zmianę (Ctrl+Y / Ctrl+Shift+Z)" disabled>↷ Ponów</button>
-  <button class="pbtn primary" id="pbSave" title="Zapisuje cały projekt (pomieszczenia, warunki, rzut, okna, drzwi, schody, dach, tarasy, meble, ustawienia 3D) do jednego pliku JSON. Zdjęcia i wizualizacje AI zostają tylko w przeglądarce.">💾 Zapisz do pliku</button>
   <span class="acct" id="acct" hidden><button class="pbtn" id="pbUser"></button><div class="umenu" id="umenu" hidden></div></span>
   <span class="lang" id="lang" data-noi18n title="Język / Language"><button data-l="pl">PL</button><button data-l="en">EN</button></span>
   <a id="openExt" class="ext" href="#" target="_blank" rel="noopener" hidden title="Otwórz bieżący moduł w osobnej karcie">↗</a>
@@ -176,13 +192,14 @@ a{color:var(--accent)}
       <p class="lead" id="homeLead">Wszystko działa w przeglądarce, bez kont i serwera. Wybierz gotowy dom albo zacznij od zera – potem idziesz po kolei przez moduły z menu po lewej. Projekt zapisujesz na dysk jednym plikiem.</p>
       <h2 class="sec">Bieżący projekt</h2>
       <div id="curProj"></div>
-      <div id="cloudMineSec" hidden><h2 class="sec">Moje projekty w chmurze</h2><div id="cloudMine"></div></div>
+      <div id="recentSec" hidden><h2 class="sec">Ostatnie projekty <a class="seclink" href="#projekty">Wszystkie projekty →</a></h2><div class="gallery" id="recent"></div></div>
       <h2 class="sec">Zacznij od gotowego domu</h2>
       <p class="lead small">Kliknij dom, żeby go wczytać – potem możesz zmieniać wszystko: pomieszczenia, dach, okna, meble.</p>
       <div class="gallery" id="gallery"></div>
       <div id="cloudPubSec" hidden><h2 class="sec">Projekty publiczne</h2><p class="lead small">Domy udostępnione przez innych. Otwierasz kopię – oryginał autora się nie zmienia.</p><div class="gallery" id="cloudPub"></div></div>
     </div>
   </section>
+  <section id="projekty" class="view"><div class="wrap" id="pm"></div></section>
 </main>
 </div>
 <script src="shared/project-store.js"></script>
@@ -191,6 +208,7 @@ a{color:var(--accent)}
 <script src="shared/openings.js"></script>
 <script src="shared/quantities.js"></script>
 <script src="shared/gallery.js"></script>
+<script src="shared/library.js"></script>
 <script src="shared/firebase-config.js"></script>
 <script src="shared/cloud.js"></script>
 <script>
@@ -241,6 +259,9 @@ const frames={};
 function tabBtn(id,label,soon,m){const b=document.createElement('button');b.className='tab';b.dataset.id=id;b.title=m?m.step+'. '+m.name+' – '+m.desc:'Strona startowa';
   b.style.setProperty('--gc',GROUP_COL[m.group]||'#64748b');b.style.setProperty('--gt',GROUP_TINT[m.group]||'#f1f5f9');
   b.innerHTML='<span class="ic">'+icon(m.id)+'</span><span class="tx">'+label+'</span><span class="no">'+String(m.step).padStart(2,'0')+'</span>';b.onclick=()=>{location.hash=id;document.body.classList.remove('navopen')};tabs.appendChild(b);}
+ICON_PATH.projekty='<path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h3.8l2 2.3h7.2A2.5 2.5 0 0 1 21 9.8v7.7a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/><path d="M3 10.5h18"/>';
+{const b=document.createElement('button');b.className='tab';b.dataset.id='projekty';b.title='Projekty – nowy, import, eksport, duplikaty, chmura';b.style.setProperty('--gc','#475569');b.style.setProperty('--gt','#e2e8f0');
+  b.innerHTML='<span class="ic">'+icon('projekty')+'</span><span class="tx">Projekty</span><span class="no"></span>';b.onclick=()=>{location.hash='projekty';document.body.classList.remove('navopen')};tabs.appendChild(b)}
 let lastGroup='',navGroup='';
 MODULES.forEach(m=>{
   if(m.group!==navGroup){navGroup=m.group;const g=document.createElement('div');g.className='grp';g.textContent=m.group;tabs.appendChild(g)}
@@ -252,18 +273,18 @@ if(cards){  if(m.group!==lastGroup){lastGroup=m.group;const h=document.createEle
   c.onclick=()=>{location.hash=m.id;};cards.appendChild(c);}
 });
 function show(id){
-  const m=MODULES.find(x=>x.id===id);if(!m)id='start';
+  const m=MODULES.find(x=>x.id===id);if(!m&&id!=='projekty')id='start';
   if(m&&!frames[id]){
     const sec=document.createElement('section');sec.className='view';sec.id='view-'+id;
     const f=document.createElement('iframe');f.src=m.src;f.title=m.name;
     sec.appendChild(f);views.appendChild(sec);frames[id]=sec;
   }
-  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v===(m?frames[id]:document.getElementById('start'))));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v===(m?frames[id]:document.getElementById(id))));
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.id===id));
-  document.getElementById('brand').classList.toggle('active',!m);
-  if(m){try{localStorage.setItem('houser:last-module',m.id)}catch(_){}}else setTimeout(()=>{try{renderHome()}catch(_){}},0);
+  document.getElementById('brand').classList.toggle('active',id==='start');
+  if(m){try{localStorage.setItem('houser:last-module',m.id)}catch(_){}}else setTimeout(()=>{try{id==='projekty'?renderProjects():renderHome()}catch(e){console.error(e)}},0);
   openExt.hidden=!m;if(m)openExt.href=m.src;
-  document.title=(m?m.name+' – ':'')+'Houser';
+  document.title=(m?m.name+' – ':id==='projekty'?'Projekty – ':'')+'Houser';
 }
 window.addEventListener('hashchange',()=>show(location.hash.slice(1)));
 // burger: wysuwa pełne menu na wierzch (nad treścią); klik w moduł, w tło albo Esc zamyka
@@ -282,24 +303,14 @@ function projName(p){return p?.definitionSnapshot?.name||p?.definitionName||p?.n
 function fmtTime(iso){if(!iso)return '';const d=new Date(iso),today=d.toDateString()===new Date().toDateString();return today?d.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'}):d.toLocaleString('pl-PL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
 const modName=id=>MODULES.find(m=>m.id===id)?.name||({plik:'wczytanie pliku / nowy projekt',cofnij:'cofnij/ponów'})[id]||'';
 function renderBar(){const rec=HouserStore.load();$('pbName').textContent=rec?projName(rec.project):'brak – wybierz dom na stronie startowej';
-  const saved=lsGet(LAST_SAVE),dirty=rec&&(!saved||saved<rec.updatedAt),inCloud=rec&&HouserCloud.isLinked(rec.project.projectId);
-  $('pbMeta').innerHTML=rec?((inCloud?'':dirty?'<span class="dirty">● niezapisane w pliku</span> · ':'✓ zapisany w pliku '+fmtTime(saved)+' · ')+'zmiana '+fmtTime(rec.updatedAt)+(modName(rec.source)?' ('+modName(rec.source)+')':'')):'';
-  $('pbMeta').title='Projekt jest zawsze trzymany w tej przeglądarce; plik JSON zapisujesz przyciskiem obok.';
-  $('pbSave').disabled=!rec;renderCloudBar()}
+  $('pbMeta').innerHTML=rec?('zmiana '+fmtTime(rec.updatedAt)+(modName(rec.source)?' ('+modName(rec.source)+')':'')):'';
+  renderCloudBar()}
 
 function $(id){return document.getElementById(id)}
 function toast(t){const d=document.createElement('div');d.className='projmsg';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),3500)}
 function reloadModules(){for(const sec of Object.values(frames)){const f=sec.querySelector('iframe');try{f.contentWindow.location.reload()}catch(_){f.src=f.src}}}
 function slug(t){return (t||'projekt').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ł/g,'l').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,50)||'projekt'}
-async function saveFile(){const rec=HouserStore.load();if(!rec)return;
-  const out={...rec.project,houserFile:{app:'houser',format:1,savedAt:new Date().toISOString()}};delete out.visualizations;
-  const blob=new Blob([JSON.stringify(out)],{type:'application/json'}),a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);a.download=slug(projName(rec.project))+'-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
-  lsSet(LAST_SAVE,new Date().toISOString());renderBar();toast('Zapisano plik '+a.download)}
-function confirmReplace(){const rec=HouserStore.load();if(!rec)return true;const saved=lsGet(LAST_SAVE);
-  if(HouserCloud.isLinked(rec.project.projectId)){const st=HouserCloud.status();if(st.state==='saved'||st.state==='idle')return true;
-    return confirm('Bieżący projekt „'+projName(rec.project)+'” nie zdążył się jeszcze zapisać w chmurze – ostatnie zmiany mogą przepaść.\n\nKontynuować?')}
-  return confirm('Bieżący projekt „'+projName(rec.project)+'” w przeglądarce zostanie zastąpiony.'+((!saved||saved<rec.updatedAt)?'\n\nUwaga: ma zmiany niezapisane w pliku – zapisz go najpierw, jeśli chcesz je zachować.':'')+'\n\nKontynuować?')}
+async function saveFile(){const rec=HouserStore.load();if(rec)downloadProject(rec.project)}
 // obj: plik projektu, sam projekt albo sama definicja (pomieszczenia + warunki)
 async function openProject(obj,label){
   if(!obj||typeof obj!=='object')throw new Error('To nie jest plik projektu.');
@@ -312,10 +323,9 @@ async function openProject(obj,label){
   if(!HouserStore.save(project,'plik'))throw new Error('Nie udało się zapisać projektu w przeglądarce (za mało miejsca?).');
   lsSet(LAST_SAVE,label==='file'?new Date().toISOString():'');
   pushUndo(before,'plik');curJSON=JSON.stringify(project);lastPush={t:0,src:''};echoUntil=Date.now()+3000;
-  reloadModules();if(label!=='cloud')HouserCloud.touch('project');renderBar();toast('Wczytano projekt „'+projName(project)+'”')}
+  reloadModules();if(label!=='cloud'&&label!=='sample')HouserCloud.touch('project');renderBar();toast('Wczytano projekt „'+projName(project)+'”')}
 // język strony (PL / EN) – zmiana przeładowuje całą aplikację razem z modułami
 for(const b of document.querySelectorAll('#lang button')){b.classList.toggle('on',b.dataset.l===HouserI18n.lang);b.onclick=()=>{if(b.dataset.l!==HouserI18n.lang)HouserI18n.set(b.dataset.l)}}
-$('pbSave').onclick=()=>saveFile().catch(e=>alert('Nie udało się zapisać: '+e.message));
 // ---------- strona startowa: bieżący projekt i galeria gotowych domów
 function pastel(hex){const n=parseInt((hex||'#cbd5e1').slice(1),16),m=v=>Math.round(v+(255-v)*.45);return 'rgb('+m(n>>16&255)+','+m(n>>8&255)+','+m(n&255)+')'}
 // miniaturka rzutu: parter i piętro obok siebie, pomieszczenia w kolorach z projektu, ściany na granicach
@@ -334,15 +344,14 @@ function stats(p){try{const q=HouserQuantities.compute(p),fl=q.net[q.up]>0?(q.at
 const chips=st=>st?'<span class="chip">'+Math.round(st.area)+' m² użytkowej</span><span class="chip">'+st.fl+'</span><span class="chip">'+st.rooms+' pomieszczeń</span><span class="chip">dach '+Math.round(st.roof)+'°</span>':'';
 const LAST_MOD='houser:last-module';
 function renderCur(){const rec=HouserStore.load(),el=$('curProj');if(!el)return;
-  if(!rec){el.innerHTML='<div class="cur"><div class="thumb">'+planSvg({})+'</div><div><h3>Nie masz jeszcze projektu</h3><div class="meta">Wybierz gotowy dom poniżej, zacznij od pustego projektu albo otwórz swój plik.</div><div class="acts"><button class="btn2 primary" id="hNew">＋ Nowy pusty projekt</button><label class="btn2">Otwórz z pliku<input type="file" id="hFile" accept="application/json,.json" hidden></label></div></div></div>';}
+  if(!rec){el.innerHTML='<div class="cur"><div class="thumb">'+planSvg({})+'</div><div><h3>Nie masz jeszcze projektu</h3><div class="meta">Wybierz gotowy dom poniżej, zacznij od pustego projektu albo otwórz swój plik.</div><div class="acts"><button class="btn2 primary" id="hNew">＋ Nowy pusty projekt</button><label class="btn2">⤒ Importuj z pliku<input type="file" id="hFile" accept="application/json,.json" hidden></label></div></div></div>';}
   else{const p=rec.project,st=stats(p),saved=lsGet(LAST_SAVE),dirty=!saved||saved<rec.updatedAt,last=MODULES.find(m=>m.id===lsGet(LAST_MOD))||MODULES.find(m=>m.id==='projektowanie');
-    el.innerHTML='<div class="cur"><div class="thumb" id="curThumb">'+planSvg(p)+'</div><div><h3>'+esc(projName(p))+'</h3><div>'+chips(st)+'</div><div class="meta">'+(rec.source==='plik'?'Wczytany '+fmtTime(rec.updatedAt):'Ostatnia zmiana '+fmtTime(rec.updatedAt)+(modName(rec.source)?' w module <b>'+esc(modName(rec.source))+'</b>':''))+' · '+(dirty?'<span class="dirty2">● niezapisane w pliku</span>':'✓ zapisany w pliku '+fmtTime(saved))+'</div>'+
-      cloudLine(p)+'<div class="acts"><a class="btn2 primary" href="#'+last.id+'">Kontynuuj: '+esc(last.name)+' →</a><button class="btn2" id="hSave">Zapisz do pliku</button><label class="btn2">Otwórz z pliku<input type="file" id="hFile" accept="application/json,.json" hidden></label><button class="btn2" id="hNew">Nowy pusty</button></div></div></div>';
-    bindCloudLine();$('hSave').onclick=()=>saveFile().catch(e=>alert('Nie udało się zapisać: '+e.message));
+    el.innerHTML='<div class="cur"><div class="thumb" id="curThumb">'+planSvg(p)+'</div><div><h3>'+esc(projName(p))+'</h3><div>'+chips(st)+'</div><div class="meta">'+(rec.source==='plik'?'Wczytany '+fmtTime(rec.updatedAt):'Ostatnia zmiana '+fmtTime(rec.updatedAt)+(modName(rec.source)?' w module <b>'+esc(modName(rec.source))+'</b>':''))+'</div>'+
+      '<div class="acts"><a class="btn2 primary" href="#'+last.id+'">Kontynuuj: '+esc(last.name)+' →</a><a class="btn2" href="#projekty">Projekty: eksport, duplikat, udostępnianie →</a></div></div></div>';
     // okładka z Galerii zamiast rzutu (rzut zostaje mniejszy w rogu)
     if(p.projectId)HouserGallery.cover(p.projectId).then(c=>{const t=$('curThumb');if(!c||!t)return;t.classList.add('hasCover');t.innerHTML='<img class="coverImg" alt="" src="'+c.thumb+'"><div class="miniPlan">'+planSvg(p)+'</div><a class="galLink" href="#galeria">Galeria →</a>'}).catch(()=>{});}
-  $('hFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f||!confirmReplace())return;try{await openProject(JSON.parse(await f.text()),'file')}catch(err){alert('Nie udało się wczytać pliku: '+err.message)}};
-  $('hNew').onclick=async()=>{if(!confirmReplace())return;try{await openProject(HouserDefinition.projectFromDefinition(HouserDefinition.emptyDefinition()),'new');location.hash='pomieszczenia'}catch(err){alert(err.message)}};
+  if($('hFile'))$('hFile').onchange=e=>{const f=e.target.files[0];e.target.value='';importFile(f)};
+  if($('hNew'))$('hNew').onclick=newEmpty;
 }
 const esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let SAMPLES=[];
@@ -350,7 +359,7 @@ async function renderGallery(){const el=$('gallery');if(!el)return;
   if(!SAMPLES.length){try{const man=await (await fetch('examples/index.json')).json();SAMPLES=await Promise.all(man.map(async m=>({...m,project:await (await fetch('examples/'+m.file)).json()})))}catch(e){el.innerHTML='<div class="empty2">Nie udało się wczytać przykładów.</div>';return}}
   const cur=HouserStore.load()?.project?.definitionFingerprint;
   el.innerHTML=SAMPLES.map((m,i)=>'<button class="hcard'+(cur&&cur===m.project.definitionFingerprint?' loaded':'')+'" data-i="'+i+'"><div class="thumb">'+planSvg(m.project)+'</div><h3>'+esc(m.name)+'</h3><div>'+chips(stats(m.project))+'</div><p>'+esc(m.desc)+'</p><span class="go">'+(cur&&cur===m.project.definitionFingerprint?'✓ wczytany – kliknij, żeby wczytać od nowa':'Wczytaj ten dom →')+'</span></button>').join('');
-  el.querySelectorAll('.hcard').forEach(b=>b.onclick=async()=>{const m=SAMPLES[+b.dataset.i];if(!confirmReplace())return;try{await openProject(JSON.parse(JSON.stringify(m.project)),'sample');renderHome()}catch(err){alert('Nie udało się wczytać: '+err.message)}});
+  el.querySelectorAll('.hcard').forEach(b=>b.onclick=async()=>{const m=SAMPLES[+b.dataset.i];if(!(await confirmReplace()))return;try{await openProject(JSON.parse(JSON.stringify(m.project)),'sample');renderHome()}catch(err){alert('Nie udało się wczytać: '+err.message)}});
 }
 function renderHome(){renderCur();renderGallery();renderCloudHome()}
 // ---------- Cofnij / Ponów – wspólne dla wszystkich modułów
@@ -360,9 +369,9 @@ function pushUndo(prevJSON,src){if(prevJSON==null)return;const now=Date.now();
   if(!(src&&src===lastPush.src&&now-lastPush.t<900&&undoStack.length)){undoStack.push({json:prevJSON,src});if(undoStack.length>HIST_MAX)undoStack.shift()}
   lastPush={t:now,src};redoStack.length=0;renderUndo()}
 let echoUntil=0; // po cofnięciu moduły mogą zapisać przywrócony projekt ponownie (normalizacja) – to nie jest nowa zmiana
-function onStoreChange(rec){const j=JSON.stringify(rec.project);if(j===curJSON)return;if(Date.now()<echoUntil){curJSON=j;return}HouserCloud.touch('project');pushUndo(curJSON,rec.source);curJSON=j}
+function onStoreChange(rec){const j=JSON.stringify(rec.project);if(j===curJSON)return;if(Date.now()<echoUntil){curJSON=j;return}HouserCloud.touch('project');libTouch();pushUndo(curJSON,rec.source);curJSON=j}
 function applyHist(from,to){if(!from.length)return;const cur=HouserStore.load(),step=from.pop();
-  to.push({json:cur?JSON.stringify(cur.project):curJSON,src:step.src});HouserStore.save(JSON.parse(step.json),'cofnij');curJSON=step.json;HouserCloud.touch('project');echoUntil=Date.now()+1500;lastPush={t:0,src:''};renderUndo();renderBar()}
+  to.push({json:cur?JSON.stringify(cur.project):curJSON,src:step.src});HouserStore.save(JSON.parse(step.json),'cofnij');curJSON=step.json;HouserCloud.touch('project');libTouch();echoUntil=Date.now()+1500;lastPush={t:0,src:''};renderUndo();renderBar()}
 function renderUndo(){const u=undoStack[undoStack.length-1],r=redoStack[redoStack.length-1];$('pbUndo').disabled=!u;$('pbRedo').disabled=!r;
   $('pbUndo').title='Cofnij'+(u?' zmianę'+(modName(u.src)?' z modułu '+modName(u.src):''):'')+' (Ctrl+Z) · kroków: '+undoStack.length;
   $('pbRedo').title='Ponów'+(r?' zmianę'+(modName(r.src)?' z modułu '+modName(r.src):''):'')+' (Ctrl+Y) · kroków: '+redoStack.length}
@@ -385,57 +394,118 @@ HouserCloud.configure({
     localWrite:()=>{const r=HouserStore.load();curJSON=r?JSON.stringify(r.project):null;renderBar()},
     conflict:async meta=>{const keep=confirm('Projekt „'+(meta.name||'')+'” zmienił się w chmurze na innym urządzeniu ('+fmtTime(meta.updatedAt)+').\n\nOK – zachowaj wersję z tej przeglądarki i nadpisz chmurę.\nAnuluj – wczytaj wersję z chmury.');
       try{if(keep)await HouserCloud.resolveConflict(true);else{await HouserCloud.resolveConflict(false);await openCloud(HouserStore.load().project.projectId,true)}}catch(e){alert('Chmura: '+e.message)}}}});
-function renderCloudBar(){const el=$('pbCloud'),acct=$('acct');if(!el)return;const st=HouserCloud.status();
-  if(!st.enabled){el.hidden=true;acct.hidden=true;return}
-  acct.hidden=false;const u=st.user;
-  $('pbUser').innerHTML=u?avatar(u)+'<span>'+esc(firstName(u.name))+'</span>':GICON+'<span>Zaloguj</span>';
-  $('pbUser').title=u?'Konto: '+u.name+(u.email?' ('+u.email+')':''):'Zaloguj się przez Google – projekty w chmurze na każdym urządzeniu';
-  const rec=HouserStore.load();el.hidden=!u||!rec;if(el.hidden)return;
-  if(!st.linked){el.innerHTML='<button class="pbtn" id="pbCloudSave" title="Zapisuje projekt na Twoim koncie; potem każda zmiana zapisuje się sama">☁ Zapisz w chmurze</button>';$('pbCloudSave').onclick=()=>cloudSave();return}
-  const txt={pending:'<span class="wait">☁ zmiany czekają…</span>',saving:'<span class="wait">☁ zapisuję…</span>',saved:'<span class="ok">☁ zapisany w chmurze '+fmtTime(st.at)+'</span>',
-    error:'<span class="bad" title="'+esc(st.msg)+'">☁ błąd zapisu</span> <button class="pbtn" id="pbCloudRetry">Ponów</button>',conflict:'<span class="bad">☁ konflikt wersji</span>'}[st.state]||'<span class="ok">☁ w chmurze'+(st.savedAt?' '+fmtTime(st.savedAt):'')+'</span>';
-  el.innerHTML=txt+' <span class="vis'+(st.vis==='public'?' pub':'')+'">'+(VIS_LABEL[st.vis]||VIS_LABEL.private)+'</span>';
-  if($('pbCloudRetry'))$('pbCloudRetry').onclick=()=>HouserCloud.saveNow()}
-function cloudLine(p){const st=HouserCloud.status();if(!st.enabled||!st.user)return '';
-  if(!HouserCloud.isLinked(p.projectId))return '<div class="cloudline">Ten projekt jest tylko w tej przeglądarce. <button class="btn2 sm primary" id="hCloudSave">☁ Zapisz w chmurze</button></div>';
-  const pub=st.vis==='public';return '<div class="cloudline">☁ Zapisuje się sam w Twojej chmurze · <span class="vis'+(pub?' pub':'')+'">'+VIS_LABEL[pub?'public':'private']+'</span> <button class="btn2 sm" id="hCloudVis">'+(pub?'Ustaw jako prywatny':'Udostępnij publicznie')+'</button></div>'}
-function bindCloudLine(){if($('hCloudSave'))$('hCloudSave').onclick=()=>cloudSave();
-  if($('hCloudVis'))$('hCloudVis').onclick=async()=>{const st=HouserCloud.status();await setVis(st.pid,st.vis==='public'?'private':'public')}}
+// ---------- stan zapisu na pasku (bez przycisku: po zalogowaniu zapis w chmurze jest automatyczny, bez – w tej przeglądarce)
+function renderCloudBar(){const el=$('pbCloud'),acct=$('acct');if(!el)return;const st=HouserCloud.status(),rec=HouserStore.load();
+  acct.hidden=!st.enabled;const u=st.user;
+  if(st.enabled){$('pbUser').innerHTML=u?avatar(u)+'<span>'+esc(firstName(u.name))+'</span>':GICON+'<span>Zaloguj</span>';
+    $('pbUser').title=u?'Konto: '+u.name+(u.email?' ('+u.email+')':''):'Zaloguj się przez Google – projekty w chmurze na każdym urządzeniu'}
+  el.hidden=!rec;if(!rec)return;
+  let h;
+  if(!u||st.off)h='<span class="wait" title="Projekt zapisuje się sam w tej przeglądarce. Po zalogowaniu – także w chmurze. Plik: moduł Projekty → Eksportuj.">💻 zapisany w tej przeglądarce</span>';
+  else h={pending:'<span class="wait">☁ zapisuję…</span>',saving:'<span class="wait">☁ zapisuję…</span>',saved:'<span class="ok">☁ zapisano '+fmtTime(st.at)+'</span>',
+    error:'<button class="pbtn" id="pbCloudRetry" title="'+esc(st.msg)+'">⚠ nie zapisano – ponów</button>',conflict:'<span class="bad">⚠ konflikt wersji</span>'}[st.state]||(st.linked?'<span class="ok">☁ w chmurze'+(st.savedAt?' '+fmtTime(st.savedAt):'')+'</span>':'<span class="wait" title="Zapisze się w chmurze przy pierwszej zmianie">☁ zapisze się przy zmianie</span>');
+  if(u&&st.linked)h+=' <span class="vis'+(st.vis==='public'?' pub':'')+'">'+(VIS_LABEL[st.vis]||VIS_LABEL.private)+'</span>';
+  el.innerHTML='<a href="#projekty" class="pblink" title="Projekty – eksport, import, duplikaty, udostępnianie">'+h+'</a>';
+  if($('pbCloudRetry'))$('pbCloudRetry').onclick=e=>{e.preventDefault();HouserCloud.saveNow()}}
 async function setVis(pid,vis){if(vis==='public'&&!confirm('Projekt będzie widoczny dla wszystkich na stronie głównej (razem ze zdjęciami z galerii i Twoim imieniem). Udostępnić?'))return;
-  try{await HouserCloud.setVisibility(pid,vis);toast(vis==='public'?'Projekt jest publiczny':'Projekt jest prywatny');cloudLists.t=0;renderBar();renderHome()}catch(e){alert('Nie udało się zmienić: '+e.message)}}
-async function cloudSave(){const rec=HouserStore.load();if(!rec)return;
-  try{let r=await HouserCloud.saveProject(rec.project);
-    if(r.conflict){if(!confirm('Ten projekt jest już w Twojej chmurze (zmiana '+fmtTime(r.conflict.updatedAt)+'). Nadpisać go wersją z tej przeglądarki?'))return;r=await HouserCloud.saveProject(HouserStore.load().project,{force:true})}
-    toast('Zapisano w chmurze – kolejne zmiany zapiszą się same');cloudLists.t=0;renderBar();renderHome()}catch(e){alert('Nie udało się zapisać w chmurze: '+e.message)}}
-async function openCloud(id,noAsk){if(!noAsk&&!confirmReplace())return;
-  try{const {project,own,meta}=await HouserCloud.open(id);await openProject(project,'cloud');if(!own)toast('Otwarto kopię projektu „'+(meta.name||'')+'” – autor: '+(meta.ownerName||'?'));renderHome()}
+  try{await HouserCloud.setVisibility(pid,vis);toast(vis==='public'?'Projekt jest publiczny':'Projekt jest prywatny');cloudLists.t=0;refreshViews()}catch(e){alert('Nie udało się zmienić: '+e.message)}}
+async function openCloud(id,noAsk){if(!noAsk&&!(await confirmReplace()))return;
+  try{const {project,own,meta}=await HouserCloud.open(id);await openProject(project,'cloud');if(!own)toast('Otwarto kopię projektu „'+(meta.name||'')+'” – autor: '+(meta.ownerName||'?'));refreshViews()}
   catch(e){alert('Nie udało się otworzyć projektu z chmury: '+e.message)}}
-function cloudCard(m,mine){const cur=HouserStore.load()?.project?.projectId===m.id,pub=m.visibility==='public';
-  const thumb=m.cover?'<img alt="" src="'+esc(m.cover)+'">':m.plan?'<img alt="" style="object-fit:contain;background:#f8fafc" src="'+esc(m.plan)+'">':planSvg({});
-  return '<div class="hcard ccard'+(cur&&mine?' cur1':'')+'" data-id="'+esc(m.id)+'"><div class="thumb" data-a="open">'+thumb+'</div><h3>'+esc(m.name||'bez nazwy')+'</h3><div>'+chips(m.stats)+'</div>'+
-    (mine?'<div class="cmeta"><span class="vis'+(pub?' pub':'')+'">'+VIS_LABEL[pub?'public':'private']+'</span>zmiana '+fmtTime(m.updatedAt)+'</div>'
-      +'<div class="cacts">'+(cur?'<span class="go">✓ otwarty</span>':'<button class="btn2 sm primary" data-a="open">Otwórz</button>')+'<button class="btn2 sm" data-a="vis">'+(pub?'Ustaw jako prywatny':'Udostępnij')+'</button><button class="btn2 sm" data-a="del" title="Usuń z chmury" aria-label="Usuń z chmury">🗑</button></div>'
-      :'<div class="owner">'+avatar({photo:m.ownerPhoto,name:m.ownerName})+esc(m.ownerName||'')+'</div><div class="cacts"><button class="btn2 sm primary" data-a="open">Otwórz kopię →</button></div>')+'</div>'}
-let cloudLists={mine:null,pub:null},cloudLoading=false;
-let cloudAgain=false;
+async function openLocal(id){if(!(await confirmReplace()))return;const r=await HouserLibrary.get(id);if(!r)return alert('Nie ma już tego projektu.');
+  try{await openProject(r.project,'library');refreshViews()}catch(e){alert(e.message)}}
+// ---------- projekty w tej przeglądarce: bieżący zapisuje się sam po każdej zmianie
+let libTimer=null;
+function libTouch(){clearTimeout(libTimer);libTimer=setTimeout(libSave,1200)}
+async function libSave(){clearTimeout(libTimer);libTimer=null;const rec=HouserStore.load();if(!rec?.project?.projectId)return;const p=rec.project;
+  try{await HouserLibrary.put({id:p.projectId,name:projName(p),updatedAt:rec.updatedAt,stats:stats(p),plan:await svgToJpeg(planSvg(p),360),project:p});if(location.hash==='#projekty')renderProjects()}catch(e){console.error(e)}}
+const flushLib=()=>libTimer?libSave():Promise.resolve();
+// przed zamianą bieżącego projektu: dopisz ostatnie zmiany (przeglądarka + chmura)
+async function confirmReplace(){const rec=HouserStore.load();if(!rec)return true;await flushLib();
+  const st=HouserCloud.status();if(st.user&&!st.off&&['pending','saving'].includes(st.state)){try{await HouserCloud.saveNow()}catch(_){}}
+  const s2=HouserCloud.status();if(s2.user&&(s2.state==='error'||s2.state==='conflict'))return confirm('Ostatnie zmiany projektu „'+projName(rec.project)+'” nie zapisały się w chmurze (są w tej przeglądarce).\n\nKontynuować?');
+  return true}
+// ---------- plik JSON
+function downloadProject(project){const out={...project,houserFile:{app:'houser',format:1,savedAt:new Date().toISOString()}};delete out.visualizations;
+  const blob=new Blob([JSON.stringify(out)],{type:'application/json'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=slug(projName(project))+'-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  toast('Zapisano plik '+a.download)}
+async function importFile(f){if(!f||!(await confirmReplace()))return;try{await openProject(JSON.parse(await f.text()),'file');libSave();refreshViews()}catch(err){alert('Nie udało się wczytać pliku: '+err.message)}}
+async function newEmpty(){if(!(await confirmReplace()))return;try{await openProject(HouserDefinition.projectFromDefinition(HouserDefinition.emptyDefinition()),'new');libSave();location.hash='pomieszczenia'}catch(err){alert(err.message)}}
+// ---------- nazwa i duplikaty
+function setName(p,n){if(p.definitionSnapshot)p.definitionSnapshot.name=n;p.definitionName=n;return p}
+function localEdit(fn,src){const before=curJSON;HouserStore.update(fn,src);const r=HouserStore.load();curJSON=JSON.stringify(r.project);pushUndo(before,src);HouserCloud.touch('project');libTouch();renderBar();refreshViews()}
+function renameCurrent(){const rec=HouserStore.load();if(!rec)return;const n=prompt('Nazwa projektu:',projName(rec.project));if(!n||!n.trim()||n.trim()===projName(rec.project))return;localEdit(p=>setName(p,n.trim()),'projekty')}
+const copyName=n=>(n||'projekt')+' (kopia)';
+async function copyPhotos(from,to){for(const r of await HouserGallery.list(from))await HouserGallery.put({...r,id:'g'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),projectId:to,cloudUp:false,cloudSig:''})}
+async function duplicateCurrent(){const rec=HouserStore.load();if(!rec)return;await flushLib();const p=JSON.parse(JSON.stringify(rec.project)),old=p.projectId;p.projectId=HouserStore.newId();setName(p,copyName(projName(rec.project)));
+  if(old)await copyPhotos(old,p.projectId);await openProject(p,'dup');await libSave();if(HouserCloud.user())HouserCloud.saveNow().catch(()=>{});toast('Utworzono kopię „'+projName(p)+'” – teraz pracujesz na kopii');refreshViews()}
+async function duplicateLocal(id){const r=await HouserLibrary.get(id);if(!r)return;const p=JSON.parse(JSON.stringify(r.project));p.projectId=HouserStore.newId();setName(p,copyName(r.name));await copyPhotos(id,p.projectId);
+  await HouserLibrary.put({...r,id:p.projectId,name:projName(p),updatedAt:new Date().toISOString(),project:p});toast('Utworzono kopię „'+projName(p)+'”');renderProjects()}
+async function duplicateCloud(m){try{await HouserCloud.duplicate(m.id,copyName(m.name),HouserStore.newId());toast('Utworzono kopię w chmurze');cloudLists.t=0;refreshViews()}catch(e){alert('Nie udało się skopiować: '+e.message)}}
+// ---------- listy projektów (chmura: moje + publiczne; przeglądarka: biblioteka)
+let cloudLists={mine:null,pub:null},cloudLoading=false,cloudAgain=false,localList=[];
 async function loadCloudLists(){if(cloudLoading){cloudAgain=true;return}cloudLoading=true;const uid=HouserCloud.user()?.uid||null;
   try{const [mine,pub]=await Promise.all([uid?HouserCloud.listMine():Promise.resolve([]),HouserCloud.listPublic().catch(()=>[])]);cloudLists={mine,pub,t:Date.now()}}
-  catch(e){console.error(e);cloudLists={mine:[],pub:[],err:e.message}}finally{cloudLoading=false}
+  catch(e){console.error(e);cloudLists={mine:[],pub:[],err:e.message,t:Date.now()}}finally{cloudLoading=false}
   if(cloudAgain||(HouserCloud.user()?.uid||null)!==uid){cloudAgain=false;return loadCloudLists()} // w trakcie zmieniło się konto
-  paintCloudHome()}
-function renderCloudHome(){if(!HouserCloud.enabled)return;$('homeLead').textContent='Projekty trzymasz na swoim koncie (logowanie przez Google) albo tylko w tej przeglądarce. Wybierz gotowy dom albo zacznij od zera – potem idziesz po kolei przez moduły z menu po lewej.';
-  paintCloudHome();HouserCloud.init().then(()=>{if(!cloudLists.mine||Date.now()-(cloudLists.t||0)>20000)loadCloudLists()}).catch(e=>{$('cloudMineSec').hidden=false;$('cloudMine').innerHTML='<div class="login"><p>Nie udało się połączyć z chmurą: '+esc(e.message||e)+'</p></div>'})}
-function paintCloudHome(){const u=HouserCloud.user(),ms=$('cloudMineSec'),mine=$('cloudMine');ms.hidden=false;
-  if(!u)mine.innerHTML='<div class="login"><p>Zaloguj się, a projekty będą zapisywać się w chmurze same – otworzysz je na każdym komputerze i telefonie, a wybrane udostępnisz innym. Bez logowania wszystko działa jak dotąd, w tej przeglądarce.</p><button class="btn2 primary" id="hLogin">'+GICON+' Zaloguj przez Google</button></div>';
-  else if(!cloudLists.mine)mine.innerHTML='<div class="empty2">Wczytuję projekty…</div>';
-  else if(!cloudLists.mine.length)mine.innerHTML='<div class="login"><p>Nie masz jeszcze projektów w chmurze. Wczytaj albo zacznij projekt i kliknij <b>☁ Zapisz w chmurze</b> – od tej chwili każda zmiana zapisze się sama.</p></div>';
-  else mine.innerHTML='<div class="gallery">'+cloudLists.mine.map(m=>cloudCard(m,true)).join('')+'</div>';
-  if($('hLogin'))$('hLogin').onclick=()=>doLogin();
-  const others=(cloudLists.pub||[]).filter(m=>!u||m.owner!==u.uid);$('cloudPubSec').hidden=!others.length;$('cloudPub').innerHTML=others.map(m=>cloudCard(m,false)).join('');
-  for(const box of [mine,$('cloudPub')])box.querySelectorAll('.ccard [data-a]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const id=b.closest('.ccard').dataset.id,a=b.dataset.a,m=[...(cloudLists.mine||[]),...(cloudLists.pub||[])].find(x=>x.id===id);
-    if(a==='open'){if(HouserStore.load()?.project?.projectId===id&&m?.owner===u?.uid){location.hash=lsGet(LAST_MOD)||'projektowanie';return}openCloud(id)}
-    else if(a==='vis')await setVis(id,m?.visibility==='public'?'private':'public');
-    else if(a==='del'){if(!confirm('Usunąć projekt z chmury (razem ze zdjęciami w chmurze)?\n„'+(m?.name||'')+'”\n\nKopia w tej przeglądarce, jeśli jest otwarta, zostaje.'))return;try{await HouserCloud.remove(id);toast('Usunięto z chmury');renderBar();cloudLists.t=0;loadCloudLists()}catch(err){alert('Nie udało się usunąć: '+err.message)}}})}
+  refreshViews(true)}
+function wantCloudLists(){if(!HouserCloud.enabled)return;HouserCloud.init().then(()=>{if(!cloudLists.mine||Date.now()-(cloudLists.t||0)>20000)loadCloudLists()}).catch(()=>{})}
+function refreshViews(noLoad){const h=location.hash;if(!h||h==='#start'){renderCur();paintRecent();paintPublic()}if(h==='#projekty')renderProjects(noLoad);renderBar()}
+const thumbImg=m=>m.cover?'<img alt="" src="'+esc(m.cover)+'">':m.plan?'<img alt="" class="plan" src="'+esc(m.plan)+'">':'';
+const fl=m=>m.stats?Math.round(m.stats.area)+' m² · '+m.stats.fl+' · ':'';
+// strona główna: ostatnie projekty (chmura + przeglądarka) i projekty publiczne
+function recentItems(){const u=HouserCloud.user(),seen=new Set(),out=[];
+  for(const m of (u&&cloudLists.mine)||[]){seen.add(m.id);out.push({...m,where:'cloud'})}
+  for(const m of localList)if(!seen.has(m.id))out.push({...m,where:'local'});
+  return out.sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||''))}
+function paintRecent(){const el=$('recent'),sec=$('recentSec');if(!el)return;const cur=HouserStore.load()?.project?.projectId,items=recentItems().filter(m=>m.id!==cur).slice(0,4);
+  sec.hidden=!items.length;el.innerHTML=items.map(m=>'<button class="hcard rcard" data-id="'+esc(m.id)+'" data-w="'+m.where+'"><div class="thumb">'+(thumbImg(m)||planSvg({}))+'</div><h3>'+esc(m.name||'bez nazwy')+'</h3><div class="cmeta">'+(m.where==='cloud'?'☁':'💻')+' '+esc(fl(m))+'zmiana '+fmtTime(m.updatedAt)+'</div><span class="go">Otwórz →</span></button>').join('');
+  el.querySelectorAll('.rcard').forEach(b=>b.onclick=()=>b.dataset.w==='cloud'?openCloud(b.dataset.id):openLocal(b.dataset.id))}
+function paintPublic(){const u=HouserCloud.user(),others=(cloudLists.pub||[]).filter(m=>!u||m.owner!==u.uid);$('cloudPubSec').hidden=!others.length;
+  $('cloudPub').innerHTML=others.map(m=>'<div class="hcard ccard" data-id="'+esc(m.id)+'"><div class="thumb" data-a="open">'+(thumbImg(m)||planSvg({}))+'</div><h3>'+esc(m.name||'bez nazwy')+'</h3><div>'+chips(m.stats)+'</div><div class="owner">'+avatar({photo:m.ownerPhoto,name:m.ownerName})+esc(m.ownerName||'')+'</div><div class="cacts"><button class="btn2 sm primary" data-a="open">Otwórz kopię →</button></div></div>').join('');
+  $('cloudPub').querySelectorAll('[data-a="open"]').forEach(b=>b.onclick=()=>openCloud(b.closest('.ccard').dataset.id))}
+function renderCloudHome(){if(HouserCloud.enabled)$('homeLead').textContent='Projekt zapisuje się sam – w tej przeglądarce, a po zalogowaniu (Google) także w chmurze, na każdym urządzeniu. Wybierz gotowy dom albo zacznij od zera – potem idziesz po kolei przez moduły z menu po lewej.';
+  HouserLibrary.list().then(l=>{localList=l;paintRecent()}).catch(()=>{});paintRecent();paintPublic();wantCloudLists()}
+// ---------- moduł Projekty
+function pmRow(m,kind,cur){const pub=m.visibility==='public',a=(k,t,ti)=>'<button class="btn2 sm" data-a="'+k+'"'+(ti?' title="'+ti+'"':'')+'>'+t+'</button>';
+  return '<div class="prow'+(cur?' cur1':'')+'" data-id="'+esc(m.id)+'" data-k="'+kind+'"><div class="pth">'+(thumbImg(m)||'')+'</div><div class="pinfo"><b>'+esc(m.name||'bez nazwy')+'</b><small>'+esc(fl(m))+'zmiana '+fmtTime(m.updatedAt)+'</small>'+
+    (kind==='cloud'?'<span class="vis'+(pub?' pub':'')+'">'+VIS_LABEL[pub?'public':'private']+'</span>':(m.inCloud?'<span class="vis">☁ też w chmurze</span>':''))+'</div><div class="pacts">'+
+    (cur?'<span class="go">✓ otwarty</span>':'<button class="btn2 sm primary" data-a="open">Otwórz</button>')+a('dup','⧉ Duplikuj')+a('exp','⤓ Eksportuj','Pobierz plik JSON')+
+    (kind==='cloud'?a('vis',pub?'🔒 Ustaw jako prywatny':'🌍 Udostępnij'):'')+(cur&&kind==='local'?'':a('del','🗑','Usuń'))+'</div></div>'}
+function renderProjects(noLoad){const el=$('pm');if(!el)return;const rec=HouserStore.load(),st=HouserCloud.status(),u=st.user,p=rec?.project,curId=p?.projectId;
+  let h='<h1>Projekty</h1><p class="lead">Projekt zapisuje się sam po każdej zmianie – w tej przeglądarce'+(st.enabled?', a po zalogowaniu także w chmurze':'')+'. Plik JSON (eksport) jest kopią zapasową albo sposobem na przeniesienie projektu bez konta.</p>'+
+    '<div class="pmbar"><button class="btn2 primary" id="pmNew">＋ Nowy pusty projekt</button><label class="btn2">⤒ Importuj z pliku<input type="file" id="pmImport" accept="application/json,.json" hidden></label><a class="btn2" href="#start">Gotowe domy →</a></div>';
+  h+='<h2 class="sec">Bieżący projekt</h2>';
+  if(!p)h+='<div class="login"><p>Nie masz otwartego projektu. Zacznij nowy, zaimportuj plik albo otwórz projekt z listy poniżej.</p></div>';
+  else{const s=stats(p),last=MODULES.find(m=>m.id===lsGet(LAST_MOD))||MODULES.find(m=>m.id==='projektowanie');
+    const where=!u?'💻 Zapisuje się sam w tej przeglądarce.'+(st.enabled?' Zaloguj się, żeby trzymać go też w chmurze.':''):st.off?'💻 Tylko w tej przeglądarce (usunięty z chmury).':st.linked?'☁ Zapisuje się sam w Twojej chmurze'+(st.savedAt?' · ostatnio '+fmtTime(st.savedAt):'')+'.':'☁ Zapisze się w chmurze przy pierwszej zmianie.';
+    h+='<div class="cur"><div class="thumb">'+planSvg(p)+'</div><div><h3>'+esc(projName(p))+' <button class="btn2 sm" id="pmRename" title="Zmień nazwę">✎</button></h3><div>'+chips(s)+'</div><div class="meta">'+where+'</div>'+
+      '<div class="acts"><a class="btn2 primary" href="#'+last.id+'">Kontynuuj: '+esc(last.name)+' →</a><button class="btn2" id="pmExport">⤓ Eksportuj do pliku</button><button class="btn2" id="pmDup">⧉ Duplikuj</button>'+
+      (u&&st.linked?'<button class="btn2" id="pmVis">'+(st.vis==='public'?'🔒 Ustaw jako prywatny':'🌍 Udostępnij publicznie')+'</button>':'')+(u&&st.off?'<button class="btn2" id="pmOn">☁ Zapisuj w chmurze</button>':'')+'</div></div></div>'}
+  if(st.enabled){h+='<h2 class="sec">W chmurze</h2>';
+    if(!u)h+='<div class="login"><p>Zaloguj się, a projekty będą zapisywać się w chmurze same – otworzysz je na każdym komputerze i telefonie, a wybrane udostępnisz innym. Bez logowania wszystko działa w tej przeglądarce.</p><button class="btn2 primary" id="pmLogin">'+GICON+' Zaloguj przez Google</button></div>';
+    else if(!cloudLists.mine)h+='<div class="empty2">Wczytuję projekty…</div>';
+    else if(!cloudLists.mine.length)h+='<div class="login"><p>Nie masz jeszcze projektów w chmurze. Zmień coś w bieżącym projekcie – zapisze się sam.</p></div>';
+    else h+='<div class="plist">'+cloudLists.mine.map(m=>pmRow(m,'cloud',m.id===curId)).join('')+'</div>'}
+  const cloudIds=new Set((u&&cloudLists.mine||[]).map(m=>m.id));
+  h+='<h2 class="sec">Na tym urządzeniu</h2>'+(localList.length?'<div class="plist">'+localList.map(m=>pmRow({...m,inCloud:cloudIds.has(m.id)},'local',m.id===curId)).join('')+'</div>':'<div class="login"><p>Tu pojawią się projekty, które zmieniasz w tej przeglądarce.</p></div>');
+  el.innerHTML=h;
+  $('pmNew').onclick=newEmpty;$('pmImport').onchange=e=>{const f=e.target.files[0];e.target.value='';importFile(f)};
+  if($('pmRename'))$('pmRename').onclick=renameCurrent;if($('pmExport'))$('pmExport').onclick=()=>downloadProject(HouserStore.load().project);
+  if($('pmDup'))$('pmDup').onclick=duplicateCurrent;if($('pmVis'))$('pmVis').onclick=()=>setVis(st.pid,st.vis==='public'?'private':'public');
+  if($('pmOn'))$('pmOn').onclick=()=>{HouserCloud.enable(st.pid);HouserCloud.saveNow().then(()=>{cloudLists.t=0;wantCloudLists()})};if($('pmLogin'))$('pmLogin').onclick=doLogin;
+  el.querySelectorAll('.prow [data-a]').forEach(b=>b.onclick=async()=>{const row=b.closest('.prow'),id=row.dataset.id,k=row.dataset.k,a=b.dataset.a;
+    const m=(k==='cloud'?cloudLists.mine:localList).find(x=>x.id===id);if(!m)return;
+    if(a==='open')return k==='cloud'?openCloud(id):openLocal(id);
+    if(a==='dup')return k==='cloud'?duplicateCloud(m):duplicateLocal(id);
+    if(a==='exp'){try{downloadProject(k==='cloud'?(await HouserCloud.fetchProject(id)).project:(await HouserLibrary.get(id)).project)}catch(e){alert('Nie udało się pobrać: '+e.message)}return}
+    if(a==='vis')return setVis(id,m.visibility==='public'?'private':'public');
+    if(a==='del'){if(k==='cloud'){if(!confirm('Usunąć projekt z chmury (razem ze zdjęciami w chmurze)?\n„'+(m.name||'')+'”\n\nKopia w tej przeglądarce, jeśli jest, zostaje.'))return;
+        try{await HouserCloud.remove(id);toast('Usunięto z chmury');cloudLists.t=0;wantCloudLists();refreshViews()}catch(e){alert('Nie udało się usunąć: '+e.message)}}
+      else{if(!confirm('Usunąć projekt z tej przeglądarki (razem z jego zdjęciami w galerii)?\n„'+(m.name||'')+'”'+(cloudIds.has(id)?'\n\nWersja w chmurze zostaje.':'')))return;
+        await HouserLibrary.remove(id);if(!cloudIds.has(id))for(const r of await HouserGallery.list(id))await HouserGallery.remove(r.id);localList=await HouserLibrary.list();renderProjects(true)}}});
+  if(!noLoad){HouserLibrary.list().then(l=>{localList=l;renderProjects(true)}).catch(()=>{});wantCloudLists()}}
 async function doLogin(){try{await HouserCloud.signIn()}catch(e){alert('Logowanie nie powiodło się: '+(e.message||e))}}
 function renderUserMenu(){const u=HouserCloud.user(),m=$('umenu');if(!u){m.hidden=true;return}
   m.innerHTML='<div class="who">'+avatar(u)+'<div><b>'+esc(u.name)+'</b><small>'+esc(u.email)+'</small></div></div><a href="#start" id="umMine">Moje projekty</a><button id="umOut">Wyloguj</button>';
@@ -443,8 +513,10 @@ function renderUserMenu(){const u=HouserCloud.user(),m=$('umenu');if(!u){m.hidde
 if(HouserCloud.enabled){
   $('pbUser').onclick=e=>{e.stopPropagation();if(!HouserCloud.user())return doLogin();renderUserMenu();const m=$('umenu'),r=$('pbUser').getBoundingClientRect();m.style.top=(r.bottom+6)+'px';m.style.right=Math.max(8,innerWidth-r.right)+'px';m.hidden=!m.hidden};
   document.addEventListener('click',e=>{if(!e.target.closest('#acct'))$('umenu').hidden=true});
-  HouserCloud.onStatus(()=>{renderCloudBar();if(!location.hash||location.hash==='#start'){const st=HouserCloud.status();if(st.state==='saved'||st.state==='idle')renderCur()}});
-  HouserCloud.onAuth(()=>{cloudLists={mine:null,pub:null};renderBar();if(!location.hash||location.hash==='#start')renderHome()});
+  let lastState='';HouserCloud.onStatus(st=>{renderCloudBar();if(st.state!==lastState){lastState=st.state;if(st.state==='saved'){if(cloudLists.mine&&!cloudLists.mine.some(m=>m.id===st.pid)){cloudLists.t=0;wantCloudLists()}else refreshViews(true)}}});
+  HouserCloud.onAuth(u=>{cloudLists={mine:null,pub:null};refreshViews();
+    // po zalogowaniu bieżący projekt (jeśli był zmieniany w tej przeglądarce) trafia do chmury
+    const pid=HouserStore.load()?.project?.projectId;if(u&&pid)HouserLibrary.get(pid).then(r=>{if(r)HouserCloud.touch('project')}).catch(()=>{})});
   HouserGallery.onChange(()=>HouserCloud.touch('photos'));
   HouserCloud.init().catch(()=>{});
 }
