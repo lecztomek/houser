@@ -9,12 +9,23 @@
 :root{--bg:var(--hs-bg);--panel:var(--hs-panel);--line:var(--hs-line);--text:var(--hs-text);--muted:var(--hs-muted);--accent:var(--hs-accent)}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
-body{display:grid;grid-template-rows:auto auto 1fr}
-header{display:flex;align-items:center;gap:4px;background:var(--hs-panel);border-bottom:1px solid var(--hs-line);padding:0 12px;min-height:46px;overflow-x:auto}
-.brand{font-weight:800;font-size:15px;margin-right:14px;white-space:nowrap;color:var(--hs-text);text-decoration:none}
-.tab{border:0;background:transparent;color:var(--hs-muted);padding:13px 9px 11px;cursor:pointer;font:600 13px var(--hs-font);white-space:nowrap;border-bottom:2px solid transparent}
-.tab:hover{color:var(--hs-text)}
-.tab.active{border-bottom-color:var(--hs-accent);color:var(--hs-accent)}
+body{display:grid;grid-template-rows:auto auto 1fr;grid-template-columns:minmax(0,1fr)}
+header{display:flex;align-items:center;gap:10px;background:var(--hs-panel);border-bottom:1px solid var(--hs-line);padding:6px 10px}
+.brand{font-weight:800;font-size:15px;white-space:nowrap;color:var(--hs-text);text-decoration:none;align-self:stretch;display:flex;align-items:center;padding:0 10px;border-radius:9px;border:1px solid transparent}
+.brand:hover{border-color:var(--hs-line)}
+.brand.active{background:#475569;color:#fff}
+@media(max-width:700px){.brand span{display:none}}
+#tabs{flex:1;min-width:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:5px}
+@media(min-width:1150px){#tabs{grid-template-columns:repeat(8,minmax(0,1fr))}}
+@media(max-width:700px){#tabs{display:flex;overflow-x:auto;scrollbar-width:thin;padding-bottom:3px}#tabs .tab{flex:0 0 132px}header{padding:6px 8px}}
+/* kafelek modułu: ikona + numer kroku + krótka nazwa, pasek u góry w kolorze etapu */
+.tab{--gc:#64748b;display:flex;align-items:center;gap:7px;height:40px;padding:0 8px;border:1px solid var(--hs-line);border-top:3px solid var(--gc);border-radius:9px;background:#fff;color:var(--hs-text);cursor:pointer;font:650 12px/1.15 var(--hs-font);text-align:left;min-width:0;transition:box-shadow .12s,border-color .12s}
+.tab .ic{font-size:17px;flex:0 0 auto;width:20px;text-align:center}
+.tab .tx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tab .tx small{display:block;font-size:10px;font-weight:700;color:var(--hs-muted);letter-spacing:.02em}
+.tab:hover{border-color:var(--gc);box-shadow:0 2px 8px rgba(15,23,42,.10)}
+.tab.active{background:var(--gc);border-color:var(--gc);color:#fff}
+.tab.active .tx small{color:rgba(255,255,255,.85)}
 .tab .soon{font-size:10px;font-weight:600;background:var(--hs-bg);color:var(--hs-muted);border:1px solid var(--hs-line);border-radius:999px;padding:1px 6px;margin-left:5px;vertical-align:middle}
 .spacer{flex:1}
 .ext{color:var(--hs-accent);font-size:12px;text-decoration:none;white-space:nowrap;padding:0 6px}
@@ -55,10 +66,8 @@ a{color:var(--accent)}
 </head>
 <body>
 <header>
-  <a class="brand" href="#start">🏠 Houser</a>
-  <nav id="tabs" style="display:flex"></nav>
-  <span class="spacer"></span>
-  <a id="openExt" class="ext" href="#" target="_blank" rel="noopener" hidden>otwórz w nowej karcie ↗</a>
+  <a class="brand" id="brand" href="#start" title="Strona startowa – lista modułów">🏠<span>&nbsp;Houser</span></a>
+  <nav id="tabs"></nav>
 </header>
 <div class="projbar" id="projbar">
   <span>Projekt:</span><span class="name" id="pbName">—</span><span class="meta" id="pbMeta"></span>
@@ -67,6 +76,7 @@ a{color:var(--accent)}
   <button class="pbtn primary" id="pbSave" title="Zapisuje cały projekt (pomieszczenia, warunki, rzut, okna, drzwi, schody, dach, tarasy, meble, ustawienia 3D) do jednego pliku JSON. Zdjęcia i wizualizacje AI zostają tylko w przeglądarce.">💾 Zapisz do pliku</button>
   <label class="pbtn" title="Wczytuje plik projektu JSON – zastępuje bieżący projekt w przeglądarce">📂 Otwórz plik<input type="file" id="pbFile" accept="application/json,.json" hidden></label>
   <button class="pbtn" id="pbNew" title="Pusty projekt – zaczynasz od modułu Pomieszczenia">Nowy</button>
+  <a id="openExt" class="ext" href="#" target="_blank" rel="noopener" hidden title="Otwórz bieżący moduł w osobnej karcie">↗</a>
   <button class="pbtn" id="pbSample" title="Wczytuje przykładowy dom (z meblami), żeby zobaczyć, jak działają moduły">Przykład</button>
 </div>
 <main id="views">
@@ -110,16 +120,20 @@ const MODULES=[
   {id:'wycena',group:'Analizy',name:'Wycena',src:'modules/wycena/',desc:'Orientacyjny koszt budowy z projektu: ilości (ściany, strop, dach, okna, drzwi, instalacje, wykończenie) × ceny jednostkowe, które możesz zmienić.'},
 ];
 MODULES.forEach((m,i)=>m.step=i+1);
+const ICON={pomieszczenia:'🧩',warunki:'✅',obrys:'✏️',projektowanie:'🗺️','kondygnacje-dach':'🏠',schody:'🪜','okna-drzwi':'🪟','drzwi-wewnetrzne':'🚪',tarasy:'🌿',meblowanie:'🛋️','wnetrze-3d':'👁️','zewnatrz-3d':'🏡',wizualizacje:'✨',przepisy:'📋',energia:'🔥',wycena:'💰'};
+const SHORT={'kondygnacje-dach':'Dach i piętra','okna-drzwi':'Okna i drzwi','drzwi-wewnetrzne':'Drzwi wewn.',projektowanie:'Układ',wizualizacje:'Wizualizacje',tarasy:'Tarasy',meblowanie:'Meble',obrys:'Obrys'};
+const GROUP_COL={'Założenia':'#7c3aed','Projekt':'#2563eb','Wnętrza':'#d97706','Podgląd':'#0d9488','Analizy':'#16a34a'};
 const tabs=document.getElementById('tabs'),cards=document.getElementById('cards'),views=document.getElementById('views'),openExt=document.getElementById('openExt');
 const frames={};
-function tabBtn(id,label,soon){const b=document.createElement('button');b.className='tab';b.dataset.id=id;b.textContent=label;if(soon){const s=document.createElement('span');s.className='soon';s.textContent='wkrótce';b.appendChild(s);}b.onclick=()=>{location.hash=id;};tabs.appendChild(b);}
-tabBtn('start','Start');
+function tabBtn(id,label,soon,m){const b=document.createElement('button');b.className='tab';b.dataset.id=id;b.title=m?m.step+'. '+m.name+' – '+m.desc:'Strona startowa';
+  b.style.setProperty('--gc',m?GROUP_COL[m.group]||'#64748b':'#475569');
+  b.innerHTML='<span class="ic">'+(m?ICON[m.id]||'•':'⌂')+'</span><span class="tx"><small>'+(m?'krok '+m.step:'Houser')+'</small>'+label+'</span>';b.onclick=()=>{location.hash=id;};tabs.appendChild(b);}
 let lastGroup='';
 MODULES.forEach(m=>{
-  tabBtn(m.id,m.step+'. '+m.name,m.soon);
+  tabBtn(m.id,SHORT[m.id]||m.name,m.soon,m);
   if(m.group!==lastGroup){lastGroup=m.group;const h=document.createElement('h3');h.className='group';h.textContent=m.group;cards.appendChild(h);}
   const c=document.createElement('button');c.className='card'+(m.soon?' disabled':'');
-  c.innerHTML='<span class="num">'+(m.soon?'wkrótce':'Krok '+m.step)+'</span><h2></h2><p></p>';
+  c.innerHTML='<span class="num" style="color:'+(GROUP_COL[m.group]||'')+'">'+(ICON[m.id]||'')+'  '+(m.soon?'wkrótce':'Krok '+m.step)+'</span><h2></h2><p></p>';
   c.querySelector('h2').textContent=m.name;c.querySelector('p').textContent=m.desc;
   c.onclick=()=>{location.hash=m.id;};cards.appendChild(c);
 });
@@ -132,6 +146,8 @@ function show(id){
   }
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v===(m?frames[id]:document.getElementById('start'))));
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.id===id));
+  document.getElementById('brand').classList.toggle('active',!m);
+  requestAnimationFrame(()=>{const at=document.querySelector('.tab.active');if(at&&innerWidth<=700)tabs.scrollLeft+=at.getBoundingClientRect().left-tabs.getBoundingClientRect().left-(tabs.clientWidth-at.offsetWidth)/2});
   openExt.hidden=!m;if(m)openExt.href=m.src;
   document.title=(m?m.name+' – ':'')+'Houser';
 }
