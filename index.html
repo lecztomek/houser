@@ -42,7 +42,7 @@ body:not(.navopen) #tabs .grp{font-size:0;padding:8px 0 4px;margin:0 6px;border-
 body:not(.navopen) #tabs .grp:first-of-type{border-top:0}
 body:not(.navopen) .tab{justify-content:center;padding:4px}
 body.navopen .brand{flex:1}
-.scrim{display:none;position:fixed;inset:0;background:rgba(15,23,42,.28);z-index:29}
+.scrim{display:none;position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(15,23,42,.28);z-index:29}
 body.navopen .scrim{display:block}
 .content{grid-column:2;min-width:0;height:100vh;display:grid;grid-template-rows:auto minmax(0,1fr)}
 .burger.mobile{display:none}
@@ -134,7 +134,7 @@ main{position:relative;min-height:0}
 .pbtn.primary{background:var(--hs-accent);border-color:var(--hs-accent);color:#fff}
 .projbar label.chk{display:inline-flex;align-items:center;gap:4px;color:var(--hs-muted);font-size:12px;white-space:nowrap}
 .projmsg{position:fixed;right:16px;bottom:16px;z-index:50;background:#0f172a;color:#fff;border-radius:10px;padding:10px 14px;font:600 13px var(--hs-font);box-shadow:0 8px 24px rgba(0,0,0,.25)}
-.view{position:absolute;inset:0;display:none;outline:none}
+.view{position:absolute;top:0;right:0;bottom:0;left:0;display:none;outline:none}
 .view.active{display:block}
 iframe{width:100%;height:100%;border:0;display:block;background:#fff}
 #start,#projekty{overflow:auto;padding:28px 16px}
@@ -233,6 +233,8 @@ a{color:var(--accent)}
 <script src="shared/firebase-config.js"></script>
 <script src="shared/cloud.js"></script>
 <script>
+// gdyby tłumacz się nie wczytał (np. stara przeglądarka) – strona działa po polsku
+window.HouserI18n=window.HouserI18n||{lang:'pl',set(){},t:s=>s};
 // Moduły w kolejności projektowania. group: etap, step: numer kroku na karcie.
 const MODULES=[
   {id:'pomieszczenia',group:'Założenia',name:'Pomieszczenia',src:'modules/pomieszczenia/',desc:'Jakie pomieszczenia ma dom i na której kondygnacji: nazwy, kolory, wnęki. Tu zaczynasz nowy projekt.'},

@@ -2,6 +2,10 @@
 // teksty w DOM (także dodawane później), atrybuty (title, placeholder, aria-label, alt), tytuł strony,
 // okna alert/confirm/prompt i napisy rysowane na canvasie. Słownik: shared/i18n-en.js (ładowany przed tym plikiem).
 // Wybór języka: localStorage 'houser:lang' ('pl' | 'en'), domyślnie wg języka przeglądarki.
+// Zgodność ze starszym Safari (iOS < 15.4): Array.prototype.at, structuredClone
+if(!Array.prototype.at)Object.defineProperty(Array.prototype,'at',{value:function(i){i=Math.trunc(i)||0;if(i<0)i+=this.length;return this[i]},writable:true,configurable:true});
+if(!String.prototype.at)Object.defineProperty(String.prototype,'at',{value:function(i){i=Math.trunc(i)||0;if(i<0)i+=this.length;return this[i]},writable:true,configurable:true});
+if(typeof structuredClone!=='function')window.structuredClone=v=>v===undefined?v:JSON.parse(JSON.stringify(v));
 (function(global){
   const KEY='houser:lang';
   let lang=null;try{lang=localStorage.getItem(KEY)}catch(_){}
@@ -13,24 +17,24 @@
 
   const D=global.HOUSER_I18N_EN||{},cache=new Map();
   // liczba: 12 · 12,5 · 1.25 · 17 073 (spacja tysięcy); w EN przecinek dziesiętny → kropka, spacja tysięcy → przecinek
-  const NUM=/(?<![\p{L}\d])(?:\d{1,3}(?:[ \u00a0\u202f]\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)*)(?![\p{L}\d])/gu;
+  const NUM=/(^|[^\p{L}\d])(\d{1,3}(?:[ \u00a0\u202f]\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)*)(?![\p{L}\d])/gu; // bez lookbehind – starsze Safari (iOS < 16.4) go nie znają
   const enNum=m=>/^\d+,\d+$/.test(m)?m.replace(',','.'):m.replace(/[ \u00a0\u202f](?=\d{3})/g,',').replace(/,(\d+)$/,(x,d)=>d.length===3&&/[ \u00a0\u202f]/.test(m)?x:'.'+d);
   // fragmenty: wielowyrazowe frazy i pojedyncze słowa od wielkiej litery (np. nazwy pomieszczeń), najdłuższe najpierw
   const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   const frag=Object.keys(D).filter(k=>!k.includes('{n}')&&k.length>=3&&/^[\p{L}„(]/u.test(k)&&(/\s/.test(k)||/^\p{Lu}/u.test(k))&&!/^\p{Lu}+$/u.test(k)).sort((a,b)=>b.length-a.length);
-  const FR=frag.length?new RegExp('(?<![\\p{L}\\d])(?:'+frag.map(esc).join('|')+')(?![\\p{L}\\d])','gu'):null;
+  const FR=frag.length?new RegExp('(^|[^\\p{L}\\d])('+frag.map(esc).join('|')+')(?![\\p{L}\\d])','gu'):null;
   const PL=/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/;
 
-  const look=s=>{if(s in D)return D[s];const nums=[];const tpl=s.replace(NUM,m=>{nums.push(m);return '{n}'});
+  const look=s=>{if(s in D)return D[s];const nums=[];const tpl=s.replace(NUM,(m,pre,n)=>{nums.push(n);return pre+'{n}'});
     if(nums.length&&tpl in D){let i=0;return D[tpl].replace(/\{n\}/g,()=>enNum(nums[i++]??''))}
     // nazwy w cudzysłowie („Salon”) jako {q} – nazwę tłumaczymy osobno
-    if(s.includes('„')){const qs=[],n2=[];const t2=s.replace(/„([^”]*)”/g,(m,x)=>{qs.push(x);return '„{q}”'}).replace(NUM,m=>{n2.push(m);return '{n}'});
+    if(s.includes('„')){const qs=[],n2=[];const t2=s.replace(/„([^”]*)”/g,(m,x)=>{qs.push(x);return '„{q}”'}).replace(NUM,(m,pre,n)=>{n2.push(n);return pre+'{n}'});
       if(t2 in D){let i=0,j=0;return D[t2].replace(/\{q\}/g,()=>core(qs[j++]??'')).replace(/\{n\}/g,()=>enNum(n2[i++]??''))}}
     return null};
   // rozbij tekst na dwie części przy pierwszym albo ostatnim separatorze i przetłumacz każdą osobno (wybór: mniej polskich znaków w wyniku)
   const plLeft=r=>(r.match(/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g)||[]).length;
   const split=(s,re)=>{const all=[...s.matchAll(re)].filter(m=>m.index>0&&m.index+m[0].length<s.length);if(!all.length)return null;
-    const at=m=>core(s.slice(0,m.index))+m[0]+core(s.slice(m.index+m[0].length));
+    const at=m=>{const k=m[1]?m[1].length:0,a=m.index+k;return core(s.slice(0,a))+m[0].slice(k)+core(s.slice(m.index+m[0].length))};
     const a=at(all[0]);if(all.length===1)return a;const b=at(all[all.length-1]);return plLeft(b)<plLeft(a)?b:a};
   const memo=new Map();
   function core(s){let r=memo.get(s);if(r===undefined){r=core0(s);memo.set(s,r)}return r}
@@ -38,7 +42,7 @@
     const r=look(s);if(r!=null)return r;
     const pre=/^(\s*(?:\d+\.|[-•·–✓✗⚠️⭐↶↷💾📷]+)\s+)([\s\S]+)$/u.exec(s);if(pre)return pre[1]+core(pre[2]);
     const post=/^([\s\S]+?)(\s*[:.…!?]+)$/.exec(s);if(post){const q=look(post[1]);if(q!=null)return q+post[2]}
-    return split(s,/\n+/g)??split(s,/\s+[·–—↔|→]\s+|\s*<->\s*/g)??split(s,/(?<=[.!?])\s+(?=[\p{Lu}„(])/gu)??split(s,/:\s+|;\s+|\s+\(|\)\s*/g)??(FR?s.replace(FR,m=>D[m]):s);
+    return split(s,/\n+/g)??split(s,/\s+[·–—↔|→]\s+|\s*<->\s*/g)??split(s,/([.!?])\s+(?=[\p{Lu}„(])/gu)??split(s,/:\s+|;\s+|\s+\(|\)\s*/g)??(FR?s.replace(FR,(m,pre,w)=>pre+D[w]):s);
   }
   function t(s){
     if(!s||typeof s!=='string')return s;
