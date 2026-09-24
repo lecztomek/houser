@@ -79,6 +79,9 @@ tr.best td{background:#f0fdf4;font-weight:700}
     <div class="field"><label>SCOP pompy ciepła (sezonowa sprawność)</label><input id="scop" type="number" min="1.5" max="6" step="0.1"></div>
     <div class="field"><label>Gaz ziemny [zł/kWh]</label><input id="pGas" type="number" min="0" step="0.01"></div>
     <div class="field"><label>Pellet [zł/tona]</label><input id="pPel" type="number" min="0" step="50"></div>
+    <div class="field"><label>Drewno kawałkowe [zł/mp – metr przestrzenny]</label><input id="pWood" type="number" min="0" step="10"></div>
+    <div class="field"><label>Energia z 1 mp drewna [kWh] (buk/dąb ~1900, sosna ~1400)</label><input id="woodKWh" type="number" min="800" max="2500" step="50"></div>
+    <div class="field"><label>Kominek dogrzewa [% ciepła do ogrzewania]</label><input id="fireShare" type="number" min="0" max="80" step="5"></div>
   </div>
   <p class="hint" style="margin-top:12px">Metoda uproszczona (sezonowa, jak w szybkich kalkulatorach), dobra do porównywania wariantów – nie zastępuje świadectwa energetycznego ani projektu instalacji.</p>
 </aside>
@@ -99,7 +102,7 @@ const ZONES={I:{name:'I – zachód (Szczecin, Poznań, Wrocław)',te:-16,hdd:35
 const PARTS=[['wall','Ściany zewnętrzne',.20,.18],['roof','Dach / strop pod nieogrzewanym',.15,.13],['floor','Podłoga na gruncie',.30,.25],['win','Okna i drzwi tarasowe',.90,.85],['roofwin','Okna dachowe',1.10,1.0],['door','Drzwi zewnętrzne',1.30,1.1]];
 function es(){const s=project.energySettings||{},U={};for(const [k,,,d] of PARTS)U[k]=Number.isFinite(+s.U?.[k])&&+s.U[k]>0?+s.U[k]:d;
   const num=(v,d)=>Number.isFinite(+v)&&v!==''&&v!=null?+v:d;
-  return {zone:ZONES[s.zone]?s.zone:'III',persons:num(s.persons,4),ti:num(s.ti,20),U,bridge:num(s.bridge,.05),vent:s.vent==='grav'?'grav':'mech',eta:num(s.eta,85),inf:num(s.inf,.1),pEl:num(s.pEl,1.10),scop:num(s.scop,3.6),pGas:num(s.pGas,.32),pPel:num(s.pPel,1400)}}
+  return {zone:ZONES[s.zone]?s.zone:'III',persons:num(s.persons,4),ti:num(s.ti,20),U,bridge:num(s.bridge,.05),vent:s.vent==='grav'?'grav':'mech',eta:num(s.eta,85),inf:num(s.inf,.1),pEl:num(s.pEl,1.10),scop:num(s.scop,3.6),pGas:num(s.pGas,.32),pPel:num(s.pPel,1400),pWood:num(s.pWood,380),woodKWh:num(s.woodKWh,1600),fireShare:num(s.fireShare,25)}}
 let tS=null;function save(patch){const s={...es(),...patch};project.energySettings=s;clearTimeout(tS);tS=setTimeout(()=>HouserStore.update(p=>{p.energySettings=s},'energia'),300);render()}
 
 function compute(){
@@ -117,19 +120,24 @@ function compute(){
   const Qloss=Htot*Z.hdd*24/1000,Qint=3*q.usableTotal*5000/1000,Qsol=(A.win+A.roofwin)*125,Qh=Math.max(0,Qloss-.9*(Qint+Qsol));
   const Qw=s.persons*2.6*365*1.15,EU=q.usableTotal>0?Qh/q.usableTotal:0;
   const hp=[3,4,5,6,7,8,9,10,12,14,16].find(k=>k>=load+.25*s.persons)||Math.ceil(load+.25*s.persons);
-  const src=[['Pompa ciepła',s.pEl/s.scop,'prąd '+fmt(s.pEl,2)+' zł/kWh ÷ SCOP '+fmt(s.scop,1)],['Kocioł gazowy',s.pGas/.95,'gaz '+fmt(s.pGas,2)+' zł/kWh, sprawność 95%'],['Kocioł na pellet',s.pPel/1000/4.8/.88,'pellet '+fmt(s.pPel)+' zł/t (4,8 kWh/kg), sprawność 88%'],['Grzejniki elektryczne',s.pEl,'prąd bezpośrednio']]
+  let src=[['Pompa ciepła',s.pEl/s.scop,'prąd '+fmt(s.pEl,2)+' zł/kWh ÷ SCOP '+fmt(s.scop,1)],['Kocioł gazowy',s.pGas/.95,'gaz '+fmt(s.pGas,2)+' zł/kWh, sprawność 95%'],['Kocioł na pellet',s.pPel/1000/4.8/.88,'pellet '+fmt(s.pPel)+' zł/t (4,8 kWh/kg), sprawność 88%'],['Grzejniki elektryczne',s.pEl,'prąd bezpośrednio'],
+    ['Kocioł zgazowujący drewno',s.pWood/s.woodKWh/.85,'drewno '+fmt(s.pWood)+' zł/mp ('+fmt(s.woodKWh)+' kWh/mp), sprawność 85%, z buforem ciepła'],
+    ['Kominek z płaszczem wodnym',s.pWood/s.woodKWh/.75,'drewno '+fmt(s.pWood)+' zł/mp, sprawność 75%, grzeje też wodę – trzeba palić codziennie']]
     .map(([name,zlkWh,how])=>({name,zlkWh,how,cost:(Qh+Qw)*zlkWh}));
+  // pompa ciepła + kominek powietrzny w salonie, który przejmuje część ogrzewania (ciepła woda z pompy)
+  {const f=Math.max(0,Math.min(.8,s.fireShare/100)),wood=s.pWood/s.woodKWh/.78,hpk=s.pEl/s.scop,cost=Qh*f*wood+(Qh*(1-f)+Qw)*hpk;
+    src.push({name:'Pompa ciepła + kominek',zlkWh:cost/Math.max(1,Qh+Qw),how:'kominek (sprawność 78%) daje '+Math.round(f*100)+'% ciepła do ogrzewania – ok. '+fmt(Qh*f/s.woodKWh/.78,1)+' mp drewna rocznie; resztę i ciepłą wodę – pompa',cost})}
   return {q,s,Z,dT,rows,Htot,load,Qloss,Qint,Qsol,Qh,Qw,EU,hp,src,A};
 }
 function klass(EU){return EU<=15?['pasywny','#15803d','#f0fdf4','#bbf7d0']:EU<=40?['energooszczędny','#15803d','#f0fdf4','#bbf7d0']:EU<=70?['zgodny z WT 2021 (orientacyjnie)','#1d4ed8','#eff6ff','#bfdbfe']:EU<=120?['standard sprzed 2014','#b45309','#fffbeb','#fde68a']:['wysokie zużycie','#b91c1c','#fef2f2','#fecaca']}
 
 function renderSide(){const s=es(),act=document.activeElement,set=(id,v)=>{if($(id)!==act)$(id).value=v};
   if(!$('zone').options.length)$('zone').innerHTML=Object.entries(ZONES).map(([k,z])=>'<option value="'+k+'">'+z.name+' · '+z.te+'°C</option>').join('');
-  set('zone',s.zone);set('persons',s.persons);set('ti',s.ti);set('bridge',s.bridge);set('vent',s.vent);set('eta',s.eta);set('inf',s.inf);set('pEl',s.pEl);set('scop',s.scop);set('pGas',s.pGas);set('pPel',s.pPel);$('etaF').hidden=s.vent!=='mech';
+  set('zone',s.zone);set('persons',s.persons);set('ti',s.ti);set('bridge',s.bridge);set('vent',s.vent);set('eta',s.eta);set('inf',s.inf);set('pEl',s.pEl);set('scop',s.scop);set('pGas',s.pGas);set('pPel',s.pPel);set('pWood',s.pWood);set('woodKWh',s.woodKWh);set('fireShare',s.fireShare);$('etaF').hidden=s.vent!=='mech';
   if(!$('ug').children.length){$('ug').innerHTML='<span class="max" style="text-align:left">przegroda</span><span class="max">U</span><span class="max">WT max</span>'+PARTS.map(([k,name,max])=>'<span>'+name+'</span><input type="number" step="0.01" min="0.05" max="3" data-u="'+k+'"><span class="max" data-max="'+k+'">≤ '+fmt(max,2)+'</span>').join('');
     $('ug').querySelectorAll('[data-u]').forEach(i=>i.onchange=()=>{const v=Number(i.value);if(Number.isFinite(v)&&v>0)save({U:{...es().U,[i.dataset.u]:v}})})}
   for(const [k,,max] of PARTS){const i=$('ug').querySelector('[data-u="'+k+'"]'),over=s.U[k]>max+1e-9;if(i!==act)i.value=s.U[k];i.classList.toggle('over',over);$('ug').querySelector('[data-max="'+k+'"]').classList.toggle('over',over)}}
-for(const id of ['zone','persons','ti','bridge','vent','eta','inf','pEl','scop','pGas','pPel'])$(id).addEventListener('change',()=>{const v=$(id).value;save({[id]:id==='zone'||id==='vent'?v:Number(v)})});
+for(const id of ['zone','persons','ti','bridge','vent','eta','inf','pEl','scop','pGas','pPel','pWood','woodKWh','fireShare'])$(id).addEventListener('change',()=>{const v=$(id).value;save({[id]:id==='zone'||id==='vent'?v:Number(v)})});
 
 function render(){
   const M=$('main');if(!project||!(project.grid||project.definitionSnapshot?.grid)){M.innerHTML='<div class="empty">Brak projektu. Narysuj rzut w <b>Układzie pomieszczeń</b> albo kliknij „Przykład” na pasku u góry.</div>';return}
@@ -153,7 +161,7 @@ function render(){
     [['Straty ciepła w sezonie ('+fmt(R.Z.hdd)+' stopniodni)',R.Qloss],['− zyski wewnętrzne (ludzie, urządzenia)',-.9*R.Qint],['− zyski od słońca przez okna',-.9*R.Qsol],['= ciepło do ogrzewania',R.Qh],['Ciepła woda ('+R.s.persons+' os.)',R.Qw],['Razem ciepło',R.Qh+R.Qw]].map(([a,b],i)=>'<tr'+(i===3||i===5?' style="font-weight:700"':'')+'><td>'+a+'</td><td class="num">'+fmt(b)+' kWh</td></tr>').join('')+'</tbody></table></div>';
   h+='<div class="card"><h2>Koszt ogrzewania i ciepłej wody</h2><table><thead><tr><th>Źródło ciepła</th><th>Założenia</th><th class="num">zł / kWh ciepła</th><th class="num">Rocznie</th><th class="num">Miesięcznie</th></tr></thead><tbody>'+
     R.src.map(x=>'<tr'+(x===best?' class="best"':'')+'><td>'+esc(x.name)+(x===best?' · najtaniej':'')+'</td><td class="hint">'+esc(x.how)+'</td><td class="num">'+fmt(x.zlkWh,2)+'</td><td class="num">'+fmt(x.cost)+' zł</td><td class="num">'+fmt(x.cost/12)+' zł</td></tr>').join('')+'</tbody></table>'+
-    '<p class="hint" style="margin:8px 0 0">Koszty bez opłat stałych (abonament, dystrybucja w części stałej).</p></div>';
+    '<p class="hint" style="margin:8px 0 0">Koszty bez opłat stałych (abonament, dystrybucja w części stałej) i bez pracy przy paleniu drewnem. '+(R.q.chimneys?'W projekcie jest komin – kocioł na drewno i kominek mają gdzie podłączyć przewód spalinowy.':'<b>Kocioł na drewno i kominek wymagają komina</b> – dodaj go w Układzie pomieszczeń.')+'</p></div>';
   M.innerHTML=h;
   // podpowiedź po najechaniu na słupek
   const tip=$('tip');M.querySelectorAll('.hit').forEach(el=>{const r=rows[+el.dataset.i];
