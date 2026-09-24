@@ -9,34 +9,52 @@
 :root{--bg:var(--hs-bg);--panel:var(--hs-panel);--line:var(--hs-line);--text:var(--hs-text);--muted:var(--hs-muted);--accent:var(--hs-accent)}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
-body{display:grid;grid-template-rows:auto auto 1fr;grid-template-columns:minmax(0,1fr)}
-/* górny blok (kafelki + pasek projektu) – wyraźnie odcięty od modułu: szare tło, białe kafelki, cień na dole */
-header{display:flex;align-items:center;gap:10px;background:#e9eef4;padding:8px 10px 6px;position:relative;z-index:5}
-.brand{font-weight:750;font-size:15.5px;letter-spacing:-.01em;white-space:nowrap;color:#0f172a;text-decoration:none;align-self:stretch;display:flex;align-items:center;gap:9px;padding:0 12px 0 6px;border-radius:11px;border:1px solid transparent}
-.brand .mark{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;box-shadow:0 2px 6px rgba(37,99,235,.35)}
-.brand .mark svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.brand{background:#fff;border-color:#dbe2ea!important;box-shadow:0 1px 2px rgba(15,23,42,.05)}
-.brand:hover{border-color:#b8c4d2!important}
-.brand.active{background:#eff6ff;border-color:#60a5fa!important;box-shadow:0 0 0 2px rgba(59,130,246,.18)}
-@media(max-width:700px){.brand>span:last-child{display:none}}
-#tabs{flex:1;min-width:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:6px}
-@media(min-width:1150px){#tabs{grid-template-columns:repeat(8,minmax(0,1fr))}}
-@media(max-width:700px){#tabs{display:flex;overflow-x:auto;scrollbar-width:thin;padding-bottom:3px}#tabs .tab{flex:0 0 132px}header{padding:6px 8px}}
-/* kafelek modułu: ikona liniowa w delikatnym kwadracie (odcień etapu) + numer i nazwa */
-.tab{--gc:#64748b;--gt:#f1f5f9;display:flex;align-items:center;gap:7px;height:42px;padding:0 6px 0 5px;border:1px solid #dbe2ea;border-radius:11px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.05);color:#1e293b;cursor:pointer;font:600 12px/1.15 var(--hs-font);letter-spacing:-.005em;text-align:left;min-width:0;transition:background .15s,border-color .15s,color .15s}
-.tab .ic{flex:0 0 auto;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:var(--gt);color:var(--gc);transition:background .15s,color .15s}
-.tab .ic svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.tab .tx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tab .tx small{display:block;font-size:10.5px;font-weight:600;color:#94a3b8;font-variant-numeric:tabular-nums;margin-bottom:1px}
-.tab:hover{border-color:#b8c4d2;box-shadow:0 3px 8px rgba(15,23,42,.10)}
-.tab.active{background:#eff6ff;border-color:#60a5fa;color:#1d4ed8;box-shadow:0 0 0 2px rgba(59,130,246,.18)}
+body{display:grid;grid-template-columns:78px minmax(0,1fr);height:100vh;overflow:hidden}
+/* ---- menu boczne: zawsze wąski pasek ikon; burger wysuwa pełne menu NA WIERZCH (treść się nie przesuwa) */
+#nav{position:fixed;left:0;top:0;bottom:0;width:78px;display:flex;flex-direction:column;background:#eef2f6;border-right:1px solid #d3dbe5;box-shadow:4px 0 14px -10px rgba(15,23,42,.35);z-index:30;transition:width .18s ease,box-shadow .18s ease;overflow:hidden}
+body.navopen #nav{width:320px;box-shadow:12px 0 32px rgba(15,23,42,.22)}
+.navtop{display:flex;align-items:center;gap:6px;padding:10px 9px 8px}
+.brand{flex:0 0 auto;min-width:0;font-weight:750;font-size:17px;letter-spacing:-.01em;white-space:nowrap;color:#0f172a;text-decoration:none;display:flex;align-items:center;gap:9px;padding:5px;border-radius:11px;border:1px solid transparent}
+.brand .mark{flex:0 0 auto;width:42px;height:42px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;box-shadow:0 2px 6px rgba(37,99,235,.35)}
+.brand svg,.burger svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.brand:hover{background:#fff;border-color:#dbe2ea}
+.brand.active{background:#fff;border-color:#60a5fa;box-shadow:0 0 0 2px rgba(59,130,246,.18)}
+.burger{flex:0 0 auto;width:42px;height:42px;border-radius:10px;border:1px solid #d3dbe5;background:#fff;color:#334155;display:grid;place-items:center;cursor:pointer}
+.burger:hover{border-color:#94a3b8;color:#0f172a}
+#tabs{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:2px 12px 14px;display:flex;flex-direction:column;gap:3px;scrollbar-width:thin}
+#tabs .grp{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8391a5;padding:12px 8px 5px;white-space:nowrap}
+.tab{--gc:#64748b;--gt:#f1f5f9;display:flex;align-items:center;gap:12px;min-height:48px;padding:5px 10px 5px 6px;border:1px solid transparent;border-radius:10px;background:transparent;color:#1e293b;cursor:pointer;font:600 14.5px/1.2 var(--hs-font);text-align:left;width:100%;transition:background .12s,border-color .12s;white-space:nowrap}
+.tab .ic{flex:0 0 auto;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--gt);color:var(--gc)}
+.tab .ic svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tab .tx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.tab .no{font-size:12px;font-weight:600;color:#9aa6b6;font-variant-numeric:tabular-nums}
+.tab:hover{background:#fff;border-color:#dbe2ea}
+.tab.active{background:#fff;border-color:#93c5fd;color:#1d4ed8;box-shadow:0 1px 3px rgba(15,23,42,.08),0 0 0 2px rgba(59,130,246,.12)}
 .tab.active .ic{background:#2563eb;color:#fff}
-.tab.active .tx small{color:#60a5fa}
-.tab .soon{font-size:10px;font-weight:600;background:var(--hs-bg);color:var(--hs-muted);border:1px solid var(--hs-line);border-radius:999px;padding:1px 6px;margin-left:5px;vertical-align:middle}
+.tab.active .no{color:#60a5fa}
+/* pasek (zamknięte): same ikony, burger nad logo */
+body:not(.navopen) .brand>span:last-child,body:not(.navopen) .tab .tx,body:not(.navopen) .tab .no{display:none}
+body:not(.navopen) .navtop{flex-direction:column}
+body:not(.navopen) #tabs{padding:2px 10px 14px}
+body:not(.navopen) #tabs .grp{font-size:0;padding:8px 0 4px;margin:0 6px;border-top:1px solid #d3dbe5}
+body:not(.navopen) #tabs .grp:first-of-type{border-top:0}
+body:not(.navopen) .tab{justify-content:center;padding:4px}
+body.navopen .brand{flex:1}
+.scrim{display:none;position:fixed;inset:0;background:rgba(15,23,42,.28);z-index:29}
+body.navopen .scrim{display:block}
+.content{grid-column:2;min-width:0;height:100vh;display:grid;grid-template-rows:auto minmax(0,1fr)}
+.burger.mobile{display:none}
+@media(max-width:800px){
+  body{grid-template-columns:minmax(0,1fr)}
+  .content{grid-column:1}
+  #nav{transform:translateX(-105%);transition:transform .2s ease;width:min(320px,88vw)!important}
+  body.navopen #nav{transform:none}
+  .burger.mobile{display:grid;width:32px;height:32px}
+}
 .spacer{flex:1}
 .ext{color:var(--hs-accent);font-size:12px;text-decoration:none;white-space:nowrap;padding:0 6px}
 main{position:relative;min-height:0}
-.projbar{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow:hidden;background:#e9eef4;border-bottom:1px solid #cfd8e3;box-shadow:0 8px 16px -12px rgba(15,23,42,.5);padding:2px 12px 8px;font-size:13px;position:relative;z-index:4}
+.projbar{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow:hidden;background:#f8fafc;border-bottom:1px solid #d3dbe5;box-shadow:0 8px 16px -12px rgba(15,23,42,.45);padding:7px 12px;font-size:13px;position:relative;z-index:4}
 .projbar .name{font-weight:700;max-width:300px;min-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:0 1 auto}
 .projbar .meta{color:var(--hs-muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1 1 auto}
 .projbar>.pbtn,.projbar>label{flex:0 0 auto}
@@ -73,11 +91,17 @@ a{color:var(--accent)}
 </style>
 </head>
 <body>
-<header>
-  <a class="brand" id="brand" href="#start" title="Strona startowa – lista modułów"><span class="mark"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></svg></span><span>Houser</span></a>
+<aside id="nav">
+  <div class="navtop">
+    <a class="brand" id="brand" href="#start" title="Strona startowa – lista modułów"><span class="mark"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></svg></span><span>Houser</span></a>
+    <button class="burger" id="burger" title="Menu – pokaż nazwy modułów"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
   <nav id="tabs"></nav>
-</header>
+</aside>
+<div class="scrim" id="scrim"></div>
+<div class="content">
 <div class="projbar" id="projbar">
+  <button class="burger mobile" id="burgerM" title="Menu modułów"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   <span>Projekt:</span><span class="name" id="pbName">—</span><span class="meta" id="pbMeta"></span>
   <button class="pbtn" id="pbUndo" title="Cofnij ostatnią zmianę (Ctrl+Z)" disabled>↶ Cofnij</button>
   <button class="pbtn" id="pbRedo" title="Ponów cofniętą zmianę (Ctrl+Y / Ctrl+Shift+Z)" disabled>↷ Ponów</button>
@@ -105,6 +129,7 @@ a{color:var(--accent)}
     </div>
   </section>
 </main>
+</div>
 <script src="shared/project-store.js"></script>
 <script src="shared/definition.js"></script>
 <script>
@@ -152,10 +177,11 @@ const tabs=document.getElementById('tabs'),cards=document.getElementById('cards'
 const frames={};
 function tabBtn(id,label,soon,m){const b=document.createElement('button');b.className='tab';b.dataset.id=id;b.title=m?m.step+'. '+m.name+' – '+m.desc:'Strona startowa';
   b.style.setProperty('--gc',GROUP_COL[m.group]||'#64748b');b.style.setProperty('--gt',GROUP_TINT[m.group]||'#f1f5f9');
-  b.innerHTML='<span class="ic">'+icon(m.id)+'</span><span class="tx"><small>'+String(m.step).padStart(2,'0')+'</small>'+label+'</span>';b.onclick=()=>{location.hash=id;};tabs.appendChild(b);}
-let lastGroup='';
+  b.innerHTML='<span class="ic">'+icon(m.id)+'</span><span class="tx">'+label+'</span><span class="no">'+String(m.step).padStart(2,'0')+'</span>';b.onclick=()=>{location.hash=id;document.body.classList.remove('navopen')};tabs.appendChild(b);}
+let lastGroup='',navGroup='';
 MODULES.forEach(m=>{
-  tabBtn(m.id,SHORT[m.id]||m.name,m.soon,m);
+  if(m.group!==navGroup){navGroup=m.group;const g=document.createElement('div');g.className='grp';g.textContent=m.group;tabs.appendChild(g)}
+  tabBtn(m.id,m.name,m.soon,m);
   if(m.group!==lastGroup){lastGroup=m.group;const h=document.createElement('h3');h.className='group';h.textContent=m.group;cards.appendChild(h);}
   const c=document.createElement('button');c.className='card'+(m.soon?' disabled':'');
   c.innerHTML='<span class="cic" style="color:'+(GROUP_COL[m.group]||'')+';background:'+(GROUP_TINT[m.group]||'')+'">'+icon(m.id)+'</span><span class="num">Krok '+m.step+'</span><h2></h2><p></p>';
@@ -172,11 +198,16 @@ function show(id){
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v===(m?frames[id]:document.getElementById('start'))));
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.id===id));
   document.getElementById('brand').classList.toggle('active',!m);
-  requestAnimationFrame(()=>{const at=document.querySelector('.tab.active');if(at&&innerWidth<=700)tabs.scrollLeft+=at.getBoundingClientRect().left-tabs.getBoundingClientRect().left-(tabs.clientWidth-at.offsetWidth)/2});
   openExt.hidden=!m;if(m)openExt.href=m.src;
   document.title=(m?m.name+' – ':'')+'Houser';
 }
 window.addEventListener('hashchange',()=>show(location.hash.slice(1)));
+// burger: wysuwa pełne menu na wierzch (nad treścią); klik w moduł, w tło albo Esc zamyka
+document.getElementById('burger').onclick=()=>document.body.classList.toggle('navopen');
+document.getElementById('burgerM').onclick=()=>document.body.classList.add('navopen');
+window.addEventListener('keydown',e=>{if(e.key==='Escape')document.body.classList.remove('navopen')});
+document.getElementById('scrim').onclick=()=>document.body.classList.remove('navopen');
+document.getElementById('brand').addEventListener('click',()=>document.body.classList.remove('navopen'));
 
 // ---------- wspólny plik projektu: jeden JSON ze wszystkim (projekt + zdjęcia i wizualizacje AI)
 // Plik = obiekt projektu (ten sam format co w przeglądarce) + houserFile (metadane). Zdjęcia i wizualizacje AI NIE trafiają do pliku – zostają w przeglądarce.
