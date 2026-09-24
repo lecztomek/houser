@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Przepisy</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:360px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.hint{font-size:12px;color:var(--hs-muted);line-height:1.45}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow);cursor:pointer;text-align:left;font:inherit;color:inherit}
+.tile .v{font-size:34px;font-weight:800;line-height:1.1}
+.tile .l{font-size:13px;font-weight:700;margin-top:2px}
+.tile.ok .v{color:#15803d}.tile.warn .v{color:#b45309}.tile.bad .v{color:#b91c1c}
+.tile.sel{outline:3px solid var(--hs-accent);outline-offset:-1px}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);box-shadow:var(--hs-shadow);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--hs-line);text-align:left;vertical-align:top}
+th{font-size:11.5px;color:var(--hs-muted);font-weight:700;background:var(--hs-panel-2);text-transform:uppercase;letter-spacing:.03em}
+tr.grp td{background:#f8fafc;font-weight:800;font-size:13.5px;border-top:2px solid var(--hs-line)}
+tr.grp td small{font-weight:600;color:var(--hs-muted)}
+.st{display:inline-flex;align-items:center;gap:5px;font-weight:700;white-space:nowrap;border-radius:999px;padding:2px 9px;font-size:12px;border:1px solid}
+.st.ok{color:#15803d;background:#f0fdf4;border-color:#bbf7d0}.st.warn{color:#b45309;background:#fffbeb;border-color:#fde68a}.st.bad{color:#b91c1c;background:#fef2f2;border-color:#fecaca}.st.info{color:#475569;background:#f1f5f9;border-color:#e2e8f0}
+td .ref{font-size:11.5px;color:var(--hs-muted)}
+td .fix{display:block;font-size:12px;color:#334155;margin-top:3px}
+.floorTabs{display:flex;gap:6px;margin-bottom:8px}
+.btn{border:1px solid var(--hs-line-strong);background:var(--hs-panel);color:var(--hs-text);padding:5px 10px;border-radius:var(--hs-radius);font:600 12.5px var(--hs-font);cursor:pointer}
+.btn.active{background:var(--hs-accent);border-color:var(--hs-accent);color:#fff}
+svg.plan{width:100%;height:auto;display:block;background:#fff;border:1px solid var(--hs-line);border-radius:8px}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;margin-top:6px;color:var(--hs-muted)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.empty{padding:40px 24px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){html,body{overflow:auto}.wrap{grid-template-columns:1fr;grid-template-rows:auto;height:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1 class="hs-title">Przepisy</h1>
+  <p class="hs-sub">Uproszczone sprawdzenie projektu z warunkami technicznymi dla domu jednorodzinnego: oświetlenie dzienne, wysokości, drzwi, schody, powierzchnie pokoi. Kliknij pomieszczenie na rzucie, żeby zobaczyć tylko jego wyniki.</p>
+  <div class="section">
+    <h3>Rzut – wynik pomieszczeń</h3>
+    <div class="floorTabs" id="floorTabs"></div>
+    <svg class="plan" id="plan"></svg>
+    <div class="legend"><span><i style="background:#86efac"></i>zgodne</span><span><i style="background:#fcd34d"></i>uwagi</span><span><i style="background:#fca5a5"></i>niezgodne</span><span><i style="background:#e2e8f0"></i>bez wymagań</span></div>
+  </div>
+  <p class="hint" style="margin-top:12px">To pomoc przy projektowaniu, nie opinia projektanta. Rodzaj pomieszczenia rozpoznaję po nazwie (salon, pokój, sypialnia, kuchnia, łazienka…). Wymiary drzwi liczę „w świetle” jako szerokość otworu minus ok. 10 cm na ościeżnicę.</p>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/stairs.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let project=null,floor=null,filter='all',roomSel=null;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const m=v=>(Math.round(v*100)/100).toLocaleString('pl-PL')+' m',m2=v=>(Math.round(v*10)/10).toLocaleString('pl-PL')+' m²';
+const ST={ok:['✓','zgodne'],warn:['!','uwaga'],bad:['✕','niezgodne'],info:['i','informacja']};
+function kindOf(name){const n=(name||'').toLowerCase();
+  if(/łazien|lazien|\bwc\b|toalet/.test(n))return 'bath';if(/kuchni|aneks/.test(n))return 'kitchen';
+  if(/salon|dzienn|jadal|pokój|pokoj|sypial|gabinet|gościn|goscin|dziec|biuro/.test(n))return 'living';
+  return 'aux'}
+const KIND_PL={living:'pokój mieszkalny',kitchen:'kuchnia',bath:'łazienka / WC',aux:'pomieszczenie pomocnicze'};
+
+function checks(){
+  const q=HouserQuantities.compute(project),out=[],G=q.G,add=(o)=>out.push(o);
+  const floorName=f=>f===q.lo?'parter':(q.attic?'poddasze':'piętro');
+  for(const r of q.rooms){const k=kindOf(r.name),grp=r.f+'|'+r.id,base={grp,room:r.name,f:r.f,kind:k};if(r.area<0.3)continue;
+    // oświetlenie dzienne
+    if(k==='living'||k==='kitchen'){const gl=r.winA+r.hstA+r.roofWinA,ratio=gl/r.area;
+      if(gl<=0)add({...base,name:'Okno (oświetlenie dzienne)',st:k==='living'?'bad':'warn',val:'brak okna',req:k==='living'?'pokój musi mieć okno':'kuchnia bez okna – potrzebna wentylacja mechaniczna',ref:'§ 57, § 94',fix:'Dodaj okno na ścianie zewnętrznej w module Układ pomieszczeń.'});
+      else add({...base,name:'Powierzchnia okien do podłogi',st:ratio>=1/8?'ok':'bad',val:'1 : '+(1/ratio).toFixed(1)+' ('+m2(gl)+' okien)',req:'co najmniej 1 : 8 ('+m2(r.area/8)+')',ref:'§ 57 ust. 2',fix:ratio<1/8?'Powiększ okna (moduł Okna i drzwi – wysokość) albo dodaj kolejne; brakuje ok. '+m2(r.area/8-gl)+'.':''})}
+    // wysokość
+    const req=k==='living'||k==='kitchen'?2.5:2.2;
+    if(r.f===q.up&&q.attic){if(k!=='aux'||r.area>=2){const share=r.areaH22/r.area;add({...base,name:'Wysokość na poddaszu',st:share>=.5?'ok':'bad',val:Math.round(share*100)+'% powierzchni ma ≥ 2,2 m (od '+m(r.minH)+' do '+m(r.maxH)+')',req:'≥ 2,2 m na co najmniej połowie powierzchni',ref:'§ 72 ust. 2',fix:share<.5?'Podnieś ściankę kolankową albo zwiększ kąt dachu (moduł Kondygnacje i dach).':''})}}
+    else{const h=r.maxH;add({...base,name:'Wysokość pomieszczenia',st:h>=req-1e-6?'ok':'bad',val:m(h),req:'≥ '+m(req),ref:'§ 72',fix:h<req?'Zwiększ wysokość kondygnacji w module Kondygnacje i dach.':''})}
+    // powierzchnia (zalecenia)
+    if(k==='living'){const n=r.name.toLowerCase();
+      if(/salon|dzienn/.test(n))add({...base,name:'Powierzchnia pokoju dziennego',st:r.area>=16?'ok':'warn',val:m2(r.area),req:'zalecane ≥ 16 m²',ref:'§ 94 ust. 1 (mieszkania)',fix:r.area<16?'Pokój dzienny jest mały – rozważ powiększenie w Układzie pomieszczeń.':''});
+      else add({...base,name:'Powierzchnia pokoju',st:r.area>=8?'ok':'warn',val:m2(r.area),req:'zalecane ≥ 8 m²',ref:'§ 94 (mieszkania)',fix:r.area<8?'Pokój poniżej 8 m² – nadaje się raczej na garderobę lub gabinet.':''})}
+    // wentylacja łazienki/kuchni
+    if(k==='bath'&&r.wins+r.roofWins===0)add({...base,name:'Wentylacja',st:'info',val:'bez okna',req:'wymagana wentylacja wywiewna (kanał lub mechaniczna)',ref:'§ 149',fix:'Zaplanuj kanał wentylacyjny albo rekuperację.'});
+    // drzwi do pomieszczenia
+    for(const d of r.doors){if(d.ext)continue;const clear=d.w-.1,need=k==='bath'?.7:(k==='living'||k==='kitchen'?.8:.7);
+      const rk=x=>({living:3,kitchen:3,bath:2,aux:1})[kindOf(x.name)],other=d.rooms.find(x=>x!==r); // każde drzwi raz – od strony ważniejszego pomieszczenia
+      if(other&&(rk(other)>rk(r)||(rk(other)===rk(r)&&d.rooms[0]!==r)))continue;
+      add({...base,name:'Szerokość drzwi',st:clear>=need-1e-6?'ok':'bad',val:m(clear)+' w świetle (otwór '+m(d.w)+')',req:'≥ '+m(need),ref:'§ 62',fix:clear<need?'Poszerz drzwi na rzucie o kolejną kratkę.':''});
+      if(d.h<2.0-1e-6)add({...base,name:'Wysokość drzwi',st:d.info?.variant==='low'?'warn':'bad',val:m(d.h),req:'≥ 2,0 m (niższe tylko do schowków)',ref:'§ 62',fix:'Zmień wysokość w module Drzwi wewnętrzne.'})}
+  }
+  // drzwi wejściowe
+  const ext=q.runs.filter(r=>r.base==='door'&&r.ext);
+  if(!ext.length)add({grp:'bud',room:'Budynek',name:'Drzwi wejściowe',st:'bad',val:'brak',req:'budynek musi mieć wejście',ref:'§ 61',fix:'Wstaw drzwi na ścianie zewnętrznej.'});
+  for(const d of ext){const clear=d.w-.1,room=d.rooms[0]?.name||'';add({grp:'bud',room:'Budynek',name:'Drzwi zewnętrzne'+(room?' ('+room+')':''),st:clear>=.9-1e-6?'ok':'bad',val:m(clear)+' w świetle',req:'≥ 0,90 m',ref:'§ 62 ust. 1',fix:clear<.9?'Poszerz drzwi zewnętrzne.':''})}
+  // schody
+  for(const s of project.stairs||[]){const H=G.groundHeight,cf=HouserStairs.comfort(s,H),w=+s.width||.9,nm={straight:'proste',L:'w kształcie L',U:'zabiegowe 180°',spiral:'kręcone'}[s.type]||s.type,base={grp:'stairs',room:'Schody '+nm};
+    add({...base,name:'Szerokość biegu',st:w>=.8-1e-6?'ok':'bad',val:m(w),req:'≥ 0,80 m',ref:'§ 68 ust. 1',fix:w<.8?'Zwiększ szerokość w module Schody.':''});
+    add({...base,name:'Wysokość stopnia',st:cf.rise<=.19+1e-6?'ok':'bad',val:(cf.rise*100).toFixed(1)+' cm',req:'≤ 19 cm',ref:'§ 68 ust. 1',fix:cf.rise>.19?'Dodaj stopni w module Schody.':''});
+    if(s.type!=='spiral')add({...base,name:'Wygoda (2h + s)',st:cf.step>=.59&&cf.step<=.66?'ok':'warn',val:(cf.step*100).toFixed(0)+' cm',req:'60–65 cm',ref:'§ 68 ust. 5',fix:!(cf.step>=.59&&cf.step<=.66)?'Dopasuj głębokość stopnia lub liczbę stopni.':''});
+    add({...base,name:'Prześwit nad schodami',st:'info',val:'otwór w stropie wg modułu Schody',req:'≥ '+m(HouserStairs.HEADROOM),ref:'§ 68 ust. 7',fix:''})}
+  if(!(project.stairs||[]).length&&q.net[q.up]>0)add({grp:'stairs',room:'Schody',name:'Schody na piętro',st:'warn',val:'brak w module Schody',req:'dostęp do kondygnacji',ref:'§ 68',fix:'Wstaw schody w module Schody – wtedy sprawdzę ich wymiary.'});
+  // ogólne
+  add({grp:'gen',room:'Ogólne',name:'Balustrady (antresola, schody, loggia)',st:'info',val:'—',req:'wysokość ≥ 1,10 m, prześwity ≤ 12 cm',ref:'§ 298',fix:''});
+  add({grp:'gen',room:'Ogólne',name:'Izolacyjność cieplna przegród',st:'info',val:'zobacz moduł Energia',req:'U ściany ≤ 0,20, dachu ≤ 0,15, okna ≤ 0,9 W/m²K',ref:'zał. 2 WT 2021',fix:''});
+  add({grp:'gen',room:'Ogólne',name:'Odległość od granic działki',st:'info',val:'brak danych o działce',req:'4 m (ściana z oknami) / 3 m (bez okien)',ref:'§ 12',fix:''});
+  return {q,out};
+}
+
+const RANK={bad:3,warn:2,ok:1,info:0};
+function render(){
+  const M=$('main');if(!project||!(project.grid||project.definitionSnapshot?.grid)){M.innerHTML='<div class="empty">Brak projektu. Narysuj rzut w <b>Układzie pomieszczeń</b> albo kliknij „Przykład” na pasku u góry.</div>';return}
+  const {q,out}=checks();floor=floor||q.lo;
+  const cnt={ok:0,warn:0,bad:0};for(const c of out)if(cnt[c.st]!=null)cnt[c.st]++;
+  let html='<div class="tiles">'+[['bad','niezgodne'],['warn','uwagi'],['ok','zgodne']].map(([k,l])=>'<button class="tile '+k+(filter===k?' sel':'')+'" data-f="'+k+'"><div class="v">'+cnt[k]+'</div><div class="l">'+ST[k][0]+' '+l+'</div></button>').join('')+'</div>';
+  const shown=out.filter(c=>(filter==='all'||c.st===filter)&&(!roomSel||c.grp===roomSel));
+  if(filter!=='all'||roomSel)html+='<div class="hint">Filtr: '+(filter!=='all'?ST[filter][1]:'')+(roomSel?' · '+esc(out.find(c=>c.grp===roomSel)?.room||''):'')+' – <a href="#" id="clr">pokaż wszystko</a></div>';
+  html+='<div class="card"><table><thead><tr><th style="width:120px">Wynik</th><th>Sprawdzenie</th><th>W projekcie</th><th>Wymaganie</th></tr></thead><tbody>';
+  const gw=g=>Math.max(...shown.filter(c=>c.grp===g).map(c=>RANK[c.st])),groups=[...new Set(shown.map(c=>c.grp))].sort((a,b)=>gw(b)-gw(a)); // najpierw problemy
+  if(!shown.length)html+='<tr><td colspan="4" class="hint" style="padding:18px">Brak pozycji dla tego filtra.</td></tr>';
+  for(const g of groups){const rows=shown.filter(c=>c.grp===g).sort((a,b)=>RANK[b.st]-RANK[a.st]),f0=rows[0];
+    html+='<tr class="grp"><td colspan="4">'+esc(f0.room)+(f0.kind?' <small>· '+KIND_PL[f0.kind]+' · '+(f0.f===q.lo?'parter':(q.attic?'poddasze':'piętro'))+'</small>':'')+'</td></tr>';
+    for(const c of rows)html+='<tr><td><span class="st '+c.st+'">'+ST[c.st][0]+' '+ST[c.st][1]+'</span></td><td><b>'+esc(c.name)+'</b><br><span class="ref">'+esc(c.ref)+'</span></td><td>'+esc(c.val)+(c.fix?'<span class="fix">→ '+esc(c.fix)+'</span>':'')+'</td><td>'+esc(c.req)+'</td></tr>'}
+  html+='</tbody></table></div>';
+  M.innerHTML=html;
+  M.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{filter=filter===b.dataset.f?'all':b.dataset.f;render()});
+  if($('clr'))$('clr').onclick=e=>{e.preventDefault();filter='all';roomSel=null;render()};
+  renderPlan(q,out);
+}
+function renderPlan(q,out){
+  $('floorTabs').innerHTML=[q.lo,q.up].filter(f=>q.net[f]>0).map(f=>'<button class="btn'+(f===floor?' active':'')+'" data-fl="'+f+'">'+(f===q.lo?'Parter':(q.attic?'Poddasze':'Piętro'))+'</button>').join('');
+  $('floorTabs').querySelectorAll('[data-fl]').forEach(b=>b.onclick=()=>{floor=b.dataset.fl;render()});
+  const S=16,svg=$('plan'),worst={};for(const c of out){if(c.st==='info')continue;worst[c.grp]=Math.max(worst[c.grp]||0,RANK[c.st])}
+  const COL={3:'#fca5a5',2:'#fcd34d',1:'#86efac',0:'#e2e8f0'};
+  svg.setAttribute('viewBox','0 0 '+q.W*S+' '+q.H*S);let h='';
+  for(const r of q.rooms.filter(r=>r.f===floor)){const k=r.f+'|'+r.id,col=COL[worst[k]||0],sel=roomSel===k;
+    for(const [x,y] of r.cells)h+='<rect x="'+x*S+'" y="'+y*S+'" width="'+S+'" height="'+S+'" fill="'+col+'" stroke="'+col+'" data-room="'+esc(k)+'" style="cursor:pointer'+(sel?';filter:brightness(.85)':'')+'"/>';
+    const cx=r.cells.reduce((a,p)=>a+p[0],0)/r.cells.length,cy=r.cells.reduce((a,p)=>a+p[1],0)/r.cells.length;
+    if(r.area>=3)h+='<text x="'+(cx+.5)*S+'" y="'+(cy+.5)*S+'" text-anchor="middle" dominant-baseline="middle" font-size="10" font-weight="700" fill="#0f172a" pointer-events="none">'+esc(r.name.length>14?r.name.slice(0,13)+'…':r.name)+'</text>'}
+  // ściany: granice między różnymi pomieszczeniami
+  const map={};for(const r of q.rooms.filter(r=>r.f===floor))for(const [x,y] of r.cells)map[x+','+y]=r.id;
+  for(let y=0;y<=q.H;y++)for(let x=0;x<q.W;x++)if((map[x+','+(y-1)]||null)!==(map[x+','+y]||null))h+='<line x1="'+x*S+'" y1="'+y*S+'" x2="'+(x+1)*S+'" y2="'+y*S+'" stroke="#334155" stroke-width="1.6"/>';
+  for(let x=0;x<=q.W;x++)for(let y=0;y<q.H;y++)if((map[(x-1)+','+y]||null)!==(map[x+','+y]||null))h+='<line x1="'+x*S+'" y1="'+y*S+'" x2="'+x*S+'" y2="'+(y+1)*S+'" stroke="#334155" stroke-width="1.6"/>';
+  svg.innerHTML=h;svg.querySelectorAll('[data-room]').forEach(e=>e.onclick=()=>{roomSel=roomSel===e.dataset.room?null:e.dataset.room;render()});
+}
+const rec=HouserStore.load();project=rec?rec.project:null;render();
+HouserStore.subscribe(r=>{project=r.project;render()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

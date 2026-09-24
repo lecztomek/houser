@@ -12,6 +12,8 @@ modules/
   obrys/index.html          obrys budynku rysowany krawędziami (dowolny kształt), dopasowanie siatki i warstw
   projektowanie/index.html  Układ pomieszczeń: definicja, malowanie pomieszczeń, otwory, komin, walidacja, elewacje
   kondygnacje-dach/index.html widok z boku: piętro / poddasze, ścianka kolankowa, kąt i kierunek dachu
+  przepisy/index.html       uproszczone sprawdzenie z warunkami technicznymi (WT 2021)
+  energia/index.html        bilans cieplny, moc grzewcza, koszt ogrzewania
   wycena/index.html         orientacyjny koszt budowy z ilości w projekcie (ceny do edycji)
   wnetrze-3d/index.html     podgląd 3D wnętrza z punktu obserwatora (meble z JSON)
   wizualizacje/index.html   wizualizacje AI (Gemini, własny klucz API w przeglądarce) ze zdjęć podglądów 3D

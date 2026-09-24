@@ -105,7 +105,9 @@ const MODULES=[
   {id:'wnetrze-3d',group:'Podgląd',name:'Wnętrze 3D',src:'modules/wnetrze-3d/',desc:'Spacer po domu z punktu obserwatora (strzałki), schody, skosy dachu, meble.'},
   {id:'zewnatrz-3d',group:'Podgląd',name:'Zewnątrz 3D',src:'modules/zewnatrz-3d/',desc:'Bryła domu z zewnątrz: dach, okna, drzwi, tarasy i pergole.'},
   {id:'wizualizacje',group:'Podgląd',name:'Wizualizacje AI',src:'modules/wizualizacje/',desc:'Zdjęcie z podglądu 3D zamienione przez AI (Gemini) na realistyczną wizualizację – prompt tworzy się sam z projektu.'},
-  {id:'wycena',group:'Koszty',name:'Wycena',src:'modules/wycena/',desc:'Orientacyjny koszt budowy z projektu: ilości (ściany, strop, dach, okna, drzwi, instalacje, wykończenie) × ceny jednostkowe, które możesz zmienić.'},
+  {id:'przepisy',group:'Analizy',name:'Przepisy',src:'modules/przepisy/',desc:'Sprawdzenie z warunkami technicznymi: okna do podłogi 1:8, wysokości, drzwi, schody, powierzchnie pokoi – z mapą pomieszczeń.'},
+  {id:'energia',group:'Analizy',name:'Energia',src:'modules/energia/',desc:'Bilans cieplny: straty przez przegrody i wentylację, moc grzewcza, zapotrzebowanie kWh/m² i koszt ogrzewania różnymi źródłami.'},
+  {id:'wycena',group:'Analizy',name:'Wycena',src:'modules/wycena/',desc:'Orientacyjny koszt budowy z projektu: ilości (ściany, strop, dach, okna, drzwi, instalacje, wykończenie) × ceny jednostkowe, które możesz zmienić.'},
 ];
 MODULES.forEach((m,i)=>m.step=i+1);
 const tabs=document.getElementById('tabs'),cards=document.getElementById('cards'),views=document.getElementById('views'),openExt=document.getElementById('openExt');
