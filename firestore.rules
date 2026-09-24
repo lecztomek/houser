@@ -1,0 +1,31 @@
+rules_version = '2';
+// Reguły bezpieczeństwa Firestore dla Houser – wklej je w konsoli Firebase: Firestore Database → Reguły.
+// projects/{id}            – opis projektu (nazwa, właściciel, prywatny/publiczny, miniaturka, statystyki)
+// projects/{id}/content/*  – pełny projekt (JSON)
+// projects/{id}/photos/*   – zdjęcia galerii
+// Czytać może właściciel, a publiczne projekty – każdy. Zapisywać i usuwać może tylko właściciel.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function mine(data) { return signedIn() && data.owner == request.auth.uid; }
+
+    match /projects/{pid} {
+      // resource == null: sprawdzenie, czy identyfikator jest wolny (nowy projekt)
+      allow read: if resource == null || resource.data.visibility == 'public' || mine(resource.data);
+      allow create: if signedIn()
+        && request.resource.data.owner == request.auth.uid
+        && request.resource.data.visibility in ['private', 'public'];
+      allow update: if mine(resource.data)
+        && request.resource.data.owner == resource.data.owner
+        && request.resource.data.visibility in ['private', 'public'];
+      allow delete: if mine(resource.data);
+
+      function parent() { return get(/databases/$(database)/documents/projects/$(pid)).data; }
+      match /{sub}/{doc} {
+        allow read: if sub in ['content', 'photos']
+          && (parent().visibility == 'public' || (signedIn() && parent().owner == request.auth.uid));
+        allow write: if sub in ['content', 'photos'] && signedIn() && parent().owner == request.auth.uid;
+      }
+    }
+  }
+}

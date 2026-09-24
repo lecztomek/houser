@@ -50,6 +50,22 @@ Zasada: każda funkcja to osobny, prosty moduł – lepiej dodać nowy moduł ni
 2. Dopisz moduł do tablicy `MODULES` w `index.html`.
 3. Nowe teksty dopisz po angielsku do `shared/i18n-en.js`.
 
+### Konta i chmura (Firebase)
+
+Po zalogowaniu przez Google projekt zapisuje się na koncie: najpierw przyciskiem **☁ Zapisz w chmurze**, a potem każda zmiana zapisuje się sama po kilku sekundach, także zdjęcia z Galerii. Na stronie głównej są **Moje projekty w chmurze** (otwieranie na dowolnym urządzeniu, udostępnianie, usuwanie) i **Projekty publiczne** innych osób (otwiera się kopia). Gdy ten sam projekt zmieni się na dwóch urządzeniach, strona pyta, którą wersję zostawić. Bez logowania wszystko działa jak dotąd, tylko w przeglądarce.
+
+Kod jest w `shared/cloud.js`, a dane w Firestore (wystarczy darmowy plan Spark, bez Storage): `projects/{id}` (opis, miniaturka, prywatny/publiczny), `projects/{id}/content/main` (projekt JSON) i `projects/{id}/photos/{id}` (zdjęcia). Reguły dostępu są w `firestore.rules`: czyta właściciel albo każdy, jeśli projekt jest publiczny; zapisuje tylko właściciel.
+
+Uruchomienie (jednorazowo, w https://console.firebase.google.com):
+
+1. **Dodaj projekt** (Google Analytics niepotrzebne).
+2. **Authentication → Rozpocznij → Metoda logowania → Google → Włącz**.
+3. **Authentication → Ustawienia → Autoryzowane domeny → Dodaj domenę**: `lecztomek.github.io`.
+4. **Firestore Database → Utwórz bazę danych**: lokalizacja w Europie (np. `eur3`), tryb produkcyjny. Potem zakładka **Reguły**: wklej zawartość `firestore.rules` → **Opublikuj**.
+5. **Ustawienia projektu → Twoje aplikacje → Aplikacja internetowa (</>)** → zarejestruj i skopiuj obiekt `firebaseConfig` do `shared/firebase-config.js`. To nie jest sekret – można go trzymać w repozytorium.
+
+Dopóki `shared/firebase-config.js` ma `null`, logowanie jest ukryte.
+
 ### Wersje językowe (PL / EN)
 
 Strona jest pisana po polsku. Przełącznik **PL | EN** na pasku projektu zapisuje język w przeglądarce (`houser:lang`) i przeładowuje całość. W trybie EN `shared/i18n.js` tłumaczy w locie teksty strony i modułów (także te dopisywane później), podpowiedzi, okna dialogowe i napisy na rzutach według słownika `shared/i18n-en.js`. Klucze to polskie teksty, a liczby zapisuje się jako `{n}`, np. `"Salon: {n} m²": "Living room: {n} m²"`. Dłuższe teksty są dzielone na zdania i części (` – `, ` · `, `: `), a nazwy pomieszczeń są podmieniane także wewnątrz innych zdań. Element z atrybutem `data-noi18n` nie jest tłumaczony. Dane projektu (nazwy wpisane przez użytkownika, plik JSON) się nie zmieniają.
