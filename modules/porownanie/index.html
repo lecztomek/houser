@@ -21,7 +21,7 @@ h1{font-size:21px;margin:0 0 4px}
 .tbl{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);box-shadow:var(--hs-shadow);overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
 th,td{padding:7px 10px;border-bottom:1px solid #eef2f6;text-align:right;vertical-align:middle;font-variant-numeric:tabular-nums}
-th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--hs-panel);z-index:1;min-width:190px;max-width:240px}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--hs-panel);z-index:1;min-width:230px;max-width:300px}
 thead th{vertical-align:top;text-align:left;border-bottom:1px solid var(--hs-line)}
 .col{display:flex;flex-direction:column;gap:6px;min-width:190px}
 .col .thumb{background:#f8fafc;border:1px solid #e8edf3;border-radius:10px;height:110px;display:grid;place-items:center;padding:6px;overflow:hidden}
@@ -41,6 +41,8 @@ td .best{color:#15803d;font-weight:800}
 td .worst{color:#b91c1c;font-weight:700}
 td .best:after{content:' ✓'}
 td small{display:block;color:var(--hs-muted);font-size:11.5px;font-weight:400}
+.dir{display:inline-block;font-size:10.5px;font-weight:700;border-radius:999px;padding:1px 7px;margin-left:4px;white-space:nowrap;vertical-align:1px}
+.dir.low{background:#eff6ff;color:#1d4ed8}.dir.high{background:#f0fdf4;color:#15803d}
 .lbl small{display:block;color:var(--hs-muted);font-size:11.5px;font-weight:400}
 .ov{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:14px 0 8px}
 .ov .o{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px 14px;box-shadow:var(--hs-shadow);display:flex;gap:12px;align-items:center}
@@ -87,6 +89,7 @@ tr.tot td{background:#f8fafc;font-weight:800;font-size:14px}
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const nf=(v,d=0)=>v==null||!Number.isFinite(v)?'–':(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const plF=(n,a,b,c)=>{n=Math.round(n);const d=n%10,t=n%100;return n===1?a:d>=2&&d<=4&&(t<12||t>14)?b:c};
 const zl=v=>v==null?'–':Math.round(v).toLocaleString('pl-PL')+' zł';
 const KEY='houser:compare',MAXC=4;
 const top_=(()=>{try{return window.top!==window&&window.top.HouserStore?window.top:null}catch(_){return null}})();
@@ -134,39 +137,39 @@ function metrics(p){const m={};const tryc=(k,fn)=>{try{m[k]=fn()}catch(e){consol
 // ---------- wiersze: [etykieta, podpis, wartość(m), format, lepsze: 'low'|'high'|null, dopisek(m)]
 const ROWS=[
   ['Dom'],
-  ['Powierzchnia użytkowa','',m=>m.q?.usableTotal,v=>nf(v,1)+' m²',null],
-  ['Powierzchnia zabudowy','ślad domu na działce',m=>m.q?.foot,v=>nf(v,1)+' m²',null],
-  ['Kubatura ogrzewana','',m=>m.q?.volume,v=>nf(v)+' m³',null],
+  ['Powierzchnia użytkowa','podłoga pokoi (poddasze liczone wg wysokości), bez garażu',m=>m.q?.usableTotal,v=>nf(v,1)+' m²',null],
+  ['Powierzchnia zabudowy','ile działki zajmuje dom – obrys w rzucie',m=>m.q?.foot,v=>nf(v,1)+' m²',null],
+  ['Kubatura ogrzewana','objętość ogrzewanych pomieszczeń',m=>m.q?.volume,v=>nf(v)+' m³',null],
   ['Kondygnacje','',m=>m.floors,v=>v||'–',null],
-  ['Pomieszczenia','w tym sypialnie / łazienki i WC',m=>m.nrooms,v=>nf(v),null,m=>m.beds+' syp. · '+m.wet+' łaz./WC'],
-  ['Dach','kąt nachylenia',m=>m.q?.G?.roofPitch,v=>nf(v)+'°',null],
-  ['Przeszklenia','okna, drzwi tarasowe, okna dachowe',m=>m.glaz,v=>nf(v,1)+' m²',null,m=>m.q?.usableTotal?nf(m.glaz/m.q.usableTotal*100)+'% pow. użytkowej':''],
+  ['Pomieszczenia','liczba pomieszczeń większych niż 2 m²; niżej – ile z nich to sypialnie, a ile łazienki i WC',m=>m.nrooms,v=>v==null?'–':nf(v)+' '+plF(v,'pomieszczenie','pomieszczenia','pomieszczeń'),null,m=>m.beds+' syp. · '+m.wet+' łaz./WC'],
+  ['Dach','kąt nachylenia połaci',m=>m.q?.G?.roofPitch,v=>nf(v)+'°',null],
+  ['Przeszklenia','okna + drzwi tarasowe + okna dachowe razem; niżej – w stosunku do powierzchni użytkowej',m=>m.glaz,v=>nf(v,1)+' m²',null,m=>m.q?.usableTotal?nf(m.glaz/m.q.usableTotal*100)+'% pow. użytkowej':''],
   ['Koszt budowy'],
-  ['Szacunkowy koszt','z rezerwą, wg Wyceny',m=>m.C?.total,zl,'low'],
-  ['Koszt za m²','powierzchni użytkowej',m=>m.C&&m.q?.usableTotal?m.C.total/m.q.usableTotal:null,v=>zl(v)+'/m²','low'],
-  ['Materiały / robocizna','',m=>m.C?.totalM,zl,null,m=>m.C?'robocizna '+zl(m.C.totalL):''],
-  ['– Stan zerowy','',m=>stageSum(m,'Stan zerowy'),zl,null],
-  ['– Stan surowy otwarty','',m=>stageSum(m,'Stan surowy otwarty'),zl,null],
-  ['– Stan surowy zamknięty','',m=>stageSum(m,'Stan surowy zamknięty'),zl,null],
-  ['– Instalacje','',m=>stageSum(m,'Instalacje'),zl,null],
-  ['– Elewacja i wykończenie','',m=>stageSum(m,'Elewacja i wykończenie'),zl,null],
-  ['– Na zewnątrz','',m=>stageSum(m,'Na zewnątrz'),zl,null],
-  ['– Inne','',m=>stageSum(m,'Inne'),zl,null],
-  ['Rezerwa na nieprzewidziane','',m=>m.C?.reserve,zl,null,m=>m.C?m.C.s.reserve+'%':''],
+  ['Szacunkowy koszt','cała budowa do zamieszkania, z rezerwą – wg modułu Wycena',m=>m.C?.total,zl,'low'],
+  ['Koszt za m²','koszt całej budowy ÷ powierzchnia użytkowa',m=>m.C&&m.q?.usableTotal?m.C.total/m.q.usableTotal:null,v=>zl(v)+'/m²','low'],
+  ['Materiały / robocizna','ile kosztu to materiały; niżej – robocizna',m=>m.C?.totalM,zl,null,m=>m.C?'robocizna '+zl(m.C.totalL):''],
+  ['– Stan zerowy','fundamenty, podłoga na gruncie, przyłącza',m=>stageSum(m,'Stan zerowy'),zl,null],
+  ['– Stan surowy otwarty','ściany, strop, schody, komin, dach',m=>stageSum(m,'Stan surowy otwarty'),zl,null],
+  ['– Stan surowy zamknięty','okna, drzwi zewnętrzne',m=>stageSum(m,'Stan surowy zamknięty'),zl,null],
+  ['– Instalacje','prąd, woda, ogrzewanie, wentylacja',m=>stageSum(m,'Instalacje'),zl,null],
+  ['– Elewacja i wykończenie','ocieplenie, tynki, podłogi, łazienki, kuchnia, drzwi',m=>stageSum(m,'Elewacja i wykończenie'),zl,null],
+  ['– Na zewnątrz','tarasy, pergole',m=>stageSum(m,'Na zewnątrz'),zl,null],
+  ['– Inne','projekt, kierownik budowy, geodeta',m=>stageSum(m,'Inne'),zl,null],
+  ['Rezerwa na nieprzewidziane','doliczona do kosztu (procent ustawiony w Wycenie)',m=>m.C?.reserve,zl,null,m=>m.C?m.C.s.reserve+'%':''],
   ['Energia'],
-  ['Zapotrzebowanie na ogrzewanie','kWh na m² rocznie',m=>m.E?.EU,v=>nf(v)+' kWh/m²','low',m=>m.E?HouserEnergy.klass(m.E.EU)[0]:''],
-  ['Ciepło rocznie','ogrzewanie + ciepła woda',m=>m.E?m.E.Qh+m.E.Qw:null,v=>nf(v)+' kWh','low'],
-  ['Moc grzewcza','przy temperaturze obliczeniowej',m=>m.E?.load,v=>nf(v,1)+' kW','low'],
-  ['Koszt ogrzewania','pompa ciepła, rocznie',m=>m.E?.src?.[0]?.cost,v=>zl(v)+'/rok','low'],
+  ['Zapotrzebowanie na ogrzewanie','energia na ogrzanie 1 m² przez cały rok',m=>m.E?.EU,v=>nf(v)+' kWh/m² na rok','low',m=>m.E?HouserEnergy.klass(m.E.EU)[0]:''],
+  ['Ciepło rocznie','ogrzewanie + ciepła woda, cały dom, przez cały rok',m=>m.E?m.E.Qh+m.E.Qw:null,v=>nf(v)+' kWh na rok','low'],
+  ['Moc grzewcza','jak mocnego źródła ciepła potrzeba w największy mróz',m=>m.E?.load,v=>nf(v,1)+' kW','low'],
+  ['Koszt ogrzewania','ogrzewanie + ciepła woda pompą ciepła, przez cały rok',m=>m.E?.src?.[0]?.cost,v=>zl(v)+' na rok','low'],
   ['Codzienność'],
-  ['Ocena codzienności','0–10, wyżej = wygodniej',m=>m.D?.overall,v=>nf(v,1)+' / 10','high',m=>m.worstDaily?'najsłabiej: '+m.worstDaily.name+' ('+nf(m.worstDaily.score,1)+')':''],
+  ['Ocena codzienności','średnia ze scenariuszy (zakupy, pranie, goście, noc…); niżej – najsłabszy scenariusz',m=>m.D?.overall,v=>nf(v,1)+' / 10','high',m=>m.worstDaily?'najsłabiej: '+m.worstDaily.name+' ('+nf(m.worstDaily.score,1)+')':''],
   ['Nasłonecznienie'],
-  ['Pokoje z ryzykiem przegrzania','wysokie i bardzo wysokie',m=>m.hot,v=>nf(v),'low',m=>m.hotOf!=null?'z '+m.hotOf+(m.worstSun?' · najgoręcej: '+m.worstSun.name:''):''],
-  ['Słońce w lipcowy dzień','zyski ciepła całego domu',m=>m.S?.house?.sumDay,v=>nf(v,1)+' kWh','low'],
-  ['Słońce zimą','zyski w sezonie grzewczym',m=>m.S?.house?.season,v=>nf(v)+' kWh','high'],
+  ['Pokoje z ryzykiem przegrzania','ile pokoi ma latem wysokie lub bardzo wysokie ryzyko przegrzania; niżej – ze wszystkich pokoi z oknami',m=>m.hot,v=>v==null?'–':nf(v)+' '+plF(v,'pokój','pokoje','pokoi'),'low',m=>m.hotOf!=null?'z '+m.hotOf+(m.worstSun?' · najgoręcej: '+m.worstSun.name:''):''],
+  ['Słońce latem – jeden dzień','ciepło przez okna w słoneczny dzień lipca, cały dom (mniej = mniej przegrzewania); niżej – na 1 m²',m=>m.S?.house?.sumDay,v=>nf(v,1)+' kWh na dzień','low',m=>m.q?.usableTotal?nf(m.S.house.sumDay/m.q.usableTotal,2)+' kWh/m² dziennie':''],
+  ['Słońce zimą – cały sezon','ciepło od słońca wykorzystane do ogrzewania przez cały sezon: październik–kwiecień (212 dni); niżej – średnio na dzień i na 1 m²',m=>m.S?.house?.season,v=>nf(v)+' kWh na sezon','high',m=>'średnio '+nf(m.S.house.season/212,1)+' kWh/dzień'+(m.q?.usableTotal?' · '+nf(m.S.house.season/m.q.usableTotal)+' kWh/m²':'')],
   ['Akustyka'],
-  ['Spokój w domu','0–10, wyżej = ciszej',m=>m.A?.overall,v=>nf(v,1)+' / 10','high',m=>m.worstA?'najgłośniej: '+m.worstA.name+' ('+nf(m.worstA.score,1)+')':''],
-  ['Pokoje z problemem akustycznym','ocena poniżej 6',m=>m.loud,v=>nf(v),'low',m=>m.loudOf!=null?'z '+m.loudOf:''],
+  ['Spokój w domu','średnia ocena cichych pokoi (sypialnie, gabinet); niżej – najgłośniejszy pokój',m=>m.A?.overall,v=>nf(v,1)+' / 10','high',m=>m.worstA?'najgłośniej: '+m.worstA.name+' ('+nf(m.worstA.score,1)+')':''],
+  ['Pokoje z problemem akustycznym','cichy pokój z oceną poniżej 6; niżej – ze wszystkich cichych pokoi',m=>m.loud,v=>v==null?'–':nf(v)+' '+plF(v,'pokój','pokoje','pokoi'),'low',m=>m.loudOf!=null?'z '+m.loudOf:''],
 ];
 
 const stageSum=(m,st)=>m.C?m.C.rows.filter(r=>r.stage===st).reduce((a,r)=>a+r.value,0)*(m.C.s.factor?1:1):null;
@@ -192,15 +195,15 @@ async function render(){
   if(cols.length<MAXC)h+='<th><button class="add" id="add">＋ Dodaj dom</button></th>';
   h+='</tr></thead><tbody>';
   const OV=cols.length?overallScores(cols):[],rank=OV.map((o,i)=>i).sort((a,b)=>(OV[b].score??-1)-(OV[a].score??-1));
-  h+='<tr class="tot"><td class="lbl">Ocena ogólna<small>wg Twoich wag</small></td>'+OV.map((o,i)=>'<td><span class="'+(cols.length>1&&rank[0]===i?'best':'')+'">'+nf(o.score,1)+' / 10</span><small>miejsce '+(rank.indexOf(i)+1)+'</small></td>').join('')+(cols.length<MAXC?'<td></td>':'')+'</tr>';
-  for(const [k,name] of CRIT){if(!(+W[k]))continue;h+='<tr><td class="lbl">'+esc(name)+'<small>punkty 0–10 do oceny ogólnej</small></td>'+OV.map(o=>'<td>'+nf(o.part[k],1)+'</td>').join('')+(cols.length<MAXC?'<td></td>':'')+'</tr>'}
+  h+='<tr class="tot"><td class="lbl">Ocena ogólna <span class="dir high">▲ więcej = lepiej</span><small>0–10, średnia punktów z kryteriów poniżej, ważona Twoimi wagami</small></td>'+OV.map((o,i)=>'<td><span class="'+(cols.length>1&&rank[0]===i?'best':'')+'">'+nf(o.score,1)+' / 10</span><small>miejsce '+(rank.indexOf(i)+1)+'</small></td>').join('')+(cols.length<MAXC?'<td></td>':'')+'</tr>';
+  for(const [k,name] of CRIT){if(!(+W[k]))continue;h+='<tr><td class="lbl">'+esc(name)+'<small>punkty 0–10 do oceny ogólnej (10 = najlepiej)</small></td>'+OV.map(o=>'<td>'+nf(o.part[k],1)+'</td>').join('')+(cols.length<MAXC?'<td></td>':'')+'</tr>'}
   const sumItems=[];
   for(const row of ROWS){
     if(row.length===1){h+='<tr class="grp"><td colspan="'+(cols.length+2)+'">'+esc(row[0])+'</td></tr>';continue}
     const [lab,sub,get,fmt,better,note]=row,vals=cols.map(c=>{try{return get(c.m)}catch(_){return null}});
     const nums=vals.filter(v=>typeof v==='number'&&Number.isFinite(v));let best=null,worst=null;
     if(better&&nums.length>=2){const mx=Math.max(...nums),mn=Math.min(...nums);if(mx-mn>Math.abs(mx)*.02+1e-9){best=better==='low'?mn:mx;worst=better==='low'?mx:mn}}
-    h+='<tr><td class="lbl"><b>'+esc(lab)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</td>';
+    h+='<tr><td class="lbl"><b>'+esc(lab)+'</b>'+(better?' <span class="dir '+better+'">'+(better==='low'?'▼ mniej = lepiej':'▲ więcej = lepiej')+'</span>':'')+(sub?'<small>'+esc(sub)+'</small>':'')+'</td>';
     vals.forEach((v,i)=>{const cls=v===best?'best':v===worst?'worst':'';let n='';try{n=note?note(cols[i].m):''}catch(_){}h+='<td><span class="'+cls+'">'+esc(fmt(v))+'</span>'+(n?'<small>'+esc(n)+'</small>':'')+'</td>'});
     if(cols.length<MAXC)h+='<td></td>';h+='</tr>';
     if(best!=null&&['Szacunkowy koszt','Zapotrzebowanie na ogrzewanie','Ocena codzienności','Spokój w domu','Pokoje z ryzykiem przegrzania'].includes(lab)){const i=vals.indexOf(best);sumItems.push([lab,projName(cols[i].p),fmt(best)])}}
