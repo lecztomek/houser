@@ -13,7 +13,7 @@ modules/
   projektowanie/index.html  Układ pomieszczeń: definicja, malowanie pomieszczeń, otwory, komin, walidacja, elewacje
   kondygnacje-dach/index.html widok z boku: piętro / poddasze, ścianka kolankowa, kąt i kierunek dachu
   galeria/index.html        wybrane zdjęcia domu (wizualizacje AI, 3D, własne), okładka, pokaz, przed/po
-  przepisy/index.html       uproszczone sprawdzenie z warunkami technicznymi (WT 2021)
+  przepisy/index.html       uproszczone sprawdzenie z warunkami technicznymi (WT 2021); reguły w przepisy/engine.js
   codziennosc/              scenariusze codzienności (zakupy, pranie, palenie w piecu, goście, noc…): trasy po domu i ocena
   naslonecznienie/          zyski od słońca latem i zimą per pomieszczenie, ryzyko przegrzania, mapa ciepła
   hydraulika/               łatwość i koszt wod-kan: odległości od źródła ciepłej wody, piony parter–piętro, dopłata za układ
@@ -24,6 +24,7 @@ modules/
   klimatyzacja/             które pokoje trzeba chłodzić (wg nasłonecznienia), moc chłodnicza, split / multi-split, koszt
   schowki/                  pojemność szaf, szafek, garderób, spiżarni, schowków, garażu, skosów – czy wystarczy dla domowników, pokoje bez wolnej ściany na szafę
   akustyka/                 cisza w sypialniach: co za ścianą, nad i pod pokojem, ulica, antresola – ocena i podpowiedzi
+  co-poprawic/               podsumowanie analiz: 5 najważniejszych poprawek, zalety i wady, oceny modułów (advisors.js – po jednym „doradcy” na moduł)
   porownanie/               2–4 domy obok siebie (koszt z etapami, energia, ogrzewanie, wentylacja, codzienność, słońce, akustyka, hydraulika, schowki) + ocena ogólna wg wag
   energia/index.html        bilans cieplny, moc grzewcza, koszt ogrzewania
   wycena/index.html         orientacyjny koszt budowy z ilości w projekcie (ceny do edycji)
@@ -63,7 +64,7 @@ Zasada: każda funkcja to osobny, prosty moduł – lepiej dodać nowy moduł ni
 1. Utwórz `modules/<nazwa>/index.html`: na początku `<head>` dodaj `<script src="../../shared/i18n-en.js"></script>` i `<script src="../../shared/i18n.js"></script>`, potem `<link rel="stylesheet" href="../../shared/theme.css">`, a przed `</body>` `<script src="../../shared/nav.js"></script>`.
 2. Dopisz moduł do tablicy `MODULES` w `index.html`.
 3. Nowe teksty dopisz po angielsku do `shared/i18n-en.js`.
-4. Jeśli moduł coś ocenia – dodaj jego wynik do Porównania domów (`modules/porownanie/`: wiersze w `ROWS` i kryterium w `CRIT`).
+4. Jeśli moduł coś ocenia – trzymaj obliczenia w osobnym pliku silnika (np. `modules/<nazwa>/engine.js`) i dodaj jego wynik do Porównania domów (`modules/porownanie/`: wiersze w `ROWS` i kryterium w `CRIT`) oraz jednego „doradcę” w `modules/co-poprawic/advisors.js` (ocena 0–10 + lista uwag z podpowiedziami).
 
 ### Konta i chmura (Firebase)
 

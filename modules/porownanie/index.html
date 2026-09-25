@@ -91,6 +91,8 @@ tr.tot td{background:#f8fafc;font-weight:800;font-size:14px}
 <script src="../../shared/heating-system.js"></script>
 <script src="../../shared/furniture.js"></script>
 <script src="../schowki/engine.js"></script>
+<script src="../przepisy/engine.js"></script>
+<script src="../co-poprawic/advisors.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -130,7 +132,7 @@ function planSvg(p){const g=p.grid||p.definitionSnapshot?.grid;if(!g)return '';c
 // ---------- wskaźniki jednego domu
 function metrics(p){const m={};const tryc=(k,fn)=>{try{m[k]=fn()}catch(e){console.error(k,e);m[k]=null}};
   tryc('q',()=>HouserQuantities.compute(p));const q=m.q;if(!q)return m;
-  tryc('E',()=>HouserEnergy.compute(p));tryc('C',()=>HouserCost.compute(p));tryc('D',()=>HouserDaily.evaluate(p,p.dailySettings));tryc('S',()=>HouserSolar.compute(p));tryc('A',()=>HouserAcoustics.evaluate(p,p.acousticSettings));tryc('P',()=>HouserPlumbing.evaluate(p,p.plumbingSettings));tryc('V',()=>HouserHVAC.evaluate(p,p.hvacSettings));tryc('VM',()=>HouserHVAC.methods(p,p.hvacSettings,m.V));tryc('Ht',()=>HouserHeating.compare(p,p.heatingSettings));tryc('HS',()=>p.heatingSystem?HouserHeatSys.evaluate(p):null);tryc('ST',()=>HouserStorage.evaluate(p,p.storageSettings));
+  tryc('E',()=>HouserEnergy.compute(p));tryc('C',()=>HouserCost.compute(p));tryc('D',()=>HouserDaily.evaluate(p,p.dailySettings));tryc('S',()=>HouserSolar.compute(p));tryc('A',()=>HouserAcoustics.evaluate(p,p.acousticSettings));tryc('P',()=>HouserPlumbing.evaluate(p,p.plumbingSettings));tryc('V',()=>HouserHVAC.evaluate(p,p.hvacSettings));tryc('VM',()=>HouserHVAC.methods(p,p.hvacSettings,m.V));tryc('Ht',()=>HouserHeating.compare(p,p.heatingSettings));tryc('HS',()=>p.heatingSystem?HouserHeatSys.evaluate(p):null);tryc('ST',()=>HouserStorage.evaluate(p,p.storageSettings));tryc('ADV',()=>HouserAdvice.collect(p));
   const rooms=q.rooms.filter(r=>r.area>=2),name=r=>(r.name||'').toLowerCase();
   m.beds=rooms.filter(r=>/sypial|pokój|pokoj|gabinet/.test(name(r))).length;m.wet=q.baths+q.wcs;m.nrooms=rooms.length;
   m.floors=q.net[q.up]>0?(q.attic?'parter + poddasze':'parter + piętro'):'parterowy';
@@ -173,6 +175,9 @@ const ROWS=[
   ['Pokoje z ryzykiem przegrzania','ile pokoi ma latem wysokie lub bardzo wysokie ryzyko przegrzania; niżej – ze wszystkich pokoi z oknami',m=>m.hot,v=>v==null?'–':nf(v)+' '+plF(v,'pokój','pokoje','pokoi'),'low',m=>m.hotOf!=null?'z '+m.hotOf+(m.worstSun?' · najgoręcej: '+m.worstSun.name:''):''],
   ['Słońce latem – jeden dzień','ciepło przez okna w słoneczny dzień lipca, cały dom (mniej = mniej przegrzewania); niżej – na 1 m²',m=>m.S?.house?.sumDay,v=>nf(v,1)+' kWh na dzień','low',m=>m.q?.usableTotal?nf(m.S.house.sumDay/m.q.usableTotal,2)+' kWh/m² dziennie':''],
   ['Słońce zimą – cały sezon','ciepło od słońca wykorzystane do ogrzewania przez cały sezon: październik–kwiecień (212 dni); niżej – średnio na dzień i na 1 m²',m=>m.S?.house?.season,v=>nf(v)+' kWh na sezon','high',m=>'średnio '+nf(m.S.house.season/212,1)+' kWh/dzień'+(m.q?.usableTotal?' · '+nf(m.S.house.season/m.q.usableTotal)+' kWh/m²':'')],
+  ['Co poprawić'],
+  ['Ważne uwagi','ile poważnych problemów znalazły wszystkie moduły razem (moduł Co poprawić); niżej – wszystkich uwag',m=>m.ADV?.major,v=>v==null?'–':nf(v),'low',m=>m.ADV?m.ADV.all.length+' wszystkich':''],
+  ['Najważniejsza poprawka','od czego zacząć poprawianie tego projektu',m=>m.ADV?.top[0]?.text,v=>v==null?'nic ważnego':(v.length>90?v.slice(0,88)+'…':v),null,m=>m.ADV?.top[0]?(m.ADV.top[0].head?m.ADV.top[0].head+' · ':'')+m.ADV.top[0].modName:''],
   ['Schowki i szafy'],
   ['Miejsce na rzeczy – ocena','0–10: czy szafy, szafki, garderoby, spiżarnia i schowki wystarczą dla domowników (moduł Schowki i szafy)',m=>m.ST?.overall,v=>nf(v,1)+' / 10','high'],
   ['Pojemność szaf i schowków','użyteczna objętość półek i drążków; niżej – ile potrzeba i ile na osobę',m=>m.ST?.cap,v=>nf(v,1)+' m³','high',m=>m.ST?'potrzeba ok. '+nf(m.ST.need,1)+' m³ · '+nf(m.ST.perPerson,1)+' m³ na osobę':''],

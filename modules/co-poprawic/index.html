@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Co poprawić</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:var(--hs-bg,#f1f5f9)}
+.wrap{max-width:1100px;margin:0 auto;padding:18px 16px 40px;display:flex;flex-direction:column;gap:14px}
+h1{font-size:21px;margin:0 0 4px}
+.lead,.hint{font-size:13px;color:var(--hs-muted);line-height:1.5;margin:0}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.card h2{font-size:16px;margin:0 0 8px}
+.top{list-style:none;margin:0;padding:0;display:grid;gap:10px;counter-reset:n}
+.top li{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start;counter-increment:n}
+.top li:before{content:counter(n);width:30px;height:30px;border-radius:50%;background:#2563eb;color:#fff;font-weight:800;display:grid;place-items:center}
+.top .t{font-weight:600;font-size:14px;line-height:1.4}
+.top .hd{font-size:12px;color:#475569;font-weight:700}
+.top .tip:before,details li small:before{content:'→ '}
+.top .tip{font-size:13px;color:#334155;margin-top:3px;line-height:1.45}
+.tag{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:1px 6px;background:#eef2ff;color:#3730a3;margin-left:4px;text-decoration:none;white-space:nowrap}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.pl{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:13.5px;line-height:1.45}
+.pl li{padding:8px 10px;border-radius:8px}
+.pl.good li{background:#f0fdf4;border-left:3px solid #22c55e}
+.pl.bad li{background:#fef2f2;border-left:3px solid #ef4444}
+.pl b{display:block;font-size:12px;color:#475569}
+.scores{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.sc{display:flex;justify-content:space-between;gap:8px;align-items:center;border:1px solid var(--hs-line);border-radius:8px;padding:8px 10px;font-size:13px;text-decoration:none;color:inherit;background:#fff}
+.sc b{font-variant-numeric:tabular-nums}
+.c-ok{color:#15803d}.c-mid{color:#b45309}.c-bad{color:#b91c1c}
+.big{font-size:28px;font-weight:800}
+details{border-top:1px solid #eef2f6;padding:8px 0}
+details summary{cursor:pointer;font-weight:600;font-size:13.5px}
+details ul{margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.5}
+details li{margin-bottom:5px}
+details li small{display:block;color:#475569}
+.empty{padding:40px;text-align:center;color:var(--hs-muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div><h1>Co poprawić</h1><p class="lead">Podsumowanie wszystkich analiz w jednym miejscu: pięć rzeczy, od których warto zacząć poprawianie projektu, największe zalety i wady domu. Szczegóły i dokładne liczby są w poszczególnych modułach – kliknij nazwę modułu.</p></div>
+  <div id="out"><div class="empty">Liczę…</div></div>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/stairs.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="../../shared/furniture.js"></script>
+<script src="../../shared/energy.js"></script>
+<script src="../przepisy/engine.js"></script>
+<script src="../codziennosc/engine.js"></script>
+<script src="../naslonecznienie/sun.js"></script>
+<script src="../naslonecznienie/calc.js"></script>
+<script src="../akustyka/engine.js"></script>
+<script src="../hydraulika/engine.js"></script>
+<script src="../schowki/engine.js"></script>
+<script src="../../shared/hvac.js"></script>
+<script src="../../shared/heating.js"></script>
+<script src="../../shared/heating-system.js"></script>
+<script src="advisors.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const cls=s=>s>=7.5?'c-ok':s>=5?'c-mid':'c-bad';
+const link=(id,name)=>'<a class="tag" href="../'+id+'/" data-mod="'+id+'">'+esc(name)+'</a>';
+function render(project){
+  const O=$('out');
+  if(!project||!(project.grid||project.definitionSnapshot?.grid)){O.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej albo narysuj rzut w <b>Układzie pomieszczeń</b>.</div>';return}
+  const R=HouserAdvice.collect(project);
+  if(!R.mods.length){O.innerHTML='<div class="empty">Na rzucie nie ma jeszcze pomieszczeń.</div>';return}
+  let h='<div class="card"><h2>Od czego zacząć – 5 najważniejszych poprawek</h2>'+(R.top.length?'<ol class="top">'+R.top.map(i=>'<li><div>'+(i.head?'<div class="hd">'+esc(i.head)+'</div>':'')+'<div class="t">'+esc(i.text)+' '+link(i.mod,i.modName)+'</div>'+(i.tip?'<div class="tip">'+esc(i.tip)+'</div>':'')+'</div></li>').join('')+'</ol>':'<p class="hint">Nie widzę nic ważnego do poprawy – dom wypada dobrze we wszystkich analizach.</p>')+'</div>';
+  h+='<div class="two"><div class="card"><h2>Największe zalety</h2>'+(R.strengths.length?'<ul class="pl good">'+R.strengths.map(s=>'<li><b>'+esc(s.modName)+' · '+fmt(s.score)+' / 10</b>'+esc(s.text)+'</li>').join('')+'</ul>':'<p class="hint">Żaden obszar nie ma jeszcze oceny 7,5 lub wyższej.</p>')+'</div>'+
+    '<div class="card"><h2>Największe wady</h2>'+(R.weaknesses.length?'<ul class="pl bad">'+R.weaknesses.map(s=>'<li><b>'+esc(s.modName)+' · '+fmt(s.score)+' / 10</b>'+(s.head?esc(s.head)+' – ':'')+esc(s.text||'niska ocena')+'</li>').join('')+'</ul>':'<p class="hint">Żaden obszar nie ma oceny poniżej 7.</p>')+'</div></div>';
+  h+='<div class="card"><h2>Oceny w modułach</h2><div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><span class="big '+(R.overall!=null?cls(R.overall):'')+'">'+(R.overall!=null?fmt(R.overall)+' / 10':'–')+'</span><span class="hint">średnia ważona z modułów (przepisy i codzienność liczą się bardziej) · '+R.major+' ważnych uwag, '+R.all.length+' wszystkich</span></div><div class="scores">'+
+    R.mods.map(m=>'<a class="sc" href="../'+m.id+'/" data-mod="'+m.id+'"><span>'+esc(m.name)+'</span><b class="'+(m.score!=null?cls(m.score):'')+'">'+(m.score!=null?fmt(m.score):'–')+'</b></a>').join('')+'</div>'+
+    '<p class="hint" style="margin-top:8px">„–” – moduł nie ma czego ocenić (np. instalacja grzewcza jeszcze niezaprojektowana).</p></div>';
+  h+='<div class="card"><h2>Wszystkie uwagi</h2>'+R.mods.filter(m=>m.items.length).map(m=>'<details><summary>'+esc(m.name)+' ('+m.items.length+')</summary><ul>'+[...m.items].sort((a,b)=>b.p-a.p).map(i=>'<li>'+(i.head?'<i>'+esc(i.head)+'</i> · ':'')+esc(i.text)+(i.tip?'<small>'+esc(i.tip)+'</small>':'')+'</li>').join('')+'</ul></details>').join('')+'</div>';
+  O.innerHTML=h;
+  // w stronie głównej linki przełączają moduł
+  try{if(window.top!==window&&window.top.HouserStore)for(const a of O.querySelectorAll('[data-mod]'))a.onclick=e=>{e.preventDefault();window.top.location.hash=a.dataset.mod}}catch(_){}
+}
+const rec=HouserStore.load();render(rec?rec.project:null);
+HouserStore.subscribe(r=>render(r.project));
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>
