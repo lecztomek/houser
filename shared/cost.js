@@ -25,9 +25,11 @@ const ITEMS=[
   ['extdoor','Stan surowy zamknięty','Drzwi zewnętrzne','szt',q=>q.ops.extDoor,6500,1,'z projektu'],
   ['elec','Instalacje','Instalacja elektryczna','m²',q=>q.usableTotal,170,1,'powierzchnia użytkowa'],
   ['plumb','Instalacje','Instalacja wodno-kanalizacyjna','m²',q=>q.usableTotal,130,1,'powierzchnia użytkowa'],
+  ['plumbExtra','Instalacje','Dopłata za układ instalacji wod-kan','kpl',()=>0,0,1,'moduł Hydraulika'],
   ['heatsrc','Instalacje','Źródło ciepła (pompa ciepła z montażem)','kpl',()=>1,45000,1,'ryczałt'],
   ['floorheat','Instalacje','Ogrzewanie podłogowe','m²',q=>q.usableTotal,120,1,'powierzchnia użytkowa'],
   ['vent','Instalacje','Wentylacja mechaniczna z rekuperacją','m²',q=>q.usableTotal,170,1,'powierzchnia użytkowa'],
+  ['ac','Instalacje','Klimatyzacja','kpl',()=>0,0,1,'moduł Klimatyzacja',false],
   ['facade','Elewacja i wykończenie','Ocieplenie i tynk elewacji','m²',q=>q.extNet,290,1,'ściany zewnętrzne netto'],
   ['plaster','Elewacja i wykończenie','Tynki wewnętrzne / sufity','m²',q=>q.plaster,65,1,'ściany od środka i sufity'],
   ['screed','Elewacja i wykończenie','Wylewki z ociepleniem podłóg','m²',q=>Object.values(q.net).reduce((a,b)=>a+b,0),120,1,'powierzchnia podłóg'],
@@ -48,9 +50,19 @@ const STD={eco:.85,std:1,high:1.35};
 const MAT={found:.6,groundslab:.6,utilities:.7,extwalls:.55,partwalls:.5,slab:.6,stairs:.65,chimney:.6,roof:.6,gutters:.55,soffit:.5,windows:.85,roofwin:.8,hst:.88,extdoor:.85,
   elec:.45,plumb:.45,heatsrc:.8,floorheat:.55,vent:.65,facade:.45,plaster:.35,screed:.5,floors:.6,paint:.3,intdoor:.75,baths:.6,wc:.6,kitchen:.85,terrace:.6,covterrace:.6,pergola:.6,design:0,manager:0};
 function cs(){const s=project.costSettings||{};return {std:STD[s.std]?s.std:'std',factor:Number.isFinite(+s.factor)&&+s.factor>0?+s.factor:1,prices:s.prices||{},mat:s.mat||{},lab:s.lab||{},off:s.off||{},on:s.on||{},reserve:Number.isFinite(+s.reserve)?+s.reserve:10}}
+// koszty z modułów (gdy ich obliczenia są załadowane na stronie): wentylacja wybrana w module Wentylacja, instalacja
+// grzewcza z modułu Instalacja grzewcza, wod-kan z Hydrauliki, klimatyzacja. Bez nich – stawki za m² jak wyżej.
+function fromModules(){const D={};const T=f=>{try{return f()}catch(e){console.warn(e);return null}};
+  if(global.HouserHVAC){const M=T(()=>HouserHVAC.methods(project,project.hvacSettings));if(M?.chosen)D.vent={name:'Wentylacja: '+M.chosen.name.toLowerCase(),total:M.chosen.invest,how:'z modułu Wentylacja'};
+    const V=M?.res;if(V?.ac&&V.ac.rooms.length)D.ac={name:'Klimatyzacja ('+V.ac.rooms.length+' '+(V.ac.rooms.length===1?'pokój':V.ac.rooms.length<5?'pokoje':'pokoi')+')',total:V.ac.best,how:'z modułu Klimatyzacja – włącz, jeśli planujesz'}}
+  if(global.HouserHeatSys&&project.heatingSystem){const R=T(()=>HouserHeatSys.evaluate(project));if(R){D.heatsrc={name:'Źródło ciepła: '+R.name.toLowerCase(),total:R.investSrc,how:'z modułu Instalacja grzewcza (źródła, bufor, komin)'};D.floorheat={name:'Instalacja grzewcza w pokojach',total:R.invest-R.investSrc,how:'z modułu Instalacja grzewcza (podłogówka, grzejniki, rozdzielacze, rury)'}}}
+  // wod-kan: stawka za m² + dopłata za układ z Hydrauliki (dalekie łazienki, przesunięte piony, cyrkulacja)
+  if(global.HouserPlumbing){const P=T(()=>HouserPlumbing.evaluate(project,project.plumbingSettings));if(P&&P.extra>0)D.plumbExtra={name:'Dopłata za układ instalacji wod-kan',total:P.extra,how:'z modułu Hydraulika – dłuższe rury i piony niż w układzie zwartym'}}
+  return D}
 function compute(){
-  const q=quantities(),s=cs(),rows=[];
-  for(const [id,stage,name,unit,qf,defPrice,fin,how,defOn] of ITEMS){
+  const q=quantities(),s=cs(),rows=[],DYN=fromModules();
+  for(let [id,stage,name,unit,qf,defPrice,fin,how,defOn] of ITEMS){
+    const dy=DYN[id];if(dy){unit='kpl';name=dy.name;how=dy.how;qf=()=>1;defPrice=dy.total;fin=0}
     const qty=Math.max(0,qf(q)||0);let base=defPrice;if(id==='stairs')base=q.stairs.length?q.stairs.reduce((a,t)=>a+(STAIR_PRICE[t]||18000),0)/q.stairs.length:18000;const ek=+project.envelopePriceK?.[id];if(ek>0)base*=ek; // mur, elewacja, okna wg modułu Ocieplenie i elewacja
     const def=base*(fin?STD[s.std]:1)*s.factor,share=MAT[id]??.6,old=s.prices[id]!=null?+s.prices[id]:null; // starsze zapisy: jedna cena -> dzielona wg udziału
     const defMat=def*share,defLab=def*(1-share),mat=s.mat[id]!=null?+s.mat[id]:(old!=null?old*share:defMat),lab=s.lab[id]!=null?+s.lab[id]:(old!=null?old*(1-share):defLab);

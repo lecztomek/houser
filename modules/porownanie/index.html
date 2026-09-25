@@ -60,6 +60,12 @@ td small{display:block;color:var(--hs-muted);font-size:11.5px;font-weight:400}
 .wgrid select{border:1px solid var(--hs-line-strong);border-radius:8px;padding:3px 6px;font:inherit;font-size:12.5px;background:#fff}
 tr.tot td{background:#f8fafc;font-weight:800;font-size:14px}
 .empty{padding:40px;text-align:center;color:var(--hs-muted)}
+.val{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin:12px 0}
+.val .c{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px 14px;box-shadow:var(--hs-shadow);font-size:13px;line-height:1.45}
+.val .c.win{border-color:#86efac;background:#f0fdf4}
+.val .h{font-weight:800;font-size:14px}.val .p{color:var(--hs-muted);font-size:12.5px;margin:2px 0 6px}
+.val ul{margin:4px 0 0;padding-left:18px}.val li.g::marker{content:'+ ';color:#15803d;font-weight:800}.val li.b::marker{content:'− ';color:#b91c1c;font-weight:800}
+.val h3{grid-column:1/-1;font-size:15px;margin:4px 0 0}
 .load{color:var(--hs-muted);font-size:12px}
 </style>
 </head>
@@ -68,6 +74,7 @@ tr.tot td{background:#f8fafc;font-weight:800;font-size:14px}
   <h1>Porównanie domów</h1>
   <p class="lead">Postaw obok siebie 2–4 projekty – swoje (z tej przeglądarki lub z chmury), bieżący albo gotowe domy. Wszystkie liczby są liczone tak samo jak w modułach Wycena, Energia, Codzienność, Nasłonecznienie i Akustyka. Najlepsza wartość w wierszu jest zielona, najsłabsza czerwona.</p>
   <div id="overall" class="ov"></div>
+  <div id="value" class="val"></div>
   <details class="wts" id="wtsBox"><summary>Co jest dla Ciebie ważne w ocenie ogólnej</summary><div class="wgrid" id="wts"></div><p class="hint">Każde kryterium daje 0–10 punktów: koszt za m² względem najtańszego z porównywanych, energia wg zapotrzebowania (15 kWh/m² = 10 pkt, 120 = 0), codzienność i akustyka – ich oceny, przegrzewanie – odsetek pokoi bez wysokiego ryzyka, hydraulika – jej ocena, ogrzewanie – koszt zaprojektowanej instalacji (albo najlepszego źródła) w okresie względem najtańszego z porównywanych, schowki i szafy – ich ocena, rekuperacja – łatwość montażu, klimatyzacja – koszt (0 zł = 10 pkt, 40 tys. zł = 0), metraż – względem największego. Ocena ogólna to średnia ważona.</p></details>
   <div id="sum" class="sum"></div>
   <div class="tbl" id="tbl"><div class="empty">Wczytuję projekty…</div></div>
@@ -238,6 +245,10 @@ async function render(){
   if(cols.length<MAXC)h+='<th><button class="add" id="add">＋ Dodaj dom</button></th>';
   h+='</tr></thead><tbody>';
   const OV=cols.length?overallScores(cols):[],rank=OV.map((o,i)=>i).sort((a,b)=>(OV[b].score??-1)-(OV[a].score??-1));
+  // cena do jakości: ocena bez kryterium kosztu ÷ koszt budowy, najlepszy = 10
+  const VAL=cols.map((c,i)=>{const o=OV[i];let sw=0,sv=0;for(const [k] of CRIT){if(k==='cost')continue;const w=+W[k]||0;if(w&&o.part[k]!=null){sw+=w;sv+=w*o.part[k]}}const q=sw?sv/sw:null,C=c.m.C?.total;return {q,C,r:q!=null&&C?q/(C/1e5):null}});
+  const maxR=Math.max(...VAL.map(v=>v.r||0));VAL.forEach(v=>v.score=v.r&&maxR?10*v.r/maxR:null);
+  h+='<tr class="tot"><td class="lbl">Cena do jakości <span class="dir high">▲ więcej = lepiej</span><small>ocena ogólna bez kosztu, podzielona przez koszt budowy; najlepszy stosunek = 10</small></td>'+VAL.map((v,i)=>'<td><span class="'+(cols.length>1&&v.score===10?'best':'')+'">'+nf(v.score,1)+' / 10</span><small>'+(v.r!=null?nf(v.r,2)+' pkt jakości na 100 tys. zł':'')+'</small></td>').join('')+(cols.length<MAXC?'<td></td>':'')+'</tr>';
   h+='<tr class="tot"><td class="lbl">Ocena ogólna <span class="dir high">▲ więcej = lepiej</span><small>0–10, średnia punktów z kryteriów poniżej, ważona Twoimi wagami</small></td>'+OV.map((o,i)=>'<td><span class="'+(cols.length>1&&rank[0]===i?'best':'')+'">'+nf(o.score,1)+' / 10</span><small>miejsce '+(rank.indexOf(i)+1)+'</small></td>').join('')+(cols.length<MAXC?'<td></td>':'')+'</tr>';
   for(const [k,name] of CRIT){if(!(+W[k]))continue;h+='<tr><td class="lbl">'+esc(name)+'<small>punkty 0–10 do oceny ogólnej (10 = najlepiej)</small></td>'+OV.map(o=>'<td>'+nf(o.part[k],1)+'</td>').join('')+(cols.length<MAXC?'<td></td>':'')+'</tr>'}
   const sumItems=[];
@@ -255,6 +266,15 @@ async function render(){
   $('sum').innerHTML=cols.length<2?'<div class="t"><div class="l">Dodaj drugi dom</div><div class="s">Porównanie ma sens od dwóch projektów – kliknij „＋ Dodaj dom”.</div></div>':sumItems.map(([k,n,v])=>'<div class="t"><div class="l">'+esc(SUM_PL[k])+'</div><div class="v">'+esc(n)+'</div><div class="s">'+esc(v)+'</div></div>').join('');
   $('overall').innerHTML=cols.length<2?'':rank.map((i,r)=>{const o=OV[i],best=Object.entries(o.part).filter(([k,v])=>v!=null&&+W[k]).sort((a,b)=>b[1]-a[1])[0];
       return '<div class="o'+(r===0?' win':'')+'"><div class="rk">'+(r+1)+'</div><div><div class="sc">'+nf(o.score,1)+' <small>/ 10</small></div><div class="nm">'+esc(projName(cols[i].p))+'</div>'+(r===0?'<div class="ex">najlepszy wybór wg Twoich wag</div>':best?'<div class="ex">najmocniej: '+esc(CRIT.find(c=>c[0]===best[0])[1])+'</div>':'')+'</div></div>'}).join('');
+  // co dostajesz za swoje pieniądze – każdy dom względem najtańszego
+  {const V=$('value');if(cols.length<2||VAL.some(v=>v.C==null)){V.innerHTML=''}else{const ord=cols.map((c,i)=>i).sort((a,b)=>VAL[a].C-VAL[b].C),ch=ord[0],bestV=VAL.indexOf(VAL.reduce((a,b)=>(b.score||0)>(a.score||0)?b:a));
+    const nm=k=>(CRIT.find(c=>c[0]===k)||[,k])[1],area=i=>cols[i].m.q?.usableTotal||0;
+    V.innerHTML='<h3>Co dostajesz za swoje pieniądze</h3>'+ord.map(i=>{const c=cols[i],v=VAL[i],d=v.C-VAL[ch].C,g=[],b=[];
+      if(i!==ch){for(const [k] of CRIT){if(k==='cost'||k==='area')continue;const a=OV[i].part[k],z=OV[ch].part[k];if(a==null||z==null)continue;const diff=a-z;if(diff>=.8)g.push([diff,nm(k),'+'+nf(diff,1)+' pkt']);else if(diff<=-.8)b.push([diff,nm(k),nf(diff,1)+' pkt'])}
+        const dA=area(i)-area(ch);if(dA>=3)g.unshift([99,'większy o '+nf(dA,0)+' m² użytkowej']);else if(dA<=-3)b.unshift([-99,'mniejszy o '+nf(-dA,0)+' m² użytkowej'])}
+      g.sort((x,y)=>y[0]-x[0]);b.sort((x,y)=>x[0]-y[0]);
+      return '<div class="c'+(i===bestV?' win':'')+'"><div class="h">'+esc(projName(c.p))+'</div><div class="p"><span>'+nf(v.C/1000,0)+' tys. zł</span> · <span>'+(i===ch?'najtańszy':'+'+nf(d/1000,0)+' tys. zł (+'+nf(d/VAL[ch].C*100,0)+'%) względem najtańszego')+'</span>'+(i===bestV?' · <b>najlepszy stosunek jakości do ceny</b>':'')+'</div>'+
+        (i===ch?'<div>Punkt odniesienia: pozostałe domy porównuję z tym, co dostajesz za najniższą kwotę.</div>':(g.length?'<div>Za dopłatę dostajesz:</div><ul>'+g.slice(0,4).map(x=>'<li class="g"><span>'+esc(x[1])+'</span>'+(x[2]?' <span>('+esc(x[2])+')</span>':'')+'</li>').join('')+'</ul>':'<div>Za dopłatę nie dostajesz wyraźnie lepszych ocen.</div>')+(b.length?'<div style="margin-top:4px">A tracisz:</div><ul>'+b.slice(0,3).map(x=>'<li class="b"><span>'+esc(x[1])+'</span>'+(x[2]?' <span>('+esc(x[2])+')</span>':'')+'</li>').join('')+'</ul>':''))+'</div>'}).join('')}}
   $('wts').innerHTML=CRIT.map(([k,name])=>'<label>'+esc(name)+'<select data-w="'+k+'">'+WOPT.map(([v,t])=>'<option value="'+v+'"'+(+W[k]===v?' selected':'')+'>'+t+'</option>').join('')+'</select></label>').join('');
   $('wts').querySelectorAll('[data-w]').forEach(s=>s.onchange=()=>{W[s.dataset.w]=+s.value;try{localStorage.setItem(WKEY,JSON.stringify(W))}catch(_){}render()});
   T.querySelectorAll('select[data-i]').forEach(s=>s.onchange=()=>{const [src,...r]=s.value.split('|');sel[+s.dataset.i]={src,id:r.join('|')};lsSet(sel);render()});
