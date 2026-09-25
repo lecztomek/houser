@@ -9,7 +9,7 @@ const ZONES={I:{name:'I – zachód (Szczecin, Poznań, Wrocław)',te:-16,hdd:35
 const PARTS=[['wall','Ściany zewnętrzne',.20,.18],['roof','Dach / strop pod nieogrzewanym',.15,.13],['floor','Podłoga na gruncie',.30,.25],['win','Okna i drzwi tarasowe',.90,.85],['roofwin','Okna dachowe',1.10,1.0],['door','Drzwi zewnętrzne',1.30,1.1]];
 function es(){const s=project.energySettings||{},U={};for(const [k,,,d] of PARTS)U[k]=Number.isFinite(+s.U?.[k])&&+s.U[k]>0?+s.U[k]:d;
   const num=(v,d)=>Number.isFinite(+v)&&v!==''&&v!=null?+v:d;
-  return {zone:ZONES[s.zone]?s.zone:'III',persons:num(s.persons,4),ti:num(s.ti,20),U,bridge:num(s.bridge,.05),vent:s.vent==='grav'?'grav':'mech',eta:num(s.eta,85),inf:num(s.inf,.1),pEl:num(s.pEl,1.10),scop:num(s.scop,3.6),pGas:num(s.pGas,.32),pPel:num(s.pPel,1400),pCoal:num(s.pCoal,1500),pWood:num(s.pWood,380),woodKWh:num(s.woodKWh,1600),fireShare:num(s.fireShare,25)}}
+  return {zone:ZONES[s.zone]?s.zone:'III',persons:num(s.persons,4),ti:num(s.ti,20),U,bridge:num(s.bridge,.05),vent:['grav','exhaust'].includes(s.vent)?s.vent:'mech',eta:num(s.eta,85),inf:num(s.inf,.1),pEl:num(s.pEl,1.10),scop:num(s.scop,3.6),pGas:num(s.pGas,.32),pPel:num(s.pPel,1400),pCoal:num(s.pCoal,1500),pWood:num(s.pWood,380),woodKWh:num(s.woodKWh,1600),fireShare:num(s.fireShare,25)}}
 function compute(){
   const q=HouserQuantities.compute(project),s=es(),Z=ZONES[s.zone],dT=s.ti-Z.te,G=q.G;
   // przegrody zewnętrzne (powierzchnie z projektu)
@@ -19,8 +19,9 @@ function compute(){
   const floor=q.net[q.lo],bFloor=.6;                                            // grunt jest cieplejszy od powietrza – współczynnik redukcji
   const A={wall,roof,floor,win:q.ops.winA+q.ops.hstA,roofwin:q.ops.roofWinA,door:q.ops.extDoorA};
   const rows=PARTS.map(([k,name])=>{const u=s.U[k]+s.bridge*(k==='wall'||k==='roof'||k==='floor'?1:0),H=A[k]*u*(k==='floor'?bFloor:1);return {k,name,A:A[k],U:s.U[k],H}}).filter(r=>r.A>0);
-  const eta=s.vent==='mech'?s.eta/100:0,nMin=.5,V=q.volume,Hv=.34*V*(nMin*(1-eta)+s.inf);
-  rows.push({k:'vent',name:s.vent==='mech'?'Wentylacja (z odzyskiem '+Math.round(eta*100)+'%)':'Wentylacja grawitacyjna',A:null,U:null,H:Hv,V});
+  // wywiewna z nawiewnikami higrosterowanymi wymienia powietrze tylko, gdy trzeba – ok. 20% mniej niż stała wymiana
+  const eta=s.vent==='mech'?s.eta/100:0,nMin=s.vent==='exhaust'?.4:.5,V=q.volume,Hv=.34*V*(nMin*(1-eta)+s.inf);
+  rows.push({k:'vent',name:s.vent==='mech'?'Wentylacja (z odzyskiem '+Math.round(eta*100)+'%)':s.vent==='exhaust'?'Wentylacja mechaniczna wywiewna':'Wentylacja grawitacyjna',A:null,U:null,H:Hv,V});
   const Htot=rows.reduce((a,r)=>a+r.H,0);for(const r of rows){r.W=r.H*dT;r.share=r.H/Htot}
   const load=Htot*dT/1000;                                                          // kW
   const Qloss=Htot*Z.hdd*24/1000,Qint=3*q.usableTotal*5000/1000,Qsol=(A.win+A.roofwin)*125,Qh=Math.max(0,Qloss-.9*(Qint+Qsol));

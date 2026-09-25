@@ -125,7 +125,7 @@ function render(){
   if($('unit').dataset.v!==opts){$('unit').innerHTML=opts;$('unit').dataset.v=opts}$('unit').value=[...$('unit').options].some(o=>o.value===s.unit)?s.unit:'auto';
   $('kitchen').value=s.kitchen;
   const R=res,dv=R.difficulty>=8?'ok':R.difficulty>=6?'mid':'bad';
-  let h='';
+  let h='';{const v=HouserEnergy.settings(project).vent;if(v!=='mech')h+='<div class="card" style="background:#fffbeb;border-color:#fcd34d"><b>W projekcie wybrano: '+(v==='exhaust'?'wentylację mechaniczną wywiewną':'wentylację grawitacyjną')+'.</b> <span class="hint">Rekuperacja poniżej to wariant do rozważenia – wybór zmienisz w module Wentylacja.</span></div>'}
   h+='<div class="tiles"><div class="tile"><div class="l">Jak bardzo potrzebna</div><div class="v"><span class="need '+R.need+'">'+NEED[R.need]+'</span></div><div class="s">strumień domu '+R.flow+' m³/h</div></div>'+
     '<div class="tile"><div class="l">Trudność montażu</div><div class="v c-'+dv+'">'+fmt(R.difficulty)+' <small>/ 10 (10 = łatwo)</small></div><div class="s">centrala: '+(R.unitLoft?'strych':esc(R.unit?.name||'—'))+' · kanały ok. '+Math.round(R.ductLen)+' m</div></div>'+
     '<div class="tile"><div class="l">Koszt rekuperacji</div><div class="v">'+zl(R.cost.total)+'</div><div class="s">z montażem, orientacyjnie</div></div>'+

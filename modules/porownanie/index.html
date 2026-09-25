@@ -199,6 +199,7 @@ const ROWS=[
   ['Ogrzewanie – rachunki roczne','zaprojektowanej instalacji, a gdy jej nie ma – najlepszego źródła: ogrzewanie + ciepła woda + opłaty stałe i serwis',m=>m.HS?m.HS.year:m.Ht?.best.year,v=>zl(v)+' na rok','low',m=>m.HS?'zaprojektowana':m.Ht?'najlepsze źródło':''],
   ['Ogrzewanie – koszt w okresie','źródła ciepła + rachunki przez okres z modułu Ogrzewanie (domyślnie 20 lat), bez instalacji w pokojach – żeby domy dało się porównać',m=>m.HS?m.HS.totalSrc:m.Ht?.best.total,zl,'low',m=>m.HS?'zaprojektowana · '+m.HS.years+' lat':m.Ht?'najlepsze źródło · instalacja '+zl(m.Ht.best.invest)+' · '+m.Ht.years+' lat':''],
   ['Wentylacja'],
+  ['Wentylacja – wybrana','sposób wentylacji wybrany w projekcie (moduł Wentylacja) – liczy się w bilansie energii; niżej – jego ocena dla tego domu',m=>m.VM?.chosen?.name,v=>v||'–',null,m=>m.VM?.chosen?'ocena '+nf(m.VM.chosen.score,1)+' / 10':''],
   ['Wentylacja – najlepsza dla domu','sposób wentylacji z najwyższą oceną – wg modułu Wentylacja',m=>m.VM?.best.name,v=>v||'–',null,m=>m.VM?'koszt zrobienia '+zl(m.VM.best.invest):''],
   ['Rekuperacja – koszt','centrala, kanały, anemostaty, montaż (orientacyjnie)',m=>m.V?.cost.total,zl,'low',m=>m.V?'potrzeba: '+({high:'bardzo potrzebna',mid:'zalecana',low:'opcjonalna'})[m.V.need]:''],
   ['Rekuperacja – trudność montażu','0–10, gdzie 10 = łatwo (centrala blisko, kanały po strychu)',m=>m.V?.difficulty,v=>nf(v,1)+' / 10','high',m=>m.V?'kanały ok. '+nf(m.V.ductLen)+' m':''],

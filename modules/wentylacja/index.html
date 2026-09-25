@@ -33,6 +33,10 @@ ul.cons li::marker{content:'− ';color:#b91c1c;font-weight:800}
 .why{font-size:12.5px;color:#334155;background:#f8fafc;border-radius:8px;padding:7px 10px 7px 24px;margin:0}
 .links{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .btn{border:1px solid var(--hs-line-strong);background:#fff;border-radius:8px;padding:6px 11px;font:600 12.5px var(--hs-font);color:var(--hs-text);text-decoration:none;cursor:pointer}
+.m.pick{border-color:#93c5fd;box-shadow:0 0 0 2px #bfdbfe}
+.chosen{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#eff6ff;border:1px solid #93c5fd;border-radius:var(--hs-radius-lg);padding:12px 14px;margin:14px 0 0;font-size:13px}
+.chosen select{border:1px solid var(--hs-line-strong);border-radius:8px;padding:6px 8px;min-height:34px;font:inherit;background:#fff}
+.badge{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:2px 7px;background:#2563eb;color:#fff;margin-left:6px;vertical-align:middle}
 .empty{padding:40px;text-align:center;color:var(--hs-muted)}
 </style>
 </head>
@@ -67,8 +71,10 @@ function render(){
   let M;try{M=HouserHVAC.methods(project,project.hvacSettings)}catch(e){console.error(e);O.innerHTML='<div class="empty">Nie udało się policzyć.</div>';return}
   if(!M.res.sup.length&&!M.res.ex.length){O.innerHTML='<div class="empty">Na rzucie nie ma jeszcze pomieszczeń.</div>';return}
   const maxT=Math.max(...M.list.map(m=>m.total));
-  let h='<div class="best"><div><div class="hint">Najlepiej pasuje do tego domu</div><div class="big">'+esc(M.best.name)+'</div></div><div class="s">'+(M.airtight?'Dom jest szczelny (infiltracja '+fmt(M.inf,2)+' 1/h) – potrzebna wentylacja mechaniczna.':'Dom jest mniej szczelny (infiltracja '+fmt(M.inf,2)+' 1/h) – wentylacja grawitacyjna ma szansę działać.')+'</div></div>';
-  h+='<div class="methods">'+[...M.list].sort((a,b)=>b.score-a.score).map(m=>'<div class="m'+(m===M.best?' win':'')+'"><h2>'+esc(m.name)+'</h2><div class="how">'+esc(m.how)+'</div>'+
+  const ck=M.chosen?.k,wrong=M.chosen&&M.chosen!==M.best&&M.best.score-M.chosen.score>=1;
+  let top='<div class="chosen"><b>Wentylacja w tym projekcie:</b><select id="pickV">'+M.list.map(m=>'<option value="'+m.k+'"'+(m.k===ck?' selected':'')+'>'+esc(m.name)+'</option>').join('')+'</select><span class="hint">liczy się w bilansie energii (moduł Energia), ogrzewaniu i porównaniu</span>'+(wrong?'<span class="hint" style="color:#b45309;width:100%">Do tego domu lepiej pasuje: <b>'+esc(M.best.name)+'</b> ('+fmt(M.best.score)+' / 10 wobec '+fmt(M.chosen.score)+').</span>':'')+'</div>';
+  let h=top+'<div class="best"><div><div class="hint">Najlepiej pasuje do tego domu</div><div class="big">'+esc(M.best.name)+'</div></div><div class="s">'+(M.airtight?'Dom jest szczelny (infiltracja '+fmt(M.inf,2)+' 1/h) – potrzebna wentylacja mechaniczna.':'Dom jest mniej szczelny (infiltracja '+fmt(M.inf,2)+' 1/h) – wentylacja grawitacyjna ma szansę działać.')+'</div></div>';
+  h+='<div class="methods">'+[...M.list].sort((a,b)=>b.score-a.score).map(m=>'<div class="m'+(m===M.best?' win':'')+(m.k===ck?' pick':'')+'"><h2>'+esc(m.name)+(m.k===ck?'<span class="badge">wybrana</span>':'')+'</h2><div class="how">'+esc(m.how)+'</div>'+
     '<div class="score"><span class="n '+cls(m.score)+'">'+fmt(m.score)+'</span><span class="hint">/ 10 ocena · dopasowanie do domu '+fmt(m.fit)+' / 10</span></div>'+
     '<div class="kv"><span>Koszt zrobienia</span><b>'+zl(m.invest)+'</b><span>Koszt roczny</span><b>'+zl(m.year)+' / rok</b><span class="hint">w tym prąd wentylatorów i serwis</span><b class="hint">'+zl(m.fan+m.service)+' / rok</b><span>Koszt w '+M.years+' lat</span><b>'+zl(m.total)+'</b></div>'+
     '<div class="bar" title="koszt w '+M.years+' lat"><i style="width:'+Math.round(m.total/maxT*100)+'%"></i></div>'+
@@ -76,6 +82,7 @@ function render(){
     (m.why.length?'<ul class="why">'+m.why.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'')+
     '<ul class="pros">'+m.pros.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul><ul class="cons">'+m.cons.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>').join('')+'</div>';
   O.innerHTML=h;
+  $('pickV').onchange=e=>{const v=HouserHVAC.VENT_OF[e.target.value];project.energySettings={...(project.energySettings||{}),vent:v};HouserStore.update(p=>{p.energySettings={...(p.energySettings||{}),vent:v}},'wentylacja');render()};
 }
 const rec=HouserStore.load();project=rec?rec.project:null;render();
 HouserStore.subscribe(r=>{project=r.project;render()});
