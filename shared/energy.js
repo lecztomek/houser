@@ -9,7 +9,7 @@ const ZONES={I:{name:'I – zachód (Szczecin, Poznań, Wrocław)',te:-16,hdd:35
 const PARTS=[['wall','Ściany zewnętrzne',.20,.18],['roof','Dach / strop pod nieogrzewanym',.15,.13],['floor','Podłoga na gruncie',.30,.25],['win','Okna i drzwi tarasowe',.90,.85],['roofwin','Okna dachowe',1.10,1.0],['door','Drzwi zewnętrzne',1.30,1.1]];
 function es(){const s=project.energySettings||{},U={};for(const [k,,,d] of PARTS)U[k]=Number.isFinite(+s.U?.[k])&&+s.U[k]>0?+s.U[k]:d;
   const num=(v,d)=>Number.isFinite(+v)&&v!==''&&v!=null?+v:d;
-  return {zone:ZONES[s.zone]?s.zone:'III',persons:num(s.persons,4),ti:num(s.ti,20),U,bridge:num(s.bridge,.05),vent:['grav','exhaust'].includes(s.vent)?s.vent:'mech',eta:num(s.eta,85),inf:num(s.inf,.1),pEl:num(s.pEl,1.10),scop:num(s.scop,3.6),pGas:num(s.pGas,.32),pPel:num(s.pPel,1400),pCoal:num(s.pCoal,1500),pWood:num(s.pWood,380),woodKWh:num(s.woodKWh,1600),fireShare:num(s.fireShare,25)}}
+  return {zone:ZONES[s.zone]?s.zone:'III',persons:num(s.persons,4),dhwL:num(s.dhwL,50),ti:num(s.ti,20),U,bridge:num(s.bridge,.05),vent:['grav','exhaust'].includes(s.vent)?s.vent:'mech',eta:num(s.eta,85),inf:num(s.inf,.1),pEl:num(s.pEl,1.10),scop:num(s.scop,3.6),pGas:num(s.pGas,.32),pPel:num(s.pPel,1400),pCoal:num(s.pCoal,1500),pWood:num(s.pWood,380),woodKWh:num(s.woodKWh,1800),fireShare:num(s.fireShare,25)}}
 function compute(){
   const q=HouserQuantities.compute(project),s=es(),Z=ZONES[s.zone],dT=s.ti-Z.te,G=q.G;
   // przegrody zewnętrzne (powierzchnie z projektu)
@@ -26,7 +26,8 @@ function compute(){
   const Htot=rows.reduce((a,r)=>a+r.H,0);for(const r of rows){r.W=r.H*dT;r.share=r.H/Htot}
   const load=Htot*dT/1000;                                                          // kW
   const Qloss=Htot*Z.hdd*24/1000,Qint=3*q.usableTotal*5000/1000,Qsol=(A.win+A.roofwin)*125,Qh=Math.max(0,Qloss-.9*(Qint+Qsol));
-  const Qw=s.persons*2.6*365*1.15,EU=q.usableTotal>0?Qh/q.usableTotal:0;
+  // ciepła woda: dhwL litrów wody 45°C (z 10°C) na osobę dziennie + 15% strat w zasobniku i rurach
+  const Qw=s.persons*s.dhwL*35*1.163/1000*365*1.15,EU=q.usableTotal>0?Qh/q.usableTotal:0;
   const hp=[3,4,5,6,7,8,9,10,12,14,16].find(k=>k>=load+.25*s.persons)||Math.ceil(load+.25*s.persons);
   let src=[['Pompa ciepła',s.pEl/s.scop,'prąd '+fmt(s.pEl,2)+' zł/kWh ÷ SCOP '+fmt(s.scop,1)],['Kocioł gazowy',s.pGas/.95,'gaz '+fmt(s.pGas,2)+' zł/kWh, sprawność 95%'],['Kocioł na pellet',s.pPel/1000/4.8/.88,'pellet '+fmt(s.pPel)+' zł/t (4,8 kWh/kg), sprawność 88%'],['Grzejniki elektryczne',s.pEl,'prąd bezpośrednio'],['Kocioł na ekogroszek',s.pCoal/1000/7.5/.85,'ekogroszek '+fmt(s.pCoal)+' zł/t (7,5 kWh/kg), sprawność 85%'],
     ['Kocioł zgazowujący drewno',s.pWood/s.woodKWh/.85,'drewno '+fmt(s.pWood)+' zł/mp ('+fmt(s.woodKWh)+' kWh/mp), sprawność 85%, z buforem ciepła'],

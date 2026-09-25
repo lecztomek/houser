@@ -91,7 +91,7 @@
     const pElP=S.pEl*(HS.pv==='yes'?.6:1),manual=['wood','fireplace_water'].includes(s.main);
     let dhwSrc=s.dhwSrc;if(!DHW[dhwSrc]||dhwSrc==='auto')dhwSrc=manual?'main_el':s.main==='electric'?'el':'main';
     if(dhwSrc==='extra'&&!EX.hydro)dhwSrc=manual?'main_el':'main';
-    const dMain=s.main==='hp_air'?pElP/(S.scop*.8):s.main==='hp_ground'?pElP/(4.6*.8):(M.rate??M.perKWh);
+    const dMain=HS.pv==='yes'&&s.main.startsWith('hp_')?pElP/(s.main==='hp_ground'?4.6*.8:S.scop*.8):M.dhwMain; // woda z tego źródła przez cały rok (latem kocioł ma niższą sprawność)
     const dhwRate=dhwSrc==='main'?dMain:dhwSrc==='main_el'?.5*dMain+.5*pElP:dhwSrc==='el'?pElP:dhwSrc==='hp_dhw'?pElP/2.8:dhwSrc==='solar'?.4*dMain:exPer;
     const DW=DHW[dhwSrc];if(DW.invest)addC(DW.name[0].toUpperCase()+DW.name.slice(1),DW.invest,dhwSrc==='solar'?'ok. 60% ciepłej wody ze słońca, zasobnik dwuwężownicowy':dhwSrc==='hp_dhw'?'z własnym zasobnikiem':'');
     if(dhwSrc==='main_el')addC('Grzałka w zasobniku (latem)',500);

@@ -162,8 +162,8 @@ function render(){
     '</div><div class="legend"><span><i style="background:#94a3b8"></i>instalacja</span><span><i style="background:#2563eb"></i>rachunki przez '+C.years+' lat</span></div></div>';
   h+='<div class="methods">'+L.map(m=>'<div class="m'+(m===C.best?' win':'')+'"><h3>'+esc(m.name)+'</h3><div class="how">'+esc(m.how)+'</div>'+
     '<div class="sc"><span class="n '+cls(m.score)+'">'+fmt(m.score)+'</span><span class="hint">/ 10 ocena · dopasowanie '+fmt(m.fit)+' / 10 · obsługa: '+esc(COMF[m.comfort]||'')+'</span></div>'+
-    '<div class="kv"><span>Instalacja</span><b>'+zl(m.invest)+'</b><span>Rachunki</span><b>'+zl(m.year)+' / rok</b><span class="hint">w tym opłaty stałe i serwis</span><b class="hint">'+zl(m.fixed+m.service)+' / rok</b><span>Koszt ciepła</span><b>'+fmt(m.perKWh,2)+' zł/kWh</b><span>Razem w '+C.years+' lat</span><b>'+zl(m.total)+'</b></div>'+
-    (m.why.length?'<ul class="fit">'+m.why.map(w=>'<li class="'+(w.d>=0?'p':'n')+'">'+esc(w.t)+'</li>').join('')+'</ul>':'')+
+    '<div class="kv"><span>Instalacja</span><b>'+zl(m.invest)+'</b><span>Rachunki</span><b>'+zl(m.year)+' / rok</b><span class="hint">ogrzewanie pokoi (CO)</span><b class="hint">'+zl(m.fuelCO)+' / rok</b><span class="hint">ciepła woda (CWU)</span><b class="hint">'+zl(m.fuelCWU)+' / rok</b><span class="hint">w tym opłaty stałe i serwis</span><b class="hint">'+zl(m.fixed+m.service)+' / rok</b><span>Koszt ciepła</span><b>'+fmt(m.perKWh,2)+' zł/kWh</b><span>Razem w '+C.years+' lat</span><b>'+zl(m.total)+'</b></div>'+
+    '<div class="hint" style="font-size:12px">'+esc(m.dhwNote)+' – w Instalacji grzewczej wybierzesz inaczej (np. pompę ciepła do wody)</div>'+(m.why.length?'<ul class="fit">'+m.why.map(w=>'<li class="'+(w.d>=0?'p':'n')+'">'+esc(w.t)+'</li>').join('')+'</ul>':'')+
     '<details><summary>Zalety i wady</summary><ul class="pc">'+m.pros.map(x=>'<li class="p">'+esc(x)+'</li>').join('')+m.cons.map(x=>'<li class="c">'+esc(x)+'</li>').join('')+'</ul></details></div>').join('')+'</div>';
   M_.innerHTML=h;
 }

@@ -33,8 +33,18 @@
        invest:hpInvest+18000+(chimney?0:7000),perKWh:null,fixed:0,service:450,comfort:9,pros:['klimat „żywego ognia” w salonie','kominek obniża rachunki w mrozy','ogrzewanie działa też przy braku prądu (kominek)'],cons:['kominek to dodatkowy koszt i komin','noszenie drewna i sprzątanie']},
     ];
     const f=Math.max(0,Math.min(.8,(S.fireShare??25)/100));
-    for(const m of list){m.rate=m.perKWh; // koszt 1 kWh ciepła z tego źródła (bez założeń o ciepłej wodzie latem)
-      if(m.k==='wood'){const wood=S.pWood/S.woodKWh/.85;m.rate=wood;m.fuel=E.Qh*wood+E.Qw*(.5*wood+.5*pEl);m.perKWh=m.fuel/Math.max(1,Q)}else if(m.k==='fireplace_water'){const wood=S.pWood/S.woodKWh/.75;m.rate=wood;m.fuel=E.Qh*wood+E.Qw*(.5*wood+.5*pEl);m.perKWh=m.fuel/Math.max(1,Q)}else if(m.k==='hp_fire'){const wood=S.pWood/S.woodKWh/.78,hp=pEl/scopAir;m.fuel=E.Qh*f*wood+(E.Qh*(1-f)+E.Qw)*hp;m.perKWh=m.fuel/Math.max(1,Q)}else m.fuel=Q*m.perKWh;
+    // CO i CWU liczone osobno. Kotły automatyczne (pellet, ekogroszek) grzeją wodę też latem, ale przy małym obciążeniu
+    // ze sprawnością ok. 60%; kotła na drewno i kominka latem się nie pali – wtedy wodę grzeje grzałka.
+    const EFF={pellet:.88,coal:.85,wood:.85,fireplace_water:.75};
+    for(const m of list){
+      if(m.k==='hp_fire'){const wood=S.pWood/S.woodKWh/.78,hp=pEl/scopAir;m.rate=f*wood+(1-f)*hp}
+      else if(m.k==='wood'||m.k==='fireplace_water')m.rate=S.pWood/S.woodKWh/EFF[m.k];
+      else m.rate=m.perKWh;
+      const summer=EFF[m.k]?m.rate*EFF[m.k]/.6:m.rate;
+      m.dhwMain=m.k==='hp_air'||m.k==='hp_fire'?pEl/(S.scop*.8):m.k==='hp_ground'?pEl/(4.6*.8):.5*m.rate+.5*summer; // woda przez cały rok z tego źródła
+      m.dhwRate=m.k==='wood'||m.k==='fireplace_water'?.5*m.rate+.5*pEl:m.dhwMain;                                    // założenie w porównaniu
+      m.dhwNote=m.k.startsWith('hp')?'ciepła woda z pompy (wyższa temperatura – niższa sprawność)':m.k==='gas'?'ciepła woda z kotła':m.k==='electric'?'ciepła woda z grzałki':m.k==='wood'||m.k==='fireplace_water'?'ciepła woda: zimą z '+(m.k==='wood'?'kotła':'kominka')+', latem z grzałki (latem się nie pali)':'ciepła woda z kotła także latem (wtedy sprawność ok. 60%)';
+      m.fuelCO=E.Qh*m.rate;m.fuelCWU=E.Qw*m.dhwRate;m.fuel=m.fuelCO+m.fuelCWU;m.perKWh=m.fuel/Math.max(1,Q);
       m.year=m.fuel+m.fixed+m.service;m.total=m.invest+years*m.year;
       // dopasowanie do tego domu 0–10
       let fit=6;const why=[];const add=(d,t)=>{fit+=d;why.push({d,t})};
@@ -56,7 +66,6 @@
       if(m.k==='electric'){if(EU<=25)add(3,'dom prawie pasywny – prąd wystarczy');else if(EU<=45)add(-1,'przy tym zapotrzebowaniu rachunki będą wysokie');else add(-4,'przy '+Math.round(EU)+' kWh/m² rachunki za prąd będą bardzo wysokie');if(set.pv==='yes')add(1,'fotowoltaika pomaga')}
       if(m.k==='hp_fire'){if(EU<=70)add(1.5,'dom energooszczędny – pompa pracuje wydajnie');if(floor)add(.5,'podłogówka');if(!chimney)add(-1,'trzeba dobudować komin do kominka');else add(.5,'komin jest w projekcie')}
       m.fit=Math.max(0,Math.min(10,Math.round(fit*10)/10));m.why=why}
-    for(const m of list)if(m.rate==null)m.rate=m.perKWh;
     const ok=list.filter(m=>m.fit>=3),minT=Math.min(...ok.map(m=>m.total));
     for(const m of list)m.score=Math.round((.5*m.fit+.3*10*Math.min(1,minT/m.total)+.2*m.comfort)*10)/10;
     const best=[...list].sort((a,b)=>b.score-a.score)[0],cheapest=[...ok].sort((a,b)=>a.total-b.total)[0];

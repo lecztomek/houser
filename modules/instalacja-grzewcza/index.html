@@ -131,7 +131,7 @@ function renderSide(){
   $('noProj').hidden=!!project;$('ui').hidden=!project;if(!project)return;
   const s=sys();fillExtra();$('main').value=s.main;$('extra').value=s.extra;
   $('shareF').hidden=s.extra==='none';$('share').value=s.share;$('shareL').textContent='Udział źródła alternatywnego w ogrzewaniu: '+s.share+'%';
-  $('buffer').value=String(s.buffer);$('dhw').value=String(s.dhw);$('dhwSrc').value=s.dhwSrc||'auto';$('dhwInfo').textContent=(s.dhwSrc==='auto'||!s.dhwSrc?'teraz: '+R.dhwName+' · ':'')+'koszt ciepłej wody ok. '+Math.round(R.fuelCWU/100)*100+' zł / rok';
+  $('buffer').value=String(s.buffer);$('dhw').value=String(s.dhw);$('dhwSrc').value=s.dhwSrc||'auto';$('dhwInfo').textContent=(s.dhwSrc==='auto'||!s.dhwSrc?'teraz: '+R.dhwName+' · ':'')+'koszt ciepłej wody ok. '+Math.round(R.fuelCWU/100)*100+' zł / rok · '+R.E.s.persons+' os. × '+R.E.s.dhwL+' l dziennie = '+Math.round(R.E.Qw).toLocaleString('pl-PL')+' kWh/rok (zmienisz w module Energia)';
   $('bufHint').innerHTML=R.bufRec?'Zalecany bufor: <b>'+R.bufRec+' l</b>'+(s.buffer==='auto'?' (ustawiony automatycznie)':''):'Przy tych źródłach bufor nie jest konieczny.';
   // urządzenia
   const T=$('tools');T.innerHTML='';
