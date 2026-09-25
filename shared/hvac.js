@@ -1,4 +1,4 @@
-// Wentylacja, rekuperacja i klimatyzacja – ocena potrzeby, trudności i kosztu (bez projektowania kanałów).
+// Wentylacja, rekuperacja i klimatyzacja – ocena potrzeby, trudności i kosztu (bez projektowania kanałów). Wspólne dla modułów Wentylacja, Rekuperacja, Klimatyzacja i Porównanie.
 // HouserHVAC.evaluate(project, settings) -> {rooms, mvhr:{flow, unit, ducts, difficulty, cost, need, savings…}, ac:{rooms, cost…}}
 // Wymaga shared/quantities.js, shared/energy.js oraz modules/naslonecznienie/sun.js + calc.js (przegrzewanie pokoi).
 (function(global){
@@ -103,7 +103,37 @@
     return {q,set,rooms,sup,ex,flow,persons,supSum,exSum,unit,unitLoft,loftFloor,loftUnit,ductLen,vents,avgDuct,hardRooms,difficulty:diff,dIss,cost,heatSave,fanCost,saving,payback,need,why,dark,
       ac:{rooms:acRooms,split:acSplit,multi:acMulti,best:acRooms.length?Math.min(acSplit,acMulti):0,need:acNeed,hot,warm,difficulty:acDiff},hasUp,lo,up,W:q.W,H:q.H,c};
   }
+  // ---------- porównanie metod wentylacji dla tego domu (grawitacyjna / mechaniczna wywiewna / rekuperacja)
+  function methods(project,settings,res){
+    res=res||evaluate(project,settings);const q=res.q,hasUp=res.hasUp,years=20;
+    let Eg=null,Em=null,S=null;try{const es=project.energySettings||{};Eg=HouserEnergy.compute({...project,energySettings:{...es,vent:'grav'}});Em=HouserEnergy.compute({...project,energySettings:{...es,vent:'mech',eta:es.eta??85}});S=Em.s}catch(e){console.error(e)}
+    const pHeat=S?S.pEl/S.scop:.3,pEl=S?S.pEl:1.1,inf=Number.isFinite(+project.energySettings?.inf)?+project.energySettings.inf:.1,airtight=inf<=.2;
+    const exN=res.ex.length,supN=res.sup.length,exDuct=res.ex.reduce((a,r)=>a+r.duct,0);
+    const heatG=Eg?Eg.Qh*pHeat:0,heatM=Em?Em.Qh*pHeat:0;
+    const list=[
+      {k:'grav',name:'Wentylacja grawitacyjna',how:'kanały wentylacyjne w kominie z kuchni, łazienek, WC i pralni + nawiewniki w oknach',
+       invest:exN*(hasUp?2800:2300)+supN*150,yearly:heatG,fan:0,air:4,
+       pros:['najtańsza w budowie','bez prądu i serwisu'],cons:['działa tylko przy różnicy temperatur – latem prawie stoi','dużo ciepła ucieka z powietrzem','w szczelnym domu – wilgoć i duszno','hałas i smog z zewnątrz przez nawiewniki']},
+      {k:'exhaust',name:'Mechaniczna wywiewna (hybrydowa)',how:'wentylator wyciąga powietrze z kuchni i łazienek, świeże wpływa przez nawiewniki higrosterowane w oknach',
+       invest:3500+exDuct*60+supN*350+2500,yearly:heatG,fan:40*8760/1000*pEl,air:6,
+       pros:['stały przepływ niezależnie od pogody','tanio i prosto','dobra do remontu i domów bez miejsca na kanały'],cons:['bez odzysku ciepła – straty jak przy grawitacyjnej','nawiewniki: zimne powietrze i hałas z zewnątrz','bez filtrowania powietrza']},
+      {k:'mvhr',name:'Rekuperacja',how:'centrala z wymiennikiem: nawiew do pokoi, wywiew z kuchni i łazienek, odzysk ok. 85% ciepła',
+       invest:res.cost.total,yearly:heatM,fan:res.fanCost||0,air:9,
+       pros:['odzysk ciepła','filtrowane świeże powietrze przy zamkniętych oknach','cisza – okna mogą być zamknięte'],cons:['najdroższa w budowie','wymiana filtrów 2–3 razy w roku (ok. 300 zł/rok)','kanały trzeba zaplanować przed stropami i sufitami']},
+    ];
+    for(const m of list){m.service=m.k==='mvhr'?300:m.k==='exhaust'?100:0;m.year=m.yearly+m.fan+m.service;m.total=m.invest+years*m.year;
+      // dopasowanie do tego domu 0–10
+      let fit=m.air;const why=[];
+      if(m.k==='grav'){if(airtight){fit-=3;why.push('dom szczelny – grawitacja nie da rady')}if(res.dark.length){fit-=1;why.push('pomieszczenia bez okna wymagają pewnego wywiewu')}if(hasUp){fit-=.5;why.push('kanały z piętra muszą iść przez komin nad dach')}if(!airtight){fit+=2;why.push('dom mniej szczelny – grawitacja zadziała')}}
+      if(m.k==='exhaust'){if(airtight){fit+=1;why.push('szczelny dom potrzebuje stałego wywiewu')}if(res.difficulty<6){fit+=1.5;why.push('trudno poprowadzić kanały nawiewne – wywiewna ich nie potrzebuje')}}
+      if(m.k==='mvhr'){if(airtight){fit+=1;why.push('szczelny, energooszczędny dom – rekuperacja to standard')}if(res.difficulty<6){fit-=2;why.push('trudny montaż kanałów w tym układzie')}else if(res.difficulty>=8){fit+=.5;why.push('łatwy montaż – kanały po strychu')}}
+      m.fit=Math.max(0,Math.min(10,Math.round(fit*10)/10));m.why=why}
+    const minTotal=Math.min(...list.map(m=>m.total));
+    for(const m of list)m.score=Math.round((.6*m.fit+.4*10*minTotal/m.total)*10)/10;
+    const best=[...list].sort((a,b)=>b.score-a.score)[0];
+    return {list,best,years,airtight,inf,res};
+  }
   const fmt1=v=>(Math.round(v*10)/10).toLocaleString('pl-PL'),fmt0=v=>Math.round(v).toLocaleString('pl-PL');
   const pl=(n,a,b,c)=>{const d=n%10,t=n%100;return n===1?a:d>=2&&d<=4&&(t<12||t>14)?b:c};
-  global.HouserHVAC={ROLES,DEF,PRICE,roleOf,evaluate};
+  global.HouserHVAC={ROLES,DEF,PRICE,roleOf,evaluate,methods};
 })(window);

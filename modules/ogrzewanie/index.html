@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ogrzewanie</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:320px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
+h1{font-size:19px;margin:0 0 4px}
+.lead,.hint{font-size:12.5px;color:var(--hs-muted);line-height:1.5;margin:0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.field{display:grid;gap:4px;margin-bottom:9px}
+.field label{font-size:12px;color:var(--hs-muted)}
+.field select{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.tile.win{background:#f0fdf4;border-color:#86efac}
+.tile .l{font-size:12px;color:var(--hs-muted);font-weight:600}
+.tile .v{font-size:20px;font-weight:800;margin-top:4px;line-height:1.25}
+.tile .s{font-size:12.5px;color:var(--hs-muted);margin-top:4px;line-height:1.4}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.card h2{font-size:15px;margin:0 0 4px}
+.chart{display:flex;flex-direction:column;gap:7px;margin-top:10px}
+.row{display:grid;grid-template-columns:220px minmax(0,1fr) 110px;gap:10px;align-items:center;font-size:12.5px}
+.row .t{font-weight:600}
+.bars{display:flex;height:16px;border-radius:4px;overflow:hidden;background:#f1f5f9}
+.bars i{display:block;height:100%}
+.bars .inv{background:#94a3b8}.bars .run{background:#2563eb}
+.row b{text-align:right;font-variant-numeric:tabular-nums}
+.legend{display:flex;gap:14px;font-size:12px;color:#475569;margin-top:8px}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:5px}
+.methods{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.m{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:13px 15px;box-shadow:var(--hs-shadow);display:flex;flex-direction:column;gap:7px}
+.m.win{border-color:#86efac;box-shadow:0 0 0 2px #bbf7d0}
+.m h3{font-size:15px;margin:0}
+.m .how{font-size:12px;color:var(--hs-muted);line-height:1.4}
+.sc{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.sc .n{font-size:26px;font-weight:800}
+.c-ok{color:#15803d}.c-mid{color:#b45309}.c-bad{color:#b91c1c}
+.kv{display:grid;grid-template-columns:1fr auto;gap:3px 10px;font-size:12.5px;border-top:1px solid #eef2f6;padding-top:7px}
+.kv b{text-align:right;font-variant-numeric:tabular-nums}
+.fit{list-style:none;margin:0;padding:0;font-size:12.5px;line-height:1.45}
+.fit li{padding-left:18px;position:relative}
+.fit li:before{position:absolute;left:0;font-weight:800}
+.fit li.p:before{content:'+';color:#15803d}.fit li.n:before{content:'−';color:#b91c1c}
+ul.pc{margin:0;padding-left:18px;font-size:12px;line-height:1.45;color:#475569}
+details summary{cursor:pointer;font-size:12.5px;font-weight:600;color:#2563eb}
+.empty{padding:40px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){html,body{overflow:auto;height:auto}.wrap{height:auto;grid-template-rows:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{overflow:visible}.row{grid-template-columns:1fr 90px}.row .bars{grid-column:1/-1;grid-row:2}}
+ul.pc li.p::marker{content:'+ ';color:#15803d;font-weight:800}
+ul.pc li.c::marker{content:'− ';color:#b91c1c;font-weight:800}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1>Ogrzewanie</h1>
+  <p class="lead">Porównanie źródeł ciepła dla tego domu: ile kosztuje instalacja, ile rachunki co roku i razem przez lata, jak wygodna jest obsługa i na ile dana metoda pasuje do tego konkretnego domu.</p>
+  <div class="section">
+    <h3>Dom i działka</h3>
+    <div class="field"><label>Gaz w ulicy</label><select id="gas"><option value="unknown">nie wiem</option><option value="yes">jest</option><option value="no">nie ma</option></select></div>
+    <div class="field"><label>Ogrzewanie w pokojach</label><select id="emitters"><option value="floor">podłogowe</option><option value="radiators">grzejniki</option></select></div>
+    <div class="field"><label>Fotowoltaika</label><select id="pv"><option value="no">nie</option><option value="yes">tak (tańszy prąd do pompy / grzejników)</option></select></div>
+    <div class="field"><label>Porównanie kosztów w okresie</label><select id="years"><option value="15">15 lat</option><option value="20">20 lat</option><option value="25">25 lat</option></select></div>
+    <p class="hint">Ustawienia zapisują się w projekcie. Zapotrzebowanie na ciepło, moc i ceny paliw (prąd, gaz, pellet, drewno) pochodzą z modułu Energia – tam je zmienisz.</p>
+  </div>
+  <div class="section">
+    <h3>Jak liczymy</h3>
+    <p class="hint">Rachunek roczny = ciepło na ogrzewanie i ciepłą wodę (z modułu Energia) × cena paliwa ÷ sprawność, + opłaty stałe i serwis. Koszt w okresie = instalacja + rachunki × liczba lat (bez zmian cen). Dopasowanie do domu (0–10) uwzględnia zapotrzebowanie na ciepło, moc, podłogówkę, kotłownię, komin, gaz w ulicy i fotowoltaikę. Ocena = 50% dopasowanie + 30% koszt w okresie + 20% wygoda obsługi. Kwoty orientacyjne, bez dotacji.</p>
+  </div>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="../../shared/energy.js"></script>
+<script src="../../shared/heating.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let project=null;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const zl=v=>(Math.round(v/100)*100).toLocaleString('pl-PL')+' zł';
+const cls=s=>s>=7.5?'c-ok':s>=5.5?'c-mid':'c-bad';
+const COMF=['','','','codzienne palenie','','','co kilka dni','','','prawie bez obsługi','bez obsługi'];
+function settings(){return {...HouserHeating.DEF,...(project?.heatingSettings||{})}}
+function save(patch){const s={...settings(),...patch};project.heatingSettings=s;HouserStore.update(p=>{p.heatingSettings=s},'ogrzewanie');render()}
+for(const id of ['gas','emitters','pv','years'])$(id).onchange=()=>save({[id]:id==='years'?+$(id).value:$(id).value});
+function render(){
+  const s=settings(),M_=$('main');for(const id of ['gas','emitters','pv','years'])$(id).value=String(s[id]);
+  if(!project||!(project.grid||project.definitionSnapshot?.grid)){M_.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej albo narysuj rzut w <b>Układzie pomieszczeń</b>.</div>';return}
+  let C;try{C=HouserHeating.compare(project,s)}catch(e){console.error(e);M_.innerHTML='<div class="empty">Nie udało się policzyć.</div>';return}
+  if(!(C.Q>0)){M_.innerHTML='<div class="empty">Na rzucie nie ma jeszcze pomieszczeń.</div>';return}
+  const L=[...C.list].sort((a,b)=>b.score-a.score),maxT=Math.max(...C.list.map(m=>m.total));
+  let h='<div class="tiles"><div class="tile win"><div class="l">Najlepiej pasuje do tego domu</div><div class="v">'+esc(C.best.name)+'</div><div class="s">ocena '+fmt(C.best.score)+' / 10 · rachunki ok. '+zl(C.best.year)+' / rok</div></div>'+
+    '<div class="tile"><div class="l">Najtaniej w '+C.years+' lat</div><div class="v">'+esc(C.cheapest.name)+'</div><div class="s">razem '+zl(C.cheapest.total)+' (instalacja + rachunki)</div></div>'+
+    '<div class="tile"><div class="l">Potrzeby domu</div><div class="v">'+fmt(C.load)+' kW · '+Math.round(C.EU)+' kWh/m²</div><div class="s">moc grzewcza w mróz · zapotrzebowanie na ogrzewanie rocznie; ciepło razem z wodą: '+Math.round(C.Q).toLocaleString('pl-PL')+' kWh/rok</div></div>'+
+    '<div class="tile"><div class="l">Kotłownia i komin</div><div class="v">'+(C.utility?'kotłownia '+fmt(C.utility.area)+' m²':'brak kotłowni')+'</div><div class="s">'+(C.chimney?'komin jest w projekcie':'brak komina w projekcie')+' – ważne dla kotłów na pellet i drewno oraz kominka</div></div></div>';
+  h+='<div class="card"><h2>Koszt w '+C.years+' lat</h2><p class="hint">Szary – instalacja, niebieski – rachunki przez '+C.years+' lat (ogrzewanie + ciepła woda + opłaty stałe + serwis).</p><div class="chart">'+
+    [...C.list].sort((a,b)=>a.total-b.total).map(m=>'<div class="row"><span class="t">'+esc(m.name)+'</span><div class="bars" title="'+esc(m.name)+'"><i class="inv" style="width:'+(m.invest/maxT*100)+'%"></i><i class="run" style="width:'+((m.total-m.invest)/maxT*100)+'%"></i></div><b>'+zl(m.total)+'</b></div>').join('')+
+    '</div><div class="legend"><span><i style="background:#94a3b8"></i>instalacja</span><span><i style="background:#2563eb"></i>rachunki przez '+C.years+' lat</span></div></div>';
+  h+='<div class="methods">'+L.map(m=>'<div class="m'+(m===C.best?' win':'')+'"><h3>'+esc(m.name)+'</h3><div class="how">'+esc(m.how)+'</div>'+
+    '<div class="sc"><span class="n '+cls(m.score)+'">'+fmt(m.score)+'</span><span class="hint">/ 10 ocena · dopasowanie '+fmt(m.fit)+' / 10 · obsługa: '+esc(COMF[m.comfort]||'')+'</span></div>'+
+    '<div class="kv"><span>Instalacja</span><b>'+zl(m.invest)+'</b><span>Rachunki</span><b>'+zl(m.year)+' / rok</b><span class="hint">w tym opłaty stałe i serwis</span><b class="hint">'+zl(m.fixed+m.service)+' / rok</b><span>Koszt ciepła</span><b>'+fmt(m.perKWh,2)+' zł/kWh</b><span>Razem w '+C.years+' lat</span><b>'+zl(m.total)+'</b></div>'+
+    (m.why.length?'<ul class="fit">'+m.why.map(w=>'<li class="'+(w.d>=0?'p':'n')+'">'+esc(w.t)+'</li>').join('')+'</ul>':'')+
+    '<details><summary>Zalety i wady</summary><ul class="pc">'+m.pros.map(x=>'<li class="p">'+esc(x)+'</li>').join('')+m.cons.map(x=>'<li class="c">'+esc(x)+'</li>').join('')+'</ul></details></div>').join('')+'</div>';
+  M_.innerHTML=h;
+}
+const rec=HouserStore.load();project=rec?rec.project:null;render();
+HouserStore.subscribe(r=>{project=r.project;render()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

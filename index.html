@@ -255,9 +255,12 @@ const MODULES=[
   {id:'codziennosc',group:'Analizy',name:'Codzienność',src:'modules/codziennosc/',desc:'Jak się mieszka na co dzień: scenariusze (zakupy, pranie, palenie w piecu, goście, noc) – trasy po domu, odległości i przejścia przez pokoje, ocena i podpowiedzi.'},
   {id:'akustyka',group:'Analizy',name:'Akustyka',src:'modules/akustyka/',desc:'Czy w sypialniach będzie cicho: co jest za ścianą, nad i pod pokojem (garaż, pralnia, salon, łazienka, schody), ulica, antresola – ocena pokoi i podpowiedzi.'},
   {id:'naslonecznienie',group:'Analizy',name:'Nasłonecznienie',src:'modules/naslonecznienie/',desc:'Zyski od słońca latem i zimą, pomieszczenie po pomieszczeniu: ryzyko przegrzania, mapa ciepła, wpływ okapu, tarasu i rolet.'},
-  {id:'hydraulika',group:'Analizy',name:'Hydraulika',src:'modules/hydraulika/',desc:'Jak łatwo i tanio zrobić wod-kan: odległości łazienek, WC, kuchni i pralni od źródła ciepłej wody, piony parter–piętro, dopłata za układ.'},
-  {id:'wentylacja',group:'Analizy',name:'Wentylacja i klimatyzacja',src:'modules/wentylacja/',desc:'Rekuperacja i klimatyzacja: jak bardzo potrzebne, jak trudno je zrobić w tym układzie i ile orientacyjnie kosztują.'},
   {id:'energia',group:'Analizy',name:'Energia',src:'modules/energia/',desc:'Bilans cieplny: straty przez przegrody i wentylację, moc grzewcza, zapotrzebowanie kWh/m² i koszt ogrzewania różnymi źródłami.'},
+  {id:'ogrzewanie',group:'Analizy',name:'Ogrzewanie',src:'modules/ogrzewanie/',desc:'Porównanie źródeł ciepła: pompy ciepła, gaz, pellet, drewno, prąd, kominek – koszt instalacji, rachunki, koszt w 20 lat i dopasowanie do domu.'},
+  {id:'wentylacja',group:'Analizy',name:'Wentylacja',src:'modules/wentylacja/',desc:'Porównanie sposobów wentylacji dla tego domu: grawitacyjna, mechaniczna wywiewna, rekuperacja – koszty, jakość powietrza, dopasowanie.'},
+  {id:'rekuperacja',group:'Analizy',name:'Rekuperacja',src:'modules/rekuperacja/',desc:'Rekuperacja w szczegółach: jak bardzo potrzebna, strumienie powietrza, centrala i kanały, trudność montażu, koszt i zwrot.'},
+  {id:'klimatyzacja',group:'Analizy',name:'Klimatyzacja',src:'modules/klimatyzacja/',desc:'Które pokoje latem się przegrzewają, jakiej mocy klimatyzatory, split czy multisplit, trudność montażu i koszt.'},
+  {id:'hydraulika',group:'Analizy',name:'Hydraulika',src:'modules/hydraulika/',desc:'Jak łatwo i tanio zrobić wod-kan: odległości łazienek, WC, kuchni i pralni od źródła ciepłej wody, piony parter–piętro, dopłata za układ.'},
   {id:'wycena',group:'Analizy',name:'Wycena',src:'modules/wycena/',desc:'Orientacyjny koszt budowy z projektu: ilości (ściany, strop, dach, okna, drzwi, instalacje, wykończenie) × ceny jednostkowe, które możesz zmienić.'},
   {id:'porownanie',group:'Analizy',name:'Porównanie domów',src:'modules/porownanie/',desc:'2–4 projekty obok siebie: metraż, koszt budowy (z etapami), energia, codzienność, przegrzewanie i akustyka – najlepsze wartości zaznaczone.'},
 ];
@@ -283,6 +286,9 @@ const ICON_PATH={pomieszczenia:'<rect x="3" y="3" width="7.5" height="7.5" rx="1
   porownanie:'<rect x="3" y="4" width="7.5" height="16" rx="1.8"/><rect x="13.5" y="4" width="7.5" height="16" rx="1.8"/><path d="M5.5 8.5h2.5M5.5 12h2.5M16 8.5h2.5M16 12h2.5"/>',
   hydraulika:'<path d="M12 3.5c3 3.6 5.5 6.6 5.5 9.8a5.5 5.5 0 0 1-11 0c0-3.2 2.5-6.2 5.5-9.8z"/><path d="M9.5 14a2.5 2.5 0 0 0 2.5 2.5"/>',
   wentylacja:'<path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h7"/>',
+  ogrzewanie:'<rect x="3" y="7" width="18" height="11" rx="2"/><path d="M7 7v11M11 7v11M15 7v11M19 7v11"/><path d="M5 18v2M19 18v2"/>',
+  rekuperacja:'<circle cx="12" cy="12" r="8.5"/><path d="M12 12c0-3 1.5-5 4-5.5M12 12c2.6 1.5 3.4 4 2.3 6.3M12 12c-2.6 1.5-5.1 1-6.6-1"/>',
+  klimatyzacja:'<path d="M12 2.5v19M4 7l16 10M20 7 4 17"/><path d="m9.5 4 2.5 2 2.5-2M9.5 20l2.5-2 2.5 2"/>',
   energia:'<path d="M12 2.8c.9 3.2 5.5 5.6 5.5 10.2a5.5 5.5 0 0 1-11 0c0-2.6 1.4-4.3 2.6-5.3.2 1.6 1 2.6 2.1 3.1-.2-3.2-.7-5.6.8-8z"/>',
   wycena:'<ellipse cx="9" cy="6.5" rx="6" ry="2.8"/><path d="M3 6.5v5c0 1.6 2.7 2.8 6 2.8s6-1.2 6-2.8v-5"/><path d="M9.5 17.2c.8 1.2 3.1 2 5.5 2 3.3 0 6-1.2 6-2.8v-5c0-1.5-2.3-2.7-5.3-2.8"/>'};
 const icon=id=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+(ICON_PATH[id]||'<circle cx="12" cy="12" r="4"/>')+'</svg>';
