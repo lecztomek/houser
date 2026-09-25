@@ -17,7 +17,8 @@ modules/
   codziennosc/              scenariusze codzienności (zakupy, pranie, palenie w piecu, goście, noc…): trasy po domu i ocena
   naslonecznienie/          zyski od słońca latem i zimą per pomieszczenie, ryzyko przegrzania, mapa ciepła
   hydraulika/               łatwość i koszt wod-kan: odległości od źródła ciepłej wody, piony parter–piętro, dopłata za układ
-  ogrzewanie/               porównanie źródeł ciepła (pompy ciepła, gaz, pellet, drewno, prąd, pompa + kominek): koszt instalacji, rachunki, koszt w N lat, dopasowanie do domu
+  instalacja-grzewcza/      projekt ogrzewania: 1–2 źródła ciepła (np. pompa + kominek), urządzenia na rzucie (kocioł, jednostka zewn., bufor, zasobnik, rozdzielacze), ogrzewanie w każdym pokoju
+  ogrzewanie/               ocena zaprojektowanej instalacji (koszt, rachunki, trudność montażu, czy wystarczy w pokojach) + porównanie źródeł ciepła (pompy ciepła, gaz, pellet, drewno, prąd, pompa + kominek): koszt instalacji, rachunki, koszt w N lat, dopasowanie do domu
   wentylacja/               porównanie sposobów wentylacji (grawitacyjna, wywiewna, rekuperacja): koszt, koszt w 20 lat, dopasowanie
   rekuperacja/              rekuperacja w tym domu: strumienie, miejsce centrali, długość kanałów, trudność montażu, koszt i zwrot
   klimatyzacja/             które pokoje trzeba chłodzić (wg nasłonecznienia), moc chłodnicza, split / multi-split, koszt
@@ -45,6 +46,7 @@ shared/furniture.js         katalog mebli w kategoriach (wymiary, wysokość, ks
 shared/snapshots.js         zdjęcia z podglądów 3D i wizualizacje (IndexedDB)
 shared/hvac.js              obliczenia wentylacji, rekuperacji i klimatyzacji (moduły Wentylacja / Rekuperacja / Klimatyzacja / Porównanie)
 shared/heating.js           porównanie źródeł ciepła (moduły Ogrzewanie i Porównanie)
+shared/heating-system.js    ocena instalacji z modułu Instalacja grzewcza (moduły Instalacja grzewcza, Ogrzewanie, Porównanie)
 shared/nav.js               przycisk powrotu do strony głównej, gdy moduł otwarto samodzielnie
 examples/                   przykładowa definicja domu i gotowy układ
 .github/workflows/pages.yml automatyczna publikacja na GitHub Pages

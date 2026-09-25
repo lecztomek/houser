@@ -88,6 +88,7 @@ tr.tot td{background:#f8fafc;font-weight:800;font-size:14px}
 <script src="../hydraulika/engine.js"></script>
 <script src="../../shared/hvac.js"></script>
 <script src="../../shared/heating.js"></script>
+<script src="../../shared/heating-system.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -127,7 +128,7 @@ function planSvg(p){const g=p.grid||p.definitionSnapshot?.grid;if(!g)return '';c
 // ---------- wskaźniki jednego domu
 function metrics(p){const m={};const tryc=(k,fn)=>{try{m[k]=fn()}catch(e){console.error(k,e);m[k]=null}};
   tryc('q',()=>HouserQuantities.compute(p));const q=m.q;if(!q)return m;
-  tryc('E',()=>HouserEnergy.compute(p));tryc('C',()=>HouserCost.compute(p));tryc('D',()=>HouserDaily.evaluate(p,p.dailySettings));tryc('S',()=>HouserSolar.compute(p));tryc('A',()=>HouserAcoustics.evaluate(p,p.acousticSettings));tryc('P',()=>HouserPlumbing.evaluate(p,p.plumbingSettings));tryc('V',()=>HouserHVAC.evaluate(p,p.hvacSettings));tryc('VM',()=>HouserHVAC.methods(p,p.hvacSettings,m.V));tryc('Ht',()=>HouserHeating.compare(p,p.heatingSettings));
+  tryc('E',()=>HouserEnergy.compute(p));tryc('C',()=>HouserCost.compute(p));tryc('D',()=>HouserDaily.evaluate(p,p.dailySettings));tryc('S',()=>HouserSolar.compute(p));tryc('A',()=>HouserAcoustics.evaluate(p,p.acousticSettings));tryc('P',()=>HouserPlumbing.evaluate(p,p.plumbingSettings));tryc('V',()=>HouserHVAC.evaluate(p,p.hvacSettings));tryc('VM',()=>HouserHVAC.methods(p,p.hvacSettings,m.V));tryc('Ht',()=>HouserHeating.compare(p,p.heatingSettings));tryc('HS',()=>p.heatingSystem?HouserHeatSys.evaluate(p):null);
   const rooms=q.rooms.filter(r=>r.area>=2),name=r=>(r.name||'').toLowerCase();
   m.beds=rooms.filter(r=>/sypial|pokój|pokoj|gabinet/.test(name(r))).length;m.wet=q.baths+q.wcs;m.nrooms=rooms.length;
   m.floors=q.net[q.up]>0?(q.attic?'parter + poddasze':'parter + piętro'):'parterowy';
@@ -176,9 +177,11 @@ const ROWS=[
   ['Najdłuższa ciepła woda','najdalsze mokre pomieszczenie od źródła; niżej – czas czekania na ciepłą wodę',m=>m.P?.maxLen,v=>nf(v,1)+' m','low',m=>{const f=m.P&&[...m.P.points].filter(x=>!x.isSrc).sort((a,b)=>(b.len||0)-(a.len||0))[0];return f?f.name+' · '+(m.P.circ?'z cyrkulacją':'ok. '+f.wait+' s'):''}],
   ['Przesunięte piony','mokre pomieszczenie na piętrze, które nie stoi nad mokrym na parterze',m=>m.P?m.P.risers.filter(r=>!r.stacked).length:null,v=>v==null?'–':nf(v),'low'],
   ['Ogrzewanie'],
+  ['Ogrzewanie – zaprojektowane','instalacja z modułu Instalacja grzewcza (źródła ciepła); „–” gdy dom jej nie ma',m=>m.HS?.name,v=>v||'–',null,m=>m.HS?'łatwość montażu '+nf(m.HS.ease,1)+' / 10':''],
+  ['Ogrzewanie – koszt całej instalacji','zaprojektowanej: źródła, bufor, rozdzielacze, podłogówka, grzejniki, rury, komin',m=>m.HS?.invest,zl,'low'],
   ['Ogrzewanie – najlepsze dla domu','źródło ciepła z najwyższą oceną (dopasowanie, koszt, wygoda) – wg modułu Ogrzewanie',m=>m.Ht?.best.name,v=>v||'–',null,m=>m.Ht?'ocena '+nf(m.Ht.best.score,1)+' / 10':''],
-  ['Ogrzewanie – rachunki roczne','najlepszego źródła: ogrzewanie + ciepła woda + opłaty stałe i serwis',m=>m.Ht?.best.year,v=>zl(v)+' na rok','low'],
-  ['Ogrzewanie – koszt w okresie','najlepszego źródła: instalacja + rachunki przez okres z modułu Ogrzewanie (domyślnie 20 lat)',m=>m.Ht?.best.total,zl,'low',m=>m.Ht?'instalacja '+zl(m.Ht.best.invest)+' · '+m.Ht.years+' lat':''],
+  ['Ogrzewanie – rachunki roczne','zaprojektowanej instalacji, a gdy jej nie ma – najlepszego źródła: ogrzewanie + ciepła woda + opłaty stałe i serwis',m=>m.HS?m.HS.year:m.Ht?.best.year,v=>zl(v)+' na rok','low',m=>m.HS?'zaprojektowana':m.Ht?'najlepsze źródło':''],
+  ['Ogrzewanie – koszt w okresie','źródła ciepła + rachunki przez okres z modułu Ogrzewanie (domyślnie 20 lat), bez instalacji w pokojach – żeby domy dało się porównać',m=>m.HS?m.HS.totalSrc:m.Ht?.best.total,zl,'low',m=>m.HS?'zaprojektowana · '+m.HS.years+' lat':m.Ht?'najlepsze źródło · instalacja '+zl(m.Ht.best.invest)+' · '+m.Ht.years+' lat':''],
   ['Wentylacja'],
   ['Wentylacja – najlepsza dla domu','sposób wentylacji z najwyższą oceną – wg modułu Wentylacja',m=>m.VM?.best.name,v=>v||'–',null,m=>m.VM?'koszt zrobienia '+zl(m.VM.best.invest):''],
   ['Rekuperacja – koszt','centrala, kanały, anemostaty, montaż (orientacyjnie)',m=>m.V?.cost.total,zl,'low',m=>m.V?'potrzeba: '+({high:'bardzo potrzebna',mid:'zalecana',low:'opcjonalna'})[m.V.need]:''],
@@ -197,9 +200,9 @@ const WKEY='houser:compare-weights',WOPT=[[0,'nieważne'],[1,'ważne'],[2,'bardz
 let W=(()=>{try{return {...Object.fromEntries(CRIT.map(c=>[c[0],c[2]])),...JSON.parse(localStorage.getItem(WKEY)||'{}')}}catch(_){return Object.fromEntries(CRIT.map(c=>[c[0],c[2]]))}})();
 const clamp=v=>Math.max(0,Math.min(10,v));
 function overallScores(cols){const cpm=cols.map(c=>c.m.C&&c.m.q?.usableTotal?c.m.C.total/c.m.q.usableTotal:null),minC=Math.min(...cpm.filter(v=>v!=null)),maxA=Math.max(...cols.map(c=>c.m.q?.usableTotal||0));
-  const hT=cols.map(c=>c.m.Ht?.best.total).filter(v=>v!=null),minH=hT.length?Math.min(...hT):null;
+  const hT=cols.map(c=>c.m.HS?c.m.HS.totalSrc:c.m.Ht?.best.total).filter(v=>v!=null),minH=hT.length?Math.min(...hT):null;
   return cols.map((c,i)=>{const m=c.m,part={cost:cpm[i]!=null?clamp(10*minC/cpm[i]):null,energy:m.E?clamp(10*(120-m.E.EU)/105):null,daily:m.D?.overall??null,
-      sun:m.hotOf?clamp(10*(1-m.hot/m.hotOf)):null,quiet:m.A?.overall??null,plumb:m.P?.overall??null,recup:m.V?.difficulty??null,ac:m.V?clamp(10-(m.V.ac.best||0)/4000):null,heat:m.Ht?m.Ht.best.total:null,area:maxA?clamp(10*(m.q?.usableTotal||0)/maxA):null};
+      sun:m.hotOf?clamp(10*(1-m.hot/m.hotOf)):null,quiet:m.A?.overall??null,plumb:m.P?.overall??null,recup:m.V?.difficulty??null,ac:m.V?clamp(10-(m.V.ac.best||0)/4000):null,heat:m.HS?m.HS.totalSrc:m.Ht?m.Ht.best.total:null,area:maxA?clamp(10*(m.q?.usableTotal||0)/maxA):null};
     if(part.heat!=null)part.heat=clamp(10*minH/part.heat);
     let sw=0,sv=0;for(const [k] of CRIT){const w=+W[k]||0;if(w&&part[k]!=null){sw+=w;sv+=w*part[k]}}
     return {part,score:sw?sv/sw:null}})}

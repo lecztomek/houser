@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Instalacja grzewcza</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+.wrap{height:100vh;display:grid;grid-template-columns:360px 1fr}
+.side{padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{position:relative;min-width:0;overflow:auto;background:#e2e8f0;display:flex;flex-direction:column;align-items:center;padding:18px;gap:12px}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--hs-line-strong);background:var(--hs-panel);color:var(--hs-text);padding:6px 10px;border-radius:var(--hs-radius);font:600 12px var(--hs-font);cursor:pointer;min-height:34px}
+.btn:hover{background:var(--hs-panel-2);border-color:#94a3b8}
+.btn.active{background:var(--hs-accent);border-color:var(--hs-accent);color:#fff}
+.field{display:grid;gap:4px;margin-bottom:9px}
+.field label{font-size:11.5px;color:var(--hs-muted)}
+.field select,.field input[type=number]{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:34px;font:inherit;background:#fff;color:var(--hs-text)}
+.field input[type=range]{width:100%}
+.hint{font-size:12px;color:var(--hs-muted);line-height:1.45;margin:6px 0 0}
+.tools{display:grid;gap:6px}
+.tool{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;border:1px solid var(--hs-line);border-radius:var(--hs-radius);padding:6px 8px;background:#fff;font-size:12.5px;cursor:pointer;min-height:38px}
+.tool.sel{outline:2px solid var(--hs-accent);outline-offset:1px}
+.tool .ic{width:20px;height:20px;border-radius:5px;display:grid;place-items:center;color:#fff;font:700 10px var(--hs-font)}
+.tool small{color:var(--hs-muted)}
+.tool .x{border:0;background:none;color:#94a3b8;font-size:16px;cursor:pointer;min-width:28px;min-height:28px}
+.rooms{display:grid;gap:5px}
+.room{display:grid;grid-template-columns:1fr 150px;gap:8px;align-items:center;font-size:12.5px}
+.room select{border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:4px 6px;min-height:32px;font:inherit;background:#fff}
+.room small{color:var(--hs-muted)}
+.room.bad b{color:#b91c1c}
+.planCard{background:#fff;border-radius:var(--hs-radius-lg);padding:14px;box-shadow:0 6px 20px rgba(15,23,42,.12);max-width:100%}
+.planTitle{font-weight:700;font-size:14px;margin-bottom:8px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.planTitle span{color:var(--hs-muted);font-weight:500;font-size:12px}
+#plan{display:block;user-select:none;max-width:100%;height:auto}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:#475569;margin-top:8px}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:4px}
+.sum{background:#fff;border-radius:var(--hs-radius-lg);padding:12px 14px;box-shadow:0 6px 20px rgba(15,23,42,.08);width:100%;max-width:900px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.sum .l{font-size:11.5px;color:var(--hs-muted);font-weight:600}.sum .v{font-size:17px;font-weight:800;margin-top:2px}
+.sum .full{grid-column:1/-1;font-size:12.5px;color:#334155}
+.c-ok{color:#15803d}.c-mid{color:#b45309}.c-bad{color:#b91c1c}
+.empty{padding:40px 24px;text-align:center;color:var(--hs-muted);max-width:420px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr;height:auto;min-height:100vh}.wrap>*{overflow:visible!important;max-height:none!important}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{padding:10px}.room{grid-template-columns:1fr 140px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1 class="hs-title">Instalacja grzewcza</h1>
+  <p class="hs-sub">Wybierz źródła ciepła (możesz połączyć dwa), wstaw urządzenia na rzut i ustaw, czym grzeje każdy pokój. Ocenę – koszt, trudność montażu i czy wszystko wystarczy – pokazuje moduł Ogrzewanie.</p>
+  <div class="section" id="noProj" hidden><div class="hint" style="margin:0">Brak projektu. Narysuj rzut w module <b>Układ pomieszczeń</b>.</div></div>
+  <div id="ui">
+  <div class="section">
+    <h3>Źródła ciepła</h3>
+    <div class="field"><label>Źródło główne</label><select id="main"></select></div>
+    <div class="field"><label>Źródło dodatkowe</label><select id="extra"></select></div>
+    <div class="field" id="shareF"><label id="shareL">Udział źródła dodatkowego w ogrzewaniu</label><input type="range" id="share" min="0" max="80" step="5"></div>
+    <div class="field"><label>Bufor ciepła</label><select id="buffer"><option value="auto">dobierz automatycznie</option><option value="0">bez bufora</option><option value="100">100 l</option><option value="200">200 l</option><option value="300">300 l</option><option value="500">500 l</option><option value="800">800 l</option><option value="1000">1000 l</option></select></div>
+    <div class="field"><label>Zasobnik ciepłej wody</label><select id="dhw"><option value="150">150 l</option><option value="200">200 l</option><option value="300">300 l</option></select></div>
+    <div id="bufHint" class="hint"></div>
+  </div>
+  <div class="section">
+    <h3>Urządzenia na rzucie</h3>
+    <div class="tools" id="tools"></div>
+    <p class="hint">Wybierz urządzenie z listy i kliknij miejsce na rzucie. Jednostkę zewnętrzną stawiasz na zewnątrz, przy ścianie. Rozdzielacz jest na każdej kondygnacji z ogrzewaniem wodnym.</p>
+  </div>
+  <div class="section">
+    <h3>Ogrzewanie w pokojach</h3>
+    <div class="row" style="margin-bottom:8px"><button class="btn" id="allFloor">Wszędzie podłogówka</button><button class="btn" id="resetEmit">Domyślnie</button></div>
+    <div class="rooms" id="rooms"></div>
+    <p class="hint">Liczba w nawiasie – ile ciepła pokój potrzebuje w największy mróz. Czerwony – wybrane ogrzewanie nie wystarczy.</p>
+  </div>
+  </div>
+</aside>
+<main class="main">
+  <div class="planCard" id="card"></div>
+  <div class="sum" id="sum"></div>
+</main>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="../../shared/energy.js"></script>
+<script src="../../shared/heating.js"></script>
+<script src="../../shared/heating-system.js"></script>
+<script>
+const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',PX=40,HS=HouserHeatSys,MARGIN=3;
+const FLOOR_PL={ground:'Parter',upper:'Piętro / poddasze'};
+const DCOL={main:'#dc2626',extra:'#9a3412',out:'#475569',buffer:'#ea580c',dhw:'#2563eb',man:'#15803d'};
+const DSH=window.HouserI18n?.lang==='en'?{main:'S',extra:'S2',out:'OU',buffer:'B',dhw:'HW',man:'M'}:{main:'Ź',extra:'Ź2',out:'JZ',buffer:'B',dhw:'W',man:'R'};
+const EMIT_OPTS=['floor','floor+ladder','floor+rad','rad','ladder','none'];
+let project=null,floor='ground',tool=null,R=null;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const zl=v=>(Math.round(v/100)*100).toLocaleString('pl-PL')+' zł';
+const grid=()=>project?.grid||project?.definitionSnapshot?.grid;
+const floors=()=>{const fo=project?.definitionSnapshot?.floorOrder;return (Array.isArray(fo)&&fo.length?fo:['ground','upper']).filter(f=>(project?.definitionSnapshot?.floors?.[f]?.rooms||[]).length)};
+const roomDef=(f,id)=>(project?.definitionSnapshot?.floors?.[f]?.rooms||[]).find(r=>r.id===id);
+function cellAt(f,x,y){const g=grid(),s=project?.state?.[f];if(!g||!s||x<0||y<0||x>=g.width||y>=g.height)return null;return (Array.isArray(s[0])?s[y]?.[x]:s[y*g.width+x])||null}
+const inside=(f,x,y)=>{const id=cellAt(f,x,y);return !!id&&roomDef(f,id)?.kind!=='exteriorVoid'&&!(f!==floors()[0]&&(id==='pustka'||id==='schody'))};
+function sys(){return HS.normalize(project)}
+function save(mut){const s=sys();mut(s);project.heatingSystem=s;HouserStore.update(p=>{p.heatingSystem=s},'instalacja-grzewcza');renderAll()}
+const devLabel=d=>d.startsWith('man:')?'Rozdzielacz – '+(FLOOR_PL[d.slice(4)]||d.slice(4)).toLowerCase():d==='main'?(HS.SOURCES[sys().main].dev||'Źródło'):d==='extra'?(HS.EXTRAS[sys().extra].dev||'Źródło dodatkowe'):HS.DEVS[d];
+const devKind=d=>d.startsWith('man:')?'man':d;
+
+$('main').innerHTML=Object.entries(HS.SOURCES).map(([k,v])=>'<option value="'+k+'">'+v.name+'</option>').join('');
+function fillExtra(){const s=sys();$('extra').innerHTML=Object.entries(HS.EXTRAS).filter(([k])=>k!==s.main).map(([k,v])=>'<option value="'+k+'">'+v.name+'</option>').join('')}
+$('main').onchange=()=>save(s=>{s.main=$('main').value;if(s.extra===s.main)s.extra='none';if(s.main==='electric'&&HS.EXTRAS[s.extra].hydro)s.extra='none'});
+$('extra').onchange=()=>save(s=>{s.extra=$('extra').value;s.share=HS.EXTRAS[s.extra].share||0});
+$('share').oninput=()=>{$('shareL').textContent='Udział źródła dodatkowego w ogrzewaniu: '+$('share').value+'%'};
+$('share').onchange=()=>save(s=>{s.share=+$('share').value});
+$('buffer').onchange=()=>save(s=>{s.buffer=$('buffer').value==='auto'?'auto':+$('buffer').value});
+$('dhw').onchange=()=>save(s=>{s.dhw=+$('dhw').value});
+$('allFloor').onclick=()=>save(s=>{for(const r of R.rooms)if(!r.garage&&r.area>=2)s.emitters[r.key]=r.bath?'floor+ladder':'floor'});
+$('resetEmit').onclick=()=>save(s=>{s.emitters={}});
+
+function renderSide(){
+  $('noProj').hidden=!!project;$('ui').hidden=!project;if(!project)return;
+  const s=sys();fillExtra();$('main').value=s.main;$('extra').value=s.extra;
+  $('shareF').hidden=s.extra==='none';$('share').value=s.share;$('shareL').textContent='Udział źródła dodatkowego w ogrzewaniu: '+s.share+'%';
+  $('buffer').value=String(s.buffer);$('dhw').value=String(s.dhw);
+  $('bufHint').innerHTML=R.bufRec?'Zalecany bufor: <b>'+R.bufRec+' l</b>'+(s.buffer==='auto'?' (ustawiony automatycznie)':''):'Przy tych źródłach bufor nie jest konieczny.';
+  // urządzenia
+  const T=$('tools');T.innerHTML='';
+  for(const d of R.need){const k=devKind(d),v=R.devs[d],it=document.createElement('div');it.className='tool'+(tool===d?' sel':'');
+    it.innerHTML='<span class="ic" style="background:'+DCOL[k]+'">'+DSH[k]+'</span><span>'+esc(devLabel(d))+'<br><small>'+(v.placed?(d==='out'?'na zewnątrz':(FLOOR_PL[v.f]||v.f)+(v.room?' · '+esc(v.room.name):'')):'nie wstawiono – kliknij i wskaż miejsce')+'</small></span>'+(v.placed?'<button class="x" title="usuń z rzutu">×</button>':'<span></span>');
+    it.onclick=e=>{if(e.target.classList.contains('x')){save(s=>{delete s.devices[d]});return}tool=tool===d?null:d;if(tool&&d.startsWith('man:'))floor=d.slice(4);if(tool==='out')floor=floors()[0];renderAll()};T.appendChild(it)}
+  // pokoje
+  const L=$('rooms');L.innerHTML='';
+  for(const f of floors()){const rs=R.rooms.filter(r=>r.f===f);if(!rs.length)continue;L.insertAdjacentHTML('beforeend','<div class="hint" style="margin:6px 0 0;font-weight:700">'+esc(FLOOR_PL[f]||f)+'</div>');
+    for(const r of rs){const row=document.createElement('div');const bad=!r.garage&&r.ok===false;row.className='room'+(bad?' bad':'');
+      row.innerHTML='<span><b>'+esc(r.name)+'</b> <small>'+fmt(r.area)+' m²'+(r.garage?'':' ('+fmt(r.load/1000,1)+' kW)')+'</small></span><select>'+EMIT_OPTS.map(o=>'<option value="'+o+'"'+(o===r.emit?' selected':'')+'>'+HS.EMIT[o]+'</option>').join('')+'</select>';
+      row.querySelector('select').onchange=e=>save(s=>{s.emitters[r.key]=e.target.value});L.appendChild(row)}}
+}
+function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
+function renderPlan(){
+  const card=$('card');if(!project){card.innerHTML='<div class="empty">Brak projektu.</div>';return}
+  const fl=floors();card.innerHTML='<div class="planTitle"><div class="row" id="tabs"></div><span>'+(tool?'kliknij na rzucie: '+esc(devLabel(tool)):'wybierz urządzenie po lewej, żeby je wstawić')+'</span></div><svg id="plan"></svg><div class="legend"><span><i style="background:repeating-linear-gradient(45deg,#fb923c 0 2px,#fff7ed 2px 6px)"></i>podłogówka</span><span><i style="background:#3b82f6"></i>grzejnik / drabinka</span><span><i style="background:#fecaca;border:1px solid #dc2626"></i>ogrzewanie nie wystarczy</span><span><i style="background:#374151"></i>komin</span></div>';
+  for(const f of fl){const b=document.createElement('button');b.className='btn'+(f===floor?' active':'');b.textContent=FLOOR_PL[f]||f;b.onclick=()=>{floor=f;if(tool==='out'&&f!==fl[0])tool=null;renderAll()};$('tabs').appendChild(b)}
+  const svg=$('plan'),g=grid(),c=g.cellMeters,M=MARGIN*c,Wm=g.width*c,Hm=g.height*c;
+  svg.setAttribute('viewBox',[-M*PX,-M*PX,(Wm+2*M)*PX,(Hm+2*M)*PX].join(' '));
+  const main=document.querySelector('.main'),avail=Math.max(280,Math.min(main.clientWidth-60,900));svg.setAttribute('width',Math.round(avail));const k=(Wm+2*M)*PX/Math.round(avail);
+  const X=m=>m*PX;
+  const defs=el('defs',{},svg),pat=el('pattern',{id:'hatch',width:8,height:8,patternUnits:'userSpaceOnUse',patternTransform:'rotate(45)'},defs);el('rect',{width:8,height:8,fill:'#fff7ed'},pat);el('rect',{width:3,height:8,fill:'#fb923c','fill-opacity':.55},pat);
+  el('rect',{x:X(-M),y:X(-M),width:X(Wm+2*M),height:X(Hm+2*M),fill:'#f8fafc'},svg);
+  const byKey=Object.fromEntries(R.rooms.map(r=>[r.key,r]));
+  for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){const id=cellAt(floor,x,y);if(!id)continue;const d=roomDef(floor,id),vd=d?.kind==='exteriorVoid',r=byKey[floor+'|'+id];
+    let fill=vd?'#e2e8f0':'#ffffff';if(r){if(r.ok===false&&!r.garage)fill='#fecaca';else if(/floor/.test(r.emit))fill='url(#hatch)';else if(r.emit==='none')fill='#f1f5f9'}else if(!vd)fill='#e5e7eb';
+    el('rect',{x:X(x*c),y:X(y*c),width:X(c)+.5,height:X(c)+.5,fill},svg)}
+  const edge=(a,b,x1,y1,x2,y2)=>{if(a===b)return;const ext=!a||!b;el('line',{x1:X(x1),y1:X(y1),x2:X(x2),y2:X(y2),stroke:'#0f172a','stroke-width':ext?5:2.5,'stroke-linecap':'square'},svg)};
+  for(let y=0;y<=g.height;y++)for(let x=0;x<g.width;x++)edge(cellAt(floor,x,y-1),cellAt(floor,x,y),x*c,y*c,(x+1)*c,y*c);
+  for(let y=0;y<g.height;y++)for(let x=0;x<=g.width;x++)edge(cellAt(floor,x-1,y),cellAt(floor,x,y),x*c,y*c,x*c,(y+1)*c);
+  for(const n of project.structure?.chimney||[]){const x=n%g.width,y=Math.floor(n/g.width);el('rect',{x:X(x*c)+2,y:X(y*c)+2,width:X(c)-4,height:X(c)-4,fill:'#374151',rx:3},svg)}
+  // rury: źródło → rozdzielacz, rozdzielacz → pokoje, jednostka zewnętrzna → moduł
+  const P=v=>[X((v.x+.5)*c),X((v.y+.5)*c)];
+  const pipe=(a,b,col,w,dash)=>{const [x1,y1]=P(a),[x2,y2]=P(b);el('path',{d:'M'+x1+' '+y1+' L'+x2+' '+y1+' L'+x2+' '+y2,fill:'none',stroke:col,'stroke-width':w*k,'stroke-dasharray':dash||'','stroke-linecap':'round','pointer-events':'none'},svg)};
+  const man=R.devs['man:'+floor];
+  if(man)for(const r of R.rooms.filter(r=>r.f===floor&&r.emit!=='none'&&!R.elec)){let best=null,bd=1e9;for(const [x,y] of r.cells){const d=Math.abs(x-man.x)+Math.abs(y-man.y);if(d<bd){bd=d;best={x,y}}}if(best&&bd>0)pipe(man,best,'#16a34a',1.5,'3 3')}
+  const src=R.devs.main||R.devs.extra;
+  if(src)for(const f of R.floorsW){const m=R.devs['man:'+f];if(!m)continue;if(src.f===floor&&m.f===floor)pipe(src,m,'#dc2626',3);else if(src.f===floor)pipe(src,{x:m.x,y:m.y},'#dc2626',3,'8 4');else if(m.f===floor)pipe({x:src.x,y:src.y},m,'#dc2626',3,'8 4')}
+  if(R.devs.out&&floor===fl[0]){const inU=R.devs.main&&HS.SOURCES[R.sys.main].out?R.devs.main:R.devs.extra||R.devs.main;if(inU&&inU.f===floor)pipe(R.devs.out,inU,'#475569',3)}
+  // etykiety pokoi
+  for(const r of R.rooms.filter(r=>r.f===floor)){const sx=r.cells.reduce((a,p)=>a+p[0],0)/r.cells.length,sy=r.cells.reduce((a,p)=>a+p[1],0)/r.cells.length;
+    el('text',{x:X((sx+.5)*c),y:X((sy+.5)*c)-6*k,'text-anchor':'middle','font-size':11.5*k,'font-weight':700,fill:'rgba(15,23,42,.7)','pointer-events':'none'},svg,r.name);
+    if((!r.garage||r.emit!=='none')&&r.area>=3.5)el('text',{x:X((sx+.5)*c),y:X((sy+.5)*c)+8*k,'text-anchor':'middle','font-size':10*k,fill:r.ok===false&&!r.garage?'#b91c1c':'#475569','pointer-events':'none'},svg,HS.EMIT[r.emit]+(r.garage?'':' · '+fmt(r.load/1000,1)+' kW'))}
+  // urządzenia
+  for(const d of R.need){const v=R.devs[d];if(v.f!==floor&&d!=='out')continue;if(d==='out'&&floor!==fl[0])continue;const kd=devKind(d),[cx,cy]=P(v),s=Math.max(X(c)*1.1,22*k);
+    const gr=el('g',{opacity:v.placed?1:.45,'pointer-events':'none'},svg);el('rect',{x:cx-s/2,y:cy-s/2,width:s,height:s,rx:5*k,fill:DCOL[kd],stroke:tool===d?'#fde047':'#fff','stroke-width':(tool===d?3:1.5)*k,'stroke-dasharray':v.placed?'':'3 2'},gr);
+    el('text',{x:cx,y:cy,'text-anchor':'middle','dominant-baseline':'central','font-size':10*k,'font-weight':800,fill:'#fff'},gr,DSH[kd])}
+  // klikanie – wstawianie urządzenia
+  svg.onclick=e=>{if(!tool)return;const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());const x=Math.floor(p.x/PX/c),y=Math.floor(p.y/PX/c);
+    const d=tool,f=d.startsWith('man:')?d.slice(4):floor;
+    if(d==='out'){if(inside(fl[0],x,y)){alert('Jednostkę zewnętrzną postaw na zewnątrz domu, przy ścianie.');return}if(x<-MARGIN||y<-MARGIN||x>=g.width+MARGIN||y>=g.height+MARGIN)return}
+    else if(!inside(f,x,y)){alert('Kliknij w środku pomieszczenia na tej kondygnacji.');return}
+    save(s=>{s.devices[d]={f:d==='out'?fl[0]:f,x,y}});const next=R.need.find(n=>!R.devs[n].placed);tool=next&&next!==d?next:null;if(tool&&tool.startsWith('man:'))floor=tool.slice(4);renderAll()};
+  svg.style.cursor=tool?'crosshair':'default';
+}
+function renderSum(){
+  const S=$('sum');if(!project){S.innerHTML='';return}
+  const cl=R.ease>=7.5?'c-ok':R.ease>=5?'c-mid':'c-bad';
+  S.innerHTML='<div><div class="l">System</div><div class="v" style="font-size:14px">'+esc(R.name)+'</div></div>'+
+    '<div><div class="l">Koszt instalacji</div><div class="v">'+zl(R.invest)+'</div></div>'+
+    '<div><div class="l">Rachunki</div><div class="v">'+zl(R.year)+' / rok</div></div>'+
+    '<div><div class="l">Łatwość montażu</div><div class="v '+cl+'">'+fmt(R.ease)+' / 10</div></div>'+
+    '<div class="full">'+(R.issues.filter(i=>i.p>0).length?'<b>Do poprawy:</b> '+R.issues.filter(i=>i.p>0).slice(0,3).map(i=>'<span>'+esc(i.text)+'</span>').join(' · '):'Bez uwag.')+' <a href="../ogrzewanie/" id="lnkOg">Pełna ocena w module Ogrzewanie →</a></div>';
+  try{if(window.top!==window&&window.top.HouserStore)$('lnkOg').onclick=e=>{e.preventDefault();window.top.location.hash='ogrzewanie'}}catch(_){}
+}
+function renderAll(){if(project){if(!floors().includes(floor))floor=floors()[0];try{R=HS.evaluate(project)}catch(e){console.error(e);R=null}}if(project&&!R){$('card').innerHTML='<div class="empty">Na rzucie nie ma jeszcze pomieszczeń.</div>';return}renderSide();renderPlan();renderSum()}
+function setProject(p){project=p&&(p.grid||p.definitionSnapshot?.grid)?p:null;renderAll()}
+window.addEventListener('resize',()=>project&&R&&renderPlan());
+const rec=HouserStore.load();setProject(rec?rec.project:null);
+HouserStore.subscribe(r=>{const a=document.activeElement;if(a&&['INPUT','SELECT'].includes(a.tagName))return;setProject(r.project)});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>
