@@ -75,7 +75,7 @@ tr.tot td{background:#f8fafc;font-weight:800;font-size:14px}
   <p class="lead">Postaw obok siebie 2–4 projekty – swoje (z tej przeglądarki lub z chmury), bieżący albo gotowe domy. Wszystkie liczby są liczone tak samo jak w modułach Wycena, Energia, Codzienność, Nasłonecznienie i Akustyka. Najlepsza wartość w wierszu jest zielona, najsłabsza czerwona.</p>
   <div id="overall" class="ov"></div>
   <div id="value" class="val"></div>
-  <details class="wts" id="wtsBox"><summary>Co jest dla Ciebie ważne w ocenie ogólnej</summary><div class="wgrid" id="wts"></div><p class="hint">Każde kryterium daje 0–10 punktów: koszt za m² względem najtańszego z porównywanych, energia wg zapotrzebowania (15 kWh/m² = 10 pkt, 120 = 0), codzienność i akustyka – ich oceny, przegrzewanie – odsetek pokoi bez wysokiego ryzyka, hydraulika – jej ocena, ogrzewanie – koszt zaprojektowanej instalacji (albo najlepszego źródła) w okresie względem najtańszego z porównywanych, schowki i szafy – ich ocena, rekuperacja – łatwość montażu, klimatyzacja – koszt (0 zł = 10 pkt, 40 tys. zł = 0), metraż – względem największego. Ocena ogólna to średnia ważona.</p></details>
+  <details class="wts" id="wtsBox"><summary>Co jest dla Ciebie ważne w ocenie ogólnej</summary><div class="wgrid" id="wts"></div><p class="hint">Każde kryterium daje 0–10 punktów: koszt za m² względem najtańszego z porównywanych, energia wg zapotrzebowania (15 kWh/m² = 10 pkt, 120 = 0), codzienność i akustyka – ich oceny, przegrzewanie – odsetek pokoi bez wysokiego ryzyka, hydraulika – jej ocena, ogrzewanie – koszt zaprojektowanej instalacji (albo najlepszego źródła) w okresie względem najtańszego z porównywanych, schowki i szafy – ich ocena, wentylacja – ocena wybranej metody (dopasowanie do domu i koszt), klimatyzacja – koszt (0 zł = 10 pkt, 40 tys. zł = 0), metraż – względem największego. Ocena ogólna to średnia ważona.</p></details>
   <div id="sum" class="sum"></div>
   <div class="tbl" id="tbl"><div class="empty">Wczytuję projekty…</div></div>
   <p class="hint" style="margin-top:10px">Wybór porównywanych domów pamięta ta przeglądarka. Koszty i energia biorą ustawienia zapisane w każdym projekcie (ceny, U ścian itd.), więc różnice mogą wynikać także z ustawień.</p>
@@ -210,8 +210,8 @@ const ROWS=[
   ['Wentylacja'],
   ['Wentylacja – wybrana','sposób wentylacji wybrany w projekcie (moduł Wentylacja) – liczy się w bilansie energii; niżej – jego ocena dla tego domu',m=>m.VM?.chosen?.name,v=>v||'–',null,m=>m.VM?.chosen?'ocena '+nf(m.VM.chosen.score,1)+' / 10':''],
   ['Wentylacja – najlepsza dla domu','sposób wentylacji z najwyższą oceną – wg modułu Wentylacja',m=>m.VM?.best.name,v=>v||'–',null,m=>m.VM?'koszt zrobienia '+zl(m.VM.best.invest):''],
-  ['Rekuperacja – koszt','centrala, kanały, anemostaty, montaż (orientacyjnie)',m=>m.V?.cost.total,zl,'low',m=>m.V?'potrzeba: '+({high:'bardzo potrzebna',mid:'zalecana',low:'opcjonalna'})[m.V.need]:''],
-  ['Rekuperacja – trudność montażu','0–10, gdzie 10 = łatwo (centrala blisko, kanały po strychu)',m=>m.V?.difficulty,v=>nf(v,1)+' / 10','high',m=>m.V?'kanały ok. '+nf(m.V.ductLen)+' m':''],
+  ['Wentylacja – koszt zrobienia','wybranej metody wentylacji (rekuperacja, wywiewna albo grawitacyjna) – z montażem',m=>m.VM?.chosen?.invest,zl,'low',m=>m.VM?.chosen?m.VM.chosen.name:''],
+  ['Rekuperacja – trudność montażu','0–10, gdzie 10 = łatwo (centrala blisko, kanały po strychu); tylko gdy wybrano rekuperację',m=>m.VM?.chosen?.k==='mvhr'?m.V?.difficulty:null,v=>v==null?'nie dotyczy':nf(v,1)+' / 10','high',m=>m.VM?.chosen?.k==='mvhr'&&m.V?'kanały ok. '+nf(m.V.ductLen)+' m':m.VM?.chosen?'wybrano: '+m.VM.chosen.name.toLowerCase():''],
   ['Klimatyzacja'],
   ['Klimatyzacja – pokoje','ile pokoi potrzebuje klimatyzatora (wg ryzyka przegrzania)',m=>m.V?.ac.rooms.length,v=>v==null?'–':nf(v)+' '+plF(v,'pokój','pokoje','pokoi'),'low'],
   ['Klimatyzacja – koszt','tańsza z opcji: osobne klimatyzatory albo jedna jednostka na kilka pokoi',m=>m.V?.ac.best,zl,'low'],
@@ -221,14 +221,14 @@ const ROWS=[
 ];
 
 const stageSum=(m,st)=>m.C?m.C.rows.filter(r=>r.stage===st).reduce((a,r)=>a+r.value,0)*(m.C.s.factor?1:1):null;
-const CRIT=[['cost','Koszt budowy za m²',2],['energy','Energia (ogrzewanie)',2],['daily','Codzienność',2],['sun','Przegrzewanie latem',1],['quiet','Akustyka',1],['plumb','Hydraulika',1],['heat','Ogrzewanie (koszt w okresie)',1],['recup','Rekuperacja (łatwość montażu)',1],['ac','Klimatyzacja (koszt)',1],['store','Schowki i szafy',1],['area','Metraż (większy = lepiej)',0]];
+const CRIT=[['cost','Koszt budowy za m²',2],['energy','Energia (ogrzewanie)',2],['daily','Codzienność',2],['sun','Przegrzewanie latem',1],['quiet','Akustyka',1],['plumb','Hydraulika',1],['heat','Ogrzewanie (koszt w okresie)',1],['vent','Wentylacja (wybrana metoda)',1],['ac','Klimatyzacja (koszt)',1],['store','Schowki i szafy',1],['area','Metraż (większy = lepiej)',0]];
 const WKEY='houser:compare-weights',WOPT=[[0,'nieważne'],[1,'ważne'],[2,'bardzo ważne']];
 let W=(()=>{try{return {...Object.fromEntries(CRIT.map(c=>[c[0],c[2]])),...JSON.parse(localStorage.getItem(WKEY)||'{}')}}catch(_){return Object.fromEntries(CRIT.map(c=>[c[0],c[2]]))}})();
 const clamp=v=>Math.max(0,Math.min(10,v));
 function overallScores(cols){const cpm=cols.map(c=>c.m.C&&c.m.q?.usableTotal?c.m.C.total/c.m.q.usableTotal:null),minC=Math.min(...cpm.filter(v=>v!=null)),maxA=Math.max(...cols.map(c=>c.m.q?.usableTotal||0));
   const hT=cols.map(c=>c.m.HS?c.m.HS.totalSrc:c.m.Ht?.best.total).filter(v=>v!=null),minH=hT.length?Math.min(...hT):null;
   return cols.map((c,i)=>{const m=c.m,part={cost:cpm[i]!=null?clamp(10*minC/cpm[i]):null,energy:m.E?clamp(10*(120-m.E.EU)/105):null,daily:m.D?.overall??null,
-      sun:m.hotOf?clamp(10*(1-m.hot/m.hotOf)):null,quiet:m.A?.overall??null,plumb:m.P?.overall??null,store:m.ST?.overall??null,recup:m.V?.difficulty??null,ac:m.V?clamp(10-(m.V.ac.best||0)/4000):null,heat:m.HS?m.HS.totalSrc:m.Ht?m.Ht.best.total:null,area:maxA?clamp(10*(m.q?.usableTotal||0)/maxA):null};
+      sun:m.hotOf?clamp(10*(1-m.hot/m.hotOf)):null,quiet:m.A?.overall??null,plumb:m.P?.overall??null,store:m.ST?.overall??null,vent:m.VM?.chosen?.score??null,ac:m.V?clamp(10-(m.V.ac.best||0)/4000):null,heat:m.HS?m.HS.totalSrc:m.Ht?m.Ht.best.total:null,area:maxA?clamp(10*(m.q?.usableTotal||0)/maxA):null};
     if(part.heat!=null)part.heat=clamp(10*minH/part.heat);
     let sw=0,sv=0;for(const [k] of CRIT){const w=+W[k]||0;if(w&&part[k]!=null){sw+=w;sv+=w*part[k]}}
     return {part,score:sw?sv/sw:null}})}

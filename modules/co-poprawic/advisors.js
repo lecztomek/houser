@@ -41,7 +41,7 @@
     {id:'wentylacja',name:'Wentylacja',w:.8,need:'HouserHVAC',run:p=>{const M=HouserHVAC.methods(p,p.hvacSettings),c=M.chosen,b=M.best;if(!c)return {score:null,items:[],good:[]};const items=[];
       if(c!==b&&b.score-c.score>=1)items.push({p:Math.min(3,(b.score-c.score)/2+.5),head:c.name,text:'Do tego domu lepiej pasuje: '+b.name+' ('+fmt(b.score)+' / 10 wobec '+fmt(c.score)+').',tip:(b.why[0]?b.why[0]+' – ':'')+'zmień wybór w module Wentylacja.'});
       return {score:c.score,items,good:c===b?['Dobrze dobrana wentylacja: '+c.name.toLowerCase()+'.']:[]}}},
-    {id:'rekuperacja',name:'Rekuperacja',w:.6,need:'HouserHVAC',run:p=>{const V=HouserHVAC.evaluate(p,p.hvacSettings);return {score:V.difficulty,items:(V.dIss||[]).map(i=>({p:Math.min(3,i.p*.8),text:i.text,tip:i.tip})),good:V.difficulty>=8?['Rekuperację łatwo zrobić – krótkie kanały, dobre miejsce na centralę.']:[]}}},
+    {id:'rekuperacja',name:'Rekuperacja',w:.6,need:'HouserHVAC',run:p=>{if(HouserEnergy.settings(p).vent!=='mech')return {score:null,items:[],good:[]};const V=HouserHVAC.evaluate(p,p.hvacSettings);return {score:V.difficulty,items:(V.dIss||[]).map(i=>({p:Math.min(3,i.p*.8),text:i.text,tip:i.tip})),good:V.difficulty>=8?['Rekuperację łatwo zrobić – krótkie kanały, dobre miejsce na centralę.']:[]}}},
   ];
   function collect(project){
     const mods=[],all=[];

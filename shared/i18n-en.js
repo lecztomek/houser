@@ -3168,4 +3168,10 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "moduł Hydraulika":"Plumbing module",
 "+{n} pkt":"+{n} pts",
 "-{n} pkt":"-{n} pts",
-"{n} pkt":"{n} pts"};
+"{n} pkt":"{n} pts",
+"Wentylacja – koszt zrobienia":"Ventilation – installation cost",
+"wybranej metody wentylacji (rekuperacja, wywiewna albo grawitacyjna) – z montażem":"of the chosen ventilation method (MVHR, extract or natural) – incl. installation",
+"0–10, gdzie 10 = łatwo (centrala blisko, kanały po strychu); tylko gdy wybrano rekuperację":"0–10, where 10 = easy (unit nearby, ducts in the loft); only when MVHR is chosen",
+"wybrano":"chosen",
+"Wentylacja (wybrana metoda)":"Ventilation (chosen method)",
+"Każde kryterium daje 0–10 punktów: koszt za m² względem najtańszego z porównywanych, energia wg zapotrzebowania (15 kWh/m² = 10 pkt, 120 = 0), codzienność i akustyka – ich oceny, przegrzewanie – odsetek pokoi bez wysokiego ryzyka, hydraulika – jej ocena, ogrzewanie – koszt zaprojektowanej instalacji (albo najlepszego źródła) w okresie względem najtańszego z porównywanych, schowki i szafy – ich ocena, wentylacja – ocena wybranej metody (dopasowanie do domu i koszt), klimatyzacja – koszt (0 zł = 10 pkt, 40 tys. zł = 0), metraż – względem największego. Ocena ogólna to średnia ważona.":"Each criterion gives 0–10 points: cost per m² relative to the cheapest compared house, energy by demand (15 kWh/m² = 10 pts, 120 = 0), everyday life and acoustics – their scores, overheating – share of rooms without high risk, plumbing – its score, heating – cost of the designed installation (or the best source) over the period relative to the cheapest compared house, storage and wardrobes – its score, ventilation – score of the chosen method (fit and cost), air conditioning – cost (PLN 0 = 10 pts, PLN 40k = 0), floor area – relative to the largest. The overall score is the weighted average."};
