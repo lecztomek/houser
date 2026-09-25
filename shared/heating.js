@@ -23,8 +23,8 @@
        invest:28000+(chimney?0:7000)+2000,perKWh:S.pPel/1000/4.8/.88,fixed:0,service:600,comfort:6,pros:['tanie paliwo','kocioł sam podaje pellet przez kilka dni'],cons:['dosypywanie pelletu co kilka dni i wynoszenie popiołu','potrzebna kotłownia z kominem i miejsce na ok. 3–5 t pelletu','czyszczenie kotła i komina']},
       {k:'coal',name:'Kocioł na ekogroszek',how:'kocioł z podajnikiem ślimakowym i zasobnikiem węgla, komin, skład opału w kotłowni',
        invest:20000+(chimney?0:7000)+1500,perKWh:S.pCoal/1000/7.5/.85,fixed:0,service:700,comfort:5,pros:['tani opał','kocioł sam podaje węgiel przez 2–4 dni'],cons:['uchwały antysmogowe w wielu województwach ograniczają lub zakazują palenia węglem – sprawdź swoją gminę','brak dotacji, a w nowych domach to wybór coraz rzadszy','dosypywanie opału, codzienne wynoszenie popiołu, czyszczenie kotła i komina','potrzebna kotłownia z kominem i miejsce na ok. 3–4 t opału']},
-      {k:'wood',name:'Kocioł zgazowujący drewno + bufor',how:'kocioł zgazowujący z buforem ciepła (zbiornik 1–2 m³), komin, skład drewna',
-       invest:22000+7000+(chimney?0:7000),perKWh:S.pWood/S.woodKWh/.85,fixed:0,service:500,comfort:3,pros:['najtańsze paliwo (zwłaszcza własne drewno)','niezależność od prądu i gazu'],cons:['palenie codziennie w sezonie','kotłownia z buforem i duży skład drewna','praca przy drewnie i popiele']},
+      {k:'wood',name:'Kocioł zgazowujący drewno + bufor',how:'kocioł zgazowujący z buforem ciepła (zbiornik 1–2 m³), komin, skład drewna; latem ciepłą wodę grzeje grzałka',
+       invest:22000+7000+(chimney?0:7000),perKWh:S.pWood/S.woodKWh/.85,fixed:0,service:500,comfort:3,pros:['najtańsze paliwo (zwłaszcza własne drewno)','niezależność od prądu i gazu'],cons:['palenie codziennie w sezonie','kotłownia z buforem i duży skład drewna','praca przy drewnie i popiele','latem ciepła woda z prądu']},
       {k:'electric',name:'Ogrzewanie elektryczne',how:'maty grzewcze lub grzejniki elektryczne + podgrzewacz wody',
        invest:Math.max(10000,load*900+3000),perKWh:pEl,fixed:0,service:0,comfort:10,pros:['najtańsze w instalacji','zero obsługi i serwisu'],cons:['najdroższe rachunki – ma sens tylko w domu pasywnym albo z dużą fotowoltaiką']},
       {k:'fireplace_water',name:'Kominek z płaszczem wodnym',how:'kominek z wkładem z płaszczem wodnym w salonie, podłączony do bufora ciepła – grzeje cały dom i wodę; latem wodę grzeje grzałka',
@@ -34,7 +34,7 @@
     ];
     const f=Math.max(0,Math.min(.8,(S.fireShare??25)/100));
     for(const m of list){
-      if(m.k==='fireplace_water'){const wood=S.pWood/S.woodKWh/.75;m.fuel=E.Qh*wood+E.Qw*(.5*wood+.5*pEl);m.perKWh=m.fuel/Math.max(1,Q)}else if(m.k==='hp_fire'){const wood=S.pWood/S.woodKWh/.78,hp=pEl/scopAir;m.fuel=E.Qh*f*wood+(E.Qh*(1-f)+E.Qw)*hp;m.perKWh=m.fuel/Math.max(1,Q)}else m.fuel=Q*m.perKWh;
+      if(m.k==='wood'){const wood=S.pWood/S.woodKWh/.85;m.fuel=E.Qh*wood+E.Qw*(.5*wood+.5*pEl);m.perKWh=m.fuel/Math.max(1,Q)}else if(m.k==='fireplace_water'){const wood=S.pWood/S.woodKWh/.75;m.fuel=E.Qh*wood+E.Qw*(.5*wood+.5*pEl);m.perKWh=m.fuel/Math.max(1,Q)}else if(m.k==='hp_fire'){const wood=S.pWood/S.woodKWh/.78,hp=pEl/scopAir;m.fuel=E.Qh*f*wood+(E.Qh*(1-f)+E.Qw)*hp;m.perKWh=m.fuel/Math.max(1,Q)}else m.fuel=Q*m.perKWh;
       m.year=m.fuel+m.fixed+m.service;m.total=m.invest+years*m.year;
       // dopasowanie do tego domu 0–10
       let fit=6;const why=[];const add=(d,t)=>{fit+=d;why.push({d,t})};

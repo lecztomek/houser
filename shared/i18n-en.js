@@ -3189,4 +3189,5 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "domyślna · {n} lat":"default · {n} years",
 "domyślna instalacja (nie zaprojektowano w module Instalacja grzewcza)":"default installation (not designed in the Heating installation module)",
 "źródła, bufor, komin":"sources, buffer, chimney",
-"podłogówka, grzejniki, rozdzielacze, rury":"underfloor heating, radiators, manifolds, pipes"};
+"podłogówka, grzejniki, rozdzielacze, rury":"underfloor heating, radiators, manifolds, pipes",
+"kocioł zgazowujący z buforem ciepła (zbiornik 1–2 m³), komin, skład drewna; latem ciepłą wodę grzeje grzałka":"wood gasification boiler with a buffer tank (1–2 m³), chimney, wood store; in summer an electric heater heats the water"};
