@@ -17,7 +17,7 @@ function checks(){
     // oświetlenie dzienne
     if(k==='living'||k==='kitchen'){const gl=r.winA+r.hstA+r.roofWinA,ratio=gl/r.area;
       if(gl<=0)add({...base,name:'Okno (oświetlenie dzienne)',st:k==='living'?'bad':'warn',val:'brak okna',req:k==='living'?'pokój musi mieć okno':'kuchnia bez okna – potrzebna wentylacja mechaniczna',ref:'§ 57, § 94',fix:'Dodaj okno na ścianie zewnętrznej w module Układ pomieszczeń.'});
-      else add({...base,name:'Powierzchnia okien do podłogi',st:ratio>=1/8?'ok':'bad',val:'1 : '+(1/ratio).toFixed(1)+' ('+m2(gl)+' okien)',req:'co najmniej 1 : 8 ('+m2(r.area/8)+')',ref:'§ 57 ust. 2',fix:ratio<1/8?'Powiększ okna (moduł Okna i drzwi – wysokość) albo dodaj kolejne; brakuje ok. '+m2(r.area/8-gl)+'.':''})}
+      else add({...base,name:'Powierzchnia okien do podłogi',st:ratio>=1/8?'ok':'bad',val:'1 : '+(Math.round(10/ratio)/10).toLocaleString('pl-PL')+' ('+m2(gl)+' okien)',req:'co najmniej 1 : 8 ('+m2(r.area/8)+')',ref:'§ 57 ust. 2',fix:ratio<1/8?'Powiększ okna (moduł Okna i drzwi – wysokość) albo dodaj kolejne; brakuje ok. '+m2(r.area/8-gl)+'.':''})}
     // wysokość
     const req=k==='living'||k==='kitchen'?2.5:2.2;
     if(r.f===q.up&&q.attic){if(k!=='aux'||r.area>=2){const share=r.areaH22/r.area;add({...base,name:'Wysokość na poddaszu',st:share>=.5?'ok':'bad',val:Math.round(share*100)+'% powierzchni ma ≥ 2,2 m (od '+m(r.minH)+' do '+m(r.maxH)+')',req:'≥ 2,2 m na co najmniej połowie powierzchni',ref:'§ 72 ust. 2',fix:share<.5?'Podnieś ściankę kolankową albo zwiększ kąt dachu (moduł Kondygnacje i dach).':''})}}

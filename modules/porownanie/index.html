@@ -141,14 +141,14 @@ function planSvg(p){const g=p.grid||p.definitionSnapshot?.grid;if(!g)return '';c
 // ---------- wskaźniki jednego domu
 function metrics(p){const m={p};const tryc=(k,fn)=>{try{m[k]=fn()}catch(e){console.error(k,e);m[k]=null}};
   tryc('q',()=>HouserQuantities.compute(p));const q=m.q;if(!q)return m;
-  tryc('E',()=>HouserEnergy.compute(p));tryc('C',()=>HouserCost.compute(p));tryc('D',()=>HouserDaily.evaluate(p,p.dailySettings));tryc('S',()=>HouserSolar.compute(p));tryc('A',()=>HouserAcoustics.evaluate(p,p.acousticSettings));tryc('P',()=>HouserPlumbing.evaluate(p,p.plumbingSettings));tryc('V',()=>HouserHVAC.evaluate(p,p.hvacSettings));tryc('VM',()=>HouserHVAC.methods(p,p.hvacSettings,m.V));tryc('Ht',()=>HouserHeating.compare(p,p.heatingSettings));tryc('HS',()=>p.heatingSystem?HouserHeatSys.evaluate(p):null);tryc('ST',()=>HouserStorage.evaluate(p,p.storageSettings));tryc('ADV',()=>HouserAdvice.collect(p));
+  tryc('E',()=>HouserEnergy.compute(p));tryc('C',()=>HouserCost.compute(p));tryc('D',()=>HouserDaily.evaluate(p,p.dailySettings));tryc('S',()=>HouserSolar.compute(p));tryc('A',()=>HouserAcoustics.evaluate(p,p.acousticSettings));tryc('P',()=>HouserPlumbing.evaluate(p,p.plumbingSettings));tryc('V',()=>HouserHVAC.evaluate(p,p.hvacSettings));tryc('VM',()=>HouserHVAC.methods(p,p.hvacSettings,m.V));tryc('HS',()=>HouserHeatSys.evaluate(p)); // bez projektu: domyślna instalacja (pompa powietrzna + podłogówka), żeby domy były porównywalnetryc('Ht',()=>HouserHeating.compare(p,{...(p.heatingSettings||{}),...(m.HS?.designed?{emitters:m.HS.emitters}:{})}));tryc('ST',()=>HouserStorage.evaluate(p,p.storageSettings));tryc('ADV',()=>HouserAdvice.collect(p));
   const rooms=q.rooms.filter(r=>r.area>=2),name=r=>(r.name||'').toLowerCase();
   m.beds=rooms.filter(r=>/sypial|pokój|pokoj|gabinet/.test(name(r))).length;m.wet=q.baths+q.wcs;m.nrooms=rooms.length;
   m.floors=q.net[q.up]>0?(q.attic?'parter + poddasze':'parter + piętro'):'parterowy';
   m.glaz=q.ops.winA+q.ops.hstA+q.ops.roofWinA;
   if(m.S){const L=m.S.list.filter(r=>r.wins?.length||r.peak>=.5);m.hot=L.filter(r=>r.risk>=2).length;m.hotOf=L.length;m.worstSun=[...L].sort((a,b)=>b.peak-a.peak)[0]}
   if(m.D){const ap=m.D.scenarios.filter(s=>s.applicable&&s.enabled!==false);m.worstDaily=[...ap].sort((a,b)=>a.score-b.score)[0]}
-  if(m.A){m.loud=m.A.quiet.filter(r=>r.score<6).length;m.loudOf=m.A.quiet.length;m.worstA=m.A.quiet[0]}
+  if(m.A){m.loud=m.A.quiet.filter(r=>r.score<6).length;m.loudOf=m.A.quiet.length;m.worstA=[...m.A.quiet].sort((a,b)=>a.score-b.score)[0]}
   return m}
 
 // ---------- wiersze: [etykieta, podpis, wartość(m), format, lepsze: 'low'|'high'|null, dopisek(m)]
@@ -166,14 +166,14 @@ const ROWS=[
   ['Koszt za m²','koszt całej budowy ÷ powierzchnia użytkowa',m=>m.C&&m.q?.usableTotal?m.C.total/m.q.usableTotal:null,v=>zl(v)+'/m²','low'],
   ['Materiały / robocizna','ile kosztu to materiały; niżej – robocizna',m=>m.C?.totalM,zl,null,m=>m.C?'robocizna '+zl(m.C.totalL):''],
   ['– Stan zerowy','fundamenty, podłoga na gruncie, przyłącza',m=>stageSum(m,'Stan zerowy'),zl,null],
-  ['– Stan surowy otwarty','ściany, strop, schody, komin, dach',m=>stageSum(m,'Stan surowy otwarty'),zl,null],
+  ['– Stan surowy otwarty','ściany, strop, schody, komin, dach, balkony',m=>stageSum(m,'Stan surowy otwarty'),zl,null],
   ['– Stan surowy zamknięty','okna, drzwi zewnętrzne',m=>stageSum(m,'Stan surowy zamknięty'),zl,null],
-  ['– Instalacje','prąd, woda, ogrzewanie, wentylacja',m=>stageSum(m,'Instalacje'),zl,null],
+  ['– Instalacje','prąd, woda, ogrzewanie, wentylacja (wg wyborów w modułach), klimatyzacja jeśli włączona w Wycenie',m=>stageSum(m,'Instalacje'),zl,null],
   ['– Elewacja i wykończenie','ocieplenie, tynki, podłogi, łazienki, kuchnia, drzwi',m=>stageSum(m,'Elewacja i wykończenie'),zl,null],
   ['– Na zewnątrz','tarasy, pergole',m=>stageSum(m,'Na zewnątrz'),zl,null],
   ['– Inne','projekt, kierownik budowy, geodeta',m=>stageSum(m,'Inne'),zl,null],
   ['Rezerwa na nieprzewidziane','doliczona do kosztu (procent ustawiony w Wycenie)',m=>m.C?.reserve,zl,null,m=>m.C?m.C.s.reserve+'%':''],
-  ['Balkony','powierzchnia balkonów na piętrze (moduł Balkony); niżej – wystające / nad parterem',m=>m.q?.balc?.area,v=>v?nf(v,1)+' m²':'brak','high',m=>m.q?.balc?.area?nf(m.q.balc.cantA,1)+' m² wystające · '+nf(m.q.balc.overA,1)+' m² nad parterem':''],
+  ['Balkony','powierzchnia balkonów na piętrze (moduł Balkony); niżej – wystające / nad parterem',m=>m.q?.balc?.area,v=>v?nf(v,1)+' m²':'brak',null,m=>m.q?.balc?.area?nf(m.q.balc.cantA,1)+' m² wystające · '+nf(m.q.balc.overA,1)+' m² nad parterem':''],
   ['Energia'],
   ['Ocieplenie ścian','mur i ocieplenie z modułu Ocieplenie i elewacja; niżej – współczynnik U ścian (WT 2021: ≤ 0,20)',m=>{const e=m.p?.envelope;if(!e)return 'nie ustawiono';const R=HouserEnvelope.evaluate(e);return R.layers.W.name.replace(/ \(.*\)/,'')+(R.layers.insT?' · '+R.layers.I.name.replace(/ \(.*\)/,'')+' '+R.layers.insT+' cm':'')},v=>v,null,m=>m.E?'U ścian '+nf(m.E.s.U.wall,2):''],
   ['U ścian','współczynnik przenikania ciepła ścian zewnętrznych (mniej = cieplej); WT 2021: ≤ 0,20',m=>m.E?.s.U.wall,v=>nf(v,2)+' W/m²K','low'],
@@ -181,7 +181,7 @@ const ROWS=[
   ['Zapotrzebowanie na ogrzewanie','energia na ogrzanie 1 m² przez cały rok',m=>m.E?.EU,v=>nf(v)+' kWh/m² na rok','low',m=>m.E?HouserEnergy.klass(m.E.EU)[0]:''],
   ['Ciepło rocznie','ogrzewanie + ciepła woda, cały dom, przez cały rok',m=>m.E?m.E.Qh+m.E.Qw:null,v=>nf(v)+' kWh na rok','low'],
   ['Moc grzewcza','jak mocnego źródła ciepła potrzeba w największy mróz',m=>m.E?.load,v=>nf(v,1)+' kW','low'],
-  ['Koszt ogrzewania','ogrzewanie + ciepła woda pompą ciepła, przez cały rok',m=>m.E?.src?.[0]?.cost,v=>zl(v)+' na rok','low'],
+  ['Koszt ogrzewania pompą ciepła','ten sam sposób ogrzewania dla każdego domu – porównuje same budynki (ocieplenie, bryła, okna, wentylacja); rachunki za wybrane ogrzewanie są niżej, w grupie Ogrzewanie',m=>m.E?.src?.[0]?.cost,v=>zl(v)+' na rok','low'],
   ['Codzienność'],
   ['Ocena codzienności','średnia ze scenariuszy (zakupy, pranie, goście, noc…); niżej – najsłabszy scenariusz',m=>m.D?.overall,v=>nf(v,1)+' / 10','high',m=>m.worstDaily?'najsłabiej: '+m.worstDaily.name+' ('+nf(m.worstDaily.score,1)+')':''],
   ['Nasłonecznienie'],
@@ -202,11 +202,11 @@ const ROWS=[
   ['Najdłuższa ciepła woda','najdalsze mokre pomieszczenie od źródła; niżej – czas czekania na ciepłą wodę',m=>m.P?.maxLen,v=>nf(v,1)+' m','low',m=>{const f=m.P&&[...m.P.points].filter(x=>!x.isSrc).sort((a,b)=>(b.len||0)-(a.len||0))[0];return f?f.name+' · '+(m.P.circ?'z cyrkulacją':'ok. '+f.wait+' s'):''}],
   ['Przesunięte piony','mokre pomieszczenie na piętrze, które nie stoi nad mokrym na parterze',m=>m.P?m.P.risers.filter(r=>!r.stacked).length:null,v=>v==null?'–':nf(v),'low'],
   ['Ogrzewanie'],
-  ['Ogrzewanie – zaprojektowane','instalacja z modułu Instalacja grzewcza (źródła ciepła); „–” gdy dom jej nie ma',m=>m.HS?.name,v=>v||'–',null,m=>m.HS?'łatwość montażu '+nf(m.HS.ease,1)+' / 10':''],
-  ['Ogrzewanie – koszt całej instalacji','zaprojektowanej: źródła, bufor, rozdzielacze, podłogówka, grzejniki, rury, komin',m=>m.HS?.invest,zl,'low'],
+  ['Ogrzewanie – w projekcie','instalacja z modułu Instalacja grzewcza; gdy jej nie zaprojektowano – domyślna: pompa ciepła powietrze–woda z podłogówką (tak samo liczona dla każdego domu)',m=>m.HS?.name,v=>v||'–',null,m=>m.HS?(m.HS.designed?'zaprojektowana · łatwość montażu '+nf(m.HS.ease,1)+' / 10':'domyślna – nie zaprojektowano'):''],
+  ['Ogrzewanie – koszt całej instalacji','źródła, bufor, rozdzielacze, podłogówka, grzejniki, rury, komin',m=>m.HS?.invest,zl,'low',m=>m.HS&&!m.HS.designed?'domyślna instalacja':''],
   ['Ogrzewanie – najlepsze dla domu','źródło ciepła z najwyższą oceną (dopasowanie, koszt, wygoda) – wg modułu Ogrzewanie',m=>m.Ht?.best.name,v=>v||'–',null,m=>m.Ht?'ocena '+nf(m.Ht.best.score,1)+' / 10':''],
-  ['Ogrzewanie – rachunki roczne','zaprojektowanej instalacji, a gdy jej nie ma – najlepszego źródła: ogrzewanie + ciepła woda + opłaty stałe i serwis',m=>m.HS?m.HS.year:m.Ht?.best.year,v=>zl(v)+' na rok','low',m=>m.HS?'zaprojektowana':m.Ht?'najlepsze źródło':''],
-  ['Ogrzewanie – koszt w okresie','źródła ciepła + rachunki przez okres z modułu Ogrzewanie (domyślnie 20 lat), bez instalacji w pokojach – żeby domy dało się porównać',m=>m.HS?m.HS.totalSrc:m.Ht?.best.total,zl,'low',m=>m.HS?'zaprojektowana · '+m.HS.years+' lat':m.Ht?'najlepsze źródło · instalacja '+zl(m.Ht.best.invest)+' · '+m.Ht.years+' lat':''],
+  ['Ogrzewanie – rachunki roczne','instalacji w projekcie (lub domyślnej): ogrzewanie + ciepła woda + opłaty stałe i serwis',m=>m.HS?.year,v=>zl(v)+' na rok','low',m=>m.HS?(m.HS.designed?'zaprojektowana':'domyślna'):''],
+  ['Ogrzewanie – koszt w okresie','źródła ciepła + rachunki przez okres z modułu Ogrzewanie (domyślnie 20 lat), bez instalacji w pokojach – żeby domy dało się porównać',m=>m.HS?.totalSrc,zl,'low',m=>m.HS?(m.HS.designed?'zaprojektowana':'domyślna')+' · '+m.HS.years+' lat':''],
   ['Wentylacja'],
   ['Wentylacja – wybrana','sposób wentylacji wybrany w projekcie (moduł Wentylacja) – liczy się w bilansie energii; niżej – jego ocena dla tego domu',m=>m.VM?.chosen?.name,v=>v||'–',null,m=>m.VM?.chosen?'ocena '+nf(m.VM.chosen.score,1)+' / 10':''],
   ['Wentylacja – najlepsza dla domu','sposób wentylacji z najwyższą oceną – wg modułu Wentylacja',m=>m.VM?.best.name,v=>v||'–',null,m=>m.VM?'koszt zrobienia '+zl(m.VM.best.invest):''],
@@ -260,7 +260,7 @@ async function render(){
     h+='<tr><td class="lbl"><b>'+esc(lab)+'</b>'+(better?' <span class="dir '+better+'">'+(better==='low'?'▼ mniej = lepiej':'▲ więcej = lepiej')+'</span>':'')+(sub?'<small>'+esc(sub)+'</small>':'')+'</td>';
     vals.forEach((v,i)=>{const cls=v===best?'best':v===worst?'worst':'';let n='';try{n=note?note(cols[i].m):''}catch(_){}h+='<td><span class="'+cls+'">'+esc(fmt(v))+'</span>'+(n?'<small>'+esc(n)+'</small>':'')+'</td>'});
     if(cols.length<MAXC)h+='<td></td>';h+='</tr>';
-    if(best!=null&&['Szacunkowy koszt','Zapotrzebowanie na ogrzewanie','Ocena codzienności','Spokój w domu','Pokoje z ryzykiem przegrzania','Łatwość instalacji wod-kan'].includes(lab)){const i=vals.indexOf(best);sumItems.push([lab,projName(cols[i].p),fmt(best)])}}
+    if(best!=null&&['Szacunkowy koszt','Zapotrzebowanie na ogrzewanie','Ocena codzienności','Spokój w domu','Pokoje z ryzykiem przegrzania','Łatwość instalacji wod-kan','Miejsce na rzeczy – ocena'].includes(lab)){const i=vals.indexOf(best);sumItems.push([lab,projName(cols[i].p),fmt(best)])}}
   h+='</tbody></table>';T.innerHTML=h;
   const SUM_PL={'Szacunkowy koszt':'Najtańszy w budowie','Zapotrzebowanie na ogrzewanie':'Najmniej energii','Ocena codzienności':'Najwygodniejszy na co dzień','Spokój w domu':'Najciszej','Pokoje z ryzykiem przegrzania':'Najmniej przegrzewania','Łatwość instalacji wod-kan':'Najłatwiejsza hydraulika','Miejsce na rzeczy – ocena':'Najwięcej miejsca na rzeczy'};
   $('sum').innerHTML=cols.length<2?'<div class="t"><div class="l">Dodaj drugi dom</div><div class="s">Porównanie ma sens od dwóch projektów – kliknij „＋ Dodaj dom”.</div></div>':sumItems.map(([k,n,v])=>'<div class="t"><div class="l">'+esc(SUM_PL[k])+'</div><div class="v">'+esc(n)+'</div><div class="s">'+esc(v)+'</div></div>').join('');
