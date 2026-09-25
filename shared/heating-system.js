@@ -26,7 +26,10 @@
   };
   const EMIT={floor:'podłogówka','floor+ladder':'podłogówka + drabinka','floor+rad':'podłogówka + grzejnik',rad:'grzejnik',ladder:'drabinka',none:'bez ogrzewania'};
   const DEVS={main:'Źródło ciepła',extra:'Źródło alternatywne',out:'Jednostka zewnętrzna',buffer:'Bufor ciepła',dhw:'Zasobnik ciepłej wody',man:'Rozdzielacz'};
-  const DEF={main:'hp_air',extra:'none',share:null,buffer:'auto',dhw:200};
+  const DEF={main:'hp_air',extra:'none',share:null,buffer:'auto',dhw:200,dhwSrc:'auto'};
+  // ciepła woda (CWU) – osobno od ogrzewania pokoi (CO)
+  const DHW={auto:{name:'dobierz automatycznie'},main:{name:'ze źródła głównego przez cały rok'},main_el:{name:'zimą ze źródła głównego, latem grzałka elektryczna'},hp_dhw:{name:'osobna pompa ciepła do ciepłej wody',invest:7500,service:100},
+    el:{name:'grzałka / podgrzewacz elektryczny',invest:2500},solar:{name:'kolektory słoneczne + dogrzewanie ze źródła głównego',invest:13000,service:150},extra:{name:'ze źródła alternatywnego'}};
   const PRICE={floorM2:170,manifold:3500,rad:1100,ladder:1400,pipeM:60,mainM:130,outM:300,czopuch:1500,chimney:7000,flue2:2500,dhwTank:4000};
   const BUF={0:[0,0],100:[2500,.3],200:[3500,.4],300:[4200,.5],500:[5500,.7],800:[7500,1],1000:[8500,1.1]};
   const re={bath:/łazien|lazien/i,wc:/\bwc\b|toalet/i,util:/techn|kotłown|kotlown|kotł|kotl/i,garage:/garaż|garaz/i,bed:/sypial|pokój|pokoj|gabinet|dziec|gości|gosci/i,living:/salon|dzienny|jadal/i,kitchen:/kuchni|aneks/i,stairs:/schod/i};
@@ -78,12 +81,22 @@
     const C=HouserHeating.compare(project,{...HS,emitters}),M=C.list.find(m=>m.k===s.main),SRC=SOURCES[s.main],EX=EXTRAS[s.extra];
     // źródło główne
     addC(SRC.name,s.main==='fireplace_water'?M.invest-6000-(C.chimney?0:7000):s.main==='wood'?M.invest-7000-(C.chimney?0:7000):s.main==='pellet'||s.main==='coal'?M.invest-(C.chimney?0:7000):M.invest,s.main==='electric'?'maty / grzejniki elektryczne w pokojach':'urządzenie z montażem'+(s.main==='hp_air'||s.main==='hp_ground'||s.main==='gas'?', z zasobnikiem ciepłej wody':''));
-    if(!['hp_air','hp_ground','gas'].includes(s.main))addC('Zasobnik ciepłej wody '+s.dhw+' l',PRICE.dhwTank);
+
     // źródło dodatkowe
     let exInv=0,exPer=0,exService=0;
     if(s.extra!=='none'){const m=C.list.find(x=>x.k===s.extra);
       if(EX.invest!=null){exInv=EX.invest;exService=EX.service}else{exInv=s.extra==='hp_air'?m.invest*.85:s.extra==='gas'?m.invest:m.invest-(C.chimney?0:7000)-(s.extra==='wood'?7000:0);exService=m.service}
-      exPer=EX.eff?S.pWood/S.woodKWh/EX.eff:s.extra==='electric'?S.pEl*(HS.pv==='yes'?.6:1):m.perKWh;addC(EX.name,exInv,EX.how||'drugie urządzenie z montażem')}
+      exPer=EX.eff?S.pWood/S.woodKWh/EX.eff:s.extra==='electric'?S.pEl*(HS.pv==='yes'?.6:1):(m.rate??m.perKWh);addC(EX.name,exInv,EX.how||'drugie urządzenie z montażem')}
+    // ciepła woda: skąd i za ile (zł za kWh ciepłej wody)
+    const pElP=S.pEl*(HS.pv==='yes'?.6:1),manual=['wood','fireplace_water'].includes(s.main);
+    let dhwSrc=s.dhwSrc;if(!DHW[dhwSrc]||dhwSrc==='auto')dhwSrc=manual?'main_el':s.main==='electric'?'el':'main';
+    if(dhwSrc==='extra'&&!EX.hydro)dhwSrc=manual?'main_el':'main';
+    const dMain=s.main==='hp_air'?pElP/(S.scop*.8):s.main==='hp_ground'?pElP/(4.6*.8):(M.rate??M.perKWh);
+    const dhwRate=dhwSrc==='main'?dMain:dhwSrc==='main_el'?.5*dMain+.5*pElP:dhwSrc==='el'?pElP:dhwSrc==='hp_dhw'?pElP/2.8:dhwSrc==='solar'?.4*dMain:exPer;
+    const DW=DHW[dhwSrc];if(DW.invest)addC(DW.name[0].toUpperCase()+DW.name.slice(1),DW.invest,dhwSrc==='solar'?'ok. 60% ciepłej wody ze słońca, zasobnik dwuwężownicowy':dhwSrc==='hp_dhw'?'z własnym zasobnikiem':'');
+    if(dhwSrc==='main_el')addC('Grzałka w zasobniku (latem)',500);
+    if(manual&&dhwSrc==='main')issues.push({p:.8,text:'Ciepła woda tylko z '+(s.main==='wood'?'kotła na drewno':'kominka')+' – latem trzeba palić, żeby mieć ciepłą wodę.',tip:'Wybierz „zimą ze źródła, latem grzałka”, pompę ciepła do ciepłej wody albo kolektory słoneczne.',cost:0});
+    if(s.dhwSrc==='extra'&&!EX.hydro)issues.push({p:.3,text:'Źródło alternatywne nie grzeje wody – ciepła woda liczona ze źródła głównego.',tip:'',cost:0});
     // bufor
     const load=E.load,solidMain=!!SRC.solid,hydroN=[SRC.hydro,EX.hydro].filter(Boolean).length;
     let rec=0,recWhy='';if(s.main==='wood'){rec=Math.max(800,Math.ceil(load*55/100)*100);recWhy='kocioł na drewno pracuje pełną mocą i potrzebuje bufora ok. 50 l na kW'}
@@ -120,7 +133,7 @@
       addC('Podłogówka '+fmt(floorM2,0)+' m²',floorM2*PRICE.floorM2,loops+' pętli, rury, izolacja, montaż (bez wylewki)',1);
       const mansN=Object.values(floors).reduce((a,x)=>a+x.mans,0);addC('Rozdzielacze ('+mansN+')',mansN*PRICE.manifold,'z szafką i grupą pompową',1);
       addC('Grzejniki ('+radN+')',radN*PRICE.rad*(SRC.out||s.main==='hp_ground'?1.3:1),SRC.out||s.main==='hp_ground'?'niskotemperaturowe (większe) – pod pompę ciepła':'',1);
-      addC('Grzejniki łazienkowe – drabinki ('+ladN+')',ladN*PRICE.ladder,1);
+      addC('Grzejniki łazienkowe – drabinki ('+ladN+')',ladN*PRICE.ladder,'',1);
       addC('Rury do pokoi',leadPipe*PRICE.pipeM,'ok. '+fmt(leadPipe,0)+' m (zasilanie + powrót)',1);
       addC('Rury źródło → rozdzielacze',mainPipe*2*PRICE.mainM,'ok. '+fmt(mainPipe,1)+' m trasy');
       if(rA>0&&(SRC.out||s.main==='hp_ground'))add(.5,'Pompa ciepła z grzejnikami pracuje z niższą sprawnością niż z podłogówką.','Grzejniki muszą być większe (niskotemperaturowe) – tam, gdzie się da, lepsza podłogówka.')}
@@ -156,8 +169,10 @@
     if(EX.room&&devs.extra?.room){const r=rooms.find(x=>x.key===devs.extra.room.f+'|'+devs.extra.room.id);if(r&&s.extra==='fireplace'&&r.load<2000)add(.5,'Kominek (ok. 6–8 kW) w pomieszczeniu „'+r.name+'”, które potrzebuje tylko ok. '+fmt(r.load/1000)+' kW – będzie za gorąco.','Wybierz mały wkład albo rozprowadzenie gorącego powietrza (DGP) do innych pokoi.');
       if(r&&!re.living.test(r.name))add(.3,'Kominek stoi w pomieszczeniu „'+r.name+'”, a zwykle stawia się go w salonie.','')}
     if(s.main==='coal'||s.extra==='coal')add(.5,'Kocioł na ekogroszek – w wielu województwach uchwały antysmogowe ograniczają palenie węglem, a w przyszłości możliwy jest zakaz.','Sprawdź uchwałę antysmogową swojego województwa i gminy; bezpieczniej: pompa ciepła lub pellet.');
-    if(s.main==='fireplace_water'&&s.extra==='none')add(1,'Kominek z płaszczem wodnym jako jedyne źródło – gdy nikt nie pali (wyjazd, choroba), dom stygnie, a latem nie ma czym grzać wody.','Dodaj źródło alternatywne: grzałkę elektryczną w buforze albo pompę ciepła.');
+
     if(s.main==='fireplace_water'&&devs.main?.room&&!re.living.test(devs.main.room.name||''))add(.3,'Kominek stoi w pomieszczeniu „'+devs.main.room.name+'”, a zwykle stawia się go w salonie.','');
+    if(s.main==='fireplace_water'&&s.extra==='none')add(1,dhwSrc==='main'?'Kominek z płaszczem wodnym jako jedyne źródło – gdy nikt nie pali (wyjazd, choroba), dom stygnie, a latem nie ma czym grzać wody.':'Kominek z płaszczem wodnym jako jedyne źródło ogrzewania – gdy nikt nie pali (wyjazd, choroba), dom stygnie.','Dodaj źródło alternatywne: grzałkę elektryczną w buforze albo pompę ciepła.');
+    if(!['hp_air','hp_ground','gas'].includes(s.main)&&!['hp_dhw','el','solar'].includes(dhwSrc))addC('Zasobnik ciepłej wody '+s.dhw+' l',PRICE.dhwTank);
     // połączenia źródeł
     if(s.extra!=='none'){const pair=s.main+'+'+s.extra;
       if(/^hp_.*\+fireplace/.test(pair))good.push('Pompa ciepła z kominkiem: kominek dogrzewa w mrozy, gdy pompa ma najniższą sprawność.');
@@ -177,12 +192,12 @@
     const noHeat=rooms.filter(r=>!r.garage&&!r.ok&&r.emit!=='none').length;if(!noHeat&&rooms.some(r=>/floor/.test(r.emit)))good.push('Podłogówka wystarczy we wszystkich pokojach, w których jest.');
     // koszt instalacji i rachunki
     const invest=cost.reduce((a,x)=>a+x.v,0),investSrc=cost.filter(x=>!x.room).reduce((a,x)=>a+x.v,0);const f=s.extra==='none'?0:s.share/100;
-    const mainPer=M.perKWh;const fuel=E.Qh*f*exPer+(E.Qh*(1-f)+E.Qw)*mainPer;
-    const fixed=(s.main==='gas'||s.extra==='gas')?480:0,service=M.service+exService;const year=fuel+fixed+service;const years=+HS.years||20,total=invest+years*year;
+    const mainRate=M.rate??M.perKWh,fuelCO=E.Qh*f*exPer+E.Qh*(1-f)*mainRate,fuelCWU=E.Qw*dhwRate,fuel=fuelCO+fuelCWU;
+    const fixed=(s.main==='gas'||s.extra==='gas')?480:0,service=M.service+exService+(DHW[dhwSrc].service||0);const year=fuel+fixed+service;const years=+HS.years||20,total=invest+years*year;
     // trudność montażu 0–10
     const pen=issues.reduce((a,x)=>a+x.p,0),ease=Math.max(0,Math.min(10,Math.round((10-pen)*10)/10));
     const name=SRC.name+(s.extra!=='none'?' + '+EX.name.replace(/ \(.*\)/,'').toLowerCase():'');
-    return {designed,sys:s,name,E,C,rooms,devs,need,floors,floorsW,util,issues:issues.sort((a,b)=>b.p-a.p),good,cost,invest,investSrc,totalSrc:investSrc+years*year,fuel,fixed,service,year,years,total,ease,buffer:buf,bufRec:rec,share:f,emitters,loops,radN,ladN,floorM2,elec,mainPipe,leadPipe};
+    return {designed,sys:s,name,E,C,rooms,devs,need,floors,floorsW,util,issues:issues.sort((a,b)=>b.p-a.p),good,dhwSrc,dhwName:DHW[dhwSrc].name,dhwRate,fuelCO,fuelCWU,cost,invest,investSrc,totalSrc:investSrc+years*year,fuel,fixed,service,year,years,total,ease,buffer:buf,bufRec:rec,share:f,emitters,loops,radN,ladN,floorM2,elec,mainPipe,leadPipe};
   }
-  global.HouserHeatSys={SOURCES,EXTRAS,EMIT,DEVS,DEF,PRICE,defaultEmit,normalize,needed,evaluate};
+  global.HouserHeatSys={DHW,SOURCES,EXTRAS,EMIT,DEVS,DEF,PRICE,defaultEmit,normalize,needed,evaluate};
 })(window);

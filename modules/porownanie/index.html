@@ -203,6 +203,7 @@ const ROWS=[
   ['Przesunięte piony','mokre pomieszczenie na piętrze, które nie stoi nad mokrym na parterze',m=>m.P?m.P.risers.filter(r=>!r.stacked).length:null,v=>v==null?'–':nf(v),'low'],
   ['Ogrzewanie'],
   ['Ogrzewanie – w projekcie','instalacja z modułu Instalacja grzewcza; gdy jej nie zaprojektowano – domyślna: pompa ciepła powietrze–woda z podłogówką (tak samo liczona dla każdego domu)',m=>m.HS?.name,v=>v||'–',null,m=>m.HS?(m.HS.designed?'zaprojektowana · łatwość montażu '+nf(m.HS.ease,1)+' / 10':'domyślna – nie zaprojektowano'):''],
+  ['Ciepła woda (CWU)','czym grzejemy wodę (moduł Instalacja grzewcza); niżej – koszt ciepłej wody na rok',m=>m.HS?.dhwName,v=>v||'–',null,m=>m.HS?'ok. '+zl(m.HS.fuelCWU)+' / rok':''],
   ['Ogrzewanie – koszt całej instalacji','źródła, bufor, rozdzielacze, podłogówka, grzejniki, rury, komin',m=>m.HS?.invest,zl,'low',m=>m.HS&&!m.HS.designed?'domyślna instalacja':''],
   ['Ogrzewanie – najlepsze dla domu','źródło ciepła z najwyższą oceną (dopasowanie, koszt, wygoda) – wg modułu Ogrzewanie',m=>m.Ht?.best.name,v=>v||'–',null,m=>m.Ht?'ocena '+nf(m.Ht.best.score,1)+' / 10':''],
   ['Ogrzewanie – rachunki roczne','instalacji w projekcie (lub domyślnej): ogrzewanie + ciepła woda + opłaty stałe i serwis',m=>m.HS?.year,v=>zl(v)+' na rok','low',m=>m.HS?(m.HS.designed?'zaprojektowana':'domyślna'):''],

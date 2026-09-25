@@ -57,11 +57,14 @@ html,body{height:100%;margin:0}
   <div class="section" id="noProj" hidden><div class="hint" style="margin:0">Brak projektu. Narysuj rzut w module <b>Układ pomieszczeń</b>.</div></div>
   <div id="ui">
   <div class="section">
-    <h3>Źródła ciepła</h3>
+    <h3>Ogrzewanie pokoi (CO)</h3>
     <div class="field"><label>Źródło główne</label><select id="main"></select></div>
     <div class="field"><label>Źródło alternatywne</label><select id="extra"></select></div>
     <div class="field" id="shareF"><label id="shareL">Udział źródła alternatywnego w ogrzewaniu</label><input type="range" id="share" min="0" max="80" step="5"></div>
     <div class="field"><label>Bufor ciepła</label><select id="buffer"><option value="auto">dobierz automatycznie</option><option value="0">bez bufora</option><option value="100">100 l</option><option value="200">200 l</option><option value="300">300 l</option><option value="500">500 l</option><option value="800">800 l</option><option value="1000">1000 l</option></select></div>
+    <h3 style="margin-top:14px">Ciepła woda (CWU)</h3>
+    <div class="field"><label>Czym grzejemy wodę</label><select id="dhwSrc"></select></div>
+    <div class="field" id="dhwInfo" style="font-size:12px;color:var(--hs-muted)"></div>
     <div class="field"><label>Zasobnik ciepłej wody</label><select id="dhw"><option value="150">150 l</option><option value="200">200 l</option><option value="300">300 l</option></select></div>
     <div id="bufHint" class="hint"></div>
   </div>
@@ -107,7 +110,7 @@ function cellAt(f,x,y){const g=grid(),s=project?.state?.[f];if(!g||!s||x<0||y<0|
 const inside=(f,x,y)=>{const id=cellAt(f,x,y);return !!id&&roomDef(f,id)?.kind!=='exteriorVoid'&&!(f!==floors()[0]&&(id==='pustka'||id==='schody'))};
 function sys(){return HS.normalize(project)}
 function save(mut){const s=sys();mut(s);project.heatingSystem=s;HouserStore.update(p=>{p.heatingSystem=s},'instalacja-grzewcza');renderAll()}
-const devLabel=d=>d.startsWith('man:')?'Rozdzielacz – '+(FLOOR_PL[d.slice(4)]||d.slice(4)).toLowerCase():d==='main'?(HS.SOURCES[sys().main].dev||'Źródło'):d==='extra'?(HS.EXTRAS[sys().extra].dev||'Źródło alternatywne'):HS.DEVS[d];
+const devLabel=d=>d.startsWith('man:')?'Rozdzielacz – '+(FLOOR_PL[d.slice(4)]||d.slice(4)).toLowerCase():d==='main'?(HS.SOURCES[sys().main].dev||'Źródło'):d==='extra'?(HS.EXTRAS[sys().extra].dev||'Źródło alternatywne'):d==='dhw'&&R?.dhwSrc==='hp_dhw'?'Pompa ciepła do ciepłej wody':d==='dhw'&&R?.dhwSrc==='solar'?'Zasobnik solarny (kolektory na dachu)':HS.DEVS[d];
 const devKind=d=>d.startsWith('man:')?'man':d;
 
 $('main').innerHTML=Object.entries(HS.SOURCES).map(([k,v])=>'<option value="'+k+'">'+v.name+'</option>').join('');
@@ -117,6 +120,8 @@ $('extra').onchange=()=>save(s=>{s.extra=$('extra').value;s.share=HS.EXTRAS[s.ex
 $('share').oninput=()=>{$('shareL').textContent='Udział źródła alternatywnego w ogrzewaniu: '+$('share').value+'%'};
 $('share').onchange=()=>save(s=>{s.share=+$('share').value});
 $('buffer').onchange=()=>save(s=>{s.buffer=$('buffer').value==='auto'?'auto':+$('buffer').value});
+$('dhwSrc').innerHTML=Object.entries(HS.DHW).map(([k,v])=>'<option value="'+k+'">'+v.name+'</option>').join('');
+$('dhwSrc').onchange=()=>save(s=>{s.dhwSrc=$('dhwSrc').value});
 $('dhw').onchange=()=>save(s=>{s.dhw=+$('dhw').value});
 $('allFloor').onclick=()=>save(s=>{for(const r of R.rooms)if(!r.garage&&r.area>=2)s.emitters[r.key]=r.bath?'floor+ladder':'floor'});
 $('allRad').onclick=()=>save(s=>{for(const r of R.rooms)if(!r.garage&&r.area>=2)s.emitters[r.key]=r.bath?'ladder':'rad'});
@@ -126,7 +131,7 @@ function renderSide(){
   $('noProj').hidden=!!project;$('ui').hidden=!project;if(!project)return;
   const s=sys();fillExtra();$('main').value=s.main;$('extra').value=s.extra;
   $('shareF').hidden=s.extra==='none';$('share').value=s.share;$('shareL').textContent='Udział źródła alternatywnego w ogrzewaniu: '+s.share+'%';
-  $('buffer').value=String(s.buffer);$('dhw').value=String(s.dhw);
+  $('buffer').value=String(s.buffer);$('dhw').value=String(s.dhw);$('dhwSrc').value=s.dhwSrc||'auto';$('dhwInfo').textContent=(s.dhwSrc==='auto'||!s.dhwSrc?'teraz: '+R.dhwName+' · ':'')+'koszt ciepłej wody ok. '+Math.round(R.fuelCWU/100)*100+' zł / rok';
   $('bufHint').innerHTML=R.bufRec?'Zalecany bufor: <b>'+R.bufRec+' l</b>'+(s.buffer==='auto'?' (ustawiony automatycznie)':''):'Przy tych źródłach bufor nie jest konieczny.';
   // urządzenia
   const T=$('tools');T.innerHTML='';
