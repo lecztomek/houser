@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ocieplenie i elewacja</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:340px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
+h1{font-size:19px;margin:0 0 4px}
+.lead,.hint{font-size:12.5px;color:var(--hs-muted);line-height:1.5;margin:0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.field{display:grid;gap:4px;margin-bottom:9px}
+.field label{font-size:12px;color:var(--hs-muted)}
+.field select,.field input{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:34px;font:inherit;background:#fff;color:var(--hs-text)}
+.two{display:grid;grid-template-columns:1fr 90px;gap:8px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:13px 15px;box-shadow:var(--hs-shadow)}
+.tile .l{font-size:12px;color:var(--hs-muted);font-weight:600}
+.tile .v{font-size:21px;font-weight:800;margin-top:4px}
+.tile .s{font-size:12px;color:var(--hs-muted);margin-top:3px;line-height:1.4}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.card h2{font-size:15px;margin:0 0 6px}
+.c-ok{color:#15803d}.c-bad{color:#b91c1c}.c-mid{color:#b45309}
+table.t{width:100%;border-collapse:collapse;font-size:12.5px}
+table.t td,table.t th{padding:6px;border-bottom:1px solid #eef2f6;text-align:left}
+table.t th{font-size:11.5px;color:var(--hs-muted);font-weight:600}
+table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.t tr.cur td{background:#eff6ff;font-weight:700}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+#sect{display:block;max-width:100%;height:auto}
+.empty{padding:40px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){html,body{overflow:auto;height:auto}.wrap{height:auto;grid-template-columns:1fr;grid-template-rows:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{overflow:visible;padding:10px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1>Ocieplenie i elewacja</h1>
+  <p class="lead">Z czego są ściany, dach i podłoga, jak grube jest ocieplenie, jakie okna i wykończenie elewacji. Z tego liczę współczynniki U – bilans cieplny w module Energia (a za nim ogrzewanie, wentylacja i porównanie) przelicza się sam, a Wycena bierze ceny muru, elewacji i okien.</p>
+  <div class="section"><h3>Ściany zewnętrzne</h3>
+    <div class="field"><label>Mur</label><select id="wall"></select></div>
+    <div class="two"><div class="field"><label>Ocieplenie</label><select id="ins"></select></div><div class="field"><label>grubość [cm]</label><input id="insT" type="number" min="0" max="40" step="1"></div></div>
+    <div class="field"><label>Wykończenie elewacji</label><select id="finish"></select></div>
+  </div>
+  <div class="section"><h3>Dach / strop pod nieogrzewanym</h3>
+    <div class="two"><div class="field"><label>Ocieplenie</label><select id="roofIns"></select></div><div class="field"><label>grubość [cm]</label><input id="roofT" type="number" min="0" max="60" step="1"></div></div>
+  </div>
+  <div class="section"><h3>Podłoga na gruncie</h3>
+    <div class="two"><div class="field"><label>Ocieplenie</label><select id="floorIns"></select></div><div class="field"><label>grubość [cm]</label><input id="floorT" type="number" min="0" max="40" step="1"></div></div>
+  </div>
+  <div class="section"><h3>Okna, drzwi, detale</h3>
+    <div class="field"><label>Okna</label><select id="win"></select></div>
+    <div class="field"><label>Drzwi zewnętrzne</label><select id="door"></select></div>
+    <div class="field"><label>Mostki cieplne (jakość wykonania)</label><select id="bridge"></select></div>
+  </div>
+  <p class="hint" style="margin-top:10px">Ustawienia zapisują się w projekcie. Współczynniki U w module Energia są teraz liczone stąd.</p>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="../../shared/energy.js"></script>
+<script src="engine.js"></script>
+<script>
+const $=id=>document.getElementById(id),EV=HouserEnvelope;
+let project=null;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const zl=v=>(Math.round(v/100)*100).toLocaleString('pl-PL')+' zł';
+const opts=(id,obj)=>{$(id).innerHTML=Object.entries(obj).map(([k,v])=>'<option value="'+k+'">'+esc(v.name)+'</option>').join('')};
+opts('wall',EV.WALLS);opts('ins',EV.INS);opts('finish',EV.FINISH);opts('roofIns',EV.ROOF_INS);opts('floorIns',EV.FLOOR_INS);opts('win',EV.WIN);opts('door',EV.DOOR);opts('bridge',EV.BRIDGE);
+const FIELDS=['wall','ins','insT','finish','roofIns','roofT','floorIns','floorT','win','door','bridge'];
+function env(){return {...EV.DEF,...(project?.envelope||{})}}
+function save(){const e={};for(const id of FIELDS)e[id]=['insT','roofT','floorT'].includes(id)?+$(id).value:$(id).value;
+  EV.apply(project,e);const snap={envelope:project.envelope,U:project.energySettings.U,bridge:project.energySettings.bridge,K:project.envelopePriceK};
+  HouserStore.update(p=>{p.envelope=snap.envelope;p.energySettings={...(p.energySettings||{}),U:snap.U,bridge:snap.bridge};p.envelopePriceK=snap.K},'ocieplenie');render()}
+for(const id of FIELDS)$(id).addEventListener('change',save);
+// bilans dla wariantu (kopia projektu z innymi U)
+function energyWith(e){const R=EV.evaluate(e),p={...project,energySettings:{...(project.energySettings||{}),U:R.U,bridge:R.bridge}};const E=HouserEnergy.compute(p);return {R,E,cost:E.src[0].cost}}
+function section(R){const L=R.layers,layers=[['#e5e7eb',.015,'tynk wewn.'],[{aac:'#f1f5f9',aac36:'#f1f5f9',ceramic:'#f0a88b',ceramic44:'#f0a88b',silicate:'#fafafa',concrete:'#cbd5e1',timber:'#fde68a'}[R.env.wall]||'#e5e7eb',L.W.d,L.W.name.replace(/ \(.*\)/,'')]];
+  if(L.insT>0)layers.push([{eps:'#ffffff',graphite:'#9ca3af',wool:'#fcd34d',pir:'#fef3c7'}[R.env.ins]||'#fff',L.insT/100,L.I.name.replace(/ \(.*\)/,'')+' '+L.insT+' cm']);
+  layers.push([{wood:'#a16207',clinker:'#b45309',fibre:'#6b7280'}[R.env.finish]||'#e7e5e4',R.env.finish==='wood'||R.env.finish==='fibre'?.04:.01,L.F.name.replace(/ \(.*\)/,'')]);
+  const S=520,tot=layers.reduce((a,l)=>a+l[1],0),h=150;let x=10,svg='<svg id="sect" viewBox="0 0 '+(S+20)+' '+(h+30+layers.length*16)+'"><text x="10" y="12" font-size="11" fill="#64748b">wnętrze</text><text x="'+(S+10)+'" y="12" font-size="11" fill="#64748b" text-anchor="end">zewnątrz</text>';
+  layers.forEach(([c,d,n],i)=>{const w=Math.max(4,d/tot*S);svg+='<rect x="'+x+'" y="20" width="'+w+'" height="'+h+'" fill="'+c+'" stroke="#475569" stroke-width="1"/>';svg+='<line x1="'+(x+w/2)+'" y1="'+(20+h)+'" x2="'+(x+w/2)+'" y2="'+(28+h+i*16)+'" stroke="#94a3b8"/><text x="'+(x+w/2+4)+'" y="'+(32+h+i*16)+'" font-size="11" fill="#334155">'+esc(n)+(d>=.03&&!/cm/.test(n)?' · '+Math.round(d*100)+' cm':'')+'</text>';x+=w});
+  return svg+'</svg>'}
+function render(){
+  const e=env();for(const id of FIELDS)if(document.activeElement!==$(id))$(id).value=String(e[id]);$('insT').disabled=e.ins==='none';
+  const M=$('main');if(!project||!(project.grid||project.definitionSnapshot?.grid)){M.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej albo narysuj rzut w <b>Układzie pomieszczeń</b>.</div>';return}
+  let cur;try{cur=energyWith(e)}catch(err){console.error(err);M.innerHTML='<div class="empty">Nie udało się policzyć.</div>';return}
+  const {R,E}=cur,q=E.q,[kn,kc]=HouserEnergy.klass(E.EU),bad=R.checks.filter(c=>!c.ok);
+  const NAMES={wall:'Ściany',roof:'Dach',floor:'Podłoga',win:'Okna',roofwin:'Okna dachowe',door:'Drzwi'};
+  let h='<div class="tiles"><div class="tile"><div class="l">Ściany – U</div><div class="v '+(R.U.wall<=EV.WT.wall?'c-ok':'c-bad')+'">'+fmt(R.U.wall,2)+'</div><div class="s">W/m²K · WT 2021: ≤ 0,20 · grubość ściany ok. '+fmt(R.thick*100,0)+' cm</div></div>'+
+    '<div class="tile"><div class="l">Zapotrzebowanie na ciepło</div><div class="v" style="color:'+kc+'">'+Math.round(E.EU)+' kWh/m²</div><div class="s">'+esc(kn)+' · moc '+fmt(E.load)+' kW</div></div>'+
+    '<div class="tile"><div class="l">Ogrzewanie rocznie</div><div class="v">'+zl(cur.cost)+'</div><div class="s">pompą ciepła, z ciepłą wodą (wg modułu Energia)</div></div>'+
+    '<div class="tile"><div class="l">Warunki techniczne 2021</div><div class="v '+(bad.length?'c-bad':'c-ok')+'">'+(bad.length?bad.length+' przekroczeń':'spełnione')+'</div><div class="s">'+(bad.length?bad.map(c=>NAMES[c.k]).join(', '):'wszystkie przegrody mają U poniżej maksimum')+'</div></div></div>';
+  h+='<div class="grid2"><div class="card"><h2>Przekrój ściany</h2>'+section(R)+'</div><div class="card"><h2>Współczynniki U</h2><table class="t"><tr><th>Przegroda</th><th class="n">U [W/m²K]</th><th class="n">WT 2021</th><th class="n">straty</th></tr>'+
+    R.checks.map(c=>{const row=E.rows.find(r=>r.k===c.k);return '<tr><td>'+NAMES[c.k]+'</td><td class="n '+(c.ok?'c-ok':'c-bad')+'">'+fmt(c.U,2)+'</td><td class="n">≤ '+fmt(c.max,2)+'</td><td class="n">'+(row?Math.round(row.share*100)+'%':'–')+'</td></tr>'}).join('')+
+    '<tr><td>Mostki cieplne</td><td class="n">+'+fmt(R.bridge,2)+'</td><td class="n"></td><td class="n"></td></tr><tr><td>Wentylacja</td><td class="n"></td><td class="n"></td><td class="n">'+Math.round((E.rows.find(r=>r.k==='vent')?.share||0)*100)+'%</td></tr></table><p class="hint" style="margin-top:6px">„Straty” – jaka część ciepła ucieka przez daną przegrodę.</p></div></div>';
+  // czy warto grubiej
+  if(e.ins!=='none'){const A=q.extNet,opts=[10,15,20,25,30];const rows=opts.map(t=>{const x=energyWith({...e,insT:t});return {t,U:x.R.U.wall,EU:x.E.EU,cost:x.cost,inv:A*x.R.insPrice}});const base=rows.find(r=>r.t===15)||rows[0];
+    h+='<div class="card"><h2>Czy warto grubsze ocieplenie ścian?</h2><p class="hint"><span>Ten sam dom, różna grubość ocieplenia</span>: <span>'+esc(R.layers.I.name)+'</span>. <span>Ściany zewnętrzne netto: '+fmt(A)+' m². Zwrot – ile lat zajmie odzyskanie dopłaty z niższych rachunków (względem 15 cm).</span></p><div style="overflow:auto"><table class="t"><tr><th>Grubość</th><th class="n">U ścian</th><th class="n">kWh/m²</th><th class="n">Ogrzewanie / rok</th><th class="n">Ocieplenie ścian</th><th class="n">Zwrot</th></tr>'+
+      rows.map(r=>{const dInv=r.inv-base.inv,dCost=base.cost-r.cost,pb=r.t>15&&dCost>0?dInv/dCost:null;return '<tr class="'+(r.t===+e.insT?'cur':'')+'"><td>'+r.t+' cm</td><td class="n">'+fmt(r.U,2)+'</td><td class="n">'+Math.round(r.EU)+'</td><td class="n">'+zl(r.cost)+'</td><td class="n">'+zl(r.inv)+'</td><td class="n">'+(pb?fmt(pb,0)+' lat':r.t===15?'–':'')+'</td></tr>'}).join('')+'</table></div></div>'}
+  // koszt
+  const A=q.extNet;h+='<div class="card"><h2>Koszt ścian i elewacji</h2><table class="t"><tr><th>Pozycja</th><th class="n">zł/m²</th><th class="n">razem</th></tr><tr><td>Mur – '+esc(R.layers.W.name)+'</td><td class="n">'+Math.round(R.wallPrice)+'</td><td class="n">'+zl(A*R.wallPrice)+'</td></tr><tr><td>Ocieplenie – '+esc(R.layers.I.name)+(R.layers.insT?' '+R.layers.insT+' cm':'')+'</td><td class="n">'+Math.round(R.insPrice)+'</td><td class="n">'+zl(A*R.insPrice)+'</td></tr><tr><td>Wykończenie – '+esc(R.layers.F.name)+'</td><td class="n">'+Math.round(R.layers.F.price)+'</td><td class="n">'+zl(A*R.layers.F.price)+'</td></tr><tr><td><b>Razem</b> ('+fmt(A)+' m² ścian netto)</td><td class="n"></td><td class="n"><b>'+zl(A*(R.wallPrice+R.facade))+'</b></td></tr></table><p class="hint" style="margin-top:6px">Ceny orientacyjne z robocizną. Te same ceny (i mnożnik za rodzaj okien i drzwi) bierze moduł Wycena.</p></div>';
+  M.innerHTML=h;
+}
+const rec=HouserStore.load();project=rec?rec.project:null;render();
+HouserStore.subscribe(r=>{const a=document.activeElement;if(a&&['INPUT','SELECT'].includes(a.tagName))return;project=r.project;render()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

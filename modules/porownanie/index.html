@@ -91,6 +91,7 @@ tr.tot td{background:#f8fafc;font-weight:800;font-size:14px}
 <script src="../../shared/heating-system.js"></script>
 <script src="../../shared/furniture.js"></script>
 <script src="../schowki/engine.js"></script>
+<script src="../ocieplenie/engine.js"></script>
 <script src="../przepisy/engine.js"></script>
 <script src="../co-poprawic/advisors.js"></script>
 <script>
@@ -130,7 +131,7 @@ function planSvg(p){const g=p.grid||p.definitionSnapshot?.grid;if(!g)return '';c
   return '<svg viewBox="-2 -2 '+(used.length*W*S+(used.length-1)*gap+4)+' '+(H*S+4)+'" preserveAspectRatio="xMidYMid meet">'+h+'</svg>'}
 
 // ---------- wskaźniki jednego domu
-function metrics(p){const m={};const tryc=(k,fn)=>{try{m[k]=fn()}catch(e){console.error(k,e);m[k]=null}};
+function metrics(p){const m={p};const tryc=(k,fn)=>{try{m[k]=fn()}catch(e){console.error(k,e);m[k]=null}};
   tryc('q',()=>HouserQuantities.compute(p));const q=m.q;if(!q)return m;
   tryc('E',()=>HouserEnergy.compute(p));tryc('C',()=>HouserCost.compute(p));tryc('D',()=>HouserDaily.evaluate(p,p.dailySettings));tryc('S',()=>HouserSolar.compute(p));tryc('A',()=>HouserAcoustics.evaluate(p,p.acousticSettings));tryc('P',()=>HouserPlumbing.evaluate(p,p.plumbingSettings));tryc('V',()=>HouserHVAC.evaluate(p,p.hvacSettings));tryc('VM',()=>HouserHVAC.methods(p,p.hvacSettings,m.V));tryc('Ht',()=>HouserHeating.compare(p,p.heatingSettings));tryc('HS',()=>p.heatingSystem?HouserHeatSys.evaluate(p):null);tryc('ST',()=>HouserStorage.evaluate(p,p.storageSettings));tryc('ADV',()=>HouserAdvice.collect(p));
   const rooms=q.rooms.filter(r=>r.area>=2),name=r=>(r.name||'').toLowerCase();
@@ -165,6 +166,9 @@ const ROWS=[
   ['– Inne','projekt, kierownik budowy, geodeta',m=>stageSum(m,'Inne'),zl,null],
   ['Rezerwa na nieprzewidziane','doliczona do kosztu (procent ustawiony w Wycenie)',m=>m.C?.reserve,zl,null,m=>m.C?m.C.s.reserve+'%':''],
   ['Energia'],
+  ['Ocieplenie ścian','mur i ocieplenie z modułu Ocieplenie i elewacja; niżej – współczynnik U ścian (WT 2021: ≤ 0,20)',m=>{const e=m.p?.envelope;if(!e)return 'nie ustawiono';const R=HouserEnvelope.evaluate(e);return R.layers.W.name.replace(/ \(.*\)/,'')+(R.layers.insT?' · '+R.layers.I.name.replace(/ \(.*\)/,'')+' '+R.layers.insT+' cm':'')},v=>v,null,m=>m.E?'U ścian '+nf(m.E.s.U.wall,2):''],
+  ['U ścian','współczynnik przenikania ciepła ścian zewnętrznych (mniej = cieplej); WT 2021: ≤ 0,20',m=>m.E?.s.U.wall,v=>nf(v,2)+' W/m²K','low'],
+  ['U okien','okna (mniej = cieplej); WT 2021: ≤ 0,9',m=>m.E?.s.U.win,v=>nf(v,2)+' W/m²K','low'],
   ['Zapotrzebowanie na ogrzewanie','energia na ogrzanie 1 m² przez cały rok',m=>m.E?.EU,v=>nf(v)+' kWh/m² na rok','low',m=>m.E?HouserEnergy.klass(m.E.EU)[0]:''],
   ['Ciepło rocznie','ogrzewanie + ciepła woda, cały dom, przez cały rok',m=>m.E?m.E.Qh+m.E.Qw:null,v=>nf(v)+' kWh na rok','low'],
   ['Moc grzewcza','jak mocnego źródła ciepła potrzeba w największy mróz',m=>m.E?.load,v=>nf(v,1)+' kW','low'],

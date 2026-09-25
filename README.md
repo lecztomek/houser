@@ -26,6 +26,7 @@ modules/
   akustyka/                 cisza w sypialniach: co za ścianą, nad i pod pokojem, ulica, antresola – ocena i podpowiedzi
   co-poprawic/               podsumowanie analiz: 5 najważniejszych poprawek, zalety i wady, oceny modułów (advisors.js – po jednym „doradcy” na moduł)
   porownanie/               2–4 domy obok siebie (koszt z etapami, energia, ogrzewanie, wentylacja, codzienność, słońce, akustyka, hydraulika, schowki) + ocena ogólna wg wag
+  ocieplenie/               ocieplenie i elewacja: mur, ocieplenie (rodzaj, grubość), dach, podłoga, okna, mostki → współczynniki U do Energii, ceny do Wyceny
   energia/index.html        bilans cieplny, moc grzewcza, koszt ogrzewania
   wycena/index.html         orientacyjny koszt budowy z ilości w projekcie (ceny do edycji)
   wnetrze-3d/index.html     podgląd 3D wnętrza z punktu obserwatora (meble z JSON)
