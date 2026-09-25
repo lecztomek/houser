@@ -22,7 +22,7 @@
     electric:{name:'Grzałka / grzejniki elektryczne (zapas)',share:3,invest:1500,service:0},
   };
   const EMIT={floor:'podłogówka','floor+ladder':'podłogówka + drabinka','floor+rad':'podłogówka + grzejnik',rad:'grzejnik',ladder:'drabinka',none:'bez ogrzewania'};
-  const DEVS={main:'Źródło ciepła',extra:'Źródło dodatkowe',out:'Jednostka zewnętrzna',buffer:'Bufor ciepła',dhw:'Zasobnik ciepłej wody',man:'Rozdzielacz'};
+  const DEVS={main:'Źródło ciepła',extra:'Źródło alternatywne',out:'Jednostka zewnętrzna',buffer:'Bufor ciepła',dhw:'Zasobnik ciepłej wody',man:'Rozdzielacz'};
   const DEF={main:'hp_air',extra:'none',share:null,buffer:'auto',dhw:200};
   const PRICE={floorM2:170,manifold:3500,rad:1100,ladder:1400,pipeM:60,mainM:130,outM:300,czopuch:1500,chimney:7000,flue2:2500,dhwTank:4000};
   const BUF={0:[0,0],100:[2500,.3],200:[3500,.4],300:[4200,.5],500:[5500,.7],800:[7500,1],1000:[8500,1.1]};

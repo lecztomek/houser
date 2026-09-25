@@ -246,7 +246,7 @@ const MODULES=[
   {id:'okna-drzwi',group:'Projekt',name:'Okna i drzwi zewnętrzne',src:'modules/okna-drzwi/',desc:'Rodzaje okien (niskie, balkonowe, naświetla, ścięte pod skos, dachowe) i drzwi, z podglądem elewacji.'},
   {id:'drzwi-wewnetrzne',group:'Projekt',name:'Drzwi wewnętrzne',src:'modules/drzwi-wewnetrzne/',desc:'Drzwi między pomieszczeniami na rzucie: rodzaj, wysokość (też niskie pod skosem) i kierunek otwierania.'},
   {id:'tarasy',group:'Projekt',name:'Tarasy i pergole',src:'modules/tarasy/',desc:'Malowanie kratek wokół domu: taras, zadaszony taras, pergola.'},
-  {id:'instalacja-grzewcza',group:'Wnętrza',name:'Instalacja grzewcza',src:'modules/instalacja-grzewcza/',desc:'Źródła ciepła (możesz połączyć dwa, np. pompa + kominek), urządzenia na rzucie: kocioł, jednostka zewnętrzna, bufor, zasobnik, rozdzielacze – i czym grzeje każdy pokój.'},
+  {id:'instalacja-grzewcza',group:'Wnętrza',name:'Instalacja grzewcza',src:'modules/instalacja-grzewcza/',desc:'Źródła ciepła (główne i alternatywne, np. pompa + kominek), urządzenia na rzucie: kocioł, jednostka zewnętrzna, bufor, zasobnik, rozdzielacze – i czym grzeje każdy pokój.'},
   {id:'meblowanie',group:'Wnętrza',name:'Meblowanie',src:'modules/meblowanie/',desc:'Rozmieszczanie mebli na gotowym rzucie – pomieszczeń tu nie zmieniasz.'},
   {id:'wnetrze-3d',group:'Podgląd',name:'Wnętrze 3D',src:'modules/wnetrze-3d/',desc:'Spacer po domu z punktu obserwatora (strzałki), schody, skosy dachu, meble.'},
   {id:'zewnatrz-3d',group:'Podgląd',name:'Zewnątrz 3D',src:'modules/zewnatrz-3d/',desc:'Bryła domu z zewnątrz: dach, okna, drzwi, tarasy i pergole.'},
@@ -254,6 +254,7 @@ const MODULES=[
   {id:'galeria',group:'Podgląd',name:'Galeria',src:'modules/galeria/',desc:'Wybrane zdjęcia domu: najlepsze wizualizacje AI, ujęcia z 3D i Twoje własne zdjęcia – okładka, podpisy, kolejność, pokaz i porównanie przed / po.'},
   {id:'przepisy',group:'Analizy',name:'Przepisy',src:'modules/przepisy/',desc:'Sprawdzenie z warunkami technicznymi: okna do podłogi 1:8, wysokości, drzwi, schody, powierzchnie pokoi – z mapą pomieszczeń.'},
   {id:'codziennosc',group:'Analizy',name:'Codzienność',src:'modules/codziennosc/',desc:'Jak się mieszka na co dzień: scenariusze (zakupy, pranie, palenie w piecu, goście, noc) – trasy po domu, odległości i przejścia przez pokoje, ocena i podpowiedzi.'},
+  {id:'schowki',group:'Analizy',name:'Schowki i szafy',src:'modules/schowki/',desc:'Ile miejsca na rzeczy: szafy i szafki, garderoby, spiżarnia, schowki, garaż, skosy, pod schodami – czy wystarczy dla domowników i gdzie brakuje wolnej ściany na szafę.'},
   {id:'akustyka',group:'Analizy',name:'Akustyka',src:'modules/akustyka/',desc:'Czy w sypialniach będzie cicho: co jest za ścianą, nad i pod pokojem (garaż, pralnia, salon, łazienka, schody), ulica, antresola – ocena pokoi i podpowiedzi.'},
   {id:'naslonecznienie',group:'Analizy',name:'Nasłonecznienie',src:'modules/naslonecznienie/',desc:'Zyski od słońca latem i zimą, pomieszczenie po pomieszczeniu: ryzyko przegrzania, mapa ciepła, wpływ okapu, tarasu i rolet.'},
   {id:'energia',group:'Analizy',name:'Energia',src:'modules/energia/',desc:'Bilans cieplny: straty przez przegrody i wentylację, moc grzewcza, zapotrzebowanie kWh/m² i koszt ogrzewania różnymi źródłami.'},
@@ -263,7 +264,7 @@ const MODULES=[
   {id:'klimatyzacja',group:'Analizy',name:'Klimatyzacja',src:'modules/klimatyzacja/',desc:'Które pokoje latem się przegrzewają, jakiej mocy klimatyzatory, split czy multisplit, trudność montażu i koszt.'},
   {id:'hydraulika',group:'Analizy',name:'Hydraulika',src:'modules/hydraulika/',desc:'Jak łatwo i tanio zrobić wod-kan: odległości łazienek, WC, kuchni i pralni od źródła ciepłej wody, piony parter–piętro, dopłata za układ.'},
   {id:'wycena',group:'Analizy',name:'Wycena',src:'modules/wycena/',desc:'Orientacyjny koszt budowy z projektu: ilości (ściany, strop, dach, okna, drzwi, instalacje, wykończenie) × ceny jednostkowe, które możesz zmienić.'},
-  {id:'porownanie',group:'Analizy',name:'Porównanie domów',src:'modules/porownanie/',desc:'2–4 projekty obok siebie: metraż, koszt budowy (z etapami), energia, codzienność, przegrzewanie i akustyka – najlepsze wartości zaznaczone.'},
+  {id:'porownanie',group:'Analizy',name:'Porównanie domów',src:'modules/porownanie/',desc:'2–4 projekty obok siebie: metraż, koszt budowy (z etapami), energia, ogrzewanie, wentylacja, codzienność, przegrzewanie, akustyka, hydraulika, schowki – ocena ogólna wg Twoich wag, najlepsze wartości zaznaczone.'},
 ];
 MODULES.forEach((m,i)=>m.step=i+1);
 const ICON_PATH={pomieszczenia:'<rect x="3" y="3" width="7.5" height="7.5" rx="1.8"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.8"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.8"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.8"/>',
@@ -276,6 +277,7 @@ const ICON_PATH={pomieszczenia:'<rect x="3" y="3" width="7.5" height="7.5" rx="1
   'drzwi-wewnetrzne':'<path d="M6 21V4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21"/><path d="M3 21h18"/><path d="M14.5 12h.01"/>',
   tarasy:'<path d="M5 20c0-8.5 5.5-14 15-15-1 9.5-6.5 15-15 15z"/><path d="M5 20 13 12"/>',
   'instalacja-grzewcza':'<path d="M6 21V7a2 2 0 0 1 4 0v14M14 21V7a2 2 0 0 1 4 0v14"/><path d="M3 11h18M3 17h18"/>',
+  schowki:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 3v18M9.5 11v2M14.5 11v2"/>',
   meblowanie:'<path d="M5 11V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3"/><path d="M3 13a2 2 0 0 1 4 0v1.5h10V13a2 2 0 0 1 4 0v5H3z"/><path d="M6 18v2M18 18v2"/>',
   'wnetrze-3d':'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   'zewnatrz-3d':'<path d="M12 2.5 3.5 7.2v9.6l8.5 4.7 8.5-4.7V7.2z"/><path d="m3.5 7.2 8.5 4.7 8.5-4.7M12 11.9v9.6"/>',

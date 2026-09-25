@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Schowki i szafy</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:320px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
+h1{font-size:19px;margin:0 0 4px}
+.lead,.hint{font-size:12.5px;color:var(--hs-muted);line-height:1.5;margin:0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.field{display:grid;gap:4px;margin-bottom:9px}
+.field label{font-size:12px;color:var(--hs-muted)}
+.field select{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:34px;font:inherit;background:#fff;color:var(--hs-text)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.tile .l{font-size:12px;color:var(--hs-muted);font-weight:600}
+.tile .v{font-size:22px;font-weight:800;margin-top:4px}
+.tile .s{font-size:12.5px;color:var(--hs-muted);margin-top:4px;line-height:1.4}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.card h2{font-size:15px;margin:0 0 4px}
+.c-ok{color:#15803d}.c-mid{color:#b45309}.c-bad{color:#b91c1c}
+.cat{display:grid;grid-template-columns:200px minmax(0,1fr) 150px;gap:10px;align-items:center;font-size:12.5px;padding:7px 0;border-bottom:1px solid #eef2f6}
+.cat:last-child{border-bottom:0}
+.cat .t b{display:block}.cat .t small{color:var(--hs-muted)}
+.track{position:relative;height:16px;background:#f1f5f9;border-radius:4px;overflow:hidden}
+.track i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.track .needm{position:absolute;top:-2px;bottom:-2px;width:2px;background:#0f172a}
+.cat .n{text-align:right;font-variant-numeric:tabular-nums}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#475569;margin-top:8px}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:5px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px}
+.iss{list-style:none;margin:0;padding:0;display:grid;gap:7px;font-size:12.5px;line-height:1.45}
+.iss li{padding:7px 10px;border-radius:8px;background:#fff7ed;border-left:3px solid #f59e0b}
+.iss li.hi{background:#fef2f2;border-color:#dc2626}
+.iss li.info{background:#f1f5f9;border-color:#94a3b8}
+.iss li.ok{background:#f0fdf4;border-color:#22c55e}
+.iss small{display:block;color:#475569;margin-top:2px}
+table.t{width:100%;border-collapse:collapse;font-size:12.5px}
+table.t td,table.t th{padding:5px 6px;border-bottom:1px solid #eef2f6;text-align:left;vertical-align:top}
+table.t th{font-size:11.5px;color:var(--hs-muted);font-weight:600}
+table.t td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.src{display:inline-block;font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 5px;white-space:nowrap}
+.src.meble{background:#dbeafe;color:#1d4ed8}.src.pom{background:#ccfbf1;color:#0f766e}.src.szac{background:#ffedd5;color:#c2410c}.src.pot{background:#f3e8ff;color:#7e22ce}
+.tabs{display:flex;gap:6px;margin:6px 0 8px}
+.btn{border:1px solid var(--hs-line-strong);background:#fff;border-radius:8px;padding:6px 11px;font:600 12.5px var(--hs-font);color:var(--hs-text);cursor:pointer;min-height:34px}
+.btn.active{background:var(--hs-accent);border-color:var(--hs-accent);color:#fff}
+#plan{display:block;max-width:100%;height:auto}
+.empty{padding:40px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){html,body{overflow:auto;height:auto}.wrap{height:auto;grid-template-columns:1fr;grid-template-rows:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{overflow:visible;padding:10px}.cat{grid-template-columns:1fr 110px}.cat .track{grid-column:1/-1;grid-row:2}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1>Schowki i szafy</h1>
+  <p class="lead">Ile miejsca na rzeczy daje ten dom: szafy i szafki z Meblowania, garderoby, spiżarnia, schowki, garaż, skosy, miejsce pod schodami i strych – i czy to wystarczy dla Twojej rodziny.</p>
+  <div class="section">
+    <h3>Domownicy</h3>
+    <div class="field"><label>Liczba osób</label><select id="persons"><option value="">jak w module Energia</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option></select></div>
+    <div class="field"><label>Ile macie rzeczy</label><select id="stuff"><option value="min">mało (minimaliści)</option><option value="avg">przeciętnie</option><option value="lots">dużo (hobby, sprzęt sportowy, zapasy)</option></select></div>
+    <p class="hint">Ustawienia zapisują się w projekcie.</p>
+  </div>
+  <div class="section">
+    <h3>Jak liczymy</h3>
+    <p class="hint">Pojemność to użyteczna objętość półek i drążków w m³. Szafa 60 cm głębokości daje ok. 1,1 m³ na każdy metr. Gdzie w pokoju nie ma mebli, liczymy szafę na najdłuższej wolnej ścianie (bez okien i drzwi, na poddaszu tam, gdzie jest ≥ 2 m wysokości). Potrzeby na osobę są orientacyjne: ubrania ok. 1,2 m³, rzeczy gospodarcze ok. 0,8 m³, przy wejściu ok. 0,35 m³, kuchnia ok. 0,35 m³. Ocena = średnia ważona z kategorii (ubrania ×3, kuchnia ×2, gospodarcze ×2, przy wejściu ×1,5, łazienka ×0,5), minus pokoje bez miejsca na szafę.</p>
+  </div>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/furniture.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="engine.js"></script>
+<script>
+const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',PX=40;
+const FLOOR_PL={ground:'Parter',upper:'Piętro / poddasze'};
+const SRC={meble:'meble',pom:'pomieszczenie',szac:'miejsce na zabudowę',pot:'możliwość'};
+const KFILL={dress:'#99f6e4',pantry:'#99f6e4',box:'#99f6e4',garage:'#e2e8f0',tech:'#e2e8f0'};
+let project=null,floor='ground';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const cls=s=>s>=7.5?'c-ok':s>=5?'c-mid':'c-bad';
+const col=s=>s>=7.5?'#22c55e':s>=5?'#f59e0b':'#ef4444';
+function settings(){return {...HouserStorage.DEF,...(project?.storageSettings||{})}}
+function save(patch){const s={...settings(),...patch};project.storageSettings=s;HouserStore.update(p=>{p.storageSettings=s},'schowki');render()}
+$('persons').onchange=()=>save({persons:$('persons').value?+$('persons').value:null});
+$('stuff').onchange=()=>save({stuff:$('stuff').value});
+function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
+function plan(R){
+  const g=project.grid||project.definitionSnapshot.grid,c=g.cellMeters,Wm=g.width*c,Hm=g.height*c,pad=.3;
+  const st=project.state?.[floor]||[],flat=Array.isArray(st[0])?st.flat():st,idAt=(x,y)=>x<0||y<0||x>=g.width||y>=g.height?null:(flat[y*g.width+x]||null);
+  const svg=el('svg',{id:'plan',viewBox:[-pad*PX,-pad*PX,(Wm+2*pad)*PX,(Hm+2*pad)*PX].join(' ')});const k=(Wm+2*pad)*PX/Math.min(720,Math.max(300,$('main').clientWidth-60));svg.setAttribute('width',Math.round((Wm+2*pad)*PX/k));
+  const X=m=>m*PX,byKey=Object.fromEntries(R.rooms.map(r=>[r.key,r]));
+  for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){const id=idAt(x,y);if(!id)continue;const r=byKey[floor+'|'+id];const def=(project.definitionSnapshot.floors?.[floor]?.rooms||[]).find(d=>d.id===id);
+    el('rect',{x:X(x*c),y:X(y*c),width:X(c)+.5,height:X(c)+.5,fill:def?.kind==='exteriorVoid'?'#e2e8f0':r?(r.noWall?'#fecaca':KFILL[r.kind]||'#ffffff'):'#f1f5f9'},svg)}
+  const edge=(a,b,x1,y1,x2,y2)=>{if(a===b)return;el('line',{x1:X(x1),y1:X(y1),x2:X(x2),y2:X(y2),stroke:'#0f172a','stroke-width':!a||!b?5:2.5,'stroke-linecap':'square'},svg)};
+  for(let y=0;y<=g.height;y++)for(let x=0;x<g.width;x++)edge(idAt(x,y-1),idAt(x,y),x*c,y*c,(x+1)*c,y*c);
+  for(let y=0;y<g.height;y++)for(let x=0;x<=g.width;x++)edge(idAt(x-1,y),idAt(x,y),x*c,y*c,x*c,(y+1)*c);
+  // okna i drzwi
+  for(const [key,base] of Object.entries(project.openings?.[floor]||{})){const [o,a,b]=key.split(':').map((v,i)=>i?+v:v);const x1=o==='h'?a*c:a*c,y1=o==='h'?b*c:b*c,x2=o==='h'?(a+1)*c:a*c,y2=o==='h'?b*c:(b+1)*c;el('line',{x1:X(x1),y1:X(y1),x2:X(x2),y2:X(y2),stroke:base==='door'?'#ffffff':base==='opening'?'#ffffff':'#60a5fa','stroke-width':base==='door'||base==='opening'?4:3},svg)}
+  // meble do przechowywania
+  const SET=new Set(['b_szafa','g_szafa','o_szafa','p_szafa','b_komoda','b_nocna','p_buty','k_dolne','k_narozne','k_zlew','k_wysokie','k_wyspa','l_umywalka','l_szafka','t_regal']);
+  for(const it of project.furniture?.[floor]||[]){if(!SET.has(it.item))continue;el('rect',{x:X(it.x),y:X(it.y),width:X(it.w),height:X(it.h),fill:'#2563eb','fill-opacity':.75,stroke:'#1e3a8a','stroke-width':1,rx:2},svg)}
+  // miejsce na szafę (wolna ściana)
+  for(const r of R.rooms.filter(r=>r.f===floor&&r.seg&&r.items.some(i=>i.src==='szac'&&(i.cat==='clothes'||i.cat==='entry')))){const s=r.seg,L=Math.min((s.to-s.from+1)*c,r.area>=14?3:2.4)/c,side=r.cells.some(([x,y])=>s.o==='h'?y===s.line&&x===s.from:x===s.line&&y===s.from)?1:-1,d=.6*side;
+    const a0=s.from*c,a1=(s.from+L)*c,l=s.line*c;const [x,y,w,h]=s.o==='h'?[a0,side>0?l:l-.6,a1-a0,.6]:[side>0?l:l-.6,a0,.6,a1-a0];
+    el('rect',{x:X(x),y:X(y),width:X(w),height:X(h),fill:'#fb923c','fill-opacity':.35,stroke:'#ea580c','stroke-width':1.5,'stroke-dasharray':'5 3',rx:2},svg)}
+  for(const r of R.rooms.filter(r=>r.f===floor)){const sx=r.cells.reduce((a,p)=>a+p[0],0)/r.cells.length,sy=r.cells.reduce((a,p)=>a+p[1],0)/r.cells.length,v=r.items.reduce((a,i)=>a+i.v,0);
+    el('text',{x:X((sx+.5)*c),y:X((sy+.5)*c)-5*k,'text-anchor':'middle','font-size':11.5*k,'font-weight':700,fill:'rgba(15,23,42,.72)'},svg,r.name);
+    if(v>0&&r.area>=2)el('text',{x:X((sx+.5)*c),y:X((sy+.5)*c)+9*k,'text-anchor':'middle','font-size':10.5*k,fill:'#334155'},svg,fmt(v)+' m³')}
+  return svg;
+}
+function render(){
+  const s=settings(),M=$('main');$('persons').value=s.persons?String(s.persons):'';$('stuff').value=s.stuff;
+  if(!project||!(project.grid||project.definitionSnapshot?.grid)){M.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej albo narysuj rzut w <b>Układzie pomieszczeń</b>.</div>';return}
+  let R;try{R=HouserStorage.evaluate(project,s)}catch(e){console.error(e);M.innerHTML='<div class="empty">Nie udało się policzyć.</div>';return}
+  if(!R.rooms.length){M.innerHTML='<div class="empty">Na rzucie nie ma jeszcze pomieszczeń.</div>';return}
+  const worst=[...R.cats].sort((a,b)=>a.ratio-b.ratio)[0];
+  let h='<div class="tiles"><div class="tile"><div class="l">Ocena miejsca na rzeczy</div><div class="v '+cls(R.overall)+'">'+fmt(R.overall)+' / 10</div><div class="s">'+(R.overall>=7.5?'miejsca wystarczy':R.overall>=5?'będzie ciasno w części domu':'za mało miejsca na rzeczy')+'</div></div>'+
+    '<div class="tile"><div class="l">Pojemność razem</div><div class="v">'+fmt(R.cap)+' m³</div><div class="s">potrzeba ok. '+fmt(R.need)+' m³ dla '+R.P+' os. · '+fmt(R.perPerson)+' m³ na osobę</div></div>'+
+    '<div class="tile"><div class="l">Najbardziej brakuje</div><div class="v" style="font-size:17px">'+esc(worst.ratio>=1?'niczego':worst.name)+'</div><div class="s">'+(worst.ratio>=1?'wszystkie kategorie mają zapas':'jest '+Math.round(worst.ratio*100)+'% potrzebnego miejsca')+'</div></div>'+
+    '<div class="tile"><div class="l">Pokoje bez miejsca na szafę</div><div class="v '+(R.noWall.length?'c-bad':'c-ok')+'">'+R.noWall.length+'</div><div class="s">'+(R.noWall.length?R.noWall.map(r=>esc(r.name)).join(', '):'każdy pokój ma wolną ścianę')+'</div></div></div>';
+  const maxV=Math.max(...R.cats.map(x=>Math.max(x.cap,x.need)))*1.05;
+  h+='<div class="card"><h2>Miejsce według rodzaju rzeczy</h2><p class="hint">Pasek – pojemność, kreska – ile potrzeba.</p>'+R.cats.map(x=>'<div class="cat"><div class="t"><b>'+esc(x.name)+'</b><small>'+esc(x.how)+'</small></div><div class="track"><i style="width:'+(x.cap/maxV*100)+'%;background:'+col(x.score)+'"></i><span class="needm" style="left:'+(x.need/maxV*100)+'%"></span></div><div class="n"><b class="'+cls(x.score)+'">'+fmt(x.cap)+' m³</b> / '+fmt(x.need)+' m³<br><span class="hint">'+Math.round(x.ratio*100)+'% potrzeb</span></div></div>').join('')+'</div>';
+  const fl=(project.definitionSnapshot?.floorOrder||['ground','upper']).filter(f=>R.rooms.some(r=>r.f===f));if(!fl.includes(floor))floor=fl[0];
+  h+='<div class="card"><h2>Na rzucie</h2><div class="tabs" id="tabs"></div><div id="planBox"></div><div class="legend"><span><i style="background:#2563eb"></i>szafy i szafki (Meblowanie)</span><span><i style="background:#fed7aa;border:1px dashed #ea580c"></i>miejsce na szafę (wolna ściana)</span><span><i style="background:#99f6e4"></i>garderoba, spiżarnia, schowek</span><span><i style="background:#fecaca"></i>brak miejsca na szafę</span></div></div>';
+  const bad=R.issues.filter(i=>i.p>0),info=R.issues.filter(i=>!(i.p>0));
+  h+='<div class="card"><h2>Uwagi</h2>'+(R.issues.length||R.good.length?'<ul class="iss">'+bad.map(i=>'<li class="'+(i.p>=1.5?'hi':'')+'">'+esc(i.text)+(i.tip?'<small>'+esc(i.tip)+'</small>':'')+'</li>').join('')+info.map(i=>'<li class="info">'+esc(i.text)+(i.tip?'<small>'+esc(i.tip)+'</small>':'')+'</li>').join('')+R.good.map(g=>'<li class="ok">'+esc(g)+'</li>').join('')+'</ul>':'<p class="hint">Bez uwag.</p>')+'</div>';
+  h+='<div class="grid2">'+R.cats.map(x=>'<div class="card"><h2>'+esc(x.name)+'</h2><table class="t"><tr><th>Co</th><th>Gdzie</th><th style="text-align:right">m³</th></tr>'+(x.items.length?x.items.map(i=>'<tr><td>'+esc(i.label)+' <span class="src '+i.src+'">'+esc(SRC[i.src])+'</span>'+(i.note?'<br><span class="hint">'+esc(i.note)+'</span>':'')+'</td><td>'+esc(i.room)+'</td><td class="n">'+fmt(i.v)+'</td></tr>').join(''):'<tr><td colspan="3" class="hint">nic</td></tr>')+'<tr><td colspan="2"><b>Razem</b> <span class="hint">(potrzeba '+fmt(x.need)+')</span></td><td class="n"><b>'+fmt(x.cap)+'</b></td></tr></table></div>').join('')+'</div>';
+  M.innerHTML=h;
+  for(const f of fl){const b=document.createElement('button');b.className='btn'+(f===floor?' active':'');b.textContent=FLOOR_PL[f]||f;b.onclick=()=>{floor=f;render()};$('tabs').appendChild(b)}
+  $('planBox').appendChild(plan(R));
+}
+const rec=HouserStore.load();project=rec?rec.project:null;render();
+HouserStore.subscribe(r=>{const a=document.activeElement;if(a&&a.tagName==='SELECT')return;project=r.project;render()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

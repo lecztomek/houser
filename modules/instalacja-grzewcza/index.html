@@ -53,14 +53,14 @@ html,body{height:100%;margin:0}
 <div class="wrap">
 <aside class="side">
   <h1 class="hs-title">Instalacja grzewcza</h1>
-  <p class="hs-sub">Wybierz źródła ciepła (możesz połączyć dwa), wstaw urządzenia na rzut i ustaw, czym grzeje każdy pokój. Ocenę – koszt, trudność montażu i czy wszystko wystarczy – pokazuje moduł Ogrzewanie.</p>
+  <p class="hs-sub">Wybierz źródła ciepła (jedno główne i jedno alternatywne), wstaw urządzenia na rzut i ustaw, czym grzeje każdy pokój. Ocenę – koszt, trudność montażu i czy wszystko wystarczy – pokazuje moduł Ogrzewanie.</p>
   <div class="section" id="noProj" hidden><div class="hint" style="margin:0">Brak projektu. Narysuj rzut w module <b>Układ pomieszczeń</b>.</div></div>
   <div id="ui">
   <div class="section">
     <h3>Źródła ciepła</h3>
     <div class="field"><label>Źródło główne</label><select id="main"></select></div>
-    <div class="field"><label>Źródło dodatkowe</label><select id="extra"></select></div>
-    <div class="field" id="shareF"><label id="shareL">Udział źródła dodatkowego w ogrzewaniu</label><input type="range" id="share" min="0" max="80" step="5"></div>
+    <div class="field"><label>Źródło alternatywne</label><select id="extra"></select></div>
+    <div class="field" id="shareF"><label id="shareL">Udział źródła alternatywnego w ogrzewaniu</label><input type="range" id="share" min="0" max="80" step="5"></div>
     <div class="field"><label>Bufor ciepła</label><select id="buffer"><option value="auto">dobierz automatycznie</option><option value="0">bez bufora</option><option value="100">100 l</option><option value="200">200 l</option><option value="300">300 l</option><option value="500">500 l</option><option value="800">800 l</option><option value="1000">1000 l</option></select></div>
     <div class="field"><label>Zasobnik ciepłej wody</label><select id="dhw"><option value="150">150 l</option><option value="200">200 l</option><option value="300">300 l</option></select></div>
     <div id="bufHint" class="hint"></div>
@@ -107,14 +107,14 @@ function cellAt(f,x,y){const g=grid(),s=project?.state?.[f];if(!g||!s||x<0||y<0|
 const inside=(f,x,y)=>{const id=cellAt(f,x,y);return !!id&&roomDef(f,id)?.kind!=='exteriorVoid'&&!(f!==floors()[0]&&(id==='pustka'||id==='schody'))};
 function sys(){return HS.normalize(project)}
 function save(mut){const s=sys();mut(s);project.heatingSystem=s;HouserStore.update(p=>{p.heatingSystem=s},'instalacja-grzewcza');renderAll()}
-const devLabel=d=>d.startsWith('man:')?'Rozdzielacz – '+(FLOOR_PL[d.slice(4)]||d.slice(4)).toLowerCase():d==='main'?(HS.SOURCES[sys().main].dev||'Źródło'):d==='extra'?(HS.EXTRAS[sys().extra].dev||'Źródło dodatkowe'):HS.DEVS[d];
+const devLabel=d=>d.startsWith('man:')?'Rozdzielacz – '+(FLOOR_PL[d.slice(4)]||d.slice(4)).toLowerCase():d==='main'?(HS.SOURCES[sys().main].dev||'Źródło'):d==='extra'?(HS.EXTRAS[sys().extra].dev||'Źródło alternatywne'):HS.DEVS[d];
 const devKind=d=>d.startsWith('man:')?'man':d;
 
 $('main').innerHTML=Object.entries(HS.SOURCES).map(([k,v])=>'<option value="'+k+'">'+v.name+'</option>').join('');
 function fillExtra(){const s=sys();$('extra').innerHTML=Object.entries(HS.EXTRAS).filter(([k])=>k!==s.main).map(([k,v])=>'<option value="'+k+'">'+v.name+'</option>').join('')}
 $('main').onchange=()=>save(s=>{s.main=$('main').value;if(s.extra===s.main)s.extra='none';if(s.main==='electric'&&HS.EXTRAS[s.extra].hydro)s.extra='none'});
 $('extra').onchange=()=>save(s=>{s.extra=$('extra').value;s.share=HS.EXTRAS[s.extra].share||0});
-$('share').oninput=()=>{$('shareL').textContent='Udział źródła dodatkowego w ogrzewaniu: '+$('share').value+'%'};
+$('share').oninput=()=>{$('shareL').textContent='Udział źródła alternatywnego w ogrzewaniu: '+$('share').value+'%'};
 $('share').onchange=()=>save(s=>{s.share=+$('share').value});
 $('buffer').onchange=()=>save(s=>{s.buffer=$('buffer').value==='auto'?'auto':+$('buffer').value});
 $('dhw').onchange=()=>save(s=>{s.dhw=+$('dhw').value});
@@ -124,7 +124,7 @@ $('resetEmit').onclick=()=>save(s=>{s.emitters={}});
 function renderSide(){
   $('noProj').hidden=!!project;$('ui').hidden=!project;if(!project)return;
   const s=sys();fillExtra();$('main').value=s.main;$('extra').value=s.extra;
-  $('shareF').hidden=s.extra==='none';$('share').value=s.share;$('shareL').textContent='Udział źródła dodatkowego w ogrzewaniu: '+s.share+'%';
+  $('shareF').hidden=s.extra==='none';$('share').value=s.share;$('shareL').textContent='Udział źródła alternatywnego w ogrzewaniu: '+s.share+'%';
   $('buffer').value=String(s.buffer);$('dhw').value=String(s.dhw);
   $('bufHint').innerHTML=R.bufRec?'Zalecany bufor: <b>'+R.bufRec+' l</b>'+(s.buffer==='auto'?' (ustawiony automatycznie)':''):'Przy tych źródłach bufor nie jest konieczny.';
   // urządzenia

@@ -17,13 +17,14 @@ modules/
   codziennosc/              scenariusze codzienności (zakupy, pranie, palenie w piecu, goście, noc…): trasy po domu i ocena
   naslonecznienie/          zyski od słońca latem i zimą per pomieszczenie, ryzyko przegrzania, mapa ciepła
   hydraulika/               łatwość i koszt wod-kan: odległości od źródła ciepłej wody, piony parter–piętro, dopłata za układ
-  instalacja-grzewcza/      projekt ogrzewania: 1–2 źródła ciepła (np. pompa + kominek), urządzenia na rzucie (kocioł, jednostka zewn., bufor, zasobnik, rozdzielacze), ogrzewanie w każdym pokoju
+  instalacja-grzewcza/      projekt ogrzewania: źródło główne i alternatywne (np. pompa + kominek), urządzenia na rzucie (kocioł, jednostka zewn., bufor, zasobnik, rozdzielacze), ogrzewanie w każdym pokoju
   ogrzewanie/               ocena zaprojektowanej instalacji (koszt, rachunki, trudność montażu, czy wystarczy w pokojach) + porównanie źródeł ciepła (pompy ciepła, gaz, pellet, drewno, prąd, pompa + kominek): koszt instalacji, rachunki, koszt w N lat, dopasowanie do domu
   wentylacja/               porównanie sposobów wentylacji (grawitacyjna, wywiewna, rekuperacja): koszt, koszt w 20 lat, dopasowanie
   rekuperacja/              rekuperacja w tym domu: strumienie, miejsce centrali, długość kanałów, trudność montażu, koszt i zwrot
   klimatyzacja/             które pokoje trzeba chłodzić (wg nasłonecznienia), moc chłodnicza, split / multi-split, koszt
+  schowki/                  pojemność szaf, szafek, garderób, spiżarni, schowków, garażu, skosów – czy wystarczy dla domowników, pokoje bez wolnej ściany na szafę
   akustyka/                 cisza w sypialniach: co za ścianą, nad i pod pokojem, ulica, antresola – ocena i podpowiedzi
-  porownanie/               2–4 domy obok siebie (koszt z etapami, energia, ogrzewanie, wentylacja, codzienność, słońce, akustyka, hydraulika) + ocena ogólna wg wag
+  porownanie/               2–4 domy obok siebie (koszt z etapami, energia, ogrzewanie, wentylacja, codzienność, słońce, akustyka, hydraulika, schowki) + ocena ogólna wg wag
   energia/index.html        bilans cieplny, moc grzewcza, koszt ogrzewania
   wycena/index.html         orientacyjny koszt budowy z ilości w projekcie (ceny do edycji)
   wnetrze-3d/index.html     podgląd 3D wnętrza z punktu obserwatora (meble z JSON)
@@ -62,6 +63,7 @@ Zasada: każda funkcja to osobny, prosty moduł – lepiej dodać nowy moduł ni
 1. Utwórz `modules/<nazwa>/index.html`: na początku `<head>` dodaj `<script src="../../shared/i18n-en.js"></script>` i `<script src="../../shared/i18n.js"></script>`, potem `<link rel="stylesheet" href="../../shared/theme.css">`, a przed `</body>` `<script src="../../shared/nav.js"></script>`.
 2. Dopisz moduł do tablicy `MODULES` w `index.html`.
 3. Nowe teksty dopisz po angielsku do `shared/i18n-en.js`.
+4. Jeśli moduł coś ocenia – dodaj jego wynik do Porównania domów (`modules/porownanie/`: wiersze w `ROWS` i kryterium w `CRIT`).
 
 ### Konta i chmura (Firebase)
 

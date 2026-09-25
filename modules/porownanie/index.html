@@ -68,7 +68,7 @@ tr.tot td{background:#f8fafc;font-weight:800;font-size:14px}
   <h1>Porównanie domów</h1>
   <p class="lead">Postaw obok siebie 2–4 projekty – swoje (z tej przeglądarki lub z chmury), bieżący albo gotowe domy. Wszystkie liczby są liczone tak samo jak w modułach Wycena, Energia, Codzienność, Nasłonecznienie i Akustyka. Najlepsza wartość w wierszu jest zielona, najsłabsza czerwona.</p>
   <div id="overall" class="ov"></div>
-  <details class="wts" id="wtsBox"><summary>Co jest dla Ciebie ważne w ocenie ogólnej</summary><div class="wgrid" id="wts"></div><p class="hint">Każde kryterium daje 0–10 punktów: koszt za m² względem najtańszego z porównywanych, energia wg zapotrzebowania (15 kWh/m² = 10 pkt, 120 = 0), codzienność i akustyka – ich oceny, przegrzewanie – odsetek pokoi bez wysokiego ryzyka, hydraulika – jej ocena, ogrzewanie – koszt najlepszego źródła w okresie względem najtańszego z porównywanych, rekuperacja – łatwość montażu, klimatyzacja – koszt (0 zł = 10 pkt, 40 tys. zł = 0), metraż – względem największego. Ocena ogólna to średnia ważona.</p></details>
+  <details class="wts" id="wtsBox"><summary>Co jest dla Ciebie ważne w ocenie ogólnej</summary><div class="wgrid" id="wts"></div><p class="hint">Każde kryterium daje 0–10 punktów: koszt za m² względem najtańszego z porównywanych, energia wg zapotrzebowania (15 kWh/m² = 10 pkt, 120 = 0), codzienność i akustyka – ich oceny, przegrzewanie – odsetek pokoi bez wysokiego ryzyka, hydraulika – jej ocena, ogrzewanie – koszt zaprojektowanej instalacji (albo najlepszego źródła) w okresie względem najtańszego z porównywanych, schowki i szafy – ich ocena, rekuperacja – łatwość montażu, klimatyzacja – koszt (0 zł = 10 pkt, 40 tys. zł = 0), metraż – względem największego. Ocena ogólna to średnia ważona.</p></details>
   <div id="sum" class="sum"></div>
   <div class="tbl" id="tbl"><div class="empty">Wczytuję projekty…</div></div>
   <p class="hint" style="margin-top:10px">Wybór porównywanych domów pamięta ta przeglądarka. Koszty i energia biorą ustawienia zapisane w każdym projekcie (ceny, U ścian itd.), więc różnice mogą wynikać także z ustawień.</p>
@@ -89,6 +89,8 @@ tr.tot td{background:#f8fafc;font-weight:800;font-size:14px}
 <script src="../../shared/hvac.js"></script>
 <script src="../../shared/heating.js"></script>
 <script src="../../shared/heating-system.js"></script>
+<script src="../../shared/furniture.js"></script>
+<script src="../schowki/engine.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -128,7 +130,7 @@ function planSvg(p){const g=p.grid||p.definitionSnapshot?.grid;if(!g)return '';c
 // ---------- wskaźniki jednego domu
 function metrics(p){const m={};const tryc=(k,fn)=>{try{m[k]=fn()}catch(e){console.error(k,e);m[k]=null}};
   tryc('q',()=>HouserQuantities.compute(p));const q=m.q;if(!q)return m;
-  tryc('E',()=>HouserEnergy.compute(p));tryc('C',()=>HouserCost.compute(p));tryc('D',()=>HouserDaily.evaluate(p,p.dailySettings));tryc('S',()=>HouserSolar.compute(p));tryc('A',()=>HouserAcoustics.evaluate(p,p.acousticSettings));tryc('P',()=>HouserPlumbing.evaluate(p,p.plumbingSettings));tryc('V',()=>HouserHVAC.evaluate(p,p.hvacSettings));tryc('VM',()=>HouserHVAC.methods(p,p.hvacSettings,m.V));tryc('Ht',()=>HouserHeating.compare(p,p.heatingSettings));tryc('HS',()=>p.heatingSystem?HouserHeatSys.evaluate(p):null);
+  tryc('E',()=>HouserEnergy.compute(p));tryc('C',()=>HouserCost.compute(p));tryc('D',()=>HouserDaily.evaluate(p,p.dailySettings));tryc('S',()=>HouserSolar.compute(p));tryc('A',()=>HouserAcoustics.evaluate(p,p.acousticSettings));tryc('P',()=>HouserPlumbing.evaluate(p,p.plumbingSettings));tryc('V',()=>HouserHVAC.evaluate(p,p.hvacSettings));tryc('VM',()=>HouserHVAC.methods(p,p.hvacSettings,m.V));tryc('Ht',()=>HouserHeating.compare(p,p.heatingSettings));tryc('HS',()=>p.heatingSystem?HouserHeatSys.evaluate(p):null);tryc('ST',()=>HouserStorage.evaluate(p,p.storageSettings));
   const rooms=q.rooms.filter(r=>r.area>=2),name=r=>(r.name||'').toLowerCase();
   m.beds=rooms.filter(r=>/sypial|pokój|pokoj|gabinet/.test(name(r))).length;m.wet=q.baths+q.wcs;m.nrooms=rooms.length;
   m.floors=q.net[q.up]>0?(q.attic?'parter + poddasze':'parter + piętro'):'parterowy';
@@ -171,6 +173,11 @@ const ROWS=[
   ['Pokoje z ryzykiem przegrzania','ile pokoi ma latem wysokie lub bardzo wysokie ryzyko przegrzania; niżej – ze wszystkich pokoi z oknami',m=>m.hot,v=>v==null?'–':nf(v)+' '+plF(v,'pokój','pokoje','pokoi'),'low',m=>m.hotOf!=null?'z '+m.hotOf+(m.worstSun?' · najgoręcej: '+m.worstSun.name:''):''],
   ['Słońce latem – jeden dzień','ciepło przez okna w słoneczny dzień lipca, cały dom (mniej = mniej przegrzewania); niżej – na 1 m²',m=>m.S?.house?.sumDay,v=>nf(v,1)+' kWh na dzień','low',m=>m.q?.usableTotal?nf(m.S.house.sumDay/m.q.usableTotal,2)+' kWh/m² dziennie':''],
   ['Słońce zimą – cały sezon','ciepło od słońca wykorzystane do ogrzewania przez cały sezon: październik–kwiecień (212 dni); niżej – średnio na dzień i na 1 m²',m=>m.S?.house?.season,v=>nf(v)+' kWh na sezon','high',m=>'średnio '+nf(m.S.house.season/212,1)+' kWh/dzień'+(m.q?.usableTotal?' · '+nf(m.S.house.season/m.q.usableTotal)+' kWh/m²':'')],
+  ['Schowki i szafy'],
+  ['Miejsce na rzeczy – ocena','0–10: czy szafy, szafki, garderoby, spiżarnia i schowki wystarczą dla domowników (moduł Schowki i szafy)',m=>m.ST?.overall,v=>nf(v,1)+' / 10','high'],
+  ['Pojemność szaf i schowków','użyteczna objętość półek i drążków; niżej – ile potrzeba i ile na osobę',m=>m.ST?.cap,v=>nf(v,1)+' m³','high',m=>m.ST?'potrzeba ok. '+nf(m.ST.need,1)+' m³ · '+nf(m.ST.perPerson,1)+' m³ na osobę':''],
+  ['Najbardziej brakuje','kategoria rzeczy z najmniejszym zapasem miejsca',m=>{if(!m.ST)return null;const w=[...m.ST.cats].sort((a,b)=>a.ratio-b.ratio)[0];return w.ratio>=1?'niczego':w.name},v=>v||'–',null,m=>{if(!m.ST)return '';const w=[...m.ST.cats].sort((a,b)=>a.ratio-b.ratio)[0];return Math.round(w.ratio*100)+'% potrzeb'}],
+  ['Pokoje bez miejsca na szafę','sypialnie, w których każda ściana ma okno, drzwi albo skos',m=>m.ST?.noWall.length,v=>v==null?'–':nf(v)+' '+plF(v,'pokój','pokoje','pokoi'),'low'],
   ['Hydraulika'],
   ['Łatwość instalacji wod-kan','0–10: odległości od źródła ciepłej wody, piony parter–piętro, grupowanie mokrych pomieszczeń',m=>m.P?.overall,v=>nf(v,1)+' / 10','high'],
   ['Dopłata za układ instalacji','ile więcej kosztują rury i piony niż w układzie zwartym (orientacyjnie)',m=>m.P?.extra,zl,'low',m=>m.P?'rury i piony razem ok. '+zl(m.P.cost.total):''],
@@ -195,14 +202,14 @@ const ROWS=[
 ];
 
 const stageSum=(m,st)=>m.C?m.C.rows.filter(r=>r.stage===st).reduce((a,r)=>a+r.value,0)*(m.C.s.factor?1:1):null;
-const CRIT=[['cost','Koszt budowy za m²',2],['energy','Energia (ogrzewanie)',2],['daily','Codzienność',2],['sun','Przegrzewanie latem',1],['quiet','Akustyka',1],['plumb','Hydraulika',1],['heat','Ogrzewanie (koszt w okresie)',1],['recup','Rekuperacja (łatwość montażu)',1],['ac','Klimatyzacja (koszt)',1],['area','Metraż (większy = lepiej)',0]];
+const CRIT=[['cost','Koszt budowy za m²',2],['energy','Energia (ogrzewanie)',2],['daily','Codzienność',2],['sun','Przegrzewanie latem',1],['quiet','Akustyka',1],['plumb','Hydraulika',1],['heat','Ogrzewanie (koszt w okresie)',1],['recup','Rekuperacja (łatwość montażu)',1],['ac','Klimatyzacja (koszt)',1],['store','Schowki i szafy',1],['area','Metraż (większy = lepiej)',0]];
 const WKEY='houser:compare-weights',WOPT=[[0,'nieważne'],[1,'ważne'],[2,'bardzo ważne']];
 let W=(()=>{try{return {...Object.fromEntries(CRIT.map(c=>[c[0],c[2]])),...JSON.parse(localStorage.getItem(WKEY)||'{}')}}catch(_){return Object.fromEntries(CRIT.map(c=>[c[0],c[2]]))}})();
 const clamp=v=>Math.max(0,Math.min(10,v));
 function overallScores(cols){const cpm=cols.map(c=>c.m.C&&c.m.q?.usableTotal?c.m.C.total/c.m.q.usableTotal:null),minC=Math.min(...cpm.filter(v=>v!=null)),maxA=Math.max(...cols.map(c=>c.m.q?.usableTotal||0));
   const hT=cols.map(c=>c.m.HS?c.m.HS.totalSrc:c.m.Ht?.best.total).filter(v=>v!=null),minH=hT.length?Math.min(...hT):null;
   return cols.map((c,i)=>{const m=c.m,part={cost:cpm[i]!=null?clamp(10*minC/cpm[i]):null,energy:m.E?clamp(10*(120-m.E.EU)/105):null,daily:m.D?.overall??null,
-      sun:m.hotOf?clamp(10*(1-m.hot/m.hotOf)):null,quiet:m.A?.overall??null,plumb:m.P?.overall??null,recup:m.V?.difficulty??null,ac:m.V?clamp(10-(m.V.ac.best||0)/4000):null,heat:m.HS?m.HS.totalSrc:m.Ht?m.Ht.best.total:null,area:maxA?clamp(10*(m.q?.usableTotal||0)/maxA):null};
+      sun:m.hotOf?clamp(10*(1-m.hot/m.hotOf)):null,quiet:m.A?.overall??null,plumb:m.P?.overall??null,store:m.ST?.overall??null,recup:m.V?.difficulty??null,ac:m.V?clamp(10-(m.V.ac.best||0)/4000):null,heat:m.HS?m.HS.totalSrc:m.Ht?m.Ht.best.total:null,area:maxA?clamp(10*(m.q?.usableTotal||0)/maxA):null};
     if(part.heat!=null)part.heat=clamp(10*minH/part.heat);
     let sw=0,sv=0;for(const [k] of CRIT){const w=+W[k]||0;if(w&&part[k]!=null){sw+=w;sv+=w*part[k]}}
     return {part,score:sw?sv/sw:null}})}
@@ -232,7 +239,7 @@ async function render(){
     if(cols.length<MAXC)h+='<td></td>';h+='</tr>';
     if(best!=null&&['Szacunkowy koszt','Zapotrzebowanie na ogrzewanie','Ocena codzienności','Spokój w domu','Pokoje z ryzykiem przegrzania','Łatwość instalacji wod-kan'].includes(lab)){const i=vals.indexOf(best);sumItems.push([lab,projName(cols[i].p),fmt(best)])}}
   h+='</tbody></table>';T.innerHTML=h;
-  const SUM_PL={'Szacunkowy koszt':'Najtańszy w budowie','Zapotrzebowanie na ogrzewanie':'Najmniej energii','Ocena codzienności':'Najwygodniejszy na co dzień','Spokój w domu':'Najciszej','Pokoje z ryzykiem przegrzania':'Najmniej przegrzewania','Łatwość instalacji wod-kan':'Najłatwiejsza hydraulika'};
+  const SUM_PL={'Szacunkowy koszt':'Najtańszy w budowie','Zapotrzebowanie na ogrzewanie':'Najmniej energii','Ocena codzienności':'Najwygodniejszy na co dzień','Spokój w domu':'Najciszej','Pokoje z ryzykiem przegrzania':'Najmniej przegrzewania','Łatwość instalacji wod-kan':'Najłatwiejsza hydraulika','Miejsce na rzeczy – ocena':'Najwięcej miejsca na rzeczy'};
   $('sum').innerHTML=cols.length<2?'<div class="t"><div class="l">Dodaj drugi dom</div><div class="s">Porównanie ma sens od dwóch projektów – kliknij „＋ Dodaj dom”.</div></div>':sumItems.map(([k,n,v])=>'<div class="t"><div class="l">'+esc(SUM_PL[k])+'</div><div class="v">'+esc(n)+'</div><div class="s">'+esc(v)+'</div></div>').join('');
   $('overall').innerHTML=cols.length<2?'':rank.map((i,r)=>{const o=OV[i],best=Object.entries(o.part).filter(([k,v])=>v!=null&&+W[k]).sort((a,b)=>b[1]-a[1])[0];
       return '<div class="o'+(r===0?' win':'')+'"><div class="rk">'+(r+1)+'</div><div><div class="sc">'+nf(o.score,1)+' <small>/ 10</small></div><div class="nm">'+esc(projName(cols[i].p))+'</div>'+(r===0?'<div class="ex">najlepszy wybór wg Twoich wag</div>':best?'<div class="ex">najmocniej: '+esc(CRIT.find(c=>c[0]===best[0])[1])+'</div>':'')+'</div></div>'}).join('');
