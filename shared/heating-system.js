@@ -8,7 +8,9 @@
     hp_ground:{name:'Pompa ciepła gruntowa',dev:'Pompa ciepła gruntowa',short:'Pompa',foot:.6,hydro:true},
     gas:{name:'Kocioł gazowy kondensacyjny',dev:'Kocioł gazowy',short:'Gaz',foot:.3,hydro:true,flue:true},
     pellet:{name:'Kocioł na pellet',dev:'Kocioł na pellet z zasobnikiem',short:'Pellet',foot:2.2,hydro:true,flue:true,solid:true},
+    coal:{name:'Kocioł na ekogroszek',dev:'Kocioł na ekogroszek',short:'Węgiel',foot:2,hydro:true,flue:true,solid:true},
     wood:{name:'Kocioł zgazowujący drewno',dev:'Kocioł na drewno',short:'Drewno',foot:1,hydro:true,flue:true,solid:true},
+    fireplace_water:{name:'Kominek z płaszczem wodnym',dev:'Kominek z płaszczem wodnym',short:'Kominek',foot:0,hydro:true,flue:true,room:true},
     electric:{name:'Ogrzewanie elektryczne',dev:null,short:'Prąd',foot:0},
   };
   const EXTRAS={
@@ -18,6 +20,7 @@
     hp_air:{name:'Pompa ciepła powietrze–woda',dev:'Pompa ciepła – moduł wewnętrzny',short:'Pompa 2',share:60,hydro:true,out:true,foot:.5},
     gas:{name:'Kocioł gazowy',dev:'Kocioł gazowy',short:'Gaz',share:25,hydro:true,flue:true,foot:.3},
     pellet:{name:'Kocioł na pellet',dev:'Kocioł na pellet',short:'Pellet',share:50,hydro:true,flue:true,solid:true,foot:2.2},
+    coal:{name:'Kocioł na ekogroszek',dev:'Kocioł na ekogroszek',short:'Węgiel',share:50,hydro:true,flue:true,solid:true,foot:2},
     wood:{name:'Kocioł na drewno',dev:'Kocioł na drewno',short:'Drewno',share:50,hydro:true,flue:true,solid:true,foot:1},
     electric:{name:'Grzałka / grzejniki elektryczne (zapas)',share:3,invest:1500,service:0},
   };
@@ -62,7 +65,7 @@
     const issues=[],good=[];const add=(p,text,tip,cost)=>issues.push({p,text,tip,cost:cost||0});
     // urządzenia: wstawione na rzut albo założone
     const devs={};for(const d of need){const v=s.devices[d];let pos=v&&Number.isFinite(v.x)?{...v}:null,placed=!!pos;
-      if(!pos){if(d==='out'){const m=devs.main||centre(util);pos=nearestOutside(m)}else if(d.startsWith('man:')){const f=d.slice(4),m=devs.main||centre(util);pos=f===m.f?{...m}:{...m,f}}else if(d==='extra'&&EXTRAS[s.extra].room){pos=centre(rooms.find(r=>re.living.test(r.name)&&r.f===lo)||util)}else pos={...(devs.main||centre(util))}}
+      if(!pos){if(d==='out'){const m=devs.main||centre(util);pos=nearestOutside(m)}else if(d.startsWith('man:')){const f=d.slice(4),m=devs.main||centre(util);pos=f===m.f?{...m}:{...m,f}}else if((d==='extra'&&EXTRAS[s.extra].room)||(d==='main'&&SOURCES[s.main].room)){pos=centre(rooms.find(r=>re.living.test(r.name)&&r.f===lo)||util)}else pos={...(devs.main||centre(util))}}
       pos.room=d==='out'?null:occ(pos.f,pos.x,pos.y)||null;devs[d]={...pos,placed,type:d}}
     function nearestOutside(m){let best=null,bd=1e9;for(let y=-1;y<=H;y++)for(let x=-1;x<=W;x++){if(occ(lo,x,y))continue;const nb=[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>occ(lo,x+a,y+b));if(!nb)continue;const d=Math.abs(x-m.x)+Math.abs(y-m.y);if(d<bd){bd=d;best={f:lo,x,y}}}return best||{f:lo,x:-1,y:0}}
     const unplacedIssue=()=>{const unplaced=need.filter(d=>!devs[d].placed);
@@ -74,7 +77,7 @@
     const emitters=fA>=rA?'floor':'radiators';
     const C=HouserHeating.compare(project,{...HS,emitters}),M=C.list.find(m=>m.k===s.main),SRC=SOURCES[s.main],EX=EXTRAS[s.extra];
     // źródło główne
-    addC(SRC.name,s.main==='wood'?M.invest-7000-(C.chimney?0:7000):s.main==='pellet'?M.invest-(C.chimney?0:7000):M.invest,s.main==='electric'?'maty / grzejniki elektryczne w pokojach':'urządzenie z montażem'+(s.main==='hp_air'||s.main==='hp_ground'||s.main==='gas'?', z zasobnikiem ciepłej wody':''));
+    addC(SRC.name,s.main==='fireplace_water'?M.invest-6000-(C.chimney?0:7000):s.main==='wood'?M.invest-7000-(C.chimney?0:7000):s.main==='pellet'||s.main==='coal'?M.invest-(C.chimney?0:7000):M.invest,s.main==='electric'?'maty / grzejniki elektryczne w pokojach':'urządzenie z montażem'+(s.main==='hp_air'||s.main==='hp_ground'||s.main==='gas'?', z zasobnikiem ciepłej wody':''));
     if(!['hp_air','hp_ground','gas'].includes(s.main))addC('Zasobnik ciepłej wody '+s.dhw+' l',PRICE.dhwTank);
     // źródło dodatkowe
     let exInv=0,exPer=0,exService=0;
@@ -85,8 +88,10 @@
     const load=E.load,solidMain=!!SRC.solid,hydroN=[SRC.hydro,EX.hydro].filter(Boolean).length;
     let rec=0,recWhy='';if(s.main==='wood'){rec=Math.max(800,Math.ceil(load*55/100)*100);recWhy='kocioł na drewno pracuje pełną mocą i potrzebuje bufora ok. 50 l na kW'}
       else if(s.extra==='wood'){rec=800;recWhy='kocioł na drewno jako drugie źródło potrzebuje dużego bufora'}
+      else if(s.main==='fireplace_water'){rec=500;recWhy='kominek z płaszczem wodnym oddaje ciepło do bufora, a z niego do całego domu'}
       else if(s.extra==='fireplace_water'){rec=500;recWhy='kominek z płaszczem wodnym oddaje ciepło do bufora'}
       else if(hydroN>=2){rec=200;recWhy='dwa źródła wodne trzeba połączyć przez bufor albo sprzęgło'}
+      else if(s.main==='coal'&&load<8){rec=200;recWhy='najmniejsze kotły na ekogroszek mają ok. 10 kW – przy małym domu bufor wydłuża pracę kotła'}
       else if(s.main==='pellet'&&load<8){rec=200;recWhy='najmniejsze kotły na pellet mają ok. 10 kW – przy małym domu bufor wydłuża pracę kotła'}
       else if(SRC.out&&emitters==='radiators'){rec=100;recWhy='pompa z grzejnikami pracuje spokojniej z małym buforem'}
     if(elec)rec=0;
@@ -150,6 +155,9 @@
     // kominek: czy nie przegrzeje pokoju
     if(EX.room&&devs.extra?.room){const r=rooms.find(x=>x.key===devs.extra.room.f+'|'+devs.extra.room.id);if(r&&s.extra==='fireplace'&&r.load<2000)add(.5,'Kominek (ok. 6–8 kW) w pomieszczeniu „'+r.name+'”, które potrzebuje tylko ok. '+fmt(r.load/1000)+' kW – będzie za gorąco.','Wybierz mały wkład albo rozprowadzenie gorącego powietrza (DGP) do innych pokoi.');
       if(r&&!re.living.test(r.name))add(.3,'Kominek stoi w pomieszczeniu „'+r.name+'”, a zwykle stawia się go w salonie.','')}
+    if(s.main==='coal'||s.extra==='coal')add(.5,'Kocioł na ekogroszek – w wielu województwach uchwały antysmogowe ograniczają palenie węglem, a w przyszłości możliwy jest zakaz.','Sprawdź uchwałę antysmogową swojego województwa i gminy; bezpieczniej: pompa ciepła lub pellet.');
+    if(s.main==='fireplace_water'&&s.extra==='none')add(1,'Kominek z płaszczem wodnym jako jedyne źródło – gdy nikt nie pali (wyjazd, choroba), dom stygnie, a latem nie ma czym grzać wody.','Dodaj źródło alternatywne: grzałkę elektryczną w buforze albo pompę ciepła.');
+    if(s.main==='fireplace_water'&&devs.main?.room&&!re.living.test(devs.main.room.name||''))add(.3,'Kominek stoi w pomieszczeniu „'+devs.main.room.name+'”, a zwykle stawia się go w salonie.','');
     // połączenia źródeł
     if(s.extra!=='none'){const pair=s.main+'+'+s.extra;
       if(/^hp_.*\+fireplace/.test(pair))good.push('Pompa ciepła z kominkiem: kominek dogrzewa w mrozy, gdy pompa ma najniższą sprawność.');

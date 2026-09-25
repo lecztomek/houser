@@ -81,6 +81,7 @@ tr.best td{background:#f0fdf4;font-weight:700}
     <div class="field"><label>SCOP pompy ciepła (sezonowa sprawność)</label><input id="scop" type="number" min="1.5" max="6" step="0.1"></div>
     <div class="field"><label>Gaz ziemny [zł/kWh]</label><input id="pGas" type="number" min="0" step="0.01"></div>
     <div class="field"><label>Pellet [zł/tona]</label><input id="pPel" type="number" min="0" step="50"></div>
+    <div class="field"><label>Ekogroszek [zł/tona]</label><input id="pCoal" type="number" min="0" step="50"></div>
     <div class="field"><label>Drewno kawałkowe [zł/mp – metr przestrzenny]</label><input id="pWood" type="number" min="0" step="10"></div>
     <div class="field"><label>Energia z 1 mp drewna [kWh] (buk/dąb ~1900, sosna ~1400)</label><input id="woodKWh" type="number" min="800" max="2500" step="50"></div>
     <div class="field"><label>Kominek dogrzewa [% ciepła do ogrzewania]</label><input id="fireShare" type="number" min="0" max="80" step="5"></div>
@@ -106,11 +107,11 @@ let tS=null;function save(patch){const s={...es(),...patch};project.energySettin
 
 function renderSide(){const s=es(),act=document.activeElement,set=(id,v)=>{if($(id)!==act)$(id).value=v};
   if(!$('zone').options.length)$('zone').innerHTML=Object.entries(ZONES).map(([k,z])=>'<option value="'+k+'">'+z.name+' · '+z.te+'°C</option>').join('');
-  set('zone',s.zone);set('persons',s.persons);set('ti',s.ti);set('bridge',s.bridge);set('vent',s.vent);set('eta',s.eta);set('inf',s.inf);set('pEl',s.pEl);set('scop',s.scop);set('pGas',s.pGas);set('pPel',s.pPel);set('pWood',s.pWood);set('woodKWh',s.woodKWh);set('fireShare',s.fireShare);$('etaF').hidden=s.vent!=='mech';
+  set('zone',s.zone);set('persons',s.persons);set('ti',s.ti);set('bridge',s.bridge);set('vent',s.vent);set('eta',s.eta);set('inf',s.inf);set('pEl',s.pEl);set('scop',s.scop);set('pGas',s.pGas);set('pPel',s.pPel);set('pCoal',s.pCoal);set('pWood',s.pWood);set('woodKWh',s.woodKWh);set('fireShare',s.fireShare);$('etaF').hidden=s.vent!=='mech';
   if(!$('ug').children.length){$('ug').innerHTML='<span class="max" style="text-align:left">przegroda</span><span class="max">U</span><span class="max">WT max</span>'+PARTS.map(([k,name,max])=>'<span>'+name+'</span><input type="number" step="0.01" min="0.05" max="3" data-u="'+k+'"><span class="max" data-max="'+k+'">≤ '+fmt(max,2)+'</span>').join('');
     $('ug').querySelectorAll('[data-u]').forEach(i=>i.onchange=()=>{const v=Number(i.value);if(Number.isFinite(v)&&v>0)save({U:{...es().U,[i.dataset.u]:v}})})}
   for(const [k,,max] of PARTS){const i=$('ug').querySelector('[data-u="'+k+'"]'),over=s.U[k]>max+1e-9;if(i!==act)i.value=s.U[k];i.classList.toggle('over',over);$('ug').querySelector('[data-max="'+k+'"]').classList.toggle('over',over)}}
-for(const id of ['zone','persons','ti','bridge','vent','eta','inf','pEl','scop','pGas','pPel','pWood','woodKWh','fireShare'])$(id).addEventListener('change',()=>{const v=$(id).value;save({[id]:id==='zone'||id==='vent'?v:Number(v)})});
+for(const id of ['zone','persons','ti','bridge','vent','eta','inf','pEl','scop','pGas','pPel','pCoal','pWood','woodKWh','fireShare'])$(id).addEventListener('change',()=>{const v=$(id).value;save({[id]:id==='zone'||id==='vent'?v:Number(v)})});
 
 function render(){
   const M=$('main');if(!project||!(project.grid||project.definitionSnapshot?.grid)){M.innerHTML='<div class="empty">Brak projektu. Narysuj rzut w <b>Układzie pomieszczeń</b> albo kliknij „Przykład” na pasku u góry.</div>';return}
