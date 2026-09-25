@@ -1,5 +1,6 @@
 // Słownik PL → EN dla shared/i18n.js (klucze: tekst polski, liczby jako {n}, nazwy w cudzysłowie jako „{q}”).
-window.HOUSER_I18N_EN={"+{n} zł":"+PLN {n}","nad „{q}”":"above „{q}”","średnia pomieszczeń {n} − {n} za dopłatę":"room average {n} − {n} for the extra cost",
+window.HOUSER_I18N_EN={"Po bryle domu (obrys, kondygnacje): jakie pomieszczenia ma mieć dom i na której kondygnacji. Ich kształt malujesz później w module Układ pomieszczeń.": "After the building shape (outline, floors): which rooms the house should have and on which floor. You paint their shape later in the Room layout module.", "Jakie pomieszczenia ma dom i na której kondygnacji: nazwy, kolory, wnęki.": "Which rooms the house has and on which floor: names, colours, recesses.", "Tu zaczynasz nowy projekt: kształt budynku rysowany po liniach siatki – dowolny (L, T, wnęki); siatka i warstwy dopasowują się same.": "Start a new project here: the building shape drawn along grid lines – any shape (L, T, recesses); the grid and layers adapt automatically.", "Bryła": "Building shape",
+"+{n} zł":"+PLN {n}","nad „{q}”":"above „{q}”","średnia pomieszczeń {n} − {n} za dopłatę":"room average {n} − {n} for the extra cost",
 "{n} pokój":"{n} room",
 "{n} pokoje":"{n} rooms",
 "{n} pomieszczenie":"{n} room",

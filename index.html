@@ -237,11 +237,11 @@ a{color:var(--accent)}
 window.HouserI18n=window.HouserI18n||{lang:'pl',set(){},t:s=>s};
 // Moduły w kolejności projektowania. group: etap, step: numer kroku na karcie.
 const MODULES=[
-  {id:'pomieszczenia',group:'Założenia',name:'Pomieszczenia',src:'modules/pomieszczenia/',desc:'Jakie pomieszczenia ma dom i na której kondygnacji: nazwy, kolory, wnęki. Tu zaczynasz nowy projekt.'},
+  {id:'obrys',group:'Bryła',name:'Obrys domu',src:'modules/obrys/',desc:'Tu zaczynasz nowy projekt: kształt budynku rysowany po liniach siatki – dowolny (L, T, wnęki); siatka i warstwy dopasowują się same.'},
+  {id:'kondygnacje-dach',group:'Bryła',name:'Kondygnacje i dach',src:'modules/kondygnacje-dach/',desc:'Widok z boku: parter, pełne piętro albo poddasze ze ścianką kolankową, kąt i kierunek dachu.'},
+  {id:'pomieszczenia',group:'Założenia',name:'Pomieszczenia',src:'modules/pomieszczenia/',desc:'Jakie pomieszczenia ma dom i na której kondygnacji: nazwy, kolory, wnęki.'},
   {id:'warunki',group:'Założenia',name:'Warunki',src:'modules/warunki/',desc:'Zasady układu: powierzchnie, sąsiedztwa, szerokości, drzwi, dojście – pogrupowane i rozwijane.'},
-  {id:'obrys',group:'Projekt',name:'Obrys domu',src:'modules/obrys/',desc:'Kształt budynku rysowany po liniach siatki – dowolny (L, T, wnęki); siatka i warstwy dopasowują się same.'},
   {id:'projektowanie',group:'Projekt',name:'Układ pomieszczeń',src:'modules/projektowanie/',desc:'Malowanie pomieszczeń na siatce, drzwi, okna i komin; walidacja warunków na bieżąco.'},
-  {id:'kondygnacje-dach',group:'Projekt',name:'Kondygnacje i dach',src:'modules/kondygnacje-dach/',desc:'Widok z boku: parter, pełne piętro albo poddasze ze ścianką kolankową, kąt i kierunek dachu.'},
   {id:'schody',group:'Projekt',name:'Schody',src:'modules/schody/',desc:'Rodzaj schodów (proste, L, 180°, kręcone), parametry i wstawienie na rzut – kratki pojawiają się same.'},
   {id:'okna-drzwi',group:'Projekt',name:'Okna i drzwi zewnętrzne',src:'modules/okna-drzwi/',desc:'Rodzaje okien (niskie, balkonowe, naświetla, ścięte pod skos, dachowe) i drzwi, z podglądem elewacji.'},
   {id:'drzwi-wewnetrzne',group:'Projekt',name:'Drzwi wewnętrzne',src:'modules/drzwi-wewnetrzne/',desc:'Drzwi między pomieszczeniami na rzucie: rodzaj, wysokość (też niskie pod skosem) i kierunek otwierania.'},
@@ -253,8 +253,8 @@ const MODULES=[
   {id:'galeria',group:'Podgląd',name:'Galeria',src:'modules/galeria/',desc:'Wybrane zdjęcia domu: najlepsze wizualizacje AI, ujęcia z 3D i Twoje własne zdjęcia – okładka, podpisy, kolejność, pokaz i porównanie przed / po.'},
   {id:'przepisy',group:'Analizy',name:'Przepisy',src:'modules/przepisy/',desc:'Sprawdzenie z warunkami technicznymi: okna do podłogi 1:8, wysokości, drzwi, schody, powierzchnie pokoi – z mapą pomieszczeń.'},
   {id:'codziennosc',group:'Analizy',name:'Codzienność',src:'modules/codziennosc/',desc:'Jak się mieszka na co dzień: scenariusze (zakupy, pranie, palenie w piecu, goście, noc) – trasy po domu, odległości i przejścia przez pokoje, ocena i podpowiedzi.'},
-  {id:'naslonecznienie',group:'Analizy',name:'Nasłonecznienie',src:'modules/naslonecznienie/',desc:'Zyski od słońca latem i zimą, pomieszczenie po pomieszczeniu: ryzyko przegrzania, mapa ciepła, wpływ okapu, tarasu i rolet.'},
   {id:'akustyka',group:'Analizy',name:'Akustyka',src:'modules/akustyka/',desc:'Czy w sypialniach będzie cicho: co jest za ścianą, nad i pod pokojem (garaż, pralnia, salon, łazienka, schody), ulica, antresola – ocena pokoi i podpowiedzi.'},
+  {id:'naslonecznienie',group:'Analizy',name:'Nasłonecznienie',src:'modules/naslonecznienie/',desc:'Zyski od słońca latem i zimą, pomieszczenie po pomieszczeniu: ryzyko przegrzania, mapa ciepła, wpływ okapu, tarasu i rolet.'},
   {id:'hydraulika',group:'Analizy',name:'Hydraulika',src:'modules/hydraulika/',desc:'Jak łatwo i tanio zrobić wod-kan: odległości łazienek, WC, kuchni i pralni od źródła ciepłej wody, piony parter–piętro, dopłata za układ.'},
   {id:'energia',group:'Analizy',name:'Energia',src:'modules/energia/',desc:'Bilans cieplny: straty przez przegrody i wentylację, moc grzewcza, zapotrzebowanie kWh/m² i koszt ogrzewania różnymi źródłami.'},
   {id:'wycena',group:'Analizy',name:'Wycena',src:'modules/wycena/',desc:'Orientacyjny koszt budowy z projektu: ilości (ściany, strop, dach, okna, drzwi, instalacje, wykończenie) × ceny jednostkowe, które możesz zmienić.'},
@@ -286,7 +286,7 @@ const ICON_PATH={pomieszczenia:'<rect x="3" y="3" width="7.5" height="7.5" rx="1
 const icon=id=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+(ICON_PATH[id]||'<circle cx="12" cy="12" r="4"/>')+'</svg>';
 const SHORT={'kondygnacje-dach':'Dach i piętra','okna-drzwi':'Okna i drzwi','drzwi-wewnetrzne':'Drzwi wewn.',projektowanie:'Układ',wizualizacje:'Wizualizacje',tarasy:'Tarasy',meblowanie:'Meble',obrys:'Obrys'};
 // odcień etapu: kolor ikony i bardzo jasne tło pod nią
-const GROUP_COL={'Założenia':'#7c3aed','Projekt':'#2563eb','Wnętrza':'#d97706','Podgląd':'#0891b2','Analizy':'#059669'},GROUP_TINT={'Założenia':'#f5f3ff','Projekt':'#eff6ff','Wnętrza':'#fffbeb','Podgląd':'#ecfeff','Analizy':'#ecfdf5'};
+const GROUP_COL={'Bryła':'#0f766e','Założenia':'#7c3aed','Projekt':'#2563eb','Wnętrza':'#d97706','Podgląd':'#0891b2','Analizy':'#059669'},GROUP_TINT={'Bryła':'#f0fdfa','Założenia':'#f5f3ff','Projekt':'#eff6ff','Wnętrza':'#fffbeb','Podgląd':'#ecfeff','Analizy':'#ecfdf5'};
 const tabs=document.getElementById('tabs'),cards=document.getElementById('cards'),views=document.getElementById('views'),openExt=document.getElementById('openExt');
 const frames={};
 function tabBtn(id,label,soon,m){const b=document.createElement('button');b.className='tab';b.dataset.id=id;b.title=m?m.step+'. '+m.name+' – '+m.desc:'Strona startowa';
@@ -465,7 +465,7 @@ function downloadProject(project){const out={...project,houserFile:{app:'houser'
   a.href=URL.createObjectURL(blob);a.download=slug(projName(project))+'-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
   toast('Zapisano plik '+a.download)}
 async function importFile(f){if(!f||!(await confirmReplace()))return;try{await openProject(JSON.parse(await f.text()),'file');libSave();refreshViews()}catch(err){alert('Nie udało się wczytać pliku: '+err.message)}}
-async function newEmpty(){if(!(await confirmReplace()))return;try{await openProject(HouserDefinition.projectFromDefinition(HouserDefinition.emptyDefinition()),'new');libSave();location.hash='pomieszczenia'}catch(err){alert(err.message)}}
+async function newEmpty(){if(!(await confirmReplace()))return;try{await openProject(HouserDefinition.projectFromDefinition(HouserDefinition.emptyDefinition()),'new');libSave();location.hash='obrys'}catch(err){alert(err.message)}}
 // ---------- nazwa i duplikaty
 function setName(p,n){if(p.definitionSnapshot)p.definitionSnapshot.name=n;p.definitionName=n;return p}
 function localEdit(fn,src){const before=curJSON;HouserStore.update(fn,src);const r=HouserStore.load();curJSON=JSON.stringify(r.project);pushUndo(before,src);HouserCloud.touch('project');libTouch();renderBar();refreshViews()}
