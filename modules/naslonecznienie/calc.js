@@ -61,11 +61,12 @@ function compute(){
       w.roofHO=w.cols[0].shades[0].hO;
     }
     w.facing=sm[w.side];w.az=AZ[w.facing];
+    w.blindKind=BLIND[w.info.blind]!=null?w.info.blind:s.blinds;w.blindK=BLIND[w.blindKind]; // roleta ustawiona przy oknie (moduł Okna i drzwi) albo domyślna
     // zyski
-    w.sum=S.windowSteps(w,7,kind,{blind,pergolaT:.5});
+    w.sum=S.windowSteps(w,7,kind,{blind:w.blindK,pergolaT:.5});
     w.sumDay=w.sum.reduce((a,v)=>a+v,0)*S.STEP/1000;
     w.janDay=S.windowSteps(w,1,kind,{pergolaT:.8}).reduce((a,v)=>a+v,0)*S.STEP/1000;
-    w.month=[];for(let m=1;m<=12;m++){const summer=m>=5&&m<=9;w.month.push(S.windowSteps(w,m,'avg',{blind:summer?blind:1,pergolaT:summer?.5:.8}).reduce((a,v)=>a+v,0)*S.STEP/1000*S.MDAYS[m-1])}
+    w.month=[];for(let m=1;m<=12;m++){const summer=m>=5&&m<=9;w.month.push(S.windowSteps(w,m,'avg',{blind:summer?w.blindK:1,pergolaT:summer?.5:.8}).reduce((a,v)=>a+v,0)*S.STEP/1000*S.MDAYS[m-1])}
     w.season=Object.entries(SEASON).reduce((a,[m,eta])=>a+w.month[m-1]*eta*(m>=5&&m<=9?1:1),0);
     // (zima bez osłon – miesiące sezonu nie mają rolet, bo SEASON nie obejmuje maja–września)
     w.part=1/ids.length;wins.push(w);

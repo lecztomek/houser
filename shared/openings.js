@@ -33,11 +33,20 @@
   // pełny opis otworu: {base, variant, name, sill, height, shape, ...}
   function resolve(project,floor,key,base){
     const v=project?.openingVariants?.[floor]?.[key]||{},list=VARIANTS[base]||{},id=list[v.variant]?v.variant:DEFAULT[base],def=list[id]||{sill:0,height:2.1,name:base};
-    return {...def,base,variant:id,sill:Number.isFinite(+v.sill)&&v.sill!==''&&v.sill!=null?+v.sill:def.sill,height:Number.isFinite(+v.height)&&v.height!==''&&v.height!=null?+v.height:def.height};
+    return {...def,base,variant:id,slope:v.slope==='manual'?'manual':'roof',angle:Number.isFinite(+v.angle)&&v.angle!==''&&v.angle!=null?+v.angle:45,rise:v.rise==='left'?'left':'right',blind:v.blind||'',sill:Number.isFinite(+v.sill)&&v.sill!==''&&v.sill!=null?+v.sill:def.sill,height:Number.isFinite(+v.height)&&v.height!==''&&v.height!=null?+v.height:def.height};
   }
   function setVariant(project,floor,keys,data){
     if(!project.openingVariants)project.openingVariants={};if(!project.openingVariants[floor])project.openingVariants[floor]={};
     for(const k of keys){const cur=project.openingVariants[floor][k]||{};project.openingVariants[floor][k]={...cur,...data};}
   }
-  global.HouserOpenings={VARIANTS,DEFAULT,BASE_NAMES,variantsFor,resolve,setVariant};
+  // górna krawędź okna ściętego (od podłogi): u – odległość od lewego końca okna patrząc z zewnątrz, len – szerokość okna,
+  // roofTop – wolna wysokość pod dachem w tym miejscu (tryb „wg dachu”). Tryb „własny”: wyższa strona (rise) ma wysokość height, skos pod kątem angle.
+  function slopedTop(info,u,len,roofTop){const y0=+info.sill||0;
+    if(info.slope==='manual'){const a=Math.max(0,Math.min(80,+info.angle||0))*Math.PI/180,d=info.rise==='left'?u:len-u;return Math.max(y0+.2,y0+info.height-Math.tan(a)*d)}
+    return roofTop==null?y0+info.height:Math.max(y0+.3,Math.min(y0+info.height,roofTop-.25))}
+  // zasięg ciągu otworów (sąsiednie krawędzie tego samego rodzaju i wariantu) – dla modułów, które rysują otwory krawędź po krawędzi
+  function runExtent(project,floor,key){const ops=project?.openings?.[floor]||{},base=ops[key],[o,aS,bS]=key.split(':'),a=+aS,b=+bS,v=resolve(project,floor,key,base).variant;
+    const k=i=>o==='h'?'h:'+i+':'+b:'v:'+a+':'+i,same=i=>ops[k(i)]===base&&resolve(project,floor,k(i),base).variant===v,at=o==='h'?a:b;
+    let from=at,to=at;while(same(from-1))from--;while(same(to+1))to++;return {from,to,at}}
+  global.HouserOpenings={VARIANTS,DEFAULT,BASE_NAMES,variantsFor,resolve,setVariant,slopedTop,runExtent};
 })(window);

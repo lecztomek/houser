@@ -41,6 +41,8 @@ svg{display:block;width:100%;height:auto}
 .empty{padding:40px 24px;text-align:center;color:var(--hs-muted)}
 .hint{font-size:12px;color:var(--hs-muted);line-height:1.45;margin:8px 0 0}
 @media(max-width:900px){.wrap{height:auto;min-height:100vh}.wrap>*{overflow:visible!important;max-height:none!important}}
+.ctl.sub{margin-top:6px}
+.btn.mv{padding:2px 8px;min-height:28px}
 </style>
 </head>
 <body>
@@ -118,6 +120,8 @@ function warnings(r){const G=geom(),w=[],c=grid().cellMeters;
   if(r.base!=='window'||r.f===floors()[0]||r.facade==='inside')return w;
   const top=r.info.sill+r.info.height;
   if(r.info.shape!=='roof'&&!isGable(r.facade)&&G.upperWall<top-.05)w.push('Ściana piętra ma tu tylko '+G.upperWall.toFixed(2)+' m – ustaw okno dachowe albo obniż okno.');
+  if(r.info.shape==='sloped'&&r.info.slope==='manual'){const L=facadeLen(r.facade),roofAt=h=>isGable(r.facade)?G.eave+G.rise*Math.max(0,1-Math.abs(h-L/2)/(L/2)):G.eave,over=[r.h0+.05,r.h1-.05].some(h=>G.groundHeight+O.slopedTop(r.info,h-r.h0,r.len,null)>roofAt(h)-.15);
+    if(over)w.push('Okno wychodzi ponad dach – zmniejsz wysokość, zmień kąt skosu albo stronę, która jest wyżej (albo ustaw „skos wg dachu”).')}
   if(r.info.shape==='roof'&&isGable(r.facade))w.push('Na ścianie szczytowej nie ma połaci – okno dachowe działa na ścianach okapowych.');
   return w}
 
@@ -137,10 +141,21 @@ function renderList(){
       const sel=document.createElement('select');for(const [id,v] of Object.entries(O.variantsFor(r.base))){const op=document.createElement('option');op.value=id;op.textContent=v.name;sel.appendChild(op)}sel.value=r.info.variant;
       sel.onchange=()=>{const v=O.variantsFor(r.base)[sel.value];O.setVariant(project,r.f,r.keys,{variant:sel.value,sill:v.sill,height:v.height});selected=r.f+'|'+r.keys[0];commit()};
       const sill=num(r.info.sill,v=>{O.setVariant(project,r.f,r.keys,{variant:r.info.variant,sill:v});commit()}),hh=num(r.info.height,v=>{O.setVariant(project,r.f,r.keys,{variant:r.info.variant,height:v});commit()});
-      if(r.info.shape==='roof')ctl.append(sel,'od okapu',sill,'m · długość',hh,'m (wzdłuż połaci)');else ctl.append(sel,'parapet',sill,'m · wys.',hh,'m');
+      const upd=data=>{O.setVariant(project,r.f,r.keys,{variant:r.info.variant,...data});selected=r.id;commit()};
+      const mv=(t,d)=>{const b=document.createElement('button');b.className='btn mv';b.type='button';b.textContent=t;b.title=d>0?'przesuń okno w górę o 5 cm':'przesuń okno w dół o 5 cm';b.onclick=e=>{e.stopPropagation();upd({sill:Math.max(0,Math.round((r.info.sill+d)*100)/100)})};return b};
+      if(r.info.shape==='roof')ctl.append(sel,'od okapu',sill,'m · długość',hh,'m (wzdłuż połaci)');
+      else if(r.info.shape==='sloped'){ctl.append(sel,'parapet',sill,'m',mv('▲',.05),mv('▼',-.05));
+        const row=document.createElement('div');row.className='ctl sub';const mode=document.createElement('select');mode.innerHTML='<option value="roof">skos wg dachu (sam się dopasuje)</option><option value="manual">skos ustawiony ręcznie</option>';mode.value=r.info.slope;
+        mode.onchange=()=>upd(mode.value==='manual'?{slope:'manual',angle:r.info.slope==='manual'?r.info.angle:Math.round(geom().roofPitch)}:{slope:'roof'});row.append(mode);
+        if(r.info.slope==='manual'){const ang=num(r.info.angle,v=>upd({angle:Math.max(0,Math.min(80,v))}));ang.step='1';ang.max='80';const rise=document.createElement('select');rise.innerHTML='<option value="left">wyżej z lewej</option><option value="right">wyżej z prawej</option>';rise.value=r.info.rise;rise.onchange=()=>upd({rise:rise.value});
+          const lowH=Math.max(.2,r.info.height-Math.tan(r.info.angle*Math.PI/180)*r.len);row.append('wys. wyższej strony',hh,'m · kąt skosu',ang,'° ·',rise,Object.assign(document.createElement('small'),{textContent:' niższa strona: '+lowH.toFixed(2)+' m'}))}
+        else row.append('maks. wys.',hh,'m');
+        d.appendChild(ctl);d.appendChild(row)}
+      else ctl.append(sel,'parapet',sill,'m · wys.',hh,'m',...(r.base!=='door'?[mv('▲',.05),mv('▼',-.05)]:[]));
+      if(r.base==='window'||r.base==='hst'){const bl=document.createElement('select');bl.title='Roleta wpływa na nagrzewanie latem (moduł Nasłonecznienie)';bl.innerHTML='<option value="">roleta: jak w Nasłonecznieniu</option><option value="none">bez rolety</option><option value="internal">roleta / żaluzja wewnętrzna</option><option value="external">roleta zewnętrzna / markiza</option>';bl.value=r.info.blind||'';bl.onchange=()=>upd({blind:bl.value});ctl.append(bl)}
       if(r.base==='door'){const vs=document.createElement('select');vs.title='Jak te drzwi wyglądają na podglądzie 3D i na wizualizacji';vs.innerHTML='<option value="">jak domyślnie we Wnętrzu 3D</option><option value="open">otwarte</option><option value="closed">zamknięte</option><option value="none">bez skrzydła (sam otwór)</option>';vs.value=project.openingVariants?.[r.f]?.[r.keys[0]]?.view||'';
         vs.onchange=()=>{O.setVariant(project,r.f,r.keys,{variant:r.info.variant,view:vs.value});selected=r.id;commit()};const lb=document.createElement('span');lb.textContent=' · w 3D:';ctl.append(lb,vs)}
-      d.appendChild(ctl);for(const w of warnings(r)){const e=document.createElement('div');e.className='warn';e.textContent='⚠ '+w;d.appendChild(e)}
+      if(!ctl.parentNode)d.appendChild(ctl);for(const w of warnings(r)){const e=document.createElement('div');e.className='warn';e.textContent='⚠ '+w;d.appendChild(e)}
       d.addEventListener('click',e=>{if(['SELECT','INPUT','OPTION'].includes(e.target.tagName))return;selected=r.id;if(r.facade!=='inside')facade=r.facade;renderAll()});
       L.appendChild(d)}
   }
@@ -167,7 +182,7 @@ function renderElev(){
     const base=r.f===floors()[0]?0:G.groundHeight,i=r.info,sel=selected===r.id,col=r.base==='door'?'#8a6a4a':'#9cc8e7',st=sel?'#2563eb':'#334155',sw=sel?3:1.5;
     let pts;
     if(i.shape==='roof'&&!gable){const sn=Math.sin(G.roofPitch*Math.PI/180),y0=Math.min(G.eave+G.rise-.3,G.eave+i.sill*sn),y1=Math.min(G.eave+G.rise-.1,y0+i.height*sn);pts=[[r.h0+.05,y0],[r.h1-.05,y0],[r.h1-.05,y1],[r.h0+.05,y1]]}
-    else if(i.shape==='sloped'&&gable&&base>0){const y0=base+i.sill,lim=h=>Math.max(y0+.2,Math.min(y0+i.height,roofAt(h)-.25));pts=[[r.h0+.05,y0],[r.h1-.05,y0],[r.h1-.05,lim(r.h1-.05)],[r.h0+.05,lim(r.h0+.05)]]}
+    else if(i.shape==='sloped'&&(i.slope==='manual'||(gable&&base>0))){const y0=base+i.sill,lim=h=>base+O.slopedTop(i,h-r.h0,r.len,i.slope==='manual'?null:roofAt(h)-base);pts=[[r.h0+.05,y0],[r.h1-.05,y0],[r.h1-.05,lim(r.h1-.05)],[r.h0+.05,lim(r.h0+.05)]]}
     else{const y0=base+i.sill,y1=y0+i.height;pts=[[r.h0+.05,y0],[r.h1-.05,y0],[r.h1-.05,y1],[r.h0+.05,y1]]}
     const g=el('g',{style:'cursor:pointer'},svg);g.addEventListener('click',()=>{selected=r.id;renderAll()});
     el('polygon',{points:pts.map(([h,y])=>X(h)+','+Y(y)).join(' '),fill:'#f8fafc',stroke:st,'stroke-width':sw},g);

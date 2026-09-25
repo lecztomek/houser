@@ -139,7 +139,7 @@ function drawWallOpening(q,base,t0,t1,info){ info=info||HouserOpenings.resolve(p
   const P=(t,y,d)=>q.o==='v'?[q.a*c+out*d,y,t]:[t,y,q.b*c+out*d];           // t wzdłuż ściany, y wysokość, d odsunięcie od lica
   const y0=base+info.sill; let top=t=>y0+info.height;
   // okno ścięte pod skos: górna krawędź równoległa do dachu (ściana szczytowa piętra)
-  if(info.shape==='sloped'&&q.f!=='ground'){ top=t=>{const p=P(t,0,0);return Math.max(y0+.3,Math.min(y0+info.height,roofY(p[0],p[2])-.25));}; }
+  if(info.shape==='sloped'&&(info.slope==='manual'||q.f!=='ground')){ const lr=q.screenSide==='bottom'||q.screenSide==='left'; top=t=>{const p=P(t,0,0),u=lr?t-t0:t1-t;return base+HouserOpenings.slopedTop(info,u,len,info.slope==='manual'?null:roofY(p[0],p[2])-base);}; }
   const poly=(ta,tb,ya,yb,d,col,opt)=>addPoly([P(ta,ya(ta),d),P(tb,ya(tb),d),P(tb,yb(tb),d),P(ta,yb(ta),d)],col,opt.stroke||'#364152',opt.line||1,opt.alpha??1);
   const a0=t0+.04,a1=t1-.04,flat=v=>()=>v;
   poly(a0,a1,flat(y0),top,.015,frame,{stroke:fr,line:1});                                           // rama
