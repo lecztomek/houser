@@ -126,11 +126,11 @@ function render(){
   // wykres strat (poziome słupki, jedna seria)
   const rows=[...R.rows].sort((a,b)=>b.W-a.W),mx=Math.max(...rows.map(r=>r.W));
   h+='<div class="card viz"><h2>Gdzie ucieka ciepło</h2><p class="sub">Straty przy temperaturze obliczeniowej '+R.Z.te+'°C (moc w W i udział w całości)</p><div class="bars">';
-  rows.forEach((r,i)=>{const pct=r.W/mx*100;h+='<div class="lab">'+esc(r.name)+(r.A!=null?'<small>'+fmt(r.A,1)+' m² · U '+fmt(r.U,2)+'</small>':'<small>kubatura '+fmt(r.V)+' m³</small>')+'</div><div class="track"><div class="bar" style="width:max(2px,calc('+pct+'% - 96px))"></div><span class="bar-v" style="left:calc(max(2px,'+pct+'% - 96px) + 6px)">'+fmt(r.W)+' W · '+fmt(r.share*100)+'%</span><div class="hit" data-i="'+i+'"></div></div>'});
+  rows.forEach((r,i)=>{const pct=r.W/mx*100;h+='<div class="lab">'+esc(r.name)+(r.A!=null?'<small>'+fmt(r.A,1)+' m² · U '+fmt(r.U,2)+'</small>':'<small>'+(r.L!=null?'styk płyty ze ścianą '+fmt(r.L,1)+' m':'kubatura '+fmt(r.V)+' m³')+'</small>')+'</div><div class="track"><div class="bar" style="width:max(2px,calc('+pct+'% - 96px))"></div><span class="bar-v" style="left:calc(max(2px,'+pct+'% - 96px) + 6px)">'+fmt(r.W)+' W · '+fmt(r.share*100)+'%</span><div class="hit" data-i="'+i+'"></div></div>'});
   h+='</div></div>';
   // tabela przegród
   h+='<div class="card"><h2>Przegrody</h2><p class="sub">Powierzchnie policzone z projektu (ściany bez okien, dach wg Kondygnacji i dachu).</p><table><thead><tr><th>Przegroda</th><th class="num">Powierzchnia</th><th class="num">U [W/m²K]</th><th class="num">Straty [W/K]</th><th class="num">Moc [W]</th><th class="num">Udział</th></tr></thead><tbody>'+
-    rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td class="num">'+(r.A!=null?fmt(r.A,1)+' m²':fmt(r.V)+' m³')+'</td><td class="num">'+(r.U!=null?fmt(r.U,2):'—')+'</td><td class="num">'+fmt(r.H,1)+'</td><td class="num">'+fmt(r.W)+'</td><td class="num">'+fmt(r.share*100)+'%</td></tr>').join('')+
+    rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td class="num">'+(r.A!=null?fmt(r.A,1)+' m²':r.L!=null?fmt(r.L,1)+' m':fmt(r.V)+' m³')+'</td><td class="num">'+(r.U!=null?fmt(r.U,2):'—')+'</td><td class="num">'+fmt(r.H,1)+'</td><td class="num">'+fmt(r.W)+'</td><td class="num">'+fmt(r.share*100)+'%</td></tr>').join('')+
     '<tr><td><b>Razem</b></td><td></td><td></td><td class="num"><b>'+fmt(R.Htot,1)+'</b></td><td class="num"><b>'+fmt(R.Htot*R.dT)+'</b></td><td class="num">100%</td></tr></tbody></table></div>';
   // bilans roczny i źródła ciepła
   h+='<div class="card"><h2>Bilans roczny</h2><table><tbody>'+
@@ -142,7 +142,7 @@ function render(){
   // podpowiedź po najechaniu na słupek
   const tip=$('tip');M.querySelectorAll('.hit').forEach(el=>{const r=rows[+el.dataset.i];
     el.onmousemove=e=>{tip.style.display='block';tip.style.left=Math.min(e.clientX+14,innerWidth-270)+'px';tip.style.top=(e.clientY+14)+'px';
-      tip.innerHTML='<b>'+esc(r.name)+'</b><br>'+(r.A!=null?fmt(r.A,1)+' m² × U '+fmt(r.U,2)+' W/m²K':'kubatura '+fmt(r.V)+' m³')+'<br>'+fmt(r.H,1)+' W/K · '+fmt(r.W)+' W przy '+R.Z.te+'°C<br>'+fmt(r.share*100,1)+'% strat · ok. '+fmt(r.share*R.Qloss)+' kWh/rok'};
+      tip.innerHTML='<b>'+esc(r.name)+'</b><br>'+(r.A!=null?fmt(r.A,1)+' m² × U '+fmt(r.U,2)+' W/m²K':(r.L!=null?'styk płyty ze ścianą '+fmt(r.L,1)+' m':'kubatura '+fmt(r.V)+' m³'))+'<br>'+fmt(r.H,1)+' W/K · '+fmt(r.W)+' W przy '+R.Z.te+'°C<br>'+fmt(r.share*100,1)+'% strat · ok. '+fmt(r.share*R.Qloss)+' kWh/rok'};
     el.onmouseleave=()=>{tip.style.display='none'}});
 }
 const rec=HouserStore.load();project=rec?rec.project:null;render();

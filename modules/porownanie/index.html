@@ -77,6 +77,7 @@ tr.tot td{background:#f8fafc;font-weight:800;font-size:14px}
 <script src="../../shared/openings.js"></script>
 <script src="../../shared/stairs.js"></script>
 <script src="../../shared/project-store.js"></script>
+<script src="../../shared/balconies.js"></script>
 <script src="../../shared/quantities.js"></script>
 <script src="../../shared/library.js"></script>
 <script src="../../shared/energy.js"></script>
@@ -165,6 +166,7 @@ const ROWS=[
   ['– Na zewnątrz','tarasy, pergole',m=>stageSum(m,'Na zewnątrz'),zl,null],
   ['– Inne','projekt, kierownik budowy, geodeta',m=>stageSum(m,'Inne'),zl,null],
   ['Rezerwa na nieprzewidziane','doliczona do kosztu (procent ustawiony w Wycenie)',m=>m.C?.reserve,zl,null,m=>m.C?m.C.s.reserve+'%':''],
+  ['Balkony','powierzchnia balkonów na piętrze (moduł Balkony); niżej – wystające / nad parterem',m=>m.q?.balc?.area,v=>v?nf(v,1)+' m²':'brak','high',m=>m.q?.balc?.area?nf(m.q.balc.cantA,1)+' m² wystające · '+nf(m.q.balc.overA,1)+' m² nad parterem':''],
   ['Energia'],
   ['Ocieplenie ścian','mur i ocieplenie z modułu Ocieplenie i elewacja; niżej – współczynnik U ścian (WT 2021: ≤ 0,20)',m=>{const e=m.p?.envelope;if(!e)return 'nie ustawiono';const R=HouserEnvelope.evaluate(e);return R.layers.W.name.replace(/ \(.*\)/,'')+(R.layers.insT?' · '+R.layers.I.name.replace(/ \(.*\)/,'')+' '+R.layers.insT+' cm':'')},v=>v,null,m=>m.E?'U ścian '+nf(m.E.s.U.wall,2):''],
   ['U ścian','współczynnik przenikania ciepła ścian zewnętrznych (mniej = cieplej); WT 2021: ≤ 0,20',m=>m.E?.s.U.wall,v=>nf(v,2)+' W/m²K','low'],

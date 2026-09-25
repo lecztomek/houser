@@ -26,6 +26,7 @@ modules/
   akustyka/                 cisza w sypialniach: co za ścianą, nad i pod pokojem, ulica, antresola – ocena i podpowiedzi
   co-poprawic/               podsumowanie analiz: 5 najważniejszych poprawek, zalety i wady, oceny modułów (advisors.js – po jednym „doradcy” na moduł)
   porownanie/               2–4 domy obok siebie (koszt z etapami, energia, ogrzewanie, wentylacja, codzienność, słońce, akustyka, hydraulika, schowki) + ocena ogólna wg wag
+  balkony/                  balkony na piętrze: wystające albo nad częścią parteru (piętro mniejsze) – balustrada, łącznik termiczny, wyjście z pokoju
   ocieplenie/               ocieplenie i elewacja: mur, ocieplenie (rodzaj, grubość), dach, podłoga, okna, mostki → współczynniki U do Energii, ceny do Wyceny
   energia/index.html        bilans cieplny, moc grzewcza, koszt ogrzewania
   wycena/index.html         orientacyjny koszt budowy z ilości w projekcie (ceny do edycji)
@@ -47,6 +48,7 @@ shared/house-model.js       wspólny model bryły (wysokości, poddasze, dach z 
 shared/project-store.js     wspólny bieżący projekt w localStorage (moduły widzą nawzajem swoje zmiany)
 shared/furniture.js         katalog mebli w kategoriach (wymiary, wysokość, kształt 3D)
 shared/snapshots.js         zdjęcia z podglądów 3D i wizualizacje (IndexedDB)
+shared/balconies.js         balkony (kratki, rodzaj, styk ze ścianą, wyjście) – moduły Balkony, Zewnątrz 3D, Co poprawić
 shared/hvac.js              obliczenia wentylacji, rekuperacji i klimatyzacji (moduły Wentylacja / Rekuperacja / Klimatyzacja / Porównanie)
 shared/heating.js           porównanie źródeł ciepła (moduły Ogrzewanie i Porównanie)
 shared/heating-system.js    ocena instalacji z modułu Instalacja grzewcza (moduły Instalacja grzewcza, Ogrzewanie, Porównanie)

@@ -15,13 +15,14 @@ function compute(){
   // przegrody zewnętrzne (powierzchnie z projektu)
   const heatedUp=q.net[q.up]>0;                                                    // dom parterowy: nad parterem nieogrzewany strych
   const wall=q.wallNet+(q.attic&&heatedUp?q.gable*.75:0);                        // na poddaszu część szczytów jest ogrzewana
-  const roof=(heatedUp?(q.attic?q.roofInnerA:q.slab):q.net[q.lo])+q.loggiaA+q.overhangA; // skosy / strop pod strychem + nad wnęką i nadwieszeniem
+  const roof=(heatedUp?(q.attic?q.roofInnerA:q.slab):q.net[q.lo])+q.loggiaA+q.overhangA+(heatedUp?q.flatA||0:0); // + stropodach nad parterem poza dachem // skosy / strop pod strychem + nad wnęką i nadwieszeniem
   const floor=q.net[q.lo],bFloor=.6;                                            // grunt jest cieplejszy od powietrza – współczynnik redukcji
   const A={wall,roof,floor,win:q.ops.winA+q.ops.hstA,roofwin:q.ops.roofWinA,door:q.ops.extDoorA};
   const rows=PARTS.map(([k,name])=>{const u=s.U[k]+s.bridge*(k==='wall'||k==='roof'||k==='floor'?1:0),H=A[k]*u*(k==='floor'?bFloor:1);return {k,name,A:A[k],U:s.U[k],H}}).filter(r=>r.A>0);
   // wywiewna z nawiewnikami higrosterowanymi wymienia powietrze tylko, gdy trzeba – ok. 20% mniej niż stała wymiana
   const eta=s.vent==='mech'?s.eta/100:0,nMin=s.vent==='exhaust'?.4:.5,V=q.volume,Hv=.34*V*(nMin*(1-eta)+s.inf);
   rows.push({k:'vent',name:s.vent==='mech'?'Wentylacja (z odzyskiem '+Math.round(eta*100)+'%)':s.vent==='exhaust'?'Wentylacja mechaniczna wywiewna':'Wentylacja grawitacyjna',A:null,U:null,H:Hv,V});
+  if(q.balc?.psiL>0)rows.push({k:'balc',name:'Płyty balkonów (mostki cieplne)',A:null,U:null,H:q.balc.psiL,V:null,L:q.balc.contact});
   const Htot=rows.reduce((a,r)=>a+r.H,0);for(const r of rows){r.W=r.H*dT;r.share=r.H/Htot}
   const load=Htot*dT/1000;                                                          // kW
   const Qloss=Htot*Z.hdd*24/1000,Qint=3*q.usableTotal*5000/1000,Qsol=(A.win+A.roofwin)*125,Qh=Math.max(0,Qloss-.9*(Qint+Qsol));

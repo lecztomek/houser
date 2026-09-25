@@ -18,6 +18,7 @@ const ITEMS=[
   ['roof','Stan surowy otwarty','Dach: więźba, membrana, łaty, pokrycie','m²',q=>q.roofA,480,0,'połacie z okapami'],
   ['gutters','Stan surowy otwarty','Rynny, obróbki blacharskie','mb',q=>q.gutter,220,0,'długość okapów'],
   ['soffit','Stan surowy otwarty','Podbitka dachu','m²',q=>q.soffitA,190,1,'spód okapów i wysunięć'],
+  ['balcony','Stan surowy otwarty','Balkony (płyta, hydroizolacja, posadzka, balustrada)','m²',q=>q.balc?.area||0,2800,0,q=>q.balc?.n?q.balc.n+' szt. · balustrada '+(Math.round(q.balc.rail*10)/10)+' m':'moduł Balkony'],
   ['windows','Stan surowy zamknięty','Okna','m²',q=>q.ops.winA,1300,1,q=>q.ops.win+' szt.'],
   ['roofwin','Stan surowy zamknięty','Okna dachowe z kołnierzami','szt',q=>q.ops.roofWin,3800,1,'z projektu'],
   ['hst','Stan surowy zamknięty','Drzwi tarasowe przesuwne (HST)','m²',q=>q.ops.hstA,3000,1,q=>q.ops.hst+' szt.'],

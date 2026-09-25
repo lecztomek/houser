@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Balkony</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+.wrap{height:100vh;display:grid;grid-template-columns:340px 1fr}
+.side{padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{position:relative;min-width:0;overflow:auto;background:#e2e8f0;display:flex;align-items:flex-start;justify-content:center;padding:18px}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--hs-line-strong);background:var(--hs-panel);color:var(--hs-text);padding:6px 10px;border-radius:var(--hs-radius);font:600 12px var(--hs-font);cursor:pointer;min-height:34px}
+.btn.active{background:var(--hs-accent);border-color:var(--hs-accent);color:#fff}
+.btn.danger{color:var(--hs-bad);border-color:#fecaca}
+.hint{font-size:12px;color:var(--hs-muted);line-height:1.45;margin:8px 0 0}
+.item{border:1px solid var(--hs-line);border-radius:var(--hs-radius);padding:8px;background:#fff;font-size:12.5px;display:grid;gap:6px;margin-bottom:6px}
+.item input[type=text],.item select{border:1px solid var(--hs-line-strong);border-radius:6px;padding:5px 7px;font:inherit;width:100%;min-height:32px}
+.item small{color:var(--hs-muted)}
+.warn{font-size:12px;color:#b45309}
+.planCard{background:#fff;border-radius:var(--hs-radius-lg);padding:14px;box-shadow:0 6px 20px rgba(15,23,42,.12);max-width:100%}
+.planTitle{font-weight:700;font-size:14px;margin-bottom:8px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.planTitle span{color:var(--hs-muted);font-weight:500;font-size:12px}
+#plan{display:block;touch-action:none;user-select:none;max-width:100%;height:auto}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:#475569;margin-top:8px}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:4px}
+.empty{padding:40px 24px;text-align:center;color:var(--hs-muted);max-width:420px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr;height:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{padding:10px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1 class="hs-title">Balkony</h1>
+  <p class="hs-sub">Malujesz kratkami balkony na piętrze: <b>wystające</b> poza ścianę domu albo <b>nad parterem</b> – tam, gdzie piętro jest cofnięte (taras / loggia na stropie parteru). Wejście na balkon to drzwi lub HST narysowane w Układzie pomieszczeń na ścianie piętra.</p>
+  <div class="section"><h3>Pędzel</h3>
+    <div class="row"><button class="btn active" id="bPaint">Balkon</button><button class="btn" id="bErase">Gumka</button></div>
+    <p class="hint">Klikaj lub przeciągaj po kratkach przy ścianie piętra. Prawy przycisk myszy usuwa. Stykające się kratki tworzą jeden balkon.</p>
+  </div>
+  <div class="section"><h3>Balkony</h3><div id="list"></div></div>
+</aside>
+<main class="main"><div class="planCard" id="card"></div></main>
+</div>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/balconies.js"></script>
+<script>
+const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',B=HouserBalcony,PX=34,MARGIN=5;
+let project=null,brush='paint',painting=null;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const grid=()=>project?.grid||project?.definitionSnapshot?.grid;
+const fl=()=>project?.definitionSnapshot?.floorOrder||['ground','upper'];
+const rooms=f=>project?.definitionSnapshot?.floors?.[f]?.rooms||[];
+function cellAt(f,x,y){const g=grid(),s=project?.state?.[f];if(!g||!s||x<0||y<0||x>=g.width||y>=g.height)return null;return (Array.isArray(s[0])?s[y]?.[x]:s[y*g.width+x])||null}
+const occ=(f,x,y)=>{const id=cellAt(f,x,y);return !!id&&rooms(f).find(r=>r.id===id)?.kind!=='exteriorVoid'&&!(f===fl()[1]&&(id==='pustka'||id==='schody'))};
+const hasUp=()=>rooms(fl()[1]).length>0;
+function save(){const out=JSON.parse(JSON.stringify(B.list(project)));HouserStore.update(p=>{p.balconies=out},'balkony')}
+$('bPaint').onclick=()=>{brush='paint';$('bPaint').classList.add('active');$('bErase').classList.remove('active')};
+$('bErase').onclick=()=>{brush='erase';$('bErase').classList.add('active');$('bPaint').classList.remove('active')};
+function paint(x,y,on){if(!B.paintable(project,x,y,MARGIN))return false;const m=B.map(project),k=B.key(x,y);if(on===m.has(k))return false;const set=new Set(m.keys());on?set.add(k):set.delete(k);project.balconies=B.fromCells(set,B.list(project));return true}
+function renderSide(){
+  const L=$('list');if(!project){L.innerHTML='<div class="hint" style="margin:0">Brak projektu.</div>';return}
+  if(!hasUp()){L.innerHTML='<div class="hint" style="margin:0">Dom nie ma piętra ani poddasza – balkony są możliwe tylko na piętrze.</div>';return}
+  const S=B.stats(project);L.innerHTML=S.items.length?'':'<div class="hint" style="margin:0">Brak balkonów – namaluj je na rzucie.</div>';
+  S.items.forEach((it,i)=>{const b=it.b,d=document.createElement('div');d.className='item';
+    d.innerHTML='<input type="text" placeholder="Balkon '+(i+1)+'" value="'+esc(b.label)+'"><small>'+(it.kind==='cantilever'?'wystający':'nad parterem')+' · '+fmt(it.area)+' m²'+(it.cantA&&it.depth?' · wysięg '+fmt(it.depth)+' m':'')+(it.rooms.length?' · przy: '+it.rooms.map(esc).join(', '):'')+'</small>'+
+      '<select data-k="rail">'+Object.entries(B.RAIL).map(([k,v])=>'<option value="'+k+'"'+(b.rail===k?' selected':'')+'>balustrada '+v+'</option>').join('')+'</select>'+
+      (it.cantA>0?'<label><input type="checkbox" data-k="tb"'+(b.thermalBreak?' checked':'')+'> łącznik termiczny (izolowane mocowanie płyty)</label>':'')+
+      (!it.door?'<div class="warn">⚠ Nie ma wyjścia na balkon – dodaj drzwi lub HST na ścianie piętra przy balkonie (moduł Układ pomieszczeń).</div>':'')+
+      (it.depth>1.8?'<div class="warn">⚠ Wysięg ponad 1,8 m – taki balkon zwykle potrzebuje słupów lub wsporników.</div>':'')+
+      (it.cantA>0&&!b.thermalBreak?'<div class="warn">⚠ Płyta bez łącznika termicznego to duży mostek cieplny (straty ciepła, wilgoć przy ścianie).</div>':'')+
+      '<button class="btn danger">Usuń</button>';
+    d.querySelector('input[type=text]').onchange=e=>{b.label=e.target.value.trim();save();renderPlan()};
+    d.querySelector('[data-k=rail]').onchange=e=>{b.rail=e.target.value;save()};
+    const tb=d.querySelector('[data-k=tb]');if(tb)tb.onchange=e=>{b.thermalBreak=e.target.checked;save();renderSide()};
+    d.querySelector('.danger').onclick=()=>{project.balconies=B.list(project).filter(x=>x!==b);save();renderAll()};
+    L.appendChild(d)});
+  if(S.items.length)L.insertAdjacentHTML('beforeend','<p class="hint">Razem '+fmt(S.area)+' m² · balustrada '+fmt(S.rail)+' m. Balkony liczą się w Wycenie, bilansie energii (mostki cieplne przy płycie) i zacienianiu okien parteru w Nasłonecznieniu.</p>');
+}
+function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
+function renderPlan(){
+  const card=$('card');if(!project){card.innerHTML='<div class="empty">Brak projektu. Narysuj rzut w module <b>Układ pomieszczeń</b>.</div>';return}
+  if(!hasUp()){card.innerHTML='<div class="empty">Dom nie ma piętra – ustaw piętro lub poddasze w module <b>Kondygnacje i dach</b>.</div>';return}
+  card.innerHTML='<div class="planTitle"><div>Piętro / poddasze · balkony</div><span>'+(brush==='erase'?'gumka':'pędzel: balkon')+'</span></div><svg id="plan"></svg><div class="legend"><span><i style="background:#e2e8f0;border:1px solid #94a3b8"></i>parter pod spodem</span><span><i style="background:#fb923c"></i>balkon wystający</span><span><i style="background:#fdba74;border:1px dashed #ea580c"></i>balkon nad parterem</span><span><i style="background:#fff;border:2px solid #0f172a"></i>ściany piętra</span></div>';
+  const svg=$('plan'),g=grid(),W=g.width,H=g.height,[lo,up]=fl(),TW=(W+2*MARGIN)*PX,TH=(H+2*MARGIN)*PX;
+  svg.setAttribute('viewBox',[-MARGIN*PX,-MARGIN*PX,TW,TH].join(' '));const main=document.querySelector('.main'),avail=Math.max(300,Math.min(main.clientWidth-60,900));svg.setAttribute('width',Math.round(avail));const k=TW/Math.round(avail);
+  const P=v=>v*PX;el('rect',{x:-MARGIN*PX,y:-MARGIN*PX,width:TW,height:TH,fill:'#eef5e9'},svg);
+  for(let x=-MARGIN;x<=W+MARGIN;x++)el('line',{x1:P(x),y1:P(-MARGIN),x2:P(x),y2:P(H+MARGIN),stroke:'rgba(15,23,42,.07)'},svg);
+  for(let y=-MARGIN;y<=H+MARGIN;y++)el('line',{x1:P(-MARGIN),y1:P(y),x2:P(W+MARGIN),y2:P(y),stroke:'rgba(15,23,42,.07)'},svg);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(occ(lo,x,y))el('rect',{x:P(x),y:P(y),width:PX+.5,height:PX+.5,fill:'#e2e8f0'},svg);if(occ(up,x,y)){const r=rooms(up).find(q=>q.id===cellAt(up,x,y));el('rect',{x:P(x),y:P(y),width:PX+.5,height:PX+.5,fill:r?.color||'#cbd5e1','fill-opacity':.35},svg)}}
+  const m=B.map(project);
+  for(const [kk,b] of m){const [x,y]=kk.split(',').map(Number),over=occ(lo,x,y);el('rect',{x:P(x),y:P(y),width:PX+.5,height:PX+.5,fill:over?'#fdba74':'#fb923c','fill-opacity':.9},svg)}
+  const ops=project.openings?.[up]||{};
+  const edge=(key,a,b,x1,y1,x2,y2)=>{if(a===b)return;el('line',{x1:P(x1),y1:P(y1),x2:P(x2),y2:P(y2),stroke:'#0f172a','stroke-width':5,'stroke-linecap':'square'},svg);const op=ops[key];if(op)el('line',{x1:P(x1),y1:P(y1),x2:P(x2),y2:P(y2),stroke:op==='door'||op==='hst'?'#fff':'#60a5fa','stroke-width':3},svg)};
+  for(let y=0;y<=H;y++)for(let x=0;x<W;x++)edge('h:'+x+':'+y,occ(up,x,y-1),occ(up,x,y),x,y,x+1,y);
+  for(let y=0;y<H;y++)for(let x=0;x<=W;x++)edge('v:'+x+':'+y,occ(up,x-1,y),occ(up,x,y),x,y,x,y+1);
+  // balustrady
+  for(const [kk] of m){const [x,y]=kk.split(',').map(Number);for(const [dx,dy,x1,y1,x2,y2] of [[0,-1,x,y,x+1,y],[0,1,x,y+1,x+1,y+1],[-1,0,x,y,x,y+1],[1,0,x+1,y,x+1,y+1]]){if(m.has(B.key(x+dx,y+dy))||occ(up,x+dx,y+dy))continue;el('line',{x1:P(x1),y1:P(y1),x2:P(x2),y2:P(y2),stroke:'#9a3412','stroke-width':2.5,'stroke-dasharray':'6 3'},svg)}}
+  for(const it of B.stats(project).items){const c=it.b.cells,cx=c.reduce((a,p)=>a+p[0]+.5,0)/c.length,cy=c.reduce((a,p)=>a+p[1]+.5,0)/c.length;el('text',{x:P(cx),y:P(cy),'text-anchor':'middle','dominant-baseline':'middle','font-size':11*k,'font-weight':700,fill:'#431407','pointer-events':'none'},svg,(it.b.label||'Balkon')+' · '+fmt(it.area)+' m²')}
+  for(const r of rooms(up)){const cells=[];for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(cellAt(up,x,y)===r.id&&occ(up,x,y))cells.push([x,y]);if(!cells.length)continue;const cx=cells.reduce((a,p)=>a+p[0]+.5,0)/cells.length,cy=cells.reduce((a,p)=>a+p[1]+.5,0)/cells.length;el('text',{x:P(cx),y:P(cy),'text-anchor':'middle','font-size':11*k,fill:'rgba(15,23,42,.55)','pointer-events':'none'},svg,r.name)}
+}
+function cellFromEvent(e){const svg=$('plan'),pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());return {x:Math.floor(p.x/PX),y:Math.floor(p.y/PX)}}
+document.addEventListener('contextmenu',e=>{if($('plan')?.contains(e.target))e.preventDefault()});
+document.addEventListener('pointerdown',e=>{const svg=$('plan');if(!project||!svg||!svg.contains(e.target))return;e.preventDefault();painting={on:!(e.button===2||brush==='erase'),changed:false};const c=cellFromEvent(e);if(paint(c.x,c.y,painting.on)){painting.changed=true;renderPlan()}});
+document.addEventListener('pointermove',e=>{if(!painting)return;const c=cellFromEvent(e);if(paint(c.x,c.y,painting.on)){painting.changed=true;renderPlan()}});
+document.addEventListener('pointerup',()=>{if(!painting)return;const ch=painting.changed;painting=null;renderAll();if(ch)save()});
+window.addEventListener('resize',()=>project&&renderPlan());
+function renderAll(){renderSide();renderPlan()}
+function setProject(p){project=p&&(p.grid||p.definitionSnapshot?.grid)?p:null;renderAll()}
+const rec=HouserStore.load();setProject(rec?rec.project:null);
+HouserStore.subscribe(r=>{if(painting)return;const a=document.activeElement;if(a&&['INPUT','SELECT'].includes(a.tagName))return;setProject(r.project)});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

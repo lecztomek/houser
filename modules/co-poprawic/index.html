@@ -51,6 +51,7 @@ details li small{display:block;color:#475569}
 <script src="../../shared/openings.js"></script>
 <script src="../../shared/stairs.js"></script>
 <script src="../../shared/project-store.js"></script>
+<script src="../../shared/balconies.js"></script>
 <script src="../../shared/quantities.js"></script>
 <script src="../../shared/furniture.js"></script>
 <script src="../../shared/energy.js"></script>
@@ -70,6 +71,7 @@ details li small{display:block;color:#475569}
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const tipHTML=t=>Array.isArray(t)?t.map(x=>'<span>'+esc(x)+'</span>').join(' '):esc(t);
 const cls=s=>s>=7.5?'c-ok':s>=5?'c-mid':'c-bad';
 const link=(id,name)=>'<a class="tag" href="../'+id+'/" data-mod="'+id+'">'+esc(name)+'</a>';
 function render(project){
@@ -77,13 +79,13 @@ function render(project){
   if(!project||!(project.grid||project.definitionSnapshot?.grid)){O.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej albo narysuj rzut w <b>Układzie pomieszczeń</b>.</div>';return}
   const R=HouserAdvice.collect(project);
   if(!R.mods.length){O.innerHTML='<div class="empty">Na rzucie nie ma jeszcze pomieszczeń.</div>';return}
-  let h='<div class="card"><h2>Od czego zacząć – 5 najważniejszych poprawek</h2>'+(R.top.length?'<ol class="top">'+R.top.map(i=>'<li><div>'+(i.head?'<div class="hd">'+esc(i.head)+'</div>':'')+'<div class="t">'+esc(i.text)+' '+link(i.mod,i.modName)+'</div>'+(i.tip?'<div class="tip">'+esc(i.tip)+'</div>':'')+'</div></li>').join('')+'</ol>':'<p class="hint">Nie widzę nic ważnego do poprawy – dom wypada dobrze we wszystkich analizach.</p>')+'</div>';
+  let h='<div class="card"><h2>Od czego zacząć – 5 najważniejszych poprawek</h2>'+(R.top.length?'<ol class="top">'+R.top.map(i=>'<li><div>'+(i.head?'<div class="hd">'+esc(i.head)+'</div>':'')+'<div class="t">'+esc(i.text)+' '+link(i.mod,i.modName)+'</div>'+(i.tip?'<div class="tip">'+tipHTML(i.tip)+'</div>':'')+'</div></li>').join('')+'</ol>':'<p class="hint">Nie widzę nic ważnego do poprawy – dom wypada dobrze we wszystkich analizach.</p>')+'</div>';
   h+='<div class="two"><div class="card"><h2>Największe zalety</h2>'+(R.strengths.length?'<ul class="pl good">'+R.strengths.map(s=>'<li><b>'+esc(s.modName)+' · '+fmt(s.score)+' / 10</b>'+esc(s.text)+'</li>').join('')+'</ul>':'<p class="hint">Żaden obszar nie ma jeszcze oceny 7,5 lub wyższej.</p>')+'</div>'+
     '<div class="card"><h2>Największe wady</h2>'+(R.weaknesses.length?'<ul class="pl bad">'+R.weaknesses.map(s=>'<li><b>'+esc(s.modName)+' · '+fmt(s.score)+' / 10</b>'+(s.head?esc(s.head)+' – ':'')+esc(s.text||'niska ocena')+'</li>').join('')+'</ul>':'<p class="hint">Żaden obszar nie ma oceny poniżej 7.</p>')+'</div></div>';
   h+='<div class="card"><h2>Oceny w modułach</h2><div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><span class="big '+(R.overall!=null?cls(R.overall):'')+'">'+(R.overall!=null?fmt(R.overall)+' / 10':'–')+'</span><span class="hint">średnia ważona z modułów (przepisy i codzienność liczą się bardziej) · '+R.major+' ważnych uwag, '+R.all.length+' wszystkich</span></div><div class="scores">'+
     R.mods.map(m=>'<a class="sc" href="../'+m.id+'/" data-mod="'+m.id+'"><span>'+esc(m.name)+'</span><b class="'+(m.score!=null?cls(m.score):'')+'">'+(m.score!=null?fmt(m.score):'–')+'</b></a>').join('')+'</div>'+
     '<p class="hint" style="margin-top:8px">„–” – moduł nie ma czego ocenić (np. instalacja grzewcza jeszcze niezaprojektowana).</p></div>';
-  h+='<div class="card"><h2>Wszystkie uwagi</h2>'+R.mods.filter(m=>m.items.length).map(m=>'<details><summary>'+esc(m.name)+' ('+m.items.length+')</summary><ul>'+[...m.items].sort((a,b)=>b.p-a.p).map(i=>'<li>'+(i.head?'<i>'+esc(i.head)+'</i> · ':'')+esc(i.text)+(i.tip?'<small>'+esc(i.tip)+'</small>':'')+'</li>').join('')+'</ul></details>').join('')+'</div>';
+  h+='<div class="card"><h2>Wszystkie uwagi</h2>'+R.mods.filter(m=>m.items.length).map(m=>'<details><summary>'+esc(m.name)+' ('+m.items.length+')</summary><ul>'+[...m.items].sort((a,b)=>b.p-a.p).map(i=>'<li>'+(i.head?'<i>'+esc(i.head)+'</i> · ':'')+esc(i.text)+(i.tip?'<small>'+tipHTML(i.tip)+'</small>':'')+'</li>').join('')+'</ul></details>').join('')+'</div>';
   O.innerHTML=h;
   // w stronie głównej linki przełączają moduł
   try{if(window.top!==window&&window.top.HouserStore)for(const a of O.querySelectorAll('[data-mod]'))a.onclick=e=>{e.preventDefault();window.top.location.hash=a.dataset.mod}}catch(_){}

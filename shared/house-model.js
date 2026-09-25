@@ -89,5 +89,15 @@
     return out;
   }
 
-  global.HouserModel={DEF,SOFFITS,normalize,geometry,toSaved,slopesAcrossX,outdoorCells,outdoorFromMap,outdoorMap,outdoorCorners};
+  // zakres dachu wzdłuż kalenicy [m] (l0..l1). Bez balkonów – cała siatka (jak dotąd). Kratki parteru pod balkonem
+  // na końcu domu (piętro krótsze) wypadają spod dachu – tam jest stropodach z tarasem / balkonem.
+  function roofRange(project){const g=project.grid||project.definitionSnapshot?.grid,c=g.cellMeters,e=project.elevationSettings||{},across=slopesAcrossX(e.ridge==='north-south'?'north-south':'east-west',project.orientation?.top);
+    const n=across?g.height:g.width,full={l0:0,l1:n*c,full:true,across};const bal=project.balconies;if(!Array.isArray(bal)||!bal.length)return full;
+    const [lo,up]=project.definitionSnapshot?.floorOrder||['ground','upper'],st={};for(const f of [lo,up]){const v=project.state?.[f]||[];st[f]=Array.isArray(v[0])?v.flat():v}
+    const kinds=f=>Object.fromEntries((project.definitionSnapshot?.floors?.[f]?.rooms||[]).map(r=>[r.id,r.kind])),K={[lo]:kinds(lo),[up]:kinds(up)};
+    const occ=(f,x,y)=>{const v=st[f]?.[y*g.width+x];return !!v&&K[f][v]!=='exteriorVoid'&&!(f===up&&(v==='pustka'||v==='schody'))};
+    const B=new Set();for(const b of bal)for(const [x,y] of b.cells||[])B.add(x+','+y);
+    let a0=1e9,a1=-1e9;for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){if(occ(up,x,y)||(occ(lo,x,y)&&!B.has(x+','+y))){const a=across?y:x;a0=Math.min(a0,a);a1=Math.max(a1,a)}}
+    if(a0>a1)return full;return {l0:a0*c,l1:(a1+1)*c,full:a0===0&&a1===n-1,across}}
+  global.HouserModel={roofRange,DEF,SOFFITS,normalize,geometry,toSaved,slopesAcrossX,outdoorCells,outdoorFromMap,outdoorMap,outdoorCorners};
 })(window);

@@ -8,7 +8,7 @@
   const FAC={north:'północ',south:'południe',east:'wschód',west:'zachód'};
   const ADVISORS=[
     {id:'przepisy',name:'Przepisy',w:1.5,need:'HouserRules',run:p=>{const {out}=HouserRules.check(p);const bad=out.filter(o=>o.st==='bad'),warn=out.filter(o=>o.st==='warn');
-      return {score:clamp(10-2*bad.length-.5*warn.length),items:[...bad.map(o=>({p:2.5,head:o.room,text:o.name+' – '+o.val+' (wymagane: '+o.req+')',tip:o.fix})),...warn.map(o=>({p:.8,head:o.room,text:o.name+' – '+o.val+' ('+o.req+')',tip:o.fix}))],
+      return {score:clamp(10-2*bad.length-.5*warn.length),items:[...bad.map(o=>({p:2.5,head:o.room+' · '+o.name,text:o.val,tip:[o.fix,'Wymagane: '+o.req+'.'].filter(Boolean)})),...warn.map(o=>({p:.8,head:o.room+' · '+o.name,text:o.val,tip:[o.fix,(/^zalec/i.test(o.req)?o.req[0].toUpperCase()+o.req.slice(1):'Zalecane: '+o.req)+'.'].filter(Boolean)}))],
         good:bad.length?[]:['Zgodny z uproszczonymi warunkami technicznymi (okna, wysokości, drzwi, schody).']}}},
     {id:'codziennosc',name:'Codzienność',w:1.2,need:'HouserDaily',run:p=>{const D=HouserDaily.evaluate(p,p.dailySettings);const sc=D.scenarios.filter(s=>s.enabled!==false&&s.score!=null);
       return {score:D.overall,items:sc.filter(s=>s.score<7.5).map(s=>({p:Math.min(3,(7.5-s.score)/2*(s.weight||1)+.3),head:s.name+' · '+fmt(s.score)+' / 10',text:s.why[0]||s.desc,tip:s.hints[0]||''})),
@@ -28,6 +28,11 @@
       const items=Object.entries(WT).filter(([k,[max]])=>U[k]>max+1e-9).map(([k,[max,n,tip]])=>({p:Math.min(3,1+(U[k]/max-1)*3),head:n,text:'U '+fmt(U[k],2)+' W/m²K – więcej niż pozwalają warunki techniczne (≤ '+fmt(max,2)+').',tip:(p.envelope?'':'Ustaw materiały w module Ocieplenie i elewacja: ')+tip}));
       if(!p.envelope)items.push({p:.3,text:'Nie ustawiono jeszcze ocieplenia – bilans energii liczy się na wartościach domyślnych.',tip:'Wybierz mur, ocieplenie i okna w module Ocieplenie i elewacja.'});
       const worst=Math.max(...Object.entries(WT).map(([k,[max]])=>U[k]/max));return {score:clamp(10-Math.max(0,worst-.7)*10),items,good:worst<=.8?['Bardzo dobre ocieplenie – wszystkie przegrody wyraźnie poniżej wymagań.']:[]}}},
+    {id:'balkony',name:'Balkony',w:.6,need:'HouserBalcony',run:p=>{const S=HouserBalcony.stats(p);if(!S.items.length)return {score:null,items:[],good:[]};const items=[];
+      for(const it of S.items){const n=it.b.label||'Balkon '+fmt(it.area)+' m²';if(!it.door)items.push({p:1.5,head:n,text:'Nie ma wyjścia na balkon z żadnego pokoju.',tip:'Dodaj drzwi balkonowe lub HST na ścianie piętra przy balkonie (moduł Układ pomieszczeń).'});
+        if(it.cantA>0&&!it.b.thermalBreak)items.push({p:1,head:n,text:'Płyta balkonu bez łącznika termicznego – mostek cieplny, zimna i wilgotna ściana przy balkonie.',tip:'Zaplanuj łącznik termiczny (izolowane mocowanie płyty) albo balkon na słupach.'});
+        if(it.depth>1.8)items.push({p:.6,head:n,text:'Wysięg balkonu ponad 1,8 m.',tip:'Przy takim wysięgu potrzebne są słupy lub wsporniki.'})}
+      return {score:clamp(10-items.reduce((a,i)=>a+i.p*1.5,0)),items,good:!items.length?['Balkony z wyjściem z pokoju i dobrze oddzielone termicznie.']:[]}}},
     {id:'hydraulika',name:'Hydraulika',w:.8,need:'HouserPlumbing',run:p=>{const P=HouserPlumbing.evaluate(p,p.plumbingSettings);const items=[];
       for(const pt of P.points)for(const i of pt.issues||[])if(i.p>=.8)items.push({p:Math.min(3,i.p),head:pt.name,text:i.text,tip:i.tip});
       return {score:P.overall,items,good:P.overall>=8.5?['Zwarta instalacja wod-kan – mokre pomieszczenia blisko siebie i jedno nad drugim.']:[]}}},

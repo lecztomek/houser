@@ -28,6 +28,7 @@ function compute(){
   const occ=(f,x,y)=>{const v=id(f,x,y);return !!v&&def[f]?.[v]?.kind!=='exteriorVoid'};
   const upAbove=(x,y)=>{const v=id(up,x,y);return !!v&&v!=='pustka'&&v!=='schody'};
   const hasUp=q.rooms.some(r=>r.f===up);
+  const balc=new Set();for(const b of project.balconies||[])for(const [x,y] of b.cells||[])balc.add(x+','+y); // balkon nad oknem parteru działa jak daszek
   const out=HouserModel.outdoorMap(project.outdoorStructures||[],c);
   const kind=s.weather==='sunny'?'clear':'avg',blind=BLIND[s.blinds];
   const rooms={};for(const r of q.rooms){if(r.area<.5)continue;rooms[r.f+'|'+r.id]={...r,key:r.f+'|'+r.id,floorName:dsn.floors?.[r.f]?.name||(r.f===lo?'Parter':'Piętro'),wins:[],fac:{north:0,east:0,south:0,west:0,roof:0},src:{}}}
@@ -51,7 +52,7 @@ function compute(){
         sh.push({kind:'roof',P:w.roofP,hO:Math.max(hO,w.hT+.05)});
         let pergola=false;
         if(r.f===lo){
-          if(hasUp){let k=1;while(k<30){const [x,y]=outCell(i,k);if(!upAbove(x,y))break;k++}if(k>1)sh.push({kind:'upper',P:(k-1)*c,hO:Math.max(G.groundHeight,w.hT+.05)})}
+          if(hasUp){let k=1;while(k<30){const [x,y]=outCell(i,k);if(!upAbove(x,y)&&!balc.has(x+','+y))break;k++}if(k>1)sh.push({kind:'upper',P:(k-1)*c,hO:Math.max(G.groundHeight,w.hT+.05)})}
           let k=1;while(k<40){const [x,y]=outCell(i,k);if(out.get(x+','+y)!=='coveredTerrace')break;k++}
           if(k>1)sh.push({kind:'terrace',P:(k-1)*c,hO:Math.max(Math.min(G.groundHeight,2.7),w.hT+.05)});
           const [x1,y1]=outCell(i,1);pergola=out.get(x1+','+y1)==='pergola';

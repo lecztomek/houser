@@ -58,8 +58,16 @@
     Object.assign(q,{hWall,hPart,extLen,partLen,gable,extGross,extNet,wallNet:Math.max(0,wallGross-glaz),partA:partLen[lo]*hPart[lo]+partLen[up]*hPart[up],ops,runs});
 
     // dach
-    const eo=G.eaveOverhang,go=G.gableOverhang,cos=Math.cos(G.roofPitch*Math.PI/180),slope=(span/2+eo)/cos,roofA=2*slope*(length+2*go);
-    Object.assign(q,{roofA,roofInnerA:2*(span/2)/cos*length,soffitA:G.soffit==='none'?0:2*eo*(length+2*go)+2*go*2*slope,gutter:2*(length+2*go)});
+    // dach tylko nad częścią domu, gdy piętro jest krótsze, a na końcu parteru jest balkon / taras (HouserModel.roofRange)
+    const rr=HouserModel.roofRange(project),roofL=rr.l1-rr.l0;
+    const eo=G.eaveOverhang,go=G.gableOverhang,cos=Math.cos(G.roofPitch*Math.PI/180),slope=(span/2+eo)/cos,roofA=2*slope*(roofL+2*go);
+    let flatA=0;if(!rr.full)for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(!occ(lo,x,y))continue;const a=(across?y+.5:x+.5)*c;if(a<rr.l0||a>rr.l1)flatA+=c2}
+    Object.assign(q,{roofA,roofL,flatA,roofInnerA:2*(span/2)/cos*roofL,soffitA:G.soffit==='none'?0:2*eo*(roofL+2*go)+2*go*2*slope,gutter:2*(roofL+2*go)});
+    // balkony: powierzchnia, wystające / nad parterem, styk płyty ze ścianą (mostek cieplny)
+    const bal={area:0,cantA:0,overA:0,contact:0,psiL:0,rail:0,n:0},bset=new Set();for(const b of project.balconies||[])for(const [x,y] of b.cells||[])bset.add(x+','+y);
+    for(const b of project.balconies||[]){bal.n++;for(const [x,y] of b.cells||[]){const over=occ(lo,x,y);bal.area+=c2;if(over)bal.overA+=c2;else bal.cantA+=c2;
+      for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(bset.has(nx+','+ny))continue;if(occ(up,nx,ny)){if(!over){bal.contact+=c;bal.psiL+=c*(b.thermalBreak===false?.5:.15)}}else bal.rail+=c}}}
+    q.balc=bal;
 
     // komin, schody, łazienki, tarasy
     const ch=new Set(project.structure?.chimney||[]),seen=new Set();let chimneys=0;
