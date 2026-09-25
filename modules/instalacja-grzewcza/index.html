@@ -72,7 +72,7 @@ html,body{height:100%;margin:0}
   </div>
   <div class="section">
     <h3>Ogrzewanie w pokojach</h3>
-    <div class="row" style="margin-bottom:8px"><button class="btn" id="allFloor">Wszędzie podłogówka</button><button class="btn" id="resetEmit">Domyślnie</button></div>
+    <div class="row" style="margin-bottom:8px"><button class="btn" id="allFloor">Wszędzie podłogówka</button><button class="btn" id="allRad">Wszędzie grzejniki</button><button class="btn" id="resetEmit">Domyślnie</button></div>
     <div class="rooms" id="rooms"></div>
     <p class="hint">Liczba w nawiasie – ile ciepła pokój potrzebuje w największy mróz. Czerwony – wybrane ogrzewanie nie wystarczy.</p>
   </div>
@@ -119,6 +119,7 @@ $('share').onchange=()=>save(s=>{s.share=+$('share').value});
 $('buffer').onchange=()=>save(s=>{s.buffer=$('buffer').value==='auto'?'auto':+$('buffer').value});
 $('dhw').onchange=()=>save(s=>{s.dhw=+$('dhw').value});
 $('allFloor').onclick=()=>save(s=>{for(const r of R.rooms)if(!r.garage&&r.area>=2)s.emitters[r.key]=r.bath?'floor+ladder':'floor'});
+$('allRad').onclick=()=>save(s=>{for(const r of R.rooms)if(!r.garage&&r.area>=2)s.emitters[r.key]=r.bath?'ladder':'rad'});
 $('resetEmit').onclick=()=>save(s=>{s.emitters={}});
 
 function renderSide(){

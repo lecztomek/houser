@@ -2962,4 +2962,5 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "dla okien, przy których nie ustawiono rolety w module Okna i drzwi":"for windows without a blind set in the Windows and doors module",
 "Okno wychodzi ponad dach – zmniejsz wysokość, zmień kąt skosu albo stronę, która jest wyżej (albo ustaw „skos wg dachu”).":"The window sticks out above the roof – reduce the height, change the slope angle or the higher side (or choose „slope follows the roof”).",
 "m · kąt skosu":"m · slope angle",
-"° ·":"° ·"};
+"° ·":"° ·",
+"Wszędzie grzejniki":"Radiators everywhere"};
