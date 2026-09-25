@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wentylacja i klimatyzacja</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:330px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
+h1{font-size:19px;margin:0 0 4px}
+h2.sh{font-size:17px;margin:8px 0 0}
+.lead,.hint{font-size:12.5px;color:var(--hs-muted);line-height:1.5;margin:0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.field{display:grid;gap:4px;margin-bottom:9px}
+.field label{font-size:12px;color:var(--hs-muted)}
+.field select{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.tile .l{font-size:12px;color:var(--hs-muted);font-weight:600}
+.tile .v{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-top:4px}
+.tile .v small{font-size:14px;color:var(--hs-muted);font-weight:600}
+.tile .s{font-size:12.5px;color:var(--hs-muted);margin-top:4px;line-height:1.4}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.card h3{font-size:14.5px;margin:0 0 6px}
+.need{display:inline-block;font-weight:800;font-size:13px;border-radius:999px;padding:3px 10px}
+.need.high{background:#fee2e2;color:#991b1b}.need.mid{background:#fef3c7;color:#92400e}.need.low{background:#dcfce7;color:#166534}
+.c-ok{color:#15803d}.c-mid{color:#b45309}.c-bad{color:#b91c1c}
+ul.why{margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.55}
+.iss{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:7px}
+.iss li{font-size:12.5px;line-height:1.45;border-top:1px solid #eef2f6;padding-top:7px}
+.iss .pen{float:right;font-weight:700;color:#b91c1c;font-size:12px;margin-left:8px}
+.iss .tip{display:block;color:#475569;margin-top:2px}
+.iss .tip:before{content:'→ ';color:#2563eb;font-weight:700}
+.plans{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.plan{flex:1 1 320px;min-width:0}
+.plan h4{margin:6px 0;font-size:12px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.06em}
+.plan svg{width:100%;height:auto;display:block;max-height:440px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#475569;margin-top:8px;align-items:center}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:5px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #eef2f6;vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+th{font-size:11.5px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.04em}
+tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
+.role{font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.role.sup{background:#dbeafe;color:#1e40af}.role.ex{background:#ffedd5;color:#9a3412}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.empty{padding:40px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){html,body{overflow:auto;height:auto}.wrap{height:auto;grid-template-rows:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{overflow:visible}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1>Wentylacja i klimatyzacja</h1>
+  <p class="lead">Nie projektujemy kanałów – oceniamy, jak bardzo przyda się rekuperacja i klimatyzacja, jak trudno je zrobić w tym układzie i ile orientacyjnie kosztują.</p>
+  <div class="section">
+    <h3>Rekuperacja</h3>
+    <div class="field"><label>Gdzie stanie centrala</label><select id="unit"></select></div>
+    <div class="field"><label>Kuchnia</label><select id="kitchen"><option value="electric">płyta elektryczna / indukcja (50 m³/h)</option><option value="gas">kuchenka gazowa (70 m³/h)</option></select></div>
+  </div>
+  <div class="section">
+    <h3>Klimatyzacja</h3>
+    <div class="field"><label>Klimatyzacja w pokojach</label><select id="ac"><option value="3">z bardzo wysokim ryzykiem przegrzania</option><option value="2">z wysokim i bardzo wysokim ryzykiem</option><option value="all">we wszystkich pokojach</option><option value="none">bez klimatyzacji</option></select></div>
+    <p class="hint">Ryzyko przegrzania bierzemy z modułu Nasłonecznienie (okna, strony świata, okap, osłony).</p>
+  </div>
+  <p class="hint" style="margin-top:10px">Ustawienia zapisują się w projekcie. Liczba mieszkańców, szczelność domu i ceny prądu pochodzą z modułu Energia.</p>
+  <div class="section">
+    <h3>Jak liczymy</h3>
+    <p class="hint">Strumienie powietrza wg normy PN-83/B-03430: wywiew z kuchni 50–70 m³/h, łazienki 50, WC i pralni 30; nawiew do salonu i sypialni, łącznie tyle, ile wywiew (co najmniej 30 m³/h na osobę i ok. pół wymiany powietrza na godzinę). Każdy pokój dostaje osobny kanał od centrali (system rozdzielaczowy): długość to odległość po rzucie + wysokość kondygnacji + zapas. Kanały do pokoi parteru pod piętrem trzeba prowadzić w stropie (sufit podwieszany) – to utrudnienie. Oszczędność = mniej ciepła na ogrzewanie (z modułu Energia) minus prąd na wentylatory.</p>
+  </div>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="../../shared/energy.js"></script>
+<script src="../naslonecznienie/sun.js"></script>
+<script src="../naslonecznienie/calc.js"></script>
+<script src="engine.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let project=null,res=null;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const zl=v=>(Math.round(v/100)*100).toLocaleString('pl-PL')+' zł';
+const NEED={high:'bardzo potrzebna',mid:'zalecana',low:'opcjonalna'},NEEDAC={high:'potrzebna',mid:'przyda się w części pokoi',low:'raczej niepotrzebna'};
+const RISK=['niskie','umiarkowane','wysokie','bardzo wysokie'];
+function settings(){return {...HouserHVAC.DEF,...(project?.hvacSettings||{})}}
+function save(patch){const s={...settings(),...patch};project.hvacSettings=s;HouserStore.update(p=>{p.hvacSettings=s},'wentylacja');render()}
+$('unit').onchange=()=>save({unit:$('unit').value});
+$('kitchen').onchange=()=>save({kitchen:$('kitchen').value});
+$('ac').onchange=()=>{const v=$('ac').value;save(v==='all'||v==='none'?{ac:v}:{ac:'auto',acThreshold:+v})};
+
+function planSVG(f){
+  const {W,H,c,rooms,lo,up}=res,S=22;const inRoom={};for(const r of rooms)if(r.f===f)for(const [x,y] of r.cells)inRoom[x+','+y]=r;
+  if(!Object.keys(inRoom).length)return '';let h='',xs=W,ys=H,xe=0,ye=0;
+  for(const k in inRoom){const [x,y]=k.split(',').map(Number);xs=Math.min(xs,x);ys=Math.min(ys,y);xe=Math.max(xe,x+1);ye=Math.max(ye,y+1)}
+  const acKeys=new Set(res.ac.rooms.map(r=>r.key));
+  for(const k in inRoom){const [x,y]=k.split(',').map(Number),r=inRoom[k];const fill=r.role==='sup'?'#dbeafe':r.role==='ex'?'#ffedd5':r.role==='pass'?'#f1f5f9':'#fff';h+='<rect x="'+x*S+'" y="'+y*S+'" width="'+S+'" height="'+S+'" fill="'+fill+'"/>'}
+  const ln=(x1,y1,x2,y2,col,w)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="square"/>';
+  const E=(a,b,x1,y1,x2,y2)=>{const A=inRoom[a],B=inRoom[b];if(!!A!==!!B)return ln(x1,y1,x2,y2,'#334155',3);if(A&&B&&A!==B)return ln(x1,y1,x2,y2,'#94a3b8',1);return ''};
+  for(let y=ys;y<=ye;y++)for(let x=xs;x<xe;x++)h+=E(x+','+(y-1),x+','+y,x*S,y*S,(x+1)*S,y*S);
+  for(let x=xs;x<=xe;x++)for(let y=ys;y<ye;y++)h+=E((x-1)+','+y,x+','+y,x*S,y*S,x*S,(y+1)*S);
+  // centrala i kanały (kierunek, nie trasa)
+  let U=null;if(res.unitLoft){if(f===res.loftFloor)U=res.loftUnit.cells[0]}else if(res.unit&&res.unit.f===f){const cs=res.unit.cells;U=cs[Math.floor(cs.length/2)]}
+  if(U){for(const r of [...res.sup,...res.ex]){if(r.f!==f&&!(res.unitLoft&&f===res.loftFloor))continue;const cs=r.cells,cx=cs.reduce((a,p)=>a+p[0],0)/cs.length,cy=cs.reduce((a,p)=>a+p[1],0)/cs.length;if(r.f!==f)continue;
+      h+='<line x1="'+((U[0]+.5)*S)+'" y1="'+((U[1]+.5)*S)+'" x2="'+((cx+.5)*S)+'" y2="'+((cy+.5)*S)+'" stroke="'+(r.role==='sup'?'#2563eb':'#ea580c')+'" stroke-width="2" stroke-dasharray="5 4" opacity=".7"/>'}
+    h+='<rect x="'+(U[0]*S-3)+'" y="'+(U[1]*S-3)+'" width="'+(S+6)+'" height="'+(S+6)+'" rx="5" fill="#0f766e"/><text x="'+((U[0]+.5)*S)+'" y="'+((U[1]+.5)*S+4)+'" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">R</text>'}
+  for(const r of rooms){if(r.f!==f||r.cells.length<5)continue;const cx=r.cells.reduce((a,p)=>a+p[0],0)/r.cells.length,cy=r.cells.reduce((a,p)=>a+p[1],0)/r.cells.length,X=(cx+.5)*S,Y=(cy+.5)*S;
+    h+='<text x="'+X+'" y="'+(Y-3)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#0f172a" pointer-events="none">'+esc(r.name.length>16?r.name.slice(0,15)+'…':r.name)+'</text>';
+    if(r.role==='sup'||r.role==='ex')h+='<text x="'+X+'" y="'+(Y+11)+'" text-anchor="middle" font-size="10.5" fill="#334155">'+(r.role==='sup'?'↓ ':'↑ ')+r.flow+' m³/h'+(acKeys.has(r.key)?' ❄':'')+'</text>'}
+  return '<div class="plan"><h4>'+(f===lo?'Parter':'Piętro / poddasze')+'</h4><svg viewBox="'+[xs*S-8,ys*S-8,(xe-xs)*S+16,(ye-ys)*S+16].join(' ')+'">'+h+'</svg></div>'}
+
+function render(){
+  const s=settings(),M=$('main');
+  if(!project||!(project.grid||project.definitionSnapshot?.grid)){M.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej albo narysuj rzut w <b>Układzie pomieszczeń</b>.</div>';return}
+  try{res=HouserHVAC.evaluate(project,s)}catch(e){console.error(e);M.innerHTML='<div class="empty">Nie udało się przeanalizować rzutu.</div>';return}
+  if(!res.sup.length&&!res.ex.length){M.innerHTML='<div class="empty">Na rzucie nie ma jeszcze pomieszczeń. Narysuj je w <b>Układzie pomieszczeń</b>.</div>';return}
+  const opts=['<option value="auto">automatycznie ('+(res.unitLoft?'strych':esc(res.unit?.name||'—'))+')</option>','<option value="loft">na strychu / poddaszu nieużytkowym</option>'].concat(res.rooms.filter(r=>r.area>=2).map(r=>'<option value="'+esc(r.key)+'">'+esc(r.name)+' – '+(r.f===res.lo?'parter':'piętro')+'</option>')).join('');
+  if($('unit').dataset.v!==opts){$('unit').innerHTML=opts;$('unit').dataset.v=opts}$('unit').value=[...$('unit').options].some(o=>o.value===s.unit)?s.unit:'auto';
+  $('kitchen').value=s.kitchen;$('ac').value=s.ac==='all'||s.ac==='none'?s.ac:String(s.acThreshold);
+  const R=res,A=R.ac,dv=R.difficulty>=8?'ok':R.difficulty>=6?'mid':'bad';
+  let h='<h2 class="sh">Rekuperacja (wentylacja mechaniczna z odzyskiem ciepła)</h2>';
+  h+='<div class="tiles"><div class="tile"><div class="l">Jak bardzo potrzebna</div><div class="v"><span class="need '+R.need+'">'+NEED[R.need]+'</span></div><div class="s">strumień domu '+R.flow+' m³/h</div></div>'+
+    '<div class="tile"><div class="l">Trudność montażu</div><div class="v c-'+dv+'">'+fmt(R.difficulty)+' <small>/ 10 (10 = łatwo)</small></div><div class="s">centrala: '+(R.unitLoft?'strych':esc(R.unit?.name||'—'))+' · kanały ok. '+Math.round(R.ductLen)+' m</div></div>'+
+    '<div class="tile"><div class="l">Koszt rekuperacji</div><div class="v">'+zl(R.cost.total)+'</div><div class="s">z montażem, orientacyjnie</div></div>'+
+    '<div class="tile"><div class="l">Oszczędność na ogrzewaniu</div><div class="v">'+(R.saving!=null?zl(Math.max(0,R.saving))+' <small>na rok</small>':'–')+'</div><div class="s">'+(R.heatSave!=null?'mniej ciepła o '+Math.round(R.heatSave).toLocaleString('pl-PL')+' kWh/rok, prąd na wentylatory ok. '+zl(R.fanCost)+'/rok':'')+(R.payback?' · zwrot ok. '+Math.round(R.payback)+' lat':'')+'</div></div></div>';
+  h+='<div class="grid2"><div class="card"><h3>Dlaczego '+NEED[R.need]+'</h3><ul class="why">'+R.why.map(w=>'<li>'+esc(w)+'</li>').join('')+'</ul>'+(R.payback&&R.payback>15?'<p class="hint" style="margin-top:8px">Zwrot z samej oszczędności energii jest długi (przy pompie ciepła ciepło jest tanie) – rekuperację robi się głównie dla jakości powietrza i szczelnego domu.</p>':'')+'</div>'+
+    '<div class="card"><h3>Trudność montażu</h3>'+(R.dIss.length?'<ul class="iss">'+R.dIss.map(i=>'<li><span class="pen">−'+fmt(i.p)+'</span>'+esc(i.text)+'<span class="tip">'+esc(i.tip)+'</span></li>').join('')+'</ul>':'<p class="hint c-ok">Łatwo: centrala blisko, kanały prowadzone po strychu, bez sufitów podwieszanych.</p>')+'</div></div>';
+  h+='<div class="card"><h3>Schemat</h3><p class="hint">Niebieskie – nawiew świeżego powietrza (↓), pomarańczowe – wywiew zużytego (↑), szare – komunikacja (powietrze przepływa przez podcięcia drzwi). R – centrala; linie to kierunek kanałów, nie ich trasa. ❄ – klimatyzacja.</p><div class="plans">'+[R.lo,R.up].map(planSVG).join('')+'</div>'+
+    '<div class="legend"><span><i style="background:#dbeafe"></i>nawiew</span><span><i style="background:#ffedd5"></i>wywiew</span><span><i style="background:#f1f5f9"></i>komunikacja</span><span><i style="background:#0f766e"></i>centrala</span></div></div>';
+  const vr=[...R.sup,...R.ex].sort((a,b)=>(a.role>b.role?-1:1)||b.flow-a.flow);
+  h+='<div class="card"><h3>Pomieszczenia i kanały</h3><table><thead><tr><th>Pomieszczenie</th><th>Rola</th><th class="n">Strumień</th><th class="n">Kanał</th><th>Prowadzenie</th></tr></thead><tbody>'+
+    vr.map(r=>'<tr><td><b>'+esc(r.name)+'</b><br><span class="hint">'+(r.f===R.lo?'Parter':'Piętro')+'</span></td><td><span class="role '+r.role+'">'+(r.role==='sup'?'nawiew':'wywiew')+'</span></td><td class="n">'+r.flow+' m³/h</td><td class="n">'+fmt(r.duct)+' m</td><td class="'+(r.hard?'c-mid':'')+'">'+esc(r.route)+'</td></tr>').join('')+'</tbody></table></div>';
+  const C=R.cost,rows=[['Centrala ('+R.flow+' m³/h)',C.unit],['Kanały ('+Math.round(R.ductLen)+' m)',C.ducts],['Skrzynki rozdzielcze',C.plenum],['Anemostaty ('+R.vents+' szt.)',C.vents],['Czerpnia i wyrzutnia',C.intake],['Montaż i uruchomienie',C.labour],['Sufity podwieszane pod kanały',C.ceilings]].filter(r=>r[1]>0);
+  h+='<div class="card"><h3>Koszt rekuperacji</h3><table><tbody>'+rows.map(r=>'<tr><td>'+esc(r[0])+'</td><td class="n">'+zl(r[1])+'</td></tr>').join('')+'<tr class="sum"><td>Razem</td><td class="n">'+zl(C.total)+'</td></tr></tbody></table>'+
+    '<p class="hint" style="margin-top:8px">Dla porównania wentylacja grawitacyjna: '+R.ex.length+' '+(R.ex.length===1?'kanał':'kanałów')+' wentylacyjnych w kominie (z kuchni, łazienek, WC, pralni) – ok. '+zl(R.ex.length*2500)+', ale większe straty ciepła i słaba praca w szczelnym domu.</p></div>';
+  // klimatyzacja
+  const av=A.difficulty>=8?'ok':A.difficulty>=6?'mid':'bad';
+  h+='<h2 class="sh">Klimatyzacja</h2>';
+  h+='<div class="tiles"><div class="tile"><div class="l">Jak bardzo potrzebna</div><div class="v"><span class="need '+A.need+'">'+NEEDAC[A.need]+'</span></div><div class="s">pokoje z bardzo wysokim ryzykiem: '+A.hot+', z wysokim: '+A.warm+'</div></div>'+
+    '<div class="tile"><div class="l">Klimatyzatory</div><div class="v">'+A.rooms.length+' <small>'+(A.rooms.length===1?'pokój':'pokoje / pokoi')+'</small></div><div class="s">'+(A.rooms.length?A.rooms.map(r=>esc(r.name)).join(', '):'wg ustawień po lewej – żaden pokój')+'</div></div>'+
+    '<div class="tile"><div class="l">Koszt klimatyzacji</div><div class="v">'+(A.rooms.length?zl(A.best):'0 zł')+'</div><div class="s">'+(A.rooms.length?'osobne (split): '+zl(A.split)+' · jedna jednostka na kilka pokoi (multisplit): '+zl(A.multi):'')+'</div></div>'+
+    '<div class="tile"><div class="l">Trudność montażu</div><div class="v c-'+av+'">'+fmt(A.difficulty)+' <small>/ 10</small></div><div class="s">'+(A.rooms.some(r=>!r.ext)?'pokoje bez ściany zewnętrznej – długie rury':'wszystkie przy ścianie zewnętrznej')+'</div></div></div>';
+  const acRows=R.rooms.filter(r=>r.coolW!=null).sort((a,b)=>(b.solarRisk-a.solarRisk)||(b.coolW-a.coolW));const acSet=new Set(A.rooms.map(r=>r.key));
+  h+='<div class="card"><h3>Pokoje – potrzeba chłodzenia</h3><table><thead><tr><th>Pokój</th><th>Ryzyko przegrzania</th><th class="n">Moc chłodnicza</th><th>Klimatyzator</th></tr></thead><tbody>'+
+    acRows.map(r=>{const a=A.rooms.find(x=>x.key===r.key);return '<tr><td><b>'+esc(r.name)+'</b><br><span class="hint">'+(r.f===R.lo?'Parter':'Piętro')+'</span></td><td class="'+(r.solarRisk>=3?'c-bad':r.solarRisk>=2?'c-mid':'')+'">'+RISK[r.solarRisk]+'</td><td class="n">'+fmt(r.coolW/1000,1)+' kW</td><td>'+(a?'❄ '+fmt(a.size,1)+' kW'+(a.ext?'':' <span class="c-mid">(bez ściany zewnętrznej)</span>'):'<span class="hint">—</span>')+'</td></tr>'}).join('')+'</tbody></table>'+
+    '<p class="hint" style="margin-top:8px">Moc chłodnicza = słońce przez okna w najgorętszej godzinie + ludzie i urządzenia + ściany/dach. Najmniejszy klimatyzator ma ok. 2,5 kW. Pompa ciepła powietrze–woda z podłogówką może lekko chłodzić podłogą (ok. 20–30 W/m²), ale nie zastąpi klimatyzacji w bardzo nasłonecznionym pokoju.</p></div>';
+  M.innerHTML=h;
+}
+const rec=HouserStore.load();project=rec?rec.project:null;render();
+HouserStore.subscribe(r=>{project=r.project;render()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

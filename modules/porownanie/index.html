@@ -68,7 +68,7 @@ tr.tot td{background:#f8fafc;font-weight:800;font-size:14px}
   <h1>Porównanie domów</h1>
   <p class="lead">Postaw obok siebie 2–4 projekty – swoje (z tej przeglądarki lub z chmury), bieżący albo gotowe domy. Wszystkie liczby są liczone tak samo jak w modułach Wycena, Energia, Codzienność, Nasłonecznienie i Akustyka. Najlepsza wartość w wierszu jest zielona, najsłabsza czerwona.</p>
   <div id="overall" class="ov"></div>
-  <details class="wts" id="wtsBox"><summary>Co jest dla Ciebie ważne w ocenie ogólnej</summary><div class="wgrid" id="wts"></div><p class="hint">Każde kryterium daje 0–10 punktów: koszt za m² względem najtańszego z porównywanych, energia wg zapotrzebowania (15 kWh/m² = 10 pkt, 120 = 0), codzienność i akustyka – ich oceny, przegrzewanie – odsetek pokoi bez wysokiego ryzyka, metraż – względem największego. Ocena ogólna to średnia ważona.</p></details>
+  <details class="wts" id="wtsBox"><summary>Co jest dla Ciebie ważne w ocenie ogólnej</summary><div class="wgrid" id="wts"></div><p class="hint">Każde kryterium daje 0–10 punktów: koszt za m² względem najtańszego z porównywanych, energia wg zapotrzebowania (15 kWh/m² = 10 pkt, 120 = 0), codzienność i akustyka – ich oceny, przegrzewanie – odsetek pokoi bez wysokiego ryzyka, hydraulika – jej ocena, wentylacja i klimatyzacja – w połowie łatwość montażu rekuperacji, w połowie koszt klimatyzacji (0 zł = 10 pkt, 40 tys. zł = 0), metraż – względem największego. Ocena ogólna to średnia ważona.</p></details>
   <div id="sum" class="sum"></div>
   <div class="tbl" id="tbl"><div class="empty">Wczytuję projekty…</div></div>
   <p class="hint" style="margin-top:10px">Wybór porównywanych domów pamięta ta przeglądarka. Koszty i energia biorą ustawienia zapisane w każdym projekcie (ceny, U ścian itd.), więc różnice mogą wynikać także z ustawień.</p>
@@ -86,6 +86,7 @@ tr.tot td{background:#f8fafc;font-weight:800;font-size:14px}
 <script src="../naslonecznienie/calc.js"></script>
 <script src="../akustyka/engine.js"></script>
 <script src="../hydraulika/engine.js"></script>
+<script src="../wentylacja/engine.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -125,7 +126,7 @@ function planSvg(p){const g=p.grid||p.definitionSnapshot?.grid;if(!g)return '';c
 // ---------- wskaźniki jednego domu
 function metrics(p){const m={};const tryc=(k,fn)=>{try{m[k]=fn()}catch(e){console.error(k,e);m[k]=null}};
   tryc('q',()=>HouserQuantities.compute(p));const q=m.q;if(!q)return m;
-  tryc('E',()=>HouserEnergy.compute(p));tryc('C',()=>HouserCost.compute(p));tryc('D',()=>HouserDaily.evaluate(p,p.dailySettings));tryc('S',()=>HouserSolar.compute(p));tryc('A',()=>HouserAcoustics.evaluate(p,p.acousticSettings));tryc('P',()=>HouserPlumbing.evaluate(p,p.plumbingSettings));
+  tryc('E',()=>HouserEnergy.compute(p));tryc('C',()=>HouserCost.compute(p));tryc('D',()=>HouserDaily.evaluate(p,p.dailySettings));tryc('S',()=>HouserSolar.compute(p));tryc('A',()=>HouserAcoustics.evaluate(p,p.acousticSettings));tryc('P',()=>HouserPlumbing.evaluate(p,p.plumbingSettings));tryc('V',()=>HouserHVAC.evaluate(p,p.hvacSettings));
   const rooms=q.rooms.filter(r=>r.area>=2),name=r=>(r.name||'').toLowerCase();
   m.beds=rooms.filter(r=>/sypial|pokój|pokoj|gabinet/.test(name(r))).length;m.wet=q.baths+q.wcs;m.nrooms=rooms.length;
   m.floors=q.net[q.up]>0?(q.attic?'parter + poddasze':'parter + piętro'):'parterowy';
@@ -173,19 +174,24 @@ const ROWS=[
   ['Dopłata za układ instalacji','ile więcej kosztują rury i piony niż w układzie zwartym (orientacyjnie)',m=>m.P?.extra,zl,'low',m=>m.P?'rury i piony razem ok. '+zl(m.P.cost.total):''],
   ['Najdłuższa ciepła woda','najdalsze mokre pomieszczenie od źródła; niżej – czas czekania na ciepłą wodę',m=>m.P?.maxLen,v=>nf(v,1)+' m','low',m=>{const f=m.P&&[...m.P.points].filter(x=>!x.isSrc).sort((a,b)=>(b.len||0)-(a.len||0))[0];return f?f.name+' · '+(m.P.circ?'z cyrkulacją':'ok. '+f.wait+' s'):''}],
   ['Przesunięte piony','mokre pomieszczenie na piętrze, które nie stoi nad mokrym na parterze',m=>m.P?m.P.risers.filter(r=>!r.stacked).length:null,v=>v==null?'–':nf(v),'low'],
+  ['Wentylacja i klimatyzacja'],
+  ['Rekuperacja – koszt','centrala, kanały, anemostaty, montaż (orientacyjnie)',m=>m.V?.cost.total,zl,'low',m=>m.V?'potrzeba: '+({high:'bardzo potrzebna',mid:'zalecana',low:'opcjonalna'})[m.V.need]:''],
+  ['Rekuperacja – trudność montażu','0–10, gdzie 10 = łatwo (centrala blisko, kanały po strychu)',m=>m.V?.difficulty,v=>nf(v,1)+' / 10','high',m=>m.V?'kanały ok. '+nf(m.V.ductLen)+' m':''],
+  ['Klimatyzacja – pokoje','ile pokoi potrzebuje klimatyzatora (wg ryzyka przegrzania)',m=>m.V?.ac.rooms.length,v=>v==null?'–':nf(v)+' '+plF(v,'pokój','pokoje','pokoi'),'low'],
+  ['Klimatyzacja – koszt','tańsza z opcji: osobne klimatyzatory albo jedna jednostka na kilka pokoi',m=>m.V?.ac.best,zl,'low'],
   ['Akustyka'],
   ['Spokój w domu','średnia ocena cichych pokoi (sypialnie, gabinet); niżej – najgłośniejszy pokój',m=>m.A?.overall,v=>nf(v,1)+' / 10','high',m=>m.worstA?'najgłośniej: '+m.worstA.name+' ('+nf(m.worstA.score,1)+')':''],
   ['Pokoje z problemem akustycznym','cichy pokój z oceną poniżej 6; niżej – ze wszystkich cichych pokoi',m=>m.loud,v=>v==null?'–':nf(v)+' '+plF(v,'pokój','pokoje','pokoi'),'low',m=>m.loudOf!=null?'z '+m.loudOf:''],
 ];
 
 const stageSum=(m,st)=>m.C?m.C.rows.filter(r=>r.stage===st).reduce((a,r)=>a+r.value,0)*(m.C.s.factor?1:1):null;
-const CRIT=[['cost','Koszt budowy za m²',2],['energy','Energia (ogrzewanie)',2],['daily','Codzienność',2],['sun','Przegrzewanie latem',1],['quiet','Akustyka',1],['plumb','Hydraulika',1],['area','Metraż (większy = lepiej)',0]];
+const CRIT=[['cost','Koszt budowy za m²',2],['energy','Energia (ogrzewanie)',2],['daily','Codzienność',2],['sun','Przegrzewanie latem',1],['quiet','Akustyka',1],['plumb','Hydraulika',1],['hvac','Wentylacja i klimatyzacja',1],['area','Metraż (większy = lepiej)',0]];
 const WKEY='houser:compare-weights',WOPT=[[0,'nieważne'],[1,'ważne'],[2,'bardzo ważne']];
 let W=(()=>{try{return {...Object.fromEntries(CRIT.map(c=>[c[0],c[2]])),...JSON.parse(localStorage.getItem(WKEY)||'{}')}}catch(_){return Object.fromEntries(CRIT.map(c=>[c[0],c[2]]))}})();
 const clamp=v=>Math.max(0,Math.min(10,v));
 function overallScores(cols){const cpm=cols.map(c=>c.m.C&&c.m.q?.usableTotal?c.m.C.total/c.m.q.usableTotal:null),minC=Math.min(...cpm.filter(v=>v!=null)),maxA=Math.max(...cols.map(c=>c.m.q?.usableTotal||0));
   return cols.map((c,i)=>{const m=c.m,part={cost:cpm[i]!=null?clamp(10*minC/cpm[i]):null,energy:m.E?clamp(10*(120-m.E.EU)/105):null,daily:m.D?.overall??null,
-      sun:m.hotOf?clamp(10*(1-m.hot/m.hotOf)):null,quiet:m.A?.overall??null,plumb:m.P?.overall??null,area:maxA?clamp(10*(m.q?.usableTotal||0)/maxA):null};
+      sun:m.hotOf?clamp(10*(1-m.hot/m.hotOf)):null,quiet:m.A?.overall??null,plumb:m.P?.overall??null,hvac:m.V?clamp(.5*m.V.difficulty+.5*(10-Math.min(10,(m.V.ac.best||0)/4000))):null,area:maxA?clamp(10*(m.q?.usableTotal||0)/maxA):null};
     let sw=0,sv=0;for(const [k] of CRIT){const w=+W[k]||0;if(w&&part[k]!=null){sw+=w;sv+=w*part[k]}}
     return {part,score:sw?sv/sw:null}})}
 let cols=[];
