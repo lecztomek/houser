@@ -3429,4 +3429,9 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "Zacznij od pustego projektu albo otwórz gotowy dom w Rankingu domów – potem idziesz po kolei przez moduły z menu po lewej.":"Start with an empty project or open a ready-made house from the House ranking – then go through the modules in the left menu.",
 "Zacznij od pustego projektu, otwórz swój plik albo gotowy dom z Rankingu domów.":"Start an empty project, open your file or a ready-made house from the House ranking.",
 "gotowe domy (wzory do porównania)":"ready-made houses (reference designs)",
-"gotowy dom – wzór, nie ma go w Twoich projektach":"ready-made house – a reference, not in your projects"};
+"gotowy dom – wzór, nie ma go w Twoich projektach":"ready-made house – a reference, not in your projects",
+"Wszystkie Twoje domy na jednej liście, policzone tak samo.":"All your houses in one list, calculated the same way.",
+"Wszystkie Twoje domy na jednej liście: ogólna ocena, koszt budowy, rachunki i cena do jakości – posortowane od najlepszego.":"All your houses in one list: overall score, construction cost, bills and value for money – sorted from the best.",
+"Zacznij od pustego projektu albo otwórz któryś ze swoich domów – potem idziesz po kolei przez moduły z menu po lewej. Projekt zapisujesz na dysk jednym plikiem.":"Start with an empty project or open one of your houses – then go through the modules in the left menu. You save the project to disk as one file.",
+"Zacznij od pustego projektu albo otwórz któryś ze swoich domów – potem idziesz po kolei przez moduły z menu po lewej.":"Start with an empty project or open one of your houses – then go through the modules in the left menu.",
+"Zacznij od pustego projektu albo otwórz swój plik.":"Start an empty project or open your file."};

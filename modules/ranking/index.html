@@ -37,12 +37,11 @@ h1{font-size:21px;margin:0 0 4px}
 </head>
 <body>
 <div class="wrap">
-  <div><h1>Ranking domów</h1><p class="lead"><span>Wszystkie Twoje domy i gotowe projekty na jednej liście, policzone tak samo.</span> <span>Ogólna ocena to średnia z modułów, jak w module Co poprawić.</span> <span>Do tego koszt budowy, rachunki i stosunek ceny do jakości.</span> <span>To widok uproszczony – szczegóły porównasz w module Porównanie domów.</span></p></div>
+  <div><h1>Ranking domów</h1><p class="lead"><span>Wszystkie Twoje domy na jednej liście, policzone tak samo.</span> <span>Ogólna ocena to średnia z modułów, jak w module Co poprawić.</span> <span>Do tego koszt budowy, rachunki i stosunek ceny do jakości.</span> <span>To widok uproszczony – szczegóły porównasz w module Porównanie domów.</span></p></div>
   <div class="bar">
     <label>Sortuj: <select id="sort">
       <option value="score">ogólna ocena</option><option value="value">cena do jakości</option><option value="cost">najtańsza budowa</option><option value="m2">najtańszy m²</option><option value="bills">najniższe rachunki</option><option value="area">największy metraż</option>
     </select></label>
-    <label><input type="checkbox" id="smp" checked> gotowe domy (wzory do porównania)</label>
     <label><input type="checkbox" id="pub"> z publicznej galerii (domy innych osób)</label>
     <span class="hint" id="st"></span>
   </div>
@@ -90,7 +89,7 @@ async function sources(withPub){const out=[],seen=new Set(),cur=HouserStore.load
   const C=cloud();
   if(C?.user?.())try{for(const m of await C.listMine())add({src:'cloud',id:m.id,pid:m.id,name:m.name,get:async()=>(await C.fetchProject(m.id))?.project})}catch(_){}
   if(withPub&&C)try{for(const m of await C.listPublic())add({src:'pub',id:m.id,pid:m.id,name:m.name+(m.ownerName?' · '+m.ownerName:''),get:async()=>(await C.fetchProject(m.id))?.project})}catch(_){}
-  try{for(const m of await (await fetch('../../examples/index.json')).json())add({src:'sample',id:m.file,name:m.name,get:async()=>await (await fetch('../../examples/'+m.file)).json()})}catch(_){}
+  // gotowe domy (examples/) nie są już w rankingu – tylko Twoje domy i (opcjonalnie) galeria publiczna
   return out}
 // liczby jednego domu
 function measure(p){const r={};const T=(k,fn)=>{try{r[k]=fn()}catch(e){console.error(k,e)}};
@@ -127,7 +126,7 @@ function render(){const L=$('list'),key=$('sort').value;
 }
 async function run(){const my=++busy;rows=[];const seenStates=new Set();$('st').textContent='';render();
   const list=await sources($('pub').checked);let k=0;
-  for(const o of list){if(my!==busy)return;if(o.src==='sample'&&!$('smp').checked)continue;$('st').textContent='liczę '+(++k)+' z '+list.length+'…';
+  for(const o of list){if(my!==busy)return;$('st').textContent='liczę '+(++k)+' z '+list.length+'…';
     const ck=o.src+':'+o.id;let res=o.src!=='current'?cache[ck]:null;
     if(!res){let p=null;try{p=await o.get()}catch(_){}
       const m=p?measure(p):null;res=m?{m,plan:planSvg(p),sk:JSON.stringify([p.state,p.openings||{}])}:null;if(o.src!=='current')cache[ck]=res}
@@ -136,8 +135,7 @@ async function run(){const my=++busy;rows=[];const seenStates=new Set();$('st').
     if(res){rows.push({o,...res});render()}await new Promise(r=>setTimeout(r,0))}
   if(my===busy){busy=0;$('st').textContent=rows.length+' domów';render()}}
 $('sort').onchange=render;$('pub').onchange=run;
-try{if(localStorage.getItem('houser:ranking-samples')==='0')$('smp').checked=false}catch(_){}
-$('smp').onchange=()=>{try{localStorage.setItem('houser:ranking-samples',$('smp').checked?'1':'0')}catch(_){}run()};
+
 try{const s=localStorage.getItem('houser:ranking-sort');if(s&&SORT[s])$('sort').value=s}catch(_){}
 $('sort').addEventListener('change',()=>{try{localStorage.setItem('houser:ranking-sort',$('sort').value)}catch(_){}});
 run();let t=null;HouserStore.subscribe(()=>{clearTimeout(t);t=setTimeout(run,800)});

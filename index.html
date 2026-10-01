@@ -210,7 +210,7 @@ a{color:var(--accent)}
   <section id="start" class="view">
     <div class="wrap">
       <h1>Start</h1>
-      <p class="lead" id="homeLead">Wszystko działa w przeglądarce, bez kont i serwera. Zacznij od pustego projektu albo otwórz gotowy dom w Rankingu domów – potem idziesz po kolei przez moduły z menu po lewej. Projekt zapisujesz na dysk jednym plikiem.</p>
+      <p class="lead" id="homeLead">Wszystko działa w przeglądarce, bez kont i serwera. Zacznij od pustego projektu albo otwórz któryś ze swoich domów – potem idziesz po kolei przez moduły z menu po lewej. Projekt zapisujesz na dysk jednym plikiem.</p>
       <h2 class="sec">Bieżący projekt</h2>
       <div id="curProj"></div>
       <div id="recentSec" hidden><h2 class="sec">Ostatnie projekty <a class="seclink" href="#projekty">Wszystkie projekty →</a></h2><div class="gallery" id="recent"></div></div>
@@ -267,7 +267,7 @@ const MODULES=[
   {id:'wyglad',group:'Analizy',name:'Wygląd domu',src:'modules/wyglad/',desc:'Elewacje według zasad kompozycji: wyrównane okna, osie pionowe, symetria szczytów, rozmiary okien, puste ściany, dach – z rysunkiem, co poprawić.'},
   {id:'oszczednosci',group:'Analizy',name:'Oszczędności',src:'modules/oszczednosci/',desc:'Zmiany, które obniżają koszt budowy: ile oszczędzasz, jak zmieniają się rachunki i ocena domu – z przyciskiem Zastosuj.'},
   {id:'porownanie',group:'Analizy',name:'Porównanie domów',src:'modules/porownanie/',desc:'2–4 projekty obok siebie: metraż, koszt budowy (z etapami), energia, ogrzewanie, wentylacja, codzienność, przegrzewanie, akustyka, hydraulika, schowki – ocena ogólna wg Twoich wag, najlepsze wartości zaznaczone.'},
-  {id:'ranking',group:'Analizy',name:'Ranking domów',src:'modules/ranking/',desc:'Wszystkie Twoje domy i gotowe projekty na jednej liście: ogólna ocena, koszt budowy, rachunki i cena do jakości – posortowane od najlepszego.'},
+  {id:'ranking',group:'Analizy',name:'Ranking domów',src:'modules/ranking/',desc:'Wszystkie Twoje domy na jednej liście: ogólna ocena, koszt budowy, rachunki i cena do jakości – posortowane od najlepszego.'},
 ];
 MODULES.forEach((m,i)=>m.step=i+1);
 const ICON_PATH={pomieszczenia:'<rect x="3" y="3" width="7.5" height="7.5" rx="1.8"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.8"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.8"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.8"/>',
@@ -399,7 +399,7 @@ function stats(p){try{const q=HouserQuantities.compute(p),fl=q.net[q.up]>0?(q.at
 const chips=st=>st?'<span class="chip">'+Math.round(st.area)+' m² użytkowej</span><span class="chip">'+st.fl+'</span><span class="chip">'+st.rooms+' pomieszczeń</span><span class="chip">dach '+Math.round(st.roof)+'°</span>':'';
 const LAST_MOD='houser:last-module';
 function renderCur(){const rec=HouserStore.load(),el=$('curProj');if(!el)return;
-  if(!rec){el.innerHTML='<div class="cur"><div class="thumb">'+planSvg({})+'</div><div><h3>Nie masz jeszcze projektu</h3><div class="meta">Zacznij od pustego projektu, otwórz swój plik albo gotowy dom z Rankingu domów.</div><div class="acts"><button class="btn2 primary" id="hNew">＋ Nowy pusty projekt</button><a class="btn2" href="#ranking">Gotowe domy →</a><label class="btn2">⤒ Importuj z pliku<input type="file" id="hFile" accept="application/json,.json" hidden></label></div></div></div>';}
+  if(!rec){el.innerHTML='<div class="cur"><div class="thumb">'+planSvg({})+'</div><div><h3>Nie masz jeszcze projektu</h3><div class="meta">Zacznij od pustego projektu albo otwórz swój plik.</div><div class="acts"><button class="btn2 primary" id="hNew">＋ Nowy pusty projekt</button><label class="btn2">⤒ Importuj z pliku<input type="file" id="hFile" accept="application/json,.json" hidden></label></div></div></div>';}
   else{const p=rec.project,st=stats(p),saved=lsGet(LAST_SAVE),dirty=!saved||saved<rec.updatedAt,last=MODULES.find(m=>m.id===lsGet(LAST_MOD))||MODULES.find(m=>m.id==='projektowanie');
     el.innerHTML='<div class="cur"><div class="thumb" id="curThumb">'+planSvg(p)+'</div><div><h3>'+esc(projName(p))+'</h3><div>'+chips(st)+'</div><div class="meta">'+(rec.source==='plik'?'Wczytany '+fmtTime(rec.updatedAt):'Ostatnia zmiana '+fmtTime(rec.updatedAt)+(modName(rec.source)?' w module <b>'+esc(modName(rec.source))+'</b>':''))+'</div>'+
       '<div class="acts"><a class="btn2 primary" href="#'+last.id+'">Kontynuuj: '+esc(last.name)+' →</a><a class="btn2" href="#projekty">Projekty: eksport, duplikat, udostępnianie →</a></div></div></div>';
@@ -537,7 +537,7 @@ function paintRecent(){const el=$('recent'),sec=$('recentSec');if(!el)return;con
 function paintPublic(){const u=HouserCloud.user(),others=(cloudLists.pub||[]).filter(m=>!u||m.owner!==u.uid);$('cloudPubSec').hidden=!others.length;
   $('cloudPub').innerHTML=others.map(m=>'<div class="hcard ccard" data-id="'+esc(m.id)+'"><div class="thumb" data-a="open">'+(thumbImg(m)||planSvg({}))+'</div><h3>'+esc(m.name||'bez nazwy')+'</h3><div>'+chips(m.stats)+'</div><div class="owner">'+avatar({photo:m.ownerPhoto,name:m.ownerName})+esc(m.ownerName||'')+'</div><div class="cacts"><button class="btn2 sm primary" data-a="open">Otwórz kopię →</button></div></div>').join('');
   $('cloudPub').querySelectorAll('[data-a="open"]').forEach(b=>b.onclick=()=>openCloud(b.closest('.ccard').dataset.id))}
-function renderCloudHome(){if(HouserCloud.enabled)$('homeLead').textContent='Projekt zapisuje się sam – w tej przeglądarce, a po zalogowaniu (Google) także w chmurze, na każdym urządzeniu. Zacznij od pustego projektu albo otwórz gotowy dom w Rankingu domów – potem idziesz po kolei przez moduły z menu po lewej.';
+function renderCloudHome(){if(HouserCloud.enabled)$('homeLead').textContent='Projekt zapisuje się sam – w tej przeglądarce, a po zalogowaniu (Google) także w chmurze, na każdym urządzeniu. Zacznij od pustego projektu albo otwórz któryś ze swoich domów – potem idziesz po kolei przez moduły z menu po lewej.';
   HouserLibrary.list().then(l=>{localList=l;paintRecent()}).catch(()=>{});paintRecent();paintPublic();wantCloudLists()}
 // ---------- porównanie domów (wspólna lista z modułem Porównanie, maks. 4)
 const CMP_KEY='houser:compare',CMP_MAX=4;
@@ -556,7 +556,7 @@ function pmRow(m,cur){const pub=m.visibility==='public',a=(k,t,ti)=>'<button cla
 function curCmpSrc(id){if(localList.some(m=>m.id===id))return 'local';if(HouserCloud.isLinked(id))return 'cloud';return 'current'}
 function renderProjects(noLoad){const el=$('pm');if(!el)return;const rec=HouserStore.load(),st=HouserCloud.status(),u=st.user,p=rec?.project,curId=p?.projectId;
   let h='<h1>Projekty</h1><p class="lead">Projekt zapisuje się sam po każdej zmianie – w tej przeglądarce'+(st.enabled?', a po zalogowaniu także w chmurze':'')+'. Plik JSON (eksport) jest kopią zapasową albo sposobem na przeniesienie projektu bez konta.</p>'+
-    '<div class="pmbar"><button class="btn2 primary" id="pmNew">＋ Nowy pusty projekt</button><label class="btn2">⤒ Importuj z pliku<input type="file" id="pmImport" accept="application/json,.json" hidden></label><a class="btn2" href="#ranking">Gotowe domy →</a>'+(cmpList().length?'<a class="btn2" href="#porownanie">⚖ W porównaniu: '+cmpList().length+'/'+CMP_MAX+' → otwórz</a>':'')+'</div>';
+    '<div class="pmbar"><button class="btn2 primary" id="pmNew">＋ Nowy pusty projekt</button><label class="btn2">⤒ Importuj z pliku<input type="file" id="pmImport" accept="application/json,.json" hidden></label>'+(cmpList().length?'<a class="btn2" href="#porownanie">⚖ W porównaniu: '+cmpList().length+'/'+CMP_MAX+' → otwórz</a>':'')+'</div>';
   h+='<h2 class="sec">Bieżący projekt</h2>';
   if(!p)h+='<div class="login"><p>Nie masz otwartego projektu. Zacznij nowy, zaimportuj plik albo otwórz projekt z listy poniżej.</p></div>';
   else{const s=stats(p),last=MODULES.find(m=>m.id===lsGet(LAST_MOD))||MODULES.find(m=>m.id==='projektowanie');
