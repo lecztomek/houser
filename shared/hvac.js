@@ -109,13 +109,15 @@
     let Eg=null,Em=null,Ex=null,S=null;try{const es=project.energySettings||{};Eg=HouserEnergy.compute({...project,energySettings:{...es,vent:'grav'}});Em=HouserEnergy.compute({...project,energySettings:{...es,vent:'mech',eta:es.eta??85}});Ex=HouserEnergy.compute({...project,energySettings:{...es,vent:'exhaust'}});S=Em.s}catch(e){console.error(e)}
     const pHeat=S?S.pEl/S.scop:.3,pEl=S?S.pEl:1.1,inf=Number.isFinite(+project.energySettings?.inf)?+project.energySettings.inf:.1,airtight=inf<=.2;
     const exN=res.ex.length,supN=res.sup.length,exDuct=res.ex.reduce((a,r)=>a+r.duct,0);
+    // grawitacja: osobny kanał w kominie z każdego pomieszczenia (spiżarnia / garderoba – kratka do sąsiedniego), długość od sufitu do ok. 0,5 m nad kalenicę
+    const topY=(q.G.ridgeY||6)+.5,chLen=r=>Math.max(2,topY-((r.f===q.lo?0:q.G.groundHeight)+2.5)),gravInvest=res.ex.reduce((a,r)=>a+(r.R?.k==='wardrobe'?120:300+chLen(r)*200),0)+supN*150;
     const heatG=Eg?Eg.Qh*pHeat:0,heatM=Em?Em.Qh*pHeat:0,heatX=Ex?Ex.Qh*pHeat:heatG;
     const list=[
       {k:'grav',name:'Wentylacja grawitacyjna',how:'kanały wentylacyjne w kominie z kuchni, łazienek, WC i pralni + nawiewniki w oknach',
-       invest:exN*(hasUp?2800:2300)+supN*150,yearly:heatG,fan:0,air:4,
+       invest:gravInvest,yearly:heatG,fan:0,air:4,
        pros:['najtańsza w budowie','bez prądu i serwisu'],cons:['działa tylko przy różnicy temperatur – latem prawie stoi','dużo ciepła ucieka z powietrzem','w szczelnym domu – wilgoć i duszno','hałas i smog z zewnątrz przez nawiewniki']},
       {k:'exhaust',name:'Mechaniczna wywiewna (hybrydowa)',how:'wentylator wyciąga powietrze z kuchni i łazienek, świeże wpływa przez nawiewniki higrosterowane w oknach',
-       invest:3500+exDuct*60+supN*350+2500,yearly:heatX,fan:40*8760/1000*pEl,air:6,
+       invest:2500+exDuct*50+exN*120+supN*350+1500,yearly:heatX, // wentylator centralny, przewody, kratki, nawiewniki higrosterowane, montażfan:40*8760/1000*pEl,air:6,
        pros:['stały przepływ niezależnie od pogody','tanio i prosto','dobra do remontu i domów bez miejsca na kanały'],cons:['bez odzysku ciepła – straty jak przy grawitacyjnej','nawiewniki: zimne powietrze i hałas z zewnątrz','bez filtrowania powietrza']},
       {k:'mvhr',name:'Rekuperacja',how:'centrala z wymiennikiem: nawiew do pokoi, wywiew z kuchni i łazienek, odzysk ok. 85% ciepła',
        invest:res.cost.total,yearly:heatM,fan:res.fanCost||0,air:9,
