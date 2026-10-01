@@ -1,6 +1,6 @@
 // Bilans cieplny domu (metoda uproszczona, sezonowa) – wspólny dla modułów Energia i Porównanie.
 // HouserEnergy.compute(project) -> {rows, Htot, load (kW), Qh (kWh/rok ogrzewanie), Qw (ciepła woda), EU (kWh/m²·rok), src (koszty źródeł ciepła)…}
-// Wymaga shared/quantities.js.
+// Wymaga shared/quantities.js. Opcjonalnie modules/naslonecznienie/sun.js + calc.js – dokładniejsze zyski od słońca.
 (function(global){
 let project=null;
 const fmt=(v,d=0)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -25,7 +25,11 @@ function compute(){
   if(q.balc?.psiL>0)rows.push({k:'balc',name:'Płyty balkonów (mostki cieplne)',A:null,U:null,H:q.balc.psiL,V:null,L:q.balc.contact});
   const Htot=rows.reduce((a,r)=>a+r.H,0);for(const r of rows){r.W=r.H*dT;r.share=r.H/Htot}
   const load=Htot*dT/1000;                                                          // kW
-  const Qloss=Htot*Z.hdd*24/1000,Qint=3*q.usableTotal*5000/1000,Qsol=(A.win+A.roofwin)*125,Qh=Math.max(0,Qloss-.9*(Qint+Qsol));
+  // zyski od słońca (już „wykorzystane” w sezonie): z modułu Nasłonecznienie, jeśli strona go wczytała – kierunki świata, daszki, tarasy, balkony;
+  // inaczej uproszczenie: 125 kWh/m² okna × 0,9
+  let Qsol=(A.win+A.roofwin)*125*.9,solarFrom='simple';
+  if(global.HouserSolar&&global.HouserSun){try{const v=HouserSolar.compute(project).house.season;if(Number.isFinite(v)){Qsol=v;solarFrom='solar'}}catch(_){}}
+  const Qloss=Htot*Z.hdd*24/1000,Qint=3*q.usableTotal*5000/1000,Qh=Math.max(0,Qloss-.9*Qint-Qsol);
   // ciepła woda: dhwL litrów wody 45°C (z 10°C) na osobę dziennie + 15% strat w zasobniku i rurach
   const Qw=s.persons*s.dhwL*35*1.163/1000*365*1.15,EU=q.usableTotal>0?Qh/q.usableTotal:0;
   const hp=[3,4,5,6,7,8,9,10,12,14,16].find(k=>k>=load+.25*s.persons)||Math.ceil(load+.25*s.persons);
@@ -36,7 +40,7 @@ function compute(){
   // pompa ciepła + kominek powietrzny w salonie, który przejmuje część ogrzewania (ciepła woda z pompy)
   {const f=Math.max(0,Math.min(.8,s.fireShare/100)),wood=s.pWood/s.woodKWh/.78,hpk=s.pEl/s.scop,cost=Qh*f*wood+(Qh*(1-f)+Qw)*hpk;
     src.push({name:'Pompa ciepła + kominek',zlkWh:cost/Math.max(1,Qh+Qw),how:'kominek (sprawność 78%) daje '+Math.round(f*100)+'% ciepła do ogrzewania – ok. '+fmt(Qh*f/s.woodKWh/.78,1)+' mp drewna rocznie; resztę i ciepłą wodę – pompa',cost})}
-  return {q,s,Z,dT,rows,Htot,load,Qloss,Qint,Qsol,Qh,Qw,EU,hp,src,A};
+  return {q,s,Z,dT,rows,Htot,load,Qloss,Qint,Qsol,solarFrom,Qh,Qw,EU,hp,src,A};
 }
 function klass(EU){return EU<=15?['pasywny','#15803d','#f0fdf4','#bbf7d0']:EU<=40?['energooszczędny','#15803d','#f0fdf4','#bbf7d0']:EU<=70?['zgodny z WT 2021 (orientacyjnie)','#1d4ed8','#eff6ff','#bfdbfe']:EU<=120?['standard sprzed 2014','#b45309','#fffbeb','#fde68a']:['wysokie zużycie','#b91c1c','#fef2f2','#fecaca']}
 const withP=fn=>p=>{const o=project;project=p;try{return fn()}finally{project=o}};

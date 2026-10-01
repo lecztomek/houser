@@ -97,6 +97,8 @@ tr.best td{background:#f0fdf4;font-weight:700}
 <script src="../../shared/openings.js"></script>
 <script src="../../shared/project-store.js"></script>
 <script src="../../shared/quantities.js"></script>
+<script src="../naslonecznienie/sun.js"></script>
+<script src="../naslonecznienie/calc.js"></script>
 <script src="../../shared/energy.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -135,7 +137,7 @@ function render(){
     '<tr><td><b>Razem</b></td><td></td><td></td><td class="num"><b>'+fmt(R.Htot,1)+'</b></td><td class="num"><b>'+fmt(R.Htot*R.dT)+'</b></td><td class="num">100%</td></tr></tbody></table></div>';
   // bilans roczny i źródła ciepła
   h+='<div class="card"><h2>Bilans roczny</h2><table><tbody>'+
-    [['Straty ciepła w sezonie ('+fmt(R.Z.hdd)+' stopniodni)',R.Qloss],['− zyski wewnętrzne (ludzie, urządzenia)',-.9*R.Qint],['− zyski od słońca przez okna',-.9*R.Qsol],['= ciepło do ogrzewania',R.Qh],['Ciepła woda ('+R.s.persons+' os.)',R.Qw],['Razem ciepło',R.Qh+R.Qw]].map(([a,b],i)=>'<tr'+(i===3||i===5?' style="font-weight:700"':'')+'><td>'+a+'</td><td class="num">'+fmt(b)+' kWh</td></tr>').join('')+'</tbody></table></div>';
+    [['Straty ciepła w sezonie ('+fmt(R.Z.hdd)+' stopniodni)',R.Qloss],['− zyski wewnętrzne (ludzie, urządzenia)',-.9*R.Qint],[R.solarFrom==='solar'?'− zyski od słońca przez okna (kierunki, daszki i tarasy – jak w Nasłonecznieniu)':'− zyski od słońca przez okna (uproszczone)',-R.Qsol],['= ciepło do ogrzewania',R.Qh],['Ciepła woda ('+R.s.persons+' os.)',R.Qw],['Razem ciepło',R.Qh+R.Qw]].map(([a,b],i)=>'<tr'+(i===3||i===5?' style="font-weight:700"':'')+'><td>'+a+'</td><td class="num">'+fmt(b)+' kWh</td></tr>').join('')+'</tbody></table></div>';
   h+='<div class="card"><h2>Koszt ogrzewania i ciepłej wody</h2><table><thead><tr><th>Źródło ciepła</th><th>Założenia</th><th class="num">zł / kWh ciepła</th><th class="num">Rocznie</th><th class="num">Miesięcznie</th></tr></thead><tbody>'+
     R.src.map(x=>'<tr'+(x===best?' class="best"':'')+'><td>'+esc(x.name)+(x===best?' · najtaniej':'')+'</td><td class="hint">'+esc(x.how)+'</td><td class="num">'+fmt(x.zlkWh,2)+'</td><td class="num">'+fmt(x.cost)+' zł</td><td class="num">'+fmt(x.cost/12)+' zł</td></tr>').join('')+'</tbody></table>'+
     '<p class="hint" style="margin:8px 0 0">Koszty bez opłat stałych (abonament, dystrybucja w części stałej) i bez pracy przy paleniu drewnem. '+(R.q.chimneys?'W projekcie jest komin – kocioł na drewno i kominek mają gdzie podłączyć przewód spalinowy.':'<b>Kocioł na drewno i kominek wymagają komina</b> – dodaj go w Układzie pomieszczeń.')+'</p></div>';
