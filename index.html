@@ -186,6 +186,7 @@ code{background:#f1f5f9;border-radius:4px;padding:1px 5px;font-size:13px}
 a{color:var(--accent)}
 .pbtn.primary{background:#2563eb;color:#fff;border-color:#2563eb}
 .pbro{display:flex;gap:6px;align-items:center;flex:0 0 auto}
+.rochip.mine{background:#dcfce7;color:#166534}
 .rochip{background:#ffedd5;color:#9a3412;border-radius:6px;padding:2px 8px;font-weight:700;margin-right:6px}
 </style>
 </head>
@@ -223,6 +224,8 @@ a{color:var(--accent)}
   <section id="projekty" class="view"><div class="wrap" id="pm"></div></section>
 </main>
 </div>
+<!-- strona główna zapisuje zawsze (otwieranie, kopia do siebie); moduły w trybie podglądu – nie -->
+<script>window.HOUSER_SHELL=true;</script>
 <script src="shared/project-store.js"></script>
 <script src="shared/definition.js"></script>
 <script src="shared/house-model.js"></script>
@@ -366,8 +369,9 @@ const canSave=p=>!!p&&!p.readOnly&&!isGuest();
 function renderBar(){const rec=HouserStore.load();$('pbName').textContent=rec?projName(rec.project):'brak – wybierz dom na stronie startowej';
   const ro=rec?.project?.readOnly,guest=!ro&&isGuest(),R=$('pbRo');
   $('pbMeta').innerHTML=rec&&!ro&&!guest?('zmiana '+fmtTime(rec.updatedAt)+(modName(rec.source)?' ('+modName(rec.source)+')':'')):'';
-  R.hidden=!(ro||guest);
-  R.innerHTML=ro?'<span class="rochip">👁 Podgląd cudzego domu'+(ro.owner?' · '+esc(ro.owner):'')+' – nic się nie zapisuje</span><button class="pbtn primary" id="pbCopy">⧉ Zrób kopię do siebie</button>':guest?'<span class="rochip">👁 Tylko podgląd – zaloguj się, żeby projektować</span><button class="pbtn primary" id="pbLogin2">Zaloguj</button>':'';
+  const me=HouserCloud.user?.();R.hidden=!rec; // zawsze widać, czyj to dom
+  try{localStorage.setItem('houser:guest',isGuest()?'1':'0');localStorage.setItem('houser:user-name',me?.name||'')}catch(_){} // dla pasków w modułach
+  R.innerHTML=ro?'<span class="rochip">'+(ro.src==='base'?'📚 Baza Housera':'👥 Społeczność · autor: '+esc(ro.owner||'nieznany'))+' – tylko podgląd</span><button class="pbtn primary" id="pbCopy">⧉ Zrób kopię do siebie</button>':!guest&&me?'<span class="rochip mine">🏠 Mój dom · '+esc(me.name||me.email||'')+'</span>':guest?'<span class="rochip">👁 Tylko podgląd – zaloguj się, żeby projektować</span><button class="pbtn primary" id="pbLogin2">Zaloguj</button>':'';
   if(ro)$('pbCopy').onclick=()=>isGuest()?doLogin():duplicateCurrent();if(guest)$('pbLogin2').onclick=doLogin;
   renderCloudBar()}
 

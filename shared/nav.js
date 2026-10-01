@@ -36,3 +36,22 @@
   a.onmouseleave=function(){a.style.opacity='.9';};
   document.body.appendChild(a);
 })();
+// Pasek „czyj to dom” na górze każdego modułu: mój (zapisuje się) albo tylko podgląd (cudzy dom / brak konta – nic się nie zapisuje).
+(function(){
+  if(!document.body)return;
+  var bar=document.createElement('div');bar.className='hs-lockbar';
+  var css=document.createElement('style');css.textContent='.hs-lockbar{position:sticky;top:0;z-index:50;font:600 12.5px/1.4 system-ui,sans-serif;padding:5px 14px;text-align:center}'+
+    '.hs-lockbar.mine{background:#dcfce7;color:#166534}.hs-lockbar.ro{background:#ffedd5;color:#9a3412;border-bottom:1px solid #fdba74}.hs-lockbar.flash{animation:hsflash .9s}'+
+    '@keyframes hsflash{0%,100%{background:#ffedd5}40%{background:#fb923c;color:#fff}}.hs-rotoast{position:fixed;left:50%;top:44px;transform:translateX(-50%);background:#9a3412;color:#fff;padding:7px 14px;border-radius:8px;font:600 13px system-ui;z-index:60}';
+  document.head.appendChild(css);document.body.insertBefore(bar,document.body.firstChild);
+  function esc(t){return String(t||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function paint(){var S=window.HouserStore,p=S&&S.load()&&S.load().project,why=S&&S.lockReason?S.lockReason():null,name='';try{name=localStorage.getItem('houser:user-name')||''}catch(e){}
+    if(!p){bar.style.display='none';return}bar.style.display='';
+    if(why==='ro'){var ro=p.readOnly||{};bar.className='hs-lockbar ro';bar.innerHTML='👁 Tylko podgląd · '+(ro.src==='base'?'baza Housera':'społeczność · autor: '+esc(ro.owner||'nieznany'))+' – zmiany nie są zapisywane. Żeby pracować nad tym domem, zrób kopię do siebie (przycisk na górze strony).'}
+    else if(why==='guest'){bar.className='hs-lockbar ro';bar.innerHTML='👁 Tylko podgląd – bez konta zmiany nie są zapisywane. Zaloguj się na górze strony, żeby projektować.'}
+    else{bar.className='hs-lockbar mine';bar.innerHTML='🏠 Mój dom'+(name?' · '+esc(name):'')+' – zmiany zapisują się same'}}
+  window.HouserLock={flash:function(){bar.classList.remove('flash');void bar.offsetWidth;bar.classList.add('flash');
+    var t=document.createElement('div');t.className='hs-rotoast';t.textContent='Tylko podgląd – ta zmiana nie została zapisana';document.body.appendChild(t);setTimeout(function(){t.remove()},2200)},paint:paint};
+  paint();window.addEventListener('storage',function(e){if(!e.key||e.key==='houser:current-project'||e.key==='houser:guest'||e.key==='houser:user-name')paint()});
+  try{if(sessionStorage.getItem('houser:ro-flash')){sessionStorage.removeItem('houser:ro-flash');setTimeout(window.HouserLock.flash,300)}}catch(e){}
+})();

@@ -10,8 +10,17 @@
   function load(){
     try{const raw=localStorage.getItem(KEY);if(!raw)return null;const rec=JSON.parse(raw);return rec&&rec.project?rec:null;}catch(_){return null;}
   }
+  // tylko podgląd: cudzy dom (project.readOnly) albo brak konta (flaga 'houser:guest' ustawiana przez stronę główną).
+  // Moduły nie mogą wtedy nic zapisać; strona główna (HOUSER_SHELL) zapisuje zawsze (otwieranie domu, kopia do siebie).
+  function lockReason(){try{const p=load()?.project;if(p?.readOnly)return 'ro';if(localStorage.getItem('houser:guest')==='1')return 'guest'}catch(_){}return null}
+  let lastInput=0;for(const ev of ['pointerdown','keydown','change','input'])global.addEventListener?.(ev,()=>{lastInput=Date.now()},true);
+  let reverting=false;
+  function blocked(){if(reverting)return;const userEdit=Date.now()-lastInput<1500;
+    try{global.HouserLock?.flash?.()}catch(_){}
+    if(userEdit){reverting=true;setTimeout(()=>{try{sessionStorage.setItem('houser:ro-flash','1')}catch(_){}location.reload()},700)}} // zmiana z ręki – wracamy do zapisanego stanu
   // source: nazwa modułu, który zapisuje (np. 'projektowanie')
   function save(project,source){
+    if(!global.HOUSER_SHELL&&lockReason()){blocked();return false}
     const rec={project,source:source||'',writer:selfId,updatedAt:new Date().toISOString()};
     try{localStorage.setItem(KEY,JSON.stringify(rec));return true;}catch(_){return false;}
   }
@@ -32,5 +41,5 @@
   function newId(){return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
   function projectId(){const rec=load();if(!rec)return null;if(rec.project.projectId)return rec.project.projectId;const id=newId();rec.project.projectId=id;save(rec.project,rec.source||'');return id}
 
-  global.HouserStore={KEY,load,save,update,subscribe,clear,newId,projectId};
+  global.HouserStore={KEY,load,save,update,subscribe,clear,newId,projectId,lockReason};
 })(window);
