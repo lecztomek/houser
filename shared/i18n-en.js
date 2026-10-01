@@ -3239,4 +3239,5 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "ciepła woda z kotła także latem (wtedy sprawność ok. {n}%)":"hot water from the boiler in summer too (efficiency approx. {n}% then)",
 "w Instalacji grzewczej wybierzesz inaczej (np. pompę ciepła do wody)":"you can choose differently in Heating installation (e.g. a hot-water heat pump)",
 "Ciepła woda na osobę [l/dzień, 45°C]":"Hot water per person [l/day, 45°C]",
-"{n} os. × {n} l dziennie = {n} kWh/rok (zmienisz w module Energia)":"{n} people × {n} l per day = {n} kWh/year (change in the Energy module)"};
+"{n} os. × {n} l dziennie = {n} kWh/rok (zmienisz w module Energia)":"{n} people × {n} l per day = {n} kWh/year (change in the Energy module)",
+"Okno sięga ponad ścianę / dach – na rysunku i w 3D jest przycięte do dachu. Zmniejsz wysokość, zmień kąt skosu albo stronę, która jest wyżej (albo ustaw „skos wg dachu”).":"The window reaches above the wall / roof – it is clipped to the roof in the drawing and in 3D. Reduce the height, change the slope angle or the higher side (or choose „slope follows the roof”)."};

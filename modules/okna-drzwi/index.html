@@ -120,8 +120,8 @@ function warnings(r){const G=geom(),w=[],c=grid().cellMeters;
   if(r.base!=='window'||r.f===floors()[0]||r.facade==='inside')return w;
   const top=r.info.sill+r.info.height;
   if(r.info.shape!=='roof'&&!isGable(r.facade)&&G.upperWall<top-.05)w.push('Ściana piętra ma tu tylko '+G.upperWall.toFixed(2)+' m – ustaw okno dachowe albo obniż okno.');
-  if(r.info.shape==='sloped'&&r.info.slope==='manual'){const L=facadeLen(r.facade),roofAt=h=>isGable(r.facade)?G.eave+G.rise*Math.max(0,1-Math.abs(h-L/2)/(L/2)):G.eave,over=[r.h0+.05,r.h1-.05].some(h=>G.groundHeight+O.slopedTop(r.info,h-r.h0,r.len,null)>roofAt(h)-.15);
-    if(over)w.push('Okno wychodzi ponad dach – zmniejsz wysokość, zmień kąt skosu albo stronę, która jest wyżej (albo ustaw „skos wg dachu”).')}
+  if(r.info.shape==='sloped'&&r.info.slope==='manual'){const L=facadeLen(r.facade),roofAt=h=>isGable(r.facade)?G.eave+G.rise*Math.max(0,1-Math.abs(h-L/2)/(L/2)):G.eave,lo=r.f===floors()[0],over=[r.h0+.05,r.h1-.05].some(h=>(lo?0:G.groundHeight)+O.slopedTop(r.info,h-r.h0,r.len,null)>(lo?G.groundHeight-.05:roofAt(h)-.15));
+    if(over)w.push('Okno sięga ponad ścianę / dach – na rysunku i w 3D jest przycięte do dachu. Zmniejsz wysokość, zmień kąt skosu albo stronę, która jest wyżej (albo ustaw „skos wg dachu”).')}
   if(r.info.shape==='roof'&&isGable(r.facade))w.push('Na ścianie szczytowej nie ma połaci – okno dachowe działa na ścianach okapowych.');
   return w}
 
@@ -182,7 +182,7 @@ function renderElev(){
     const base=r.f===floors()[0]?0:G.groundHeight,i=r.info,sel=selected===r.id,col=r.base==='door'?'#8a6a4a':'#9cc8e7',st=sel?'#2563eb':'#334155',sw=sel?3:1.5;
     let pts;
     if(i.shape==='roof'&&!gable){const sn=Math.sin(G.roofPitch*Math.PI/180),y0=Math.min(G.eave+G.rise-.3,G.eave+i.sill*sn),y1=Math.min(G.eave+G.rise-.1,y0+i.height*sn);pts=[[r.h0+.05,y0],[r.h1-.05,y0],[r.h1-.05,y1],[r.h0+.05,y1]]}
-    else if(i.shape==='sloped'&&(i.slope==='manual'||(gable&&base>0))){const y0=base+i.sill,lim=h=>base+O.slopedTop(i,h-r.h0,r.len,i.slope==='manual'?null:roofAt(h)-base);pts=[[r.h0+.05,y0],[r.h1-.05,y0],[r.h1-.05,lim(r.h1-.05)],[r.h0+.05,lim(r.h0+.05)]]}
+    else if(i.shape==='sloped'&&(i.slope==='manual'||(gable&&base>0))){const y0=base+i.sill,lim=h=>base+O.slopedTop(i,h-r.h0,r.len,base>0?(gable?roofAt(h):G.eave)-base:G.groundHeight+.2);pts=[[r.h0+.05,y0],[r.h1-.05,y0],[r.h1-.05,lim(r.h1-.05)],[r.h0+.05,lim(r.h0+.05)]]}
     else{const y0=base+i.sill,y1=y0+i.height;pts=[[r.h0+.05,y0],[r.h1-.05,y0],[r.h1-.05,y1],[r.h0+.05,y1]]}
     const g=el('g',{style:'cursor:pointer'},svg);g.addEventListener('click',()=>{selected=r.id;renderAll()});
     el('polygon',{points:pts.map(([h,y])=>X(h)+','+Y(y)).join(' '),fill:'#f8fafc',stroke:st,'stroke-width':sw},g);

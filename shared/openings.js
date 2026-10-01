@@ -42,7 +42,7 @@
   // górna krawędź okna ściętego (od podłogi): u – odległość od lewego końca okna patrząc z zewnątrz, len – szerokość okna,
   // roofTop – wolna wysokość pod dachem w tym miejscu (tryb „wg dachu”). Tryb „własny”: wyższa strona (rise) ma wysokość height, skos pod kątem angle.
   function slopedTop(info,u,len,roofTop){const y0=+info.sill||0;
-    if(info.slope==='manual'){const a=Math.max(0,Math.min(80,+info.angle||0))*Math.PI/180,d=info.rise==='left'?u:len-u;return Math.max(y0+.2,y0+info.height-Math.tan(a)*d)}
+    if(info.slope==='manual'){const a=Math.max(0,Math.min(80,+info.angle||0))*Math.PI/180,d=info.rise==='left'?u:len-u;let t=y0+info.height-Math.tan(a)*d;if(roofTop!=null)t=Math.min(t,roofTop-.25);return Math.max(y0+.2,t)} // ręczny skos – przycięty do ściany / dachu
     return roofTop==null?y0+info.height:Math.max(y0+.3,Math.min(y0+info.height,roofTop-.25))}
   // zasięg ciągu otworów (sąsiednie krawędzie tego samego rodzaju i wariantu) – dla modułów, które rysują otwory krawędź po krawędzi
   function runExtent(project,floor,key){const ops=project?.openings?.[floor]||{},base=ops[key],[o,aS,bS]=key.split(':'),a=+aS,b=+bS,v=resolve(project,floor,key,base).variant;
