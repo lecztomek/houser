@@ -3424,4 +3424,7 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "• z tej przeglądarki":"• from this browser",
 "• z chmury":"• from the cloud",
 "Tego nie da się cofnąć.":"This cannot be undone.",
-"Usunięto „{q}”":"Deleted „{q}”"};
+"Usunięto „{q}”":"Deleted „{q}”",
+"Zacznij od pustego projektu albo otwórz gotowy dom w Rankingu domów – potem idziesz po kolei przez moduły z menu po lewej. Projekt zapisujesz na dysk jednym plikiem.":"Start with an empty project or open a ready-made house from the House ranking – then go through the modules in the left menu. You save the project to disk as one file.",
+"Zacznij od pustego projektu albo otwórz gotowy dom w Rankingu domów – potem idziesz po kolei przez moduły z menu po lewej.":"Start with an empty project or open a ready-made house from the House ranking – then go through the modules in the left menu.",
+"Zacznij od pustego projektu, otwórz swój plik albo gotowy dom z Rankingu domów.":"Start an empty project, open your file or a ready-made house from the House ranking."};
