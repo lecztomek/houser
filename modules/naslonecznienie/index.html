@@ -81,7 +81,7 @@ td.num,th.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-n
   <div class="section">
     <h3>Osłony latem</h3>
     <div class="field"><label>Osłony okien w słoneczne dni</label>
-      <select id="blinds"><option value="none">brak osłon</option><option value="internal">rolety / żaluzje wewnętrzne</option><option value="external">rolety zewnętrzne / markizy</option></select><span class="hint">dla okien, przy których nie ustawiono rolety w module Okna i drzwi</span></div>
+      <select id="blinds"></select><span class="hint">dla okien, przy których nie ustawiono rolety w module Okna i drzwi</span></div>
     <p class="hint">Osłony wewnętrzne zatrzymują ok. 35% zysków (ciepło i tak jest już w pokoju), zewnętrzne – ok. 75%. Zimą liczone są okna odsłonięte.</p>
   </div>
   <div class="section">
@@ -113,6 +113,7 @@ let project=null,mode='summer',selKey=null,sortBy='risk';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt=(v,d=0)=>(Math.round((+v||0)*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
 const {ORD,AZ,FAC,BLIND,RISK,NOWIN,WINT,WINT_T,SRC,SEASON,MONTHS,LOCAL_SHIFT}=HouserSolar,ss=()=>HouserSolar.settings(project),sideMap=()=>HouserSolar.sideMap(project),compute=()=>HouserSolar.compute(project); // obliczenia: calc.js
+$('blinds').innerHTML=Object.entries(HouserSolar.BLIND_NAMES).map(([k,n])=>'<option value="'+k+'">'+n+'</option>').join('');
 let tS=null;function save(patch){const s={...ss(),...patch};project.solarSettings=s;clearTimeout(tS);tS=setTimeout(()=>HouserStore.update(p=>{p.solarSettings=s},'naslonecznienie'),300);render()}
 for(const id of ['g','blinds','weather','internal'])$(id).addEventListener('change',()=>{const v=$(id).value;save({[id]:id==='g'||id==='internal'?Number(v):v})});
 
@@ -126,7 +127,7 @@ function tips(R,C){
   const summerOf=(w,cols)=>S.windowSteps({...w,cols},7,C.kind,{blind:w.blindK,pergolaT:.5}).reduce((a,v)=>a+v,0);
   const winterOf=(w,cols)=>Object.entries(SEASON).reduce((a,[m,eta])=>a+eta*S.MDAYS[m-1]*S.windowSteps({...w,cols},+m,'avg',{pergolaT:.8}).reduce((x,v)=>x+v,0),0);
   // okna W / E / S bez zewnętrznych osłon
-  if(R.risk>=1)for(const f of ['west','south','east']){const ws=(byFac[f]||[]).filter(w=>w.blindKind!=='external');if(!ws.length)continue;const cut=Math.round((1-BLIND.external/Math.max(...ws.map(w=>w.blindK)))*100);const A=ws.reduce((a,w)=>a+w.A*w.part,0);if(A<.6)continue;
+  if(R.risk>=1)for(const f of ['west','south','east']){const ws=(byFac[f]||[]).filter(w=>w.blindK>BLIND.screen);if(!ws.length)continue;const cut=Math.round((1-BLIND.external/Math.max(...ws.map(w=>w.blindK)))*100);const A=ws.reduce((a,w)=>a+w.A*w.part,0);if(A<.6)continue;
     const cap={west:'Okna zachodnie',south:'Okna południowe',east:'Okna wschodnie'}[f];
     T.push(cap+' '+fmt(A,1)+' m² bez osłon zewnętrznych – rolety zewnętrzne zmniejszą zyski o ~'+cut+'%')}
   // okap nad oknami południowymi
@@ -139,7 +140,7 @@ function tips(R,C){
       else if(!best.near)T.push('Nad oknami południowymi przyda się daszek lub stała markiza (wysięg ok. 0,8 m) – latem zyski mniejsze o ~'+a+'%, zimą tylko o ~'+b+'%')}}
   if(R.risk>=1)for(const f of ['west','east'])if(byFac[f])T.push(FAC[f].on+' słońce świeci nisko – okap niewiele da, skuteczne są rolety, żaluzje fasadowe lub zieleń');
   // okna dachowe
-  const rw={};for(const w of R.wins)if(w.roof&&w.blindKind!=='external')rw[w.facing]=(rw[w.facing]||0)+w.A*w.part;const cut=Math.round((1-BLIND.external)*100);
+  const rw={};for(const w of R.wins)if(w.roof&&w.blindK>BLIND.screen)rw[w.facing]=(rw[w.facing]||0)+w.A*w.part;const cut=Math.round((1-BLIND.external)*100);
   for(const f in rw)if(f!=='north')T.push('Okno dachowe (połać '+FAC[f].fem+') '+fmt(rw[f],1)+' m² – markiza zewnętrzna zmniejszy zyski o ~'+cut+'%');
   if(rw.north&&!rw.south&&!rw.west&&!rw.east)T.push('Okna dachowe tylko na północnej połaci – latem nagrzewają się niewiele');
   // taras, piętro nad oknem

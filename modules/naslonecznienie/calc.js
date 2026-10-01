@@ -6,7 +6,7 @@ const S=HouserSun,D2R=Math.PI/180;
 const fmt=(v,d=0)=>(Math.round((+v||0)*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
 const ORD=['north','east','south','west'],AZ={north:0,east:90,south:180,west:270};
 const FAC={north:{short:'Pn',adj:'północne',fem:'północna',on:'Na północy'},east:{short:'Wsch',adj:'wschodnie',fem:'wschodnia',on:'Na wschodzie'},south:{short:'Pd',adj:'południowe',fem:'południowa',on:'Na południu'},west:{short:'Zach',adj:'zachodnie',fem:'zachodnia',on:'Na zachodzie'}};
-const BLIND={none:1,internal:.65,external:.25};
+const BLIND=HouserOpenings.BLIND,BLIND_NAMES=HouserOpenings.BLIND_NAMES; // osłony przeciwsłoneczne – shared/openings.js
 const RISK=[{n:'niskie',bg:'#fbe7cf',fg:'#0f172a'},{n:'umiarkowane',bg:'#f5b77a',fg:'#0f172a'},{n:'wysokie',bg:'#e2753a',fg:'#fff'},{n:'bardzo wysokie',bg:'#a8421a',fg:'#fff'}];
 const NOWIN='#f1efea';
 const WINT=['#e3eefc','#b7d3f6','#86b6ef','#3987e5','#1c5cab'],WINT_T=[5,15,30,50]; // kWh/m² podłogi w sezonie
@@ -112,5 +112,5 @@ function compute(){
 }
 
 const withP=fn=>p=>{const o=project;project=p;try{return fn()}finally{project=o}};
-global.HouserSolar={ORD,AZ,FAC,BLIND,RISK,NOWIN,WINT,WINT_T,SRC,SEASON,MONTHS,LOCAL_SHIFT,settings:withP(ss),sideMap:withP(sideMap),compute:withP(compute)};
+global.HouserSolar={ORD,AZ,FAC,BLIND,BLIND_NAMES,RISK,NOWIN,WINT,WINT_T,SRC,SEASON,MONTHS,LOCAL_SHIFT,settings:withP(ss),sideMap:withP(sideMap),compute:withP(compute)};
 })(window);

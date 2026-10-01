@@ -152,7 +152,7 @@ function renderList(){
         else row.append('maks. wys.',hh,'m');
         d.appendChild(ctl);d.appendChild(row)}
       else ctl.append(sel,'parapet',sill,'m · wys.',hh,'m',...(r.base!=='door'?[mv('▲',.05),mv('▼',-.05)]:[]));
-      if(r.base==='window'||r.base==='hst'){const bl=document.createElement('select');bl.title='Roleta wpływa na nagrzewanie latem (moduł Nasłonecznienie)';bl.innerHTML='<option value="">roleta: jak w Nasłonecznieniu</option><option value="none">bez rolety</option><option value="internal">roleta / żaluzja wewnętrzna</option><option value="external">roleta zewnętrzna / markiza</option>';bl.value=r.info.blind||'';bl.onchange=()=>upd({blind:bl.value});ctl.append(bl)}
+      if(r.base==='window'||r.base==='hst'){const bl=document.createElement('select');bl.title='Osłona (roleta, żaluzja, markiza) wpływa na nagrzewanie latem (moduł Nasłonecznienie)';bl.innerHTML='<option value="">osłona: jak w Nasłonecznieniu</option>'+Object.entries(O.BLIND_NAMES).map(([k,n])=>'<option value="'+k+'">'+n+'</option>').join('');bl.value=r.info.blind||'';bl.onchange=()=>upd({blind:bl.value});ctl.append(bl)}
       if(r.base==='door'){const vs=document.createElement('select');vs.title='Jak te drzwi wyglądają na podglądzie 3D i na wizualizacji';vs.innerHTML='<option value="">jak domyślnie we Wnętrzu 3D</option><option value="open">otwarte</option><option value="closed">zamknięte</option><option value="none">bez skrzydła (sam otwór)</option>';vs.value=project.openingVariants?.[r.f]?.[r.keys[0]]?.view||'';
         vs.onchange=()=>{O.setVariant(project,r.f,r.keys,{variant:r.info.variant,view:vs.value});selected=r.id;commit()};const lb=document.createElement('span');lb.textContent=' · w 3D:';ctl.append(lb,vs)}
       if(!ctl.parentNode)d.appendChild(ctl);for(const w of warnings(r)){const e=document.createElement('div');e.className='warn';e.textContent='⚠ '+w;d.appendChild(e)}
@@ -189,6 +189,11 @@ function renderElev(){
     const ins=pts.map(([h,y],k)=>[h+(k===0||k===3?.06:-.06),y+(k<2?.06:-.06)]);
     el('polygon',{points:ins.map(([h,y])=>X(h)+','+Y(y)).join(' '),fill:col,'fill-opacity':r.base==='door'?1:.8,stroke:'#64748b'},g);
     if(i.leaves===2||(r.base!=='door'&&r.len>1.2)){const n=i.leaves===2?1:Math.max(1,Math.round(r.len/1.1)-1);for(let k=1;k<=n;k++){const h=r.h0+.05+(r.len-.1)*k/(n+1);el('line',{x1:X(h),y1:Y(pts[0][1]),x2:X(h),y2:Y(Math.min(pts[2][1],pts[3][1])),stroke:'#f8fafc','stroke-width':4},g)}}
+    const bl=r.base!=='door'?O.blindOf(project,i):null; // osłona widoczna z zewnątrz
+    if(bl&&i.shape==='roof'&&!gable&&bl.look!=='band'&&bl.look!=='curtain')el('polygon',{points:ins.map(([h,y])=>X(h)+','+Y(y)).join(' '),fill:bl.color,'fill-opacity':.45},g);
+    else if(bl){const tp=Math.max(pts[2][1],pts[3][1]),a=r.h0+.02,b=r.h1-.02,ta=pts[3][1],tb=pts[2][1]; // kaseta biegnie wzdłuż górnej krawędzi (też skośnej)
+      if(bl.look==='box')el('polygon',{points:[[a,ta],[b,tb],[b,tb+.2],[a,ta+.2]].map(([h,y])=>X(h)+','+Y(y)).join(' '),fill:bl.color,stroke:'#334155'},g);
+      if(bl.look==='awning')el('polygon',{points:[[a-.05,tp+.35],[b+.05,tp+.35],[b+.1,tp+.05],[a-.1,tp+.05]].map(([h,y])=>X(h)+','+Y(y)).join(' '),fill:bl.color,'fill-opacity':.85,stroke:'#7c2d12'},g)}
     el('text',{x:X((r.h0+r.h1)/2),y:Y(pts[0][1])+14,'text-anchor':'middle','font-size':11,fill:'#475569'},g,i.name);
   }
   root.appendChild(card);

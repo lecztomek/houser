@@ -45,10 +45,16 @@
     if(info.slope==='manual'){const a=Math.max(0,Math.min(80,+info.angle||0))*Math.PI/180,d=info.rise==='left'?u:len-u;let t=y0+info.height-Math.tan(a)*d;if(roofTop!=null)t=Math.min(t,roofTop-.25);return Math.max(y0+.2,t)} // ręczny skos – przycięty do ściany / dachu
     return roofTop==null?y0+info.height:Math.max(y0+.3,Math.min(y0+info.height,roofTop-.25))}
   // zasięg ciągu otworów (sąsiednie krawędzie tego samego rodzaju i wariantu) – dla modułów, które rysują otwory krawędź po krawędzi
+  // osłony przeciwsłoneczne: ile ciepła ze słońca przechodzi przy opuszczonej osłonie (latem; w sezonie grzewczym osłony są podniesione)
+  const BLIND={none:1,curtain:.8,internal:.65,awning:.4,screen:.3,external:.25,venetian:.2};
+  const BLIND_NAMES={none:'bez osłon',curtain:'zasłony / firany',internal:'roleta / żaluzja wewnętrzna',awning:'markiza (na oknie dachowym: markizeta)',screen:'screen zewnętrzny (tkanina)',external:'roleta zewnętrzna',venetian:'żaluzja zewnętrzna (fasadowa)'};
+  // jak narysować osłonę (prosto): box – kaseta rolety/żaluzji nad oknem na zewnątrz, awning – markiza (pochyła płachta), band – roleta wewnętrzna, curtain – zasłony po bokach od środka
+  const BLIND_LOOK={curtain:{look:'curtain',color:'#e6d8bf'},internal:{look:'band',color:'#eeebe4'},awning:{look:'awning',color:'#c2532d'},screen:{look:'box',color:'#80868f'},external:{look:'box',color:'#5b6470'},venetian:{look:'box',color:'#9a9184'}};
+  const blindOf=(project,info)=>{const k=info?.blind||project?.solarSettings?.blinds||'none';return BLIND_LOOK[k]?{kind:k,...BLIND_LOOK[k]}:null};
   // podpis ustawień otworu – sąsiednie kratki z tym samym podpisem to jedno okno / drzwi
   const sig=i=>[i.variant,i.slope,i.angle,i.rise,i.sill,i.height,i.blind].join('|');
   function runExtent(project,floor,key){const ops=project?.openings?.[floor]||{},base=ops[key],[o,aS,bS]=key.split(':'),a=+aS,b=+bS,v=sig(resolve(project,floor,key,base));
     const k=i=>o==='h'?'h:'+i+':'+b:'v:'+a+':'+i,same=i=>ops[k(i)]===base&&sig(resolve(project,floor,k(i),base))===v,at=o==='h'?a:b;
     let from=at,to=at;while(same(from-1))from--;while(same(to+1))to++;return {from,to,at}}
-  global.HouserOpenings={VARIANTS,DEFAULT,BASE_NAMES,variantsFor,resolve,setVariant,slopedTop,runExtent,sig};
+  global.HouserOpenings={VARIANTS,DEFAULT,BASE_NAMES,variantsFor,resolve,setVariant,slopedTop,runExtent,sig,BLIND,BLIND_NAMES,BLIND_LOOK,blindOf};
 })(window);

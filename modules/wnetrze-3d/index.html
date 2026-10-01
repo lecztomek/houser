@@ -537,7 +537,7 @@ function addWall2D(orient,x,z,len,height,base,opening,exterior){const info=openi
   }
   if(opening==='hst'){
     const dh=Math.min(info?.height??settings.hstH,height-.05);wallSlab(orient,x,z,len,base,dh,height,wallColor,exterior);
-    if(settings.showGlass)wallQuad(orient,gx,gz,len,base,.03,dh,'#6fb4de',{alpha:.24,stroke:'#6fb4de',kind:'glass'});return;
+    if(settings.showGlass)wallQuad(orient,gx,gz,len,base,.03,dh,'#6fb4de',{alpha:.24,stroke:'#6fb4de',kind:'glass'});addBlind3D(orient,x,z,len,base,.03,dh,info,exterior);return;
   }
   if(opening==='window'){
     if(info?.shape==='roof'){wallSlab(orient,x,z,len,base,0,height,wallColor,exterior);return} // okno dachowe – w ścianie nie ma otworu
@@ -546,13 +546,21 @@ function addWall2D(orient,x,z,len,height,base,opening,exterior){const info=openi
       const sill=Math.min(info.sill,height-.35),tA=Math.min(height-.05,HouserOpenings.slopedTop(info,uA,runLen)),tB=Math.min(height-.05,HouserOpenings.slopedTop(info,uB,runLen));
       wallSlab(orient,x,z,len,base,0,sill,wallColor,exterior);wallSlabSloped(orient,x,z,len,base,tA,tB,height,wallColor,exterior);
       if(settings.showGlass){const g=orient==='h'?[[gx-len/2,sill,gz],[gx+len/2,sill,gz],[gx+len/2,tB,gz],[gx-len/2,tA,gz]]:[[gx,sill,gz-len/2],[gx,sill,gz+len/2],[gx,tB,gz+len/2],[gx,tA,gz-len/2]];addQuad(...g.map(([a,b,c2])=>[a,base+b,c2]),'#6fb4de',{alpha:.28,stroke:'#6fb4de',kind:'glass'})}
-      return}
+      addBlind3D(orient,x,z,len,base,sill,Math.min(tA,tB),info,exterior);return}
     const sill=Math.min(info?.sill??settings.sillH,height-.35),wh=Math.min(info?.height??settings.windowH,height-sill-.08),top=sill+wh;
     wallSlab(orient,x,z,len,base,0,sill,wallColor,exterior);wallSlab(orient,x,z,len,base,top,height,wallColor,exterior);
-    if(settings.showGlass)wallQuad(orient,gx,gz,len,base,sill,top,'#6fb4de',{alpha:.28,stroke:'#6fb4de',kind:'glass'});return;
+    if(settings.showGlass)wallQuad(orient,gx,gz,len,base,sill,top,'#6fb4de',{alpha:.28,stroke:'#6fb4de',kind:'glass'});addBlind3D(orient,x,z,len,base,sill,top,info,exterior);return;
   }
   wallSlab(orient,x,z,len,base,0,height,wallColor,exterior)
 }
+// osłona okna (prosto): roleta/żaluzja zewnętrzna – opuszczona do ~1/4 okna za szybą, markiza – pochyła płachta na zewnątrz, roleta wewnętrzna – pas u góry, zasłony – po bokach
+function addBlind3D(orient,x,z,len,base,sill,top,info,exterior){const b=exterior&&curOut?HouserOpenings.blindOf(project,info):null;if(!b)return;
+  const P=(u,y,d)=>orient==='h'?[x+u,base+y,z+curOut*d]:[x+curOut*d,base+y,z+u],q=(u0,u1,y0,y1,d0,d1,col,al)=>addQuad(P(u0,y0,d0),P(u1,y0,d1),P(u1,y1,d1),P(u0,y1,d0),col,{stroke:col,alpha:al??1}),h=len/2,t=WALL_EXT;
+  if(b.look==='box'){const y0=top-(top-sill)*.25;q(-h,h,y0,top,t+.02,t+.02,b.color);if(b.kind==='venetian')for(let y=y0+.05;y<top;y+=.06)q(-h,h,y,y+.012,t+.015,t+.015,'#6b6459')}
+  else if(b.look==='awning'){const Q=[P(-h,top+.3,t+.02),P(h,top+.3,t+.02),P(h,top-.1,t+.8),P(-h,top-.1,t+.8)];addQuad(...Q,b.color,{stroke:'#7c2d12',alpha:.95})}
+  else if(b.look==='band')q(-h,h,top-.16,top,-.03,-.03,b.color);
+  else if(b.look==='curtain'&&curOpKey){const e=HouserOpenings.runExtent(project,curOpFloor,curOpKey),w=.22;
+    if(e.at===e.from)q(-h-.05,-h+w,0.05,Math.min(top+.2,floorHeight(curOpFloor)-.03),-.06,-.06,b.color);if(e.at===e.to)q(h-w,h+.05,0.05,Math.min(top+.2,floorHeight(curOpFloor)-.03),-.06,-.06,b.color)}}
 // balustrada wnęki (loggii) na piętrze: krawędź komórki-wnęki od strony, gdzie nie ma już budynku
 function addLoggiaRails(){const f='upper',g=grid(),c=g.cellMeters,base=floorBase(f),isV=(x,y)=>{const id=roomAt(f,x,y);return !!id&&isExteriorVoid(f,id)},
   out=(x,y)=>{const id=roomAt(f,x,y);return !id||(cellClass(f,id)==='outside'&&!isExteriorVoid(f,id))},gOcc=(x,y)=>cellClass('ground',roomAt('ground',x,y))!=='outside';
