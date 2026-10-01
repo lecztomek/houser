@@ -1,0 +1,112 @@
+{
+ "dom-energooszczedny.json": {
+  "overall": 8.6,
+  "cost": 713336,
+  "Qh": 6038,
+  "bills": 3450,
+  "area": 108,
+  "mods": {
+   "Przepisy": 10,
+   "Codzienność": 8.1,
+   "Schowki i szafy": 9,
+   "Akustyka": 5.6,
+   "Nasłonecznienie": 10,
+   "Energia": 6.1,
+   "Ocieplenie i elewacja": 7.6,
+   "Wygląd": 8.9,
+   "Balkony": null,
+   "Hydraulika": 9.3,
+   "Ogrzewanie": 9.5,
+   "Wentylacja": 9.4,
+   "Rekuperacja": 10
+  }
+ },
+ "dom-parterowy.json": {
+  "overall": 8.4,
+  "cost": 873771,
+  "Qh": 8915,
+  "bills": 4329,
+  "area": 117,
+  "mods": {
+   "Przepisy": 10,
+   "Codzienność": 8,
+   "Schowki i szafy": 9.9,
+   "Akustyka": 6,
+   "Nasłonecznienie": 10,
+   "Energia": 4.2,
+   "Ocieplenie i elewacja": 7.6,
+   "Wygląd": 8,
+   "Balkony": null,
+   "Hydraulika": 8.8,
+   "Ogrzewanie": 9.5,
+   "Wentylacja": 9.6,
+   "Rekuperacja": 10
+  }
+ },
+ "dom-z-poddaszem.json": {
+  "overall": 8.4,
+  "cost": 1005466,
+  "Qh": 8070,
+  "bills": 4699,
+  "area": 186.5,
+  "mods": {
+   "Przepisy": 10,
+   "Codzienność": 6.3,
+   "Schowki i szafy": 7.8,
+   "Akustyka": 8,
+   "Nasłonecznienie": 8,
+   "Energia": 7.3,
+   "Ocieplenie i elewacja": 7.6,
+   "Wygląd": 8.9,
+   "Balkony": null,
+   "Hydraulika": 9.8,
+   "Ogrzewanie": 9.5,
+   "Wentylacja": 9.8,
+   "Rekuperacja": 7.5
+  }
+ },
+ "nowoczesna-stodola.json": {
+  "overall": 8.1,
+  "cost": 1035872,
+  "Qh": 9386,
+  "bills": 4473,
+  "area": 159.25,
+  "mods": {
+   "Przepisy": 10,
+   "Codzienność": 7.5,
+   "Schowki i szafy": 8.9,
+   "Akustyka": 6.2,
+   "Nasłonecznienie": 7,
+   "Energia": 5.8,
+   "Ocieplenie i elewacja": 7.6,
+   "Wygląd": 8.8,
+   "Balkony": null,
+   "Hydraulika": 8.5,
+   "Ogrzewanie": 9.5,
+   "Wentylacja": 9.7,
+   "Rekuperacja": 7
+  }
+ },
+ "uklad-domu-v7.json": {
+  "overall": 8.3,
+  "cost": 895012,
+  "Qh": 7453,
+  "bills": 3882,
+  "area": 148.75,
+  "mods": {
+   "Przepisy": 9.5,
+   "Codzienność": 8.3,
+   "Schowki i szafy": 10,
+   "Akustyka": 5.7,
+   "Nasłonecznienie": 8.5,
+   "Energia": 6.7,
+   "Ocieplenie i elewacja": 7.6,
+   "Wygląd": 8.7,
+   "Balkony": null,
+   "Hydraulika": 7,
+   "Ogrzewanie": 10,
+   "Wentylacja": 9.6,
+   "Rekuperacja": 7
+  }
+ }
+}

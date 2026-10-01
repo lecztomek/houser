@@ -103,3 +103,7 @@ Jednorazowo w repozytorium: **Settings → Pages → Build and deployment → So
 python3 -m http.server 8000
 ```
 i otwórz http://localhost:8000
+
+## Testy
+
+`node tests/run.js` – sprawdza obliczenia na wszystkich domach z `examples/` (bez NaN, rozsądne granice, zależności między wariantami i porównanie z `tests/expected.json`). Po świadomej zmianie wyników: `node tests/run.js --update`. Na GitHubie testy uruchamiają się przy każdej zmianie, a strona publikuje się tylko przy zielonych testach.
