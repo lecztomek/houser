@@ -21,7 +21,7 @@
   const curPid=()=>HouserStore.load()?.project?.projectId||null;
   function linkOf(pid){const L=pid&&links()[pid];return L&&!L.off&&user&&L.owner===user.uid?L:null}
   // czy projekt ma się zapisywać w chmurze (po zalogowaniu – każdy, chyba że użytkownik go z chmury usunął)
-  const eligible=pid=>!!(user&&pid&&!links()[pid]?.off);
+  const eligible=pid=>!!(user&&pid&&!links()[pid]?.off&&!HouserStore.load()?.project?.readOnly); // podgląd cudzego domu nie trafia do chmury
   // stan dla paska projektu
   function status(){const pid=curPid(),L=linkOf(pid);return {enabled,ready:!!fb,user,pid,linked:!!L,off:!!(pid&&links()[pid]?.off),vis:L?.vis||null,savedAt:L?.at||null,...op}}
 

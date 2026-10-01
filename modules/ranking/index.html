@@ -81,11 +81,12 @@ const cls=s=>s>=7.5?'c-ok':s>=5?'c-mid':'c-bad',col=s=>s>=7.5?'#22c55e':s>=5?'#f
 const projName=p=>p?.definitionSnapshot?.name||p?.definitionName||p?.name||'bez nazwy';
 const top_=(()=>{try{return window.top!==window&&window.top.HouserStore?window.top:null}catch(_){return null}})();
 const cloud=()=>{try{return top_?.HouserCloud||null}catch(_){return null}};
+const notMine=o=>['pub','base','sample'].includes(o.src)||!!o.ro;
 const SRC={current:'bieżący',local:'w tej przeglądarce',cloud:'w chmurze',pub:'ogólna baza',base:'ogólna baza',sample:'gotowy dom – wzór, nie ma go w Twoich projektach'};
 const cache={};let rows=[],busy=0;
 // wszystkie domy (bez powtórzeń – ten sam projekt z różnych miejsc liczy się raz)
 async function sources(withPub){const out=[],seen=new Set(),cur=HouserStore.load()?.project,add=o=>{if(o.pid&&seen.has(o.pid))return;if(o.pid)seen.add(o.pid);out.push(o)};
-  if(cur)add({src:'current',id:'current',pid:cur.projectId,name:projName(cur),get:async()=>cur});
+  if(cur)add({src:'current',id:'current',pid:cur.projectId,name:projName(cur),ro:!!cur.readOnly,owner:cur.readOnly?.owner||'',get:async()=>cur});
   try{for(const m of await HouserLibrary.list())add({src:'local',id:m.id,pid:m.id,name:m.name,get:async()=>(await HouserLibrary.get(m.id))?.project})}catch(_){}
   const C=cloud();
   if(C?.user?.())try{for(const m of await C.listMine())add({src:'cloud',id:m.id,pid:m.id,name:m.name,get:async()=>(await C.fetchProject(m.id))?.project})}catch(_){}
@@ -110,7 +111,7 @@ const SORT={score:r=>-(r.m.score??-1),value:r=>-(r.value??-1),cost:r=>r.m.cost??
 // przejście do domu: przez stronę główną (zamienia bieżący projekt – ten zostaje zapisany w przeglądarce / chmurze)
 async function openHouse(key){const [src,...rest]=key.split('|'),id=rest.join('|'),O=top_?.HouserOpen,r=rows.find(x=>x.o.src===src&&x.o.id===id);
   if(!O){alert('Otwórz Ranking ze strony głównej, żeby przechodzić do domów.');return}
-  if(!confirm('Otworzyć dom „'+(r?.o.name||'')+'”?\nBieżący projekt zostaje zapisany i wrócisz do niego z listy projektów.'))return;
+  if(!confirm((notMine(r?.o||{})?'Obejrzeć dom „'+(r?.o.name||'')+'” (podgląd – nic się nie zapisuje)?':'Otworzyć dom „'+(r?.o.name||'')+'”?')+'\nBieżący projekt zostaje zapisany i wrócisz do niego z listy projektów.'))return;
   const ok=src==='sample'||src==='base'?await O.sample(id):src==='local'?await O.local(id):await O.cloud(id);if(ok)top_.location.hash='co-poprawic'}
 function render(){const L=$('list'),key=$('sort').value;
   if(!rows.length){L.innerHTML='<div class="empty">'+(busy?'Liczę…':'Nie ma jeszcze żadnych domów do porównania.')+'</div>';return}
@@ -118,12 +119,12 @@ function render(){const L=$('list'),key=$('sort').value;
   const S=[...rows].sort((a,b)=>SORT[key](a)-SORT[key](b));
   const n=(k,v,sel)=>'<span'+(sel?' class="sel"':'')+'><span class="k">'+k+'</span><b>'+v+'</b></span>';
   L.onclick=e=>{const b=e.target.closest('[data-open],[data-go]');if(!b)return;if(b.dataset.go){if(top_)top_.location.hash=b.dataset.go;else location.href='../'+b.dataset.go+'/';return}openHouse(b.dataset.open)};
-  L.innerHTML=S.map((r,i)=>{const m=r.m;return '<div class="h'+(r.o.src==='current'?' cur':'')+(['pub','base','sample'].includes(r.o.src)?' notmine':'')+'"><div class="rk">'+(i+1)+'</div><div class="th">'+r.plan+'</div><div>'+
-    '<div class="nm">'+(['pub','base','sample'].includes(r.o.src)?'<span class="own no">Nie mój'+(r.o.owner?' · '+esc(r.o.owner):'')+'</span>':'<span class="own">Mój</span>')+esc(r.o.name)+'<small><span>'+SRC[r.o.src]+'</span> · <span>'+m.floors+'</span></small></div>'+
+  L.innerHTML=S.map((r,i)=>{const m=r.m;return '<div class="h'+(r.o.src==='current'?' cur':'')+(notMine(r.o)?' notmine':'')+'"><div class="rk">'+(i+1)+'</div><div class="th">'+r.plan+'</div><div>'+
+    '<div class="nm">'+(notMine(r.o)?'<span class="own no">Nie mój'+(r.o.owner?' · '+esc(r.o.owner):'')+'</span>':'<span class="own">Mój</span>')+esc(r.o.name)+'<small><span>'+SRC[r.o.src]+'</span> · <span>'+m.floors+'</span></small></div>'+
     '<div class="nums">'+n('ocena',(m.score!=null?'<span class="'+cls(m.score)+'">'+nf(m.score,1)+'</span><span class="sb"><i style="width:'+(m.score*10)+'%;background:'+col(m.score)+'"></i></span>':'–'),key==='score')+
       n('cena do jakości',r.value!=null?nf(r.value,1)+' / 10':'–',key==='value')+n('budowa',zl(m.cost),key==='cost')+n('za m²',m.cost?nf(m.cost/m.area)+' zł':'–',key==='m2')+
       n('rachunki / rok',m.bills!=null?nf(Math.round(m.bills/100)*100)+' zł':'–',key==='bills')+n('metraż',nf(m.area)+' m²',key==='area')+n('pokoje',String(m.beds))+'</div>'+
-    '<div class="pm">'+(r.o.src==='current'?'<button class="hs-btn go" data-go="co-poprawic">Co poprawić →</button>':'<button class="hs-btn go" data-open="'+esc(r.o.src+'|'+r.o.id)+'">Otwórz ten dom</button>')+(m.best?'<span class="g">▲ <span>'+esc(m.best.name)+'</span> '+nf(m.best.score,1)+'</span>':'')+(m.worst&&m.worst.score<7?'<span class="b">▼ <span>'+esc(m.worst.name)+'</span> '+nf(m.worst.score,1)+'</span>':'')+'</div></div></div>'}).join('');
+    '<div class="pm">'+(r.o.src==='current'?'<button class="hs-btn go" data-go="co-poprawic">Co poprawić →</button>':'<button class="hs-btn go" data-open="'+esc(r.o.src+'|'+r.o.id)+'">'+(notMine(r.o)?'👁 Podgląd':'Otwórz ten dom')+'</button>')+(m.best?'<span class="g">▲ <span>'+esc(m.best.name)+'</span> '+nf(m.best.score,1)+'</span>':'')+(m.worst&&m.worst.score<7?'<span class="b">▼ <span>'+esc(m.worst.name)+'</span> '+nf(m.worst.score,1)+'</span>':'')+'</div></div></div>'}).join('');
 }
 async function run(){const my=++busy;rows=[];const seenStates=new Set();$('st').textContent='';render();
   const list=await sources($('pub').checked);let k=0;
