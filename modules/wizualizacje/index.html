@@ -144,7 +144,9 @@ function roomDecor(name){const n=(name||'').toLowerCase();
 function kindOf(s){return s?.meta?.kind==='interior'?'interior':'exterior'}
 function groupsFor(kind){return {...OPTS.common,...OPTS[kind]}}
 function normOpts(sn){const k=kindOf(sn),d=defaults(k),o={...d,...(sn.opts||{})};for(const [key,g] of Object.entries(groupsFor(k)))if(!g.items[o[key]])o[key]=d[key];return o}
-function defaults(kind){const o={};for(const [k,g] of Object.entries(groupsFor(kind)))o[k]=Object.keys(g.items)[0];return o}
+function defaults(kind){const o={};for(const [k,g] of Object.entries(groupsFor(kind)))o[k]=Object.keys(g.items)[0];
+  if(kind==='exterior'){const fin=HouserStore.load()?.project?.envelope?.finish,m={wood:'wood',clinker:'brick',mixed:'mix',fibre:'grey',silicone:'white',plaster:'white'};if(m[fin])o.facade=m[fin]} // elewacja wybrana w module Ocieplenie i elewacja
+  return o}
 
 // ---------- opis projektu do promptu
 function projectFacts(s){
@@ -153,18 +155,26 @@ function projectFacts(s){
   const G=HouserModel.geometry(e,across?g.width*g.cellMeters:g.height*g.cellMeters),c=g.cellMeters,out=[];
   const floors=p.definitionSnapshot?.floorOrder||['ground','upper'];
   if(kindOf(s)==='exterior'){
-    out.push('Single-family house, footprint about '+(g.width*c).toFixed(0)+' x '+(g.height*c).toFixed(0)+' m.');
+    {const st=p.state?.[floors[0]]||[],fl=Array.isArray(st[0])?st.flat():st,rk=Object.fromEntries((p.definitionSnapshot?.floors?.[floors[0]]?.rooms||[]).map(r=>[r.id,r.kind]));let x0=1e9,x1=-1,y0=1e9,y1=-1;
+      fl.forEach((v,i)=>{if(!v||rk[v]==='exteriorVoid')return;const x=i%g.width,y=Math.floor(i/g.width);x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y)});
+      const w=x1>=0?(x1-x0+1)*c:g.width*c,d=y1>=0?(y1-y0+1)*c:g.height*c;out.push('Single-family house, footprint about '+w.toFixed(0)+' x '+d.toFixed(0)+' m.')}
     out.push(G.upperType==='none'?'Single-storey house (bungalow) under a '+G.roofPitch+' degree gable roof, no upper floor.':G.upperType==='attic'?'Ground floor plus a usable attic under a '+G.roofPitch+' degree gable roof (knee wall '+G.kneeWall.toFixed(1)+' m).':'Two full storeys with a '+G.roofPitch+' degree gable roof.');
     {const eo=Math.round(G.eaveOverhang*100),go=Math.round(G.gableOverhang*100),sf={wood:'natural wood soffit boards',white:'white soffit',graphite:'dark graphite soffit',none:'exposed rafter ends under the eaves'}[G.soffit]||'soffit';
-      out.push('Roof overhang: about '+eo+' cm beyond the eaves walls and '+go+' cm beyond the gable walls'+(eo+go>0?', with '+sf+' and fascia boards':'')+' – keep these overhangs as in the render.');}
+      out.push(eo+go<20?'No roof overhangs: the roof ends flush with the walls (no eaves, no soffits, modern barn style) – keep it so.':'Roof overhang: about '+eo+' cm beyond the eaves walls and '+go+' cm beyond the gable walls, with '+sf+' and fascia boards – keep these overhangs as in the render.');}
     {const kind=(f,id)=>(p.definitionSnapshot?.floors?.[f]?.rooms||[]).find(r=>r.id===id)?.kind,flat=f=>{const st=p.state?.[f]||[];return Array.isArray(st[0])?st.flat():st};
       const up=flat('upper'),gr=flat('ground'),occ=(f,id)=>id&&kind(f,id)!=='exteriorVoid';let loggia=0,porch=0;
       for(let i=0;i<Math.max(up.length,gr.length);i++){if(kind('upper',up[i])==='exteriorVoid'&&occ('ground',gr[i]))loggia++;if(occ('upper',up[i])&&kind('ground',gr[i])==='exteriorVoid')porch++}
       if(loggia)out.push('A recessed loggia cut into the upper floor (deeper, shaded area with a glass railing) – keep it recessed, with a real floor, ceiling and glass balustrade.');
       if(porch)out.push('A recessed covered area on the ground floor under the upper floor (e.g. covered entrance) – keep it recessed and shaded.');}
-    const ov=p.openingVariants||{},vals=Object.values(ov).flatMap(o=>Object.values(o));
+    const ov=p.openingVariants||{},vals=Object.entries(ov).flatMap(([f,o])=>Object.entries(o).filter(([k])=>p.openings?.[f]?.[k]).map(([,v])=>v)); // tylko otwory, które są na rzucie
     if(vals.some(v=>v.variant==='roof'))out.push('Roof windows (skylights) in the roof slope.');
     if(Object.values(p.openings||{}).some(o=>Object.values(o).includes('hst')))out.push('Large floor-to-ceiling sliding glass terrace doors.');
+    if(vals.some(v=>/^sloped/.test(v.variant||'')))out.push('Some windows in the gable wall are trapezoid-shaped, their top edge following the roof slope – keep that shape.');
+    {const bl=new Set(vals.map(v=>v.blind).filter(Boolean));const g=p.solarSettings?.blinds;if(g&&g!=='none')bl.add(g);
+      if(bl.has('external')||bl.has('venetian')||bl.has('screen'))out.push('Slim external roller shutter / blind boxes above some windows (shutters raised).');
+      if(bl.has('awning'))out.push('Fabric awnings above some windows or glass doors.');}
+    if((p.balconies||[]).length){const rails={glass:'glass balustrade',bars:'slim steel bar railing',wall:'solid parapet wall'};const r=[...new Set(p.balconies.map(b=>rails[b.rail]||'glass balustrade'))].join(' or ');out.push('Upper-floor balcony'+(p.balconies.length>1?'s':'')+' with '+r+' – keep '+(p.balconies.length>1?'them':'it')+' as in the render.')}
+    try{const rr=HouserModel.roofRange(p);if(rr&&!rr.full)out.push('The pitched roof covers only part of the house; the rest has a flat roof or terrace – keep it so.')}catch(_){}
     const od=p.outdoorStructures||[];const kinds=[...new Set(od.map(o=>o.type))];
     if(kinds.includes('coveredTerrace'))out.push('Covered terrace with a flat roof on slim posts.');
     if(kinds.includes('pergola'))out.push('Wooden pergola with slats.');
