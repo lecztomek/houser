@@ -17,11 +17,12 @@ h1{font-size:21px;margin:0 0 4px}
 .bar select{font:inherit;padding:5px 8px;border:1px solid var(--hs-line);border-radius:8px;background:#fff}
 .list{display:flex;flex-direction:column;gap:10px}
 .h{display:grid;grid-template-columns:34px 110px 1fr;gap:12px;align-items:center;background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:10px 14px;box-shadow:var(--hs-shadow)}
+.h.notmine{background:#fff7ed;border-color:#fdba74}
 .h.cur{border-color:#2563eb;box-shadow:0 0 0 2px #bfdbfe}
 .rk{width:30px;height:30px;border-radius:50%;background:#e2e8f0;color:#0f172a;font-weight:800;display:grid;place-items:center}
 .h:nth-child(1) .rk{background:#facc15}.h:nth-child(2) .rk{background:#cbd5e1}.h:nth-child(3) .rk{background:#f0b27a}
 .th{height:64px;display:flex;align-items:center}.th svg{width:100%;height:64px}
-.nm{font-weight:700;font-size:15px}.nm small{font-weight:500;color:var(--hs-muted);margin-left:6px;font-size:12px}
+.nm{font-weight:700;font-size:15px}.own{display:inline-block;font-size:11px;font-weight:800;border-radius:5px;padding:1px 7px;margin-right:7px;vertical-align:2px;background:#dcfce7;color:#166534}.own.no{background:#ffedd5;color:#9a3412}.nm small{font-weight:500;color:var(--hs-muted);margin-left:6px;font-size:12px}
 .nums{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:6px;font-size:13px}
 .nums span b{font-variant-numeric:tabular-nums}
 .nums .k{color:var(--hs-muted);font-size:11.5px;display:block}
@@ -42,7 +43,7 @@ h1{font-size:21px;margin:0 0 4px}
     <label>Sortuj: <select id="sort">
       <option value="score">ogólna ocena</option><option value="value">cena do jakości</option><option value="cost">najtańsza budowa</option><option value="m2">najtańszy m²</option><option value="bills">najniższe rachunki</option><option value="area">największy metraż</option>
     </select></label>
-    <label><input type="checkbox" id="pub"> z publicznej galerii (domy innych osób)</label>
+    <label>Pokaż: <select id="pubSel"><option value="0">tylko moje domy</option><option value="1">moje + ogólna baza (domy innych osób)</option></select><input type="checkbox" id="pub" hidden></label>
     <span class="hint" id="st"></span>
   </div>
   <div id="list" class="list"><div class="empty">Liczę…</div></div>
@@ -80,7 +81,7 @@ const cls=s=>s>=7.5?'c-ok':s>=5?'c-mid':'c-bad',col=s=>s>=7.5?'#22c55e':s>=5?'#f
 const projName=p=>p?.definitionSnapshot?.name||p?.definitionName||p?.name||'bez nazwy';
 const top_=(()=>{try{return window.top!==window&&window.top.HouserStore?window.top:null}catch(_){return null}})();
 const cloud=()=>{try{return top_?.HouserCloud||null}catch(_){return null}};
-const SRC={current:'bieżący',local:'w tej przeglądarce',cloud:'w chmurze',pub:'galeria publiczna',sample:'gotowy dom – wzór, nie ma go w Twoich projektach'};
+const SRC={current:'bieżący',local:'w tej przeglądarce',cloud:'w chmurze',pub:'ogólna baza',base:'ogólna baza',sample:'gotowy dom – wzór, nie ma go w Twoich projektach'};
 const cache={};let rows=[],busy=0;
 // wszystkie domy (bez powtórzeń – ten sam projekt z różnych miejsc liczy się raz)
 async function sources(withPub){const out=[],seen=new Set(),cur=HouserStore.load()?.project,add=o=>{if(o.pid&&seen.has(o.pid))return;if(o.pid)seen.add(o.pid);out.push(o)};
@@ -88,8 +89,8 @@ async function sources(withPub){const out=[],seen=new Set(),cur=HouserStore.load
   try{for(const m of await HouserLibrary.list())add({src:'local',id:m.id,pid:m.id,name:m.name,get:async()=>(await HouserLibrary.get(m.id))?.project})}catch(_){}
   const C=cloud();
   if(C?.user?.())try{for(const m of await C.listMine())add({src:'cloud',id:m.id,pid:m.id,name:m.name,get:async()=>(await C.fetchProject(m.id))?.project})}catch(_){}
-  if(withPub&&C)try{for(const m of await C.listPublic())add({src:'pub',id:m.id,pid:m.id,name:m.name+(m.ownerName?' · '+m.ownerName:''),get:async()=>(await C.fetchProject(m.id))?.project})}catch(_){}
-  // gotowe domy (examples/) nie są już w rankingu – tylko Twoje domy i (opcjonalnie) galeria publiczna
+  if(withPub&&C)try{for(const m of await C.listPublic())add({src:'pub',id:m.id,pid:m.id,name:m.name,owner:m.ownerName||'',get:async()=>(await C.fetchProject(m.id))?.project})}catch(_){}
+  if(withPub)try{for(const m of await (await fetch('../../examples/index.json')).json())add({src:'base',id:m.file,name:m.name,owner:'baza Houser',get:async()=>await (await fetch('../../examples/'+m.file)).json()})}catch(_){} // wzorcowe domy ogólnej bazy
   return out}
 // liczby jednego domu
 function measure(p){const r={};const T=(k,fn)=>{try{r[k]=fn()}catch(e){console.error(k,e)}};
@@ -110,15 +111,15 @@ const SORT={score:r=>-(r.m.score??-1),value:r=>-(r.value??-1),cost:r=>r.m.cost??
 async function openHouse(key){const [src,...rest]=key.split('|'),id=rest.join('|'),O=top_?.HouserOpen,r=rows.find(x=>x.o.src===src&&x.o.id===id);
   if(!O){alert('Otwórz Ranking ze strony głównej, żeby przechodzić do domów.');return}
   if(!confirm('Otworzyć dom „'+(r?.o.name||'')+'”?\nBieżący projekt zostaje zapisany i wrócisz do niego z listy projektów.'))return;
-  const ok=src==='sample'?await O.sample(id):src==='local'?await O.local(id):await O.cloud(id);if(ok)top_.location.hash='co-poprawic'}
+  const ok=src==='sample'||src==='base'?await O.sample(id):src==='local'?await O.local(id):await O.cloud(id);if(ok)top_.location.hash='co-poprawic'}
 function render(){const L=$('list'),key=$('sort').value;
   if(!rows.length){L.innerHTML='<div class="empty">'+(busy?'Liczę…':'Nie ma jeszcze żadnych domów do porównania.')+'</div>';return}
   const vals=rows.map(r=>r.m.score!=null&&r.m.cost?r.m.score/(r.m.cost/1e5):null),maxV=Math.max(...vals.map(v=>v||0));rows.forEach((r,i)=>r.value=vals[i]&&maxV?10*vals[i]/maxV:null);
   const S=[...rows].sort((a,b)=>SORT[key](a)-SORT[key](b));
   const n=(k,v,sel)=>'<span'+(sel?' class="sel"':'')+'><span class="k">'+k+'</span><b>'+v+'</b></span>';
   L.onclick=e=>{const b=e.target.closest('[data-open],[data-go]');if(!b)return;if(b.dataset.go){if(top_)top_.location.hash=b.dataset.go;else location.href='../'+b.dataset.go+'/';return}openHouse(b.dataset.open)};
-  L.innerHTML=S.map((r,i)=>{const m=r.m;return '<div class="h'+(r.o.src==='current'?' cur':'')+'"><div class="rk">'+(i+1)+'</div><div class="th">'+r.plan+'</div><div>'+
-    '<div class="nm">'+esc(r.o.name)+'<small><span>'+SRC[r.o.src]+'</span> · <span>'+m.floors+'</span></small></div>'+
+  L.innerHTML=S.map((r,i)=>{const m=r.m;return '<div class="h'+(r.o.src==='current'?' cur':'')+(['pub','base','sample'].includes(r.o.src)?' notmine':'')+'"><div class="rk">'+(i+1)+'</div><div class="th">'+r.plan+'</div><div>'+
+    '<div class="nm">'+(['pub','base','sample'].includes(r.o.src)?'<span class="own no">Nie mój'+(r.o.owner?' · '+esc(r.o.owner):'')+'</span>':'<span class="own">Mój</span>')+esc(r.o.name)+'<small><span>'+SRC[r.o.src]+'</span> · <span>'+m.floors+'</span></small></div>'+
     '<div class="nums">'+n('ocena',(m.score!=null?'<span class="'+cls(m.score)+'">'+nf(m.score,1)+'</span><span class="sb"><i style="width:'+(m.score*10)+'%;background:'+col(m.score)+'"></i></span>':'–'),key==='score')+
       n('cena do jakości',r.value!=null?nf(r.value,1)+' / 10':'–',key==='value')+n('budowa',zl(m.cost),key==='cost')+n('za m²',m.cost?nf(m.cost/m.area)+' zł':'–',key==='m2')+
       n('rachunki / rok',m.bills!=null?nf(Math.round(m.bills/100)*100)+' zł':'–',key==='bills')+n('metraż',nf(m.area)+' m²',key==='area')+n('pokoje',String(m.beds))+'</div>'+
@@ -130,11 +131,13 @@ async function run(){const my=++busy;rows=[];const seenStates=new Set();$('st').
     const ck=o.src+':'+o.id;let res=o.src!=='current'?cache[ck]:null;
     if(!res){let p=null;try{p=await o.get()}catch(_){}
       const m=p?measure(p):null;res=m?{m,plan:planSvg(p),sk:JSON.stringify([p.state,p.openings||{}])}:null;if(o.src!=='current')cache[ck]=res}
-    if(res&&o.src==='sample'&&seenStates.has(res.sk))continue; // gotowy dom otwarty bez zmian – już jest na liście jako Twój projekt
+    if(res&&(o.src==='sample'||o.src==='base')&&seenStates.has(res.sk))continue; // gotowy dom otwarty bez zmian – już jest na liście jako Twój projekt
     if(res)seenStates.add(res.sk);
     if(res){rows.push({o,...res});render()}await new Promise(r=>setTimeout(r,0))}
   if(my===busy){busy=0;$('st').textContent=rows.length+' domów';render()}}
 $('sort').onchange=render;$('pub').onchange=run;
+try{if(localStorage.getItem('houser:ranking-pub')==='1'){$('pubSel').value='1';$('pub').checked=true}}catch(_){}
+$('pubSel').onchange=()=>{$('pub').checked=$('pubSel').value==='1';try{localStorage.setItem('houser:ranking-pub',$('pubSel').value)}catch(_){}run()};
 
 try{const s=localStorage.getItem('houser:ranking-sort');if(s&&SORT[s])$('sort').value=s}catch(_){}
 $('sort').addEventListener('change',()=>{try{localStorage.setItem('houser:ranking-sort',$('sort').value)}catch(_){}});

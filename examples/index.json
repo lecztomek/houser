@@ -1,5 +1,10 @@
 [
  {
+  "file": "dom-energooszczedny.json",
+  "name": "Dom parterowy energooszczędny",
+  "desc": "12 × 9 m, ok. 108 m²: dwie sypialnie, salon z kuchnią i tarasem od południa, wejście od wschodu, okna w jednej linii, pompa ciepła i rekuperacja, bez komina."
+ },
+ {
   "file": "dom-parterowy.json",
   "name": "Dom parterowy z garażem",
   "desc": "Wszystko na jednym poziomie: 3 sypialnie, salon z kominkiem otwarty na kuchnię, garaż w bryle, zadaszony taras od południa."
