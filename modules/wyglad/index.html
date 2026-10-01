@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wygląd domu</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:var(--hs-bg,#f1f5f9)}
+.wrap{max-width:1100px;margin:0 auto;padding:18px 16px 40px;display:flex;flex-direction:column;gap:14px}
+h1{font-size:21px;margin:0 0 4px}
+.lead,.hint{font-size:13px;color:var(--hs-muted);line-height:1.5;margin:0}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.card h2{font-size:16px;margin:0 0 8px;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.card h2 small{font-weight:600;font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:10px 14px}
+.tile .l{font-size:12px;color:var(--hs-muted)}.tile .v{font-size:24px;font-weight:800}
+.facs{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.facs svg{width:100%;height:auto;display:block;background:#f8fafc;border-radius:8px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:#475569;margin-top:6px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;vertical-align:-2px}
+ul.n{margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.5}ul.n li{margin-bottom:4px}ul.n small{display:block;color:#475569}
+.good li{color:#166534}
+.c-ok{color:#15803d}.c-mid{color:#b45309}.c-bad{color:#b91c1c}
+.empty{padding:40px;text-align:center;color:var(--hs-muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div><h1>Wygląd domu</h1><p class="lead"><span>Ocena elewacji według prostych zasad kompozycji, nie gustu.</span> <span>Liczy się wyrównanie okien, osie pionowe, symetria szczytów, liczba rozmiarów okien, puste ściany i proporcje dachu.</span> <span>Kolory, materiały i otoczenie najlepiej oceniać na Wizualizacjach.</span></p></div>
+  <div id="out"><div class="empty">Liczę…</div></div>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/balconies.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="engine.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const cls=s=>s>=7.5?'c-ok':s>=5?'c-mid':'c-bad';
+// uproszczona elewacja (widok z zewnątrz): ściana, dach, okna; pomarańczowe – góra nie w linii, fioletowa ramka – poza osią
+function facSvg(f,R){const G=R.G,q=R.q,hasUp=q.net[q.up]>0,S=40,pad=14,L=f.len,wallTop=hasUp?G.groundHeight+(q.attic?G.kneeWall:G.upperHeight):G.groundHeight,ridge=G.rise>0?wallTop+G.rise:wallTop;
+  const H=(f.gable?ridge:wallTop+(G.rise>0?G.rise*.5:0))+.3,W=L*S+2*pad,Hp=H*S+2*pad,X=t=>pad+t*S,Y=y=>Hp-pad-y*S,mx=t=>(f.side==='bottom'||f.side==='left')?t:L-t;
+  let h='<svg viewBox="0 0 '+W+' '+Hp+'"><rect x="'+X(0)+'" y="'+Y(wallTop)+'" width="'+L*S+'" height="'+wallTop*S+'" fill="#f5f3ef" stroke="#334155" stroke-width="1.5"/>';
+  if(G.rise>0){if(f.gable)h+='<polygon points="'+X(0)+','+Y(wallTop)+' '+X(L/2)+','+Y(ridge)+' '+X(L)+','+Y(wallTop)+'" fill="#ece8e1" stroke="#334155" stroke-width="1.5"/><line x1="'+X(L/2)+'" y1="'+Y(ridge)+'" x2="'+X(L/2)+'" y2="'+Y(0)+'" stroke="#94a3b8" stroke-dasharray="4 4"/>';
+    else h+='<rect x="'+X(-.2)+'" y="'+Y(wallTop+G.rise*.5)+'" width="'+(L+.4)*S+'" height="'+G.rise*.5*S+'" fill="#64748b"/>'}
+  if(hasUp)h+='<line x1="'+X(0)+'" y1="'+Y(G.groundHeight)+'" x2="'+X(L)+'" y2="'+Y(G.groundHeight)+'" stroke="#cbd5e1" stroke-dasharray="3 3"/>';
+  for(const w of f.wins){const a=mx(w.t0),b=mx(w.t1),x0=Math.min(a,b)+.04,x1=Math.max(a,b)-.04,col=w.base==='door'?'#8a6a4a':w.offTop?'#fb923c':'#9cc8e7';
+    h+='<rect x="'+X(x0)+'" y="'+Y(w.y1)+'" width="'+(x1-x0)*S+'" height="'+(w.y1-w.y0)*S+'" fill="'+col+'" stroke="'+(w.offAxis?'#7c3aed':'#475569')+'" stroke-width="'+(w.offAxis?2.5:1)+'"'+(w.offAxis?' stroke-dasharray="4 2"':'')+'/>'}
+  return h+'<rect x="0" y="'+Y(0)+'" width="'+W+'" height="'+pad+'" fill="#e7e2d9"/></svg>'}
+function render(project){const O=$('out');
+  if(!project||!(project.grid||project.definitionSnapshot?.grid)){O.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej albo narysuj rzut w <b>Układzie pomieszczeń</b>.</div>';return}
+  let R;try{R=HouserLooks.evaluate(project)}catch(e){console.error(e);O.innerHTML='<div class="empty">Nie udało się policzyć.</div>';return}
+  let h='<div class="tiles"><div class="tile"><div class="l">Ocena wyglądu</div><div class="v '+(R.score!=null?cls(R.score):'')+'">'+(R.score!=null?fmt(R.score)+' / 10':'–')+'</div></div>'+
+    R.parts.map(p=>'<div class="tile"><div class="l">'+esc(p.name)+'</div><div class="v '+(p.score!=null?cls(p.score):'')+'">'+(p.score!=null?fmt(p.score):'–')+'</div></div>').join('')+'</div>';
+  h+='<div class="card"><h2>Co poprawić w wyglądzie</h2>'+(R.items.length?'<ul class="n">'+R.items.map(i=>'<li><b>'+esc(i.head)+'</b> – <span>'+esc(i.text)+'</span>'+(i.tip?'<small>'+esc(i.tip)+'</small>':'')+'</li>').join('')+'</ul>':'<p class="hint">Nie widzę nic do poprawy – okna są wyrównane, a proporcje w porządku.</p>')+
+    (R.good.length?'<ul class="n good">'+R.good.map(g=>'<li>'+esc(g)+'</li>').join('')+'</ul>':'')+'</div>';
+  h+='<div class="facs">'+R.facades.filter(f=>f.wins.length||f.len>0).map(f=>'<div class="card"><h2><span>Elewacja '+esc(HouserLooks.PL[f.fac])+(f.gable?' · szczyt':'')+'</span><small class="'+(f.score!=null?cls(f.score):'')+'">'+(f.score!=null?fmt(f.score)+' / 10':'–')+'</small></h2>'+facSvg(f,R)+'</div>').join('')+'</div>';
+  h+='<div class="legend"><span><i style="background:#9cc8e7"></i>okno</span><span><i style="background:#fb923c"></i>góra okna poza wspólną linią</span><span><i style="border:2px dashed #7c3aed"></i>okno piętra poza osią okien parteru</span><span><i style="background:#8a6a4a"></i>drzwi</span></div>';
+  O.innerHTML=h}
+const rec=HouserStore.load();render(rec?rec.project:null);HouserStore.subscribe(r=>render(r.project));
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>
