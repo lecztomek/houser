@@ -26,6 +26,7 @@ modules/
   akustyka/                 cisza w sypialniach: co za ścianą, nad i pod pokojem, ulica, antresola – ocena i podpowiedzi
   co-poprawic/               podsumowanie analiz: 5 najważniejszych poprawek, zalety i wady, oceny modułów (advisors.js – po jednym „doradcy” na moduł)
   porownanie/               2–4 domy obok siebie (koszt z etapami, energia, ogrzewanie, wentylacja, codzienność, słońce, akustyka, hydraulika, schowki) + ocena ogólna wg wag
+  ranking/                  ranking wszystkich domów (bieżący, w przeglądarce, w chmurze, gotowe, opcjonalnie galeria publiczna): ocena z Co poprawić, koszt budowy, rachunki, cena do jakości
   balkony/                  balkony na piętrze: wystające albo nad częścią parteru (piętro mniejsze) – balustrada, łącznik termiczny, wyjście z pokoju
   ocieplenie/               ocieplenie i elewacja: mur, ocieplenie (rodzaj, grubość), dach, podłoga, okna, mostki → współczynniki U do Energii, ceny do Wyceny
   energia/index.html        bilans cieplny, moc grzewcza, koszt ogrzewania
