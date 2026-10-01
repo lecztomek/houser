@@ -90,7 +90,7 @@ async function sources(withPub){const out=[],seen=new Set(),cur=HouserStore.load
   try{for(const m of await HouserLibrary.list())add({src:'local',id:m.id,pid:m.id,name:m.name,get:async()=>(await HouserLibrary.get(m.id))?.project})}catch(_){}
   const C=cloud();
   if(C?.user?.())try{for(const m of await C.listMine())add({src:'cloud',id:m.id,pid:m.id,name:m.name,get:async()=>(await C.fetchProject(m.id))?.project})}catch(_){}
-  if(withPub&&C)try{for(const m of await C.listPublic())add({src:'pub',id:m.id,pid:m.id,name:m.name,owner:m.ownerName||'',get:async()=>(await C.fetchProject(m.id))?.project})}catch(_){}
+  if(withPub&&C)try{const uid=C.user?.()?.uid;for(const m of await C.listPublic())if(uid&&m.owner===uid)add({src:'cloud',id:m.id,pid:m.id,name:m.name,get:async()=>(await C.fetchProject(m.id))?.project});else add({src:'pub',id:m.id,pid:m.id,name:m.name,owner:m.ownerName||'',get:async()=>(await C.fetchProject(m.id))?.project})}catch(_){}
   if(withPub)try{for(const m of await (await fetch('../../examples/index.json')).json())add({src:'base',id:m.file,name:m.name,owner:'baza Houser',get:async()=>await (await fetch('../../examples/'+m.file)).json()})}catch(_){} // wzorcowe domy ogólnej bazy
   return out}
 // liczby jednego domu

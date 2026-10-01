@@ -535,6 +535,15 @@ const thumbImg=m=>m.cover?'<img alt="" src="'+esc(m.cover)+'">':m.plan?'<img alt
 // okładka z galerii tej przeglądarki (★) ma pierwszeństwo – tak samo dla projektów lokalnych i z chmury; bez zdjęć zostaje rzut
 // okładka domu: z galerii w tej przeglądarce, a gdy jej tu nie ma – ta zapisana w chmurze
 async function curCover(pid){try{const c=await HouserGallery.cover(pid);if(c?.thumb)return c.thumb}catch(_){}return (cloudLists.mine||[]).find(m=>m.id===pid)?.cover||null}
+// porządki: kopie gotowych domów, w których nic nie zmieniono (powstawały przy każdym otwarciu wzoru) i bez zdjęć
+async function findUntouched(){const cur=HouserStore.load()?.project?.projectId,out=[];let base=[];
+  try{const man=await (await fetch('examples/index.json')).json();base=await Promise.all(man.map(async m=>{const p=await (await fetch('examples/'+m.file)).json();return JSON.stringify([p.state,p.openings||{}])}))}catch(_){return out}
+  for(const m of localList){if(m.id===cur)continue;const r=await HouserLibrary.get(m.id);const p=r?.project;if(!p)continue;
+    if(base.includes(JSON.stringify([p.state,p.openings||{}]))&&!(await HouserGallery.list(m.id)).length)out.push(m)}
+  return out}
+async function tidyUntouched(L){if(!confirm('Usunąć '+L.length+' nieruszonych kopii gotowych domów?\n\n'+L.map(m=>'• '+m.name).join('\n')+'\n\nTwoje zmienione domy zostają.'))return;
+  const mine=new Set((cloudLists.mine||[]).map(m=>m.id));for(const m of L){try{if(mine.has(m.id))await HouserCloud.remove(m.id)}catch(e){console.error(e)}await HouserLibrary.remove(m.id)}
+  toast('Usunięto '+L.length+' kopii');localList=await HouserLibrary.list();cloudLists.t=0;wantCloudLists();renderProjects(true)}
 async function fillCovers(root){if(!root)return;for(const el of root.querySelectorAll('[data-id]')){const th=el.querySelector('.thumb,.pth');if(!th)continue;
   const c=await curCover(el.dataset.id);if(c)th.innerHTML='<img alt="" src="'+c+'">'}}
 const fl=m=>m.stats?Math.round(m.stats.area)+' m² · '+m.stats.fl+' · ':'';
@@ -584,8 +593,9 @@ function renderProjects(noLoad){const el=$('pm');if(!el)return;const rec=HouserS
   h+='<h2 class="sec">Wszystkie projekty'+(all.length?' ('+all.length+')':'')+'</h2>';
   if(st.enabled&&!u)h+='<div class="login"><p>Zaloguj się, a projekty będą zapisywać się też w chmurze – otworzysz je na każdym komputerze i telefonie, a wybrane udostępnisz innym. Bez logowania wszystko działa w tej przeglądarce.</p><button class="btn2 primary" id="pmLogin">'+GICON+' Zaloguj przez Google</button></div>';
   if(u&&!cloudLists.mine)h+='<div class="empty2">Wczytuję projekty z chmury…</div>';
+  h+='<div class="login" id="pmTidy" hidden></div>';
   h+=all.length?'<div class="plist">'+all.map(m=>pmRow(m,m.id===curId)).join('')+'</div>':'<div class="login"><p>Tu pojawią się Twoje projekty – każdy zapisuje się sam po pierwszej zmianie.</p></div>';
-  el.innerHTML=h;fillCovers(el);if(p?.projectId)curCover(p.projectId).then(c=>{const t=$('pmCurThumb');if(!c||!t)return;t.classList.add('hasCover');t.innerHTML='<img class="coverImg" alt="" src="'+c+'"><div class="miniPlan">'+planSvg(p)+'</div><a class="galLink" href="#galeria">Galeria →</a>'}).catch(()=>{});
+  el.innerHTML=h;fillCovers(el);findUntouched().then(L=>{if(!L.length||!$('pmTidy'))return;$('pmTidy').hidden=false;$('pmTidy').innerHTML='<p>🧹 Masz '+L.length+' '+(L.length===1?'nieruszoną kopię':'nieruszone kopie')+' gotowych domów (otwarte, ale nic w nich nie zmieniłeś): <b>'+L.map(m=>esc(m.name)).join(', ')+'</b>.</p><button class="btn2" id="pmTidyGo">Usuń te kopie</button>';$('pmTidyGo').onclick=()=>tidyUntouched(L)});if(p?.projectId)curCover(p.projectId).then(c=>{const t=$('pmCurThumb');if(!c||!t)return;t.classList.add('hasCover');t.innerHTML='<img class="coverImg" alt="" src="'+c+'"><div class="miniPlan">'+planSvg(p)+'</div><a class="galLink" href="#galeria">Galeria →</a>'}).catch(()=>{});
   $('pmNew').onclick=newEmpty;$('pmImport').onchange=e=>{const f=e.target.files[0];e.target.value='';importFile(f)};
   if($('pmRename'))$('pmRename').onclick=renameCurrent;if($('pmExport'))$('pmExport').onclick=()=>downloadProject(HouserStore.load().project);
   if($('pmDup'))$('pmDup').onclick=duplicateCurrent;if($('pmVis'))$('pmVis').onclick=()=>setVis(st.pid,st.vis==='public'?'private':'public');

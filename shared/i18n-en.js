@@ -3457,4 +3457,10 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "Masz już swoją kopię domu „{q}” (zmiana {q}).":"You already have your own copy of „{q}” (changed {q}).",
 "OK – otwórz swoją kopię":"OK – open your copy",
 "Anuluj – obejrzyj wzór (podgląd)":"Cancel – view the original (read only)",
-"Podgląd domu „{q}” – autor: {q}. Żeby go zmieniać, zrób kopię do siebie.":"Viewing „{q}” – author: {q}. To change it, make your own copy."};
+"Podgląd domu „{q}” – autor: {q}. Żeby go zmieniać, zrób kopię do siebie.":"Viewing „{q}” – author: {q}. To change it, make your own copy.",
+"🧹 Masz {n} nieruszoną kopię gotowych domów (otwarte, ale nic w nich nie zmieniłeś):":"🧹 You have {n} untouched copy of a ready-made house (opened but never changed):",
+"🧹 Masz {n} nieruszone kopie gotowych domów (otwarte, ale nic w nich nie zmieniłeś):":"🧹 You have {n} untouched copies of ready-made houses (opened but never changed):",
+"Usuń te kopie":"Delete these copies",
+"Usunąć {n} nieruszonych kopii gotowych domów?":"Delete {n} untouched copies of ready-made houses?",
+"Twoje zmienione domy zostają.":"Your changed houses stay.",
+"Usunięto {n} kopii":"Deleted {n} copies"};
