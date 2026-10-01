@@ -45,8 +45,10 @@
     if(info.slope==='manual'){const a=Math.max(0,Math.min(80,+info.angle||0))*Math.PI/180,d=info.rise==='left'?u:len-u;let t=y0+info.height-Math.tan(a)*d;if(roofTop!=null)t=Math.min(t,roofTop-.25);return Math.max(y0+.2,t)} // ręczny skos – przycięty do ściany / dachu
     return roofTop==null?y0+info.height:Math.max(y0+.3,Math.min(y0+info.height,roofTop-.25))}
   // zasięg ciągu otworów (sąsiednie krawędzie tego samego rodzaju i wariantu) – dla modułów, które rysują otwory krawędź po krawędzi
-  function runExtent(project,floor,key){const ops=project?.openings?.[floor]||{},base=ops[key],[o,aS,bS]=key.split(':'),a=+aS,b=+bS,v=resolve(project,floor,key,base).variant;
-    const k=i=>o==='h'?'h:'+i+':'+b:'v:'+a+':'+i,same=i=>ops[k(i)]===base&&resolve(project,floor,k(i),base).variant===v,at=o==='h'?a:b;
+  // podpis ustawień otworu – sąsiednie kratki z tym samym podpisem to jedno okno / drzwi
+  const sig=i=>[i.variant,i.slope,i.angle,i.rise,i.sill,i.height,i.blind].join('|');
+  function runExtent(project,floor,key){const ops=project?.openings?.[floor]||{},base=ops[key],[o,aS,bS]=key.split(':'),a=+aS,b=+bS,v=sig(resolve(project,floor,key,base));
+    const k=i=>o==='h'?'h:'+i+':'+b:'v:'+a+':'+i,same=i=>ops[k(i)]===base&&sig(resolve(project,floor,k(i),base))===v,at=o==='h'?a:b;
     let from=at,to=at;while(same(from-1))from--;while(same(to+1))to++;return {from,to,at}}
-  global.HouserOpenings={VARIANTS,DEFAULT,BASE_NAMES,variantsFor,resolve,setVariant,slopedTop,runExtent};
+  global.HouserOpenings={VARIANTS,DEFAULT,BASE_NAMES,variantsFor,resolve,setVariant,slopedTop,runExtent,sig};
 })(window);
