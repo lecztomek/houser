@@ -15,8 +15,13 @@
   async function get(id){return tx('readonly',st=>st.get(id))}
   async function put(rec){await tx('readwrite',st=>st.put(rec));changed();return rec}
   function ping(id){try{localStorage.setItem('houser:last-snapshot',id+'|'+Date.now())}catch(_){}}
-  async function add(image,source,meta){const rec={id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),createdAt:new Date().toISOString(),source,meta:meta||{},image,results:[]};await put(rec);ping(rec.id);return rec}
+  // zdjęcie należy do domu, który był otwarty (meta.projectId); starsze zdjęcia nie mają domu – pokazujemy je osobno jako „starsze”
+  const curPid=()=>{try{return global.HouserStore?.projectId?.()||null}catch(_){return null}};
+  async function forProject(pid){pid=pid||curPid();return (await list()).filter(s=>!s.meta?.projectId||s.meta.projectId===pid)}
+  async function add(image,source,meta){const rec={id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),createdAt:new Date().toISOString(),source,meta:{...(meta||{}),projectId:curPid()},image,results:[]};await put(rec);ping(rec.id);return rec}
   async function remove(id){await tx('readwrite',st=>st.delete(id));changed()}
+  // przypisanie starszego zdjęcia do domu (gdy użyjesz go w tym domu)
+  async function claim(id,pid){const r=await get(id);if(r&&!r.meta?.projectId){r.meta={...(r.meta||{}),projectId:pid||curPid()};await put(r)}}
   function onChange(cb){if(bc)bc.addEventListener('message',()=>cb())}
 
   // Zdjęcie z płótna WebGL: tło (niebo z CSS) + scena, JPEG, maks. 1600 px szerokości.
@@ -32,5 +37,5 @@
     const im=new Image();im.onload=()=>{const sc=Math.min(1,maxW/im.width),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);
       const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);const out=c.toDataURL('image/jpeg',q);res(out.length<url.length?out:url)};
     im.onerror=()=>res(url);im.src=url})}
-  global.HouserSnapshots={list,get,put,add,remove,onChange,capture,toJpeg};
+  global.HouserSnapshots={list,get,put,add,remove,onChange,capture,toJpeg,forProject,claim};
 })(window);

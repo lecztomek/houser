@@ -104,6 +104,7 @@ body.dropping .wrap{outline:3px dashed #2563eb;outline-offset:-8px;border-radius
 
 <script src="../../shared/project-store.js"></script>
 <script src="../../shared/snapshots.js"></script>
+<script src="../../shared/library.js"></script>
 <script src="../../shared/gallery.js"></script>
 <script>
 const $=id=>document.getElementById(id),G=HouserGallery;
@@ -113,7 +114,8 @@ let pid=null,items=[],lbIdx=0,cmp=false;
 function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),3200)}
 function projectName(){const p=HouserStore.load()?.project;return p?.definitionSnapshot?.name||p?.definitionName||'bez nazwy'}
 
-async function load(){pid=HouserStore.load()?HouserStore.projectId():null;items=pid?await G.list(pid):[];render()}
+async function load(){pid=HouserStore.load()?HouserStore.projectId():null;items=pid?await G.list(pid):[];render();
+  if(items.some(r=>!r.cloudUp))try{window.top!==window&&window.top.HouserCloud?.touch('photos')}catch(_){}} // zdjęcia przeniesione z innego domu – wyślij do chmury
 function render(){
   $('max').textContent=G.MAX;$('count').textContent=items.length+' / '+G.MAX;
   const full=items.length>=G.MAX,none=!pid;
@@ -125,7 +127,8 @@ function render(){
   if(!items.length){C.innerHTML='<div class="empty"><h2>Galeria jest pusta</h2>Dodaj najlepsze wizualizacje z modułu Wizualizacje AI albo wgraj własne zdjęcia – możesz je też po prostu przeciągnąć tutaj z pulpitu.<div class="row"><button class="btn" id="e1">＋ Z wizualizacji AI</button><label class="btn primary">⬆ Wgraj zdjęcia<input type="file" id="e2" accept="image/*" multiple hidden></label></div></div>';
     $('e1').onclick=openPicker;$('e2').onchange=e=>upload(e.target.files);return}
   C.innerHTML='<div class="grid" id="grid">'+items.map((r,i)=>'<div class="item" draggable="true" data-id="'+r.id+'"><div class="ph" data-i="'+i+'"><img alt="" src="'+r.thumb+'"><span class="badge">'+SRC[r.source]+'</span>'+(r.cover?'<span class="cover-lbl">OKŁADKA</span>':'')+'<button class="star'+(r.cover?' on':'')+'" data-cover="'+r.id+'" title="'+(r.cover?'To jest okładka':'Ustaw jako okładkę')+'">★</button></div>'+
-    '<div class="meta"><input class="cap" data-cap="'+r.id+'" placeholder="Dodaj podpis…" value="'+esc(r.caption)+'"><div class="acts"><span class="drag-h" title="Przeciągnij, żeby zmienić kolejność">⠿</span><button class="btn sm" data-mv="-1" data-id="'+r.id+'" title="Wcześniej"'+(i?'':' disabled')+'>◀</button><button class="btn sm" data-mv="1" data-id="'+r.id+'" title="Później"'+(i<items.length-1?'':' disabled')+'>▶</button><span class="grow"></span><button class="btn sm" data-dl="'+r.id+'" title="Pobierz">⬇</button><button class="btn sm" data-del="'+r.id+'" title="Usuń z galerii">🗑</button></div></div></div>').join('')+'</div>';
+    '<div class="meta"><input class="cap" data-cap="'+r.id+'" placeholder="Dodaj podpis…" value="'+esc(r.caption)+'"><div class="acts"><span class="drag-h" title="Przeciągnij, żeby zmienić kolejność">⠿</span><button class="btn sm" data-mv="-1" data-id="'+r.id+'" title="Wcześniej"'+(i?'':' disabled')+'>◀</button><button class="btn sm" data-mv="1" data-id="'+r.id+'" title="Później"'+(i<items.length-1?'':' disabled')+'>▶</button><span class="grow"></span><button class="btn sm" data-dl="'+r.id+'" title="Pobierz">⬇</button><button class="btn sm" data-move="'+r.id+'" title="Przenieś do innego domu">⇄</button><button class="btn sm" data-del="'+r.id+'" title="Usuń z galerii">🗑</button></div></div></div>').join('')+'</div>';
+  C.querySelectorAll('[data-move]').forEach(b=>b.onclick=e=>{e.stopPropagation();moveTo(b.dataset.move)});
   C.querySelectorAll('.ph').forEach(el=>el.onclick=e=>{if(e.target.closest('[data-cover]'))return;openLb(+el.dataset.i)});
   C.querySelectorAll('[data-cover]').forEach(b=>b.onclick=async e=>{e.stopPropagation();await G.setCover(pid,b.dataset.cover);load()});
   C.querySelectorAll('[data-cap]').forEach(inp=>inp.onchange=async()=>{const r=items.find(x=>x.id===inp.dataset.cap);r.caption=inp.value.trim();await G.put(r)});
@@ -139,6 +142,14 @@ function render(){
     el.ondragover=e=>{if(!dragId)return;e.preventDefault();el.classList.add('over')};el.ondragleave=()=>el.classList.remove('over');
     el.ondrop=async e=>{if(!dragId)return;e.preventDefault();e.stopPropagation();const ids=items.map(r=>r.id).filter(x=>x!==dragId),at=ids.indexOf(el.dataset.id);ids.splice(at+(dragId===el.dataset.id?0:0),0,dragId);dragId=null;await G.reorder(pid,ids);load()}});
 }
+// zdjęcie trafiło do złego domu – przenieś je do innego projektu z tej przeglądarki
+async function moveTo(id){const r=items.find(x=>x.id===id);if(!r)return;let L=[];try{L=(await HouserLibrary.list()).filter(m=>m.id!==pid)}catch(_){}
+  if(!L.length){alert('Nie ma innych domów w tej przeglądarce.');return}
+  const n=prompt('Do którego domu przenieść to zdjęcie? Wpisz numer:\n\n'+L.map((m,i)=>(i+1)+'. '+m.name).join('\n'));const k=parseInt(n,10)-1;if(!(k>=0&&k<L.length))return;
+  const to=L[k].id,dest=await G.list(to);if(dest.length>=G.MAX){alert('Galeria domu „'+L[k].name+'” jest pełna ('+G.MAX+' zdjęć).');return}
+  await G.put({...r,projectId:to,order:(dest.at(-1)?.order??-1)+1,cover:!dest.length,cloudUp:false,cloudSig:''});
+  if(r.cover){const rest=items.filter(x=>x.id!==id);if(rest[0])await G.setCover(pid,rest[0].id)}
+  toast('Przeniesiono do „'+L[k].name+'” – w chmurze pojawi się po otwarciu tamtego domu.');load()}
 async function move(id,d){const ids=items.map(r=>r.id),i=ids.indexOf(id),j=i+d;if(j<0||j>=ids.length)return;[ids[i],ids[j]]=[ids[j],ids[i]];await G.reorder(pid,ids);load()}
 function download(r){const a=document.createElement('a');a.href=r.image;a.download=(r.caption||'zdjecie').replace(/[^\p{L}\p{N}]+/gu,'-').slice(0,40)+'-'+r.id+'.jpg';document.body.appendChild(a);a.click();a.remove()}
 async function upload(files){for(const f of [...files||[]]){if(!/^image\//.test(f.type))continue;const url=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f)});
@@ -150,12 +161,12 @@ addEventListener('dragleave',e=>{if(e.target===document.documentElement||!e.rela
 addEventListener('drop',e=>{if(!e.dataTransfer.files.length)return;e.preventDefault();document.body.classList.remove('dropping');if(pid&&items.length<G.MAX)upload(e.dataTransfer.files)});
 
 // ---------- wybór z wizualizacji AI
-async function openPicker(){const snaps=await HouserSnapshots.list(),inRefs=new Set(items.map(r=>r.ref?.key).filter(Boolean)),opts=[];
-  for(const s of snaps){for(const r of s.results||[])opts.push({key:'snap:'+s.id+':'+r.id,image:r.image,before:s.image,source:'ai',label:'Wizualizacja AI'+(s.meta?.roomName?' · '+s.meta.roomName:''),caption:s.meta?.roomName||(s.meta?.kind==='exterior'?'Widok z zewnątrz':'')});
-    opts.push({key:'snap:'+s.id+':orig',image:s.image,source:'3d',label:'Model 3D'+(s.meta?.roomName?' · '+s.meta.roomName:''),caption:s.meta?.roomName||(s.meta?.kind==='exterior'?'Widok z zewnątrz':'')})}
+async function openPicker(){const snaps=await HouserSnapshots.forProject(pid),inRefs=new Set(items.map(r=>r.ref?.key).filter(Boolean)),opts=[];
+  for(const s of snaps){for(const r of s.results||[])opts.push({key:'snap:'+s.id+':'+r.id,image:r.image,before:s.image,source:'ai',label:'Wizualizacja AI'+(s.meta?.roomName?' · '+s.meta.roomName:'')+(s.meta?.projectId?'':' · starsze (bez domu)'),sid:s.id,caption:s.meta?.roomName||(s.meta?.kind==='exterior'?'Widok z zewnątrz':'')});
+    opts.push({key:'snap:'+s.id+':orig',image:s.image,source:'3d',label:'Model 3D'+(s.meta?.roomName?' · '+s.meta.roomName:'')+(s.meta?.projectId?'':' · starsze (bez domu)'),sid:s.id,caption:s.meta?.roomName||(s.meta?.kind==='exterior'?'Widok z zewnątrz':'')})}
   $('pickBody').innerHTML=opts.length?'<div class="pick">'+opts.map((o,i)=>'<button class="pk'+(inRefs.has(o.key)?' in':'')+'" data-i="'+i+'"><img alt="" src="'+o.image+'"><span>'+esc(o.label)+'</span></button>').join('')+'</div>':'<div class="empty" style="border:0">Nie masz jeszcze wizualizacji. Zrób zdjęcie przyciskiem 📷 we Wnętrzu 3D lub Zewnątrz 3D i wygeneruj wizualizację w module Wizualizacje AI.</div>';
   $('pickBody').querySelectorAll('.pk').forEach(b=>b.onclick=async()=>{if(b.classList.contains('in'))return;const o=opts[+b.dataset.i];
-    try{await G.add(pid,o.image,{source:o.source,before:o.before,caption:o.caption,ref:{key:o.key}});b.classList.add('in');items=await G.list(pid);render();toast('Dodano do galerii ('+items.length+' / '+G.MAX+')');if(items.length>=G.MAX)$('picker').classList.remove('open')}catch(e){alert(e.message)}});
+    try{await HouserSnapshots.claim(o.sid,pid);await G.add(pid,o.image,{source:o.source,before:o.before,caption:o.caption,ref:{key:o.key}});b.classList.add('in');items=await G.list(pid);render();toast('Dodano do galerii ('+items.length+' / '+G.MAX+')');if(items.length>=G.MAX)$('picker').classList.remove('open')}catch(e){alert(e.message)}});
   $('picker').classList.add('open')}
 $('fromAi').onclick=openPicker;$('pickClose').onclick=()=>$('picker').classList.remove('open');$('picker').onclick=e=>{if(e.target===$('picker'))$('picker').classList.remove('open')};
 
