@@ -518,10 +518,13 @@ function addDoorLeaves(){
         const hx=hp+dir*(w-.08);doorBox(d,base,hx-.06,hx+.06,mid-th/2-.05,mid+th/2+.05,1.0,1.04,hc,ho)}
       else{const o0=sg*face;doorBox(d,base,hp,hp+dir*th,o0,o0+sg*w,0,y1,col,op);
         doorBox(d,base,hp+dir*th/2-.05,hp+dir*th/2+.05,o0+sg*(w-.14),o0+sg*(w-.08),1.0,1.04,hc,ho)}};
-    if(d.sliding){const n=d.to-d.from+1,wallOn=dir=>{for(let k=1;k<=n;k++)if(!slideWall(f,d,dir>0?d.to+k:d.from-k))return false;return true}; // skrzydło chowa się tylko za ścianę
-      let sd=d.hinge==='end'?-1:1;if(!wallOn(sd))sd=wallOn(-sd)?-sd:0;
-      const o=mode==='open'&&sd?(sg*(face+th)):mid,sh=mode==='open'?sd*W*.92:0;
-      doorBox(d,base,d.s0+sh,d.s1+sh,o-th/2,o+th/2,0,y1,col,op);continue}
+    if(d.sliding){ // przesuwne: skrzydło lekko odsunięte po licu ściany; część, która nie ma za sobą ściany, „chowa się” (nie wystaje poza ścianę)
+      const n=d.to-d.from+1,wallLen=dir=>{let k=0;while(k<n&&slideWall(f,d,dir>0?d.to+k+1:d.from-k-1))k++;return k*grid().cellMeters};
+      const pref=d.hinge==='end'?-1:1,aP=wallLen(pref),aN=wallLen(-pref),sd=aN>aP?-pref:pref,avail=Math.max(aP,aN);
+      if(mode!=='open'){doorBox(d,base,d.s0,d.s1,mid-th/2,mid+th/2,0,y1,col,op);continue}
+      const sh=sd*W*.7,lo=sd>0?d.s0+sh:Math.max(d.s0+sh,d.s0-avail),hi=sd>0?Math.min(d.s1+sh,d.s1+avail):d.s1+sh,o=sg*(face+th);
+      if(hi-lo>.04)doorBox(d,base,lo,hi,o-th/2,o+th/2,0,y1,col,op);
+      const ex=sd>0?hi:lo;doorBox(d,base,ex-sd*.04,ex-sd*.025,o+sg*th/2,o+sg*(th/2+.025),.95,1.15,hc,ho);continue}
     if(d.leaves===2){leaf(d.s0,1,W/2);leaf(d.s1,-1,W/2)}
     else if(d.hinge==='end')leaf(d.s1,-1,W);else leaf(d.s0,1,W);
   }}}
