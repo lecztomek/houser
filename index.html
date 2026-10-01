@@ -417,7 +417,7 @@ async function renderGallery(){const el=$('gallery');if(!el)return;
   if(!SAMPLES.length){try{const man=await (await fetch('examples/index.json')).json();SAMPLES=await Promise.all(man.map(async m=>({...m,project:await (await fetch('examples/'+m.file)).json()})))}catch(e){el.innerHTML='<div class="empty2">Nie udało się wczytać przykładów.</div>';return}}
   const cur=HouserStore.load()?.project?.definitionFingerprint;
   el.innerHTML=SAMPLES.map((m,i)=>'<button class="hcard'+(cur&&cur===m.project.definitionFingerprint?' loaded':'')+'" data-i="'+i+'"><div class="thumb">'+planSvg(m.project)+'</div><h3>'+esc(m.name)+'</h3><div>'+chips(stats(m.project))+'</div><p>'+esc(m.desc)+'</p><span class="go">'+(cur&&cur===m.project.definitionFingerprint?'✓ wczytany – kliknij, żeby wczytać od nowa':'Wczytaj ten dom →')+'</span></button>').join('');
-  el.querySelectorAll('.hcard').forEach(b=>b.onclick=async()=>{const m=SAMPLES[+b.dataset.i];if(!(await confirmReplace()))return;try{await openProject(JSON.parse(JSON.stringify(m.project)),'sample');renderHome()}catch(err){alert('Nie udało się wczytać: '+err.message)}});
+  el.querySelectorAll('.hcard').forEach(b=>b.onclick=async()=>{const m=SAMPLES[+b.dataset.i];if(await openSample(m.file,m.project))renderHome()});
 }
 function renderHome(){renderCur();renderGallery();renderCloudHome()}
 // ---------- Cofnij / Ponów – wspólne dla wszystkich modułów
@@ -472,8 +472,17 @@ async function openCloud(id,noAsk){if(!noAsk&&!(await confirmReplace()))return;
   catch(e){alert('Nie udało się otworzyć projektu z chmury: '+e.message)}}
 async function openLocal(id){if(!(await confirmReplace()))return;const r=await HouserLibrary.get(id);if(!r)return alert('Nie ma już tego projektu.');
   try{await openProject(r.project,'library');refreshViews()}catch(e){alert(e.message)}}
+// gotowy dom: jeśli masz już jego kopię (w tej przeglądarce), zapytaj – otworzyć ją czy zacząć od nowa (bez tego każde kliknięcie robiło nowy projekt)
+async function openSample(file,sample){if(!(await confirmReplace()))return false;
+  try{let own=null;const name=projName(sample),cur=HouserStore.load()?.project;
+    if(cur&&(cur.fromSample===file||(!cur.fromSample&&projName(cur)===name&&JSON.stringify(cur.state)===JSON.stringify(sample.state)))){toast('Ten dom jest już otwarty.');return true}
+    for(const m of await HouserLibrary.list()){if(own)break;const r=await HouserLibrary.get(m.id);const p=r?.project;if(p&&(p.fromSample===file||(!p.fromSample&&projName(p)===name&&JSON.stringify(p.state)===JSON.stringify(sample.state))))own=r}
+    if(own&&own.project.projectId===HouserStore.load()?.project?.projectId){toast('Ten dom jest już otwarty.');return true}
+    if(own&&confirm('Masz już kopię domu „'+projName(own.project)+'” (zmiana '+fmtTime(own.updatedAt)+').\n\nOK – otwórz tę kopię\nAnuluj – zacznij od nowa (nowy projekt)')){await openProject(own.project,'library');refreshViews();return true}
+    const p=JSON.parse(JSON.stringify(sample));p.fromSample=file;await openProject(p,'sample');refreshViews();return true}
+  catch(err){alert('Nie udało się wczytać: '+err.message);return false}}
 // otwieranie domu z modułów (np. Ranking domów): gotowy dom (plik z examples/), z tej przeglądarki albo z chmury
-window.HouserOpen={async sample(file){if(!(await confirmReplace()))return false;try{const p=await (await fetch('examples/'+file)).json();await openProject(p,'sample');refreshViews();return true}catch(e){alert('Nie udało się otworzyć domu: '+e.message);return false}},
+window.HouserOpen={async sample(file){let p;try{p=await (await fetch('examples/'+file)).json()}catch(e){alert('Nie udało się otworzyć domu: '+e.message);return false}return openSample(file,p)},
   local:id=>openLocal(id).then(()=>true),cloud:id=>openCloud(id).then(()=>true)};
 // ---------- projekty w tej przeglądarce: bieżący zapisuje się sam po każdej zmianie
 let libTimer=null;
