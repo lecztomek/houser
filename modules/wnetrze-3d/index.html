@@ -224,6 +224,11 @@ function computeStairExits(){stairExitEdges=new Set();const f='upper',c=grid().c
       for(let t=0;t<1.6;t+=.03){const nx=Math.floor((x+dx*t)/c),ny=Math.floor((z+dz*t)/c);if(nx===cx&&ny===cy)continue;
         const cross=(ax,ay,bx,by)=>{const A=roomAt(f,ax,ay),B=roomAt(f,bx,by);if(cellClass(f,A)==='hole'&&cellClass(f,B)==='room'){stairExitEdges.add(ax!==bx?openKeyV(Math.max(ax,bx),ay):openKeyH(ax,Math.max(ay,by)));return true}return cellClass(f,B)!=='hole'};
         let stop=false;if(nx!==cx){stop=cross(cx,cy,nx,cy)||stop;cx=nx}if(!stop&&ny!==cy){stop=cross(cx,cy,cx,ny)||stop;cy=ny}if(stop)break}}}}
+// schody narysowane jako pomieszczenie „schody” (bez modułu Schody): krawędź przy najniższym stopniu to wejście – zawsze otwarte
+let stairEntryEdges=new Set();
+function computeStairEntry(){stairEntryEdges=new Set();if(modelStairs().length)return;const sp=stairSpec();if(!sp)return;
+  if(sp.axis==='z'){const y=sp.lowSide==='max'?sp.maxY+1:sp.minY;for(let x=sp.minX;x<=sp.maxX;x++)stairEntryEdges.add(openKeyH(x,y))}
+  else{const x=sp.lowSide==='max'?sp.maxX+1:sp.minX;for(let y=sp.minY;y<=sp.maxY;y++)stairEntryEdges.add(openKeyV(x,y))}}
 function canStand(f,id){return !!id && !isExteriorVoid(f,id) && !isHole(f,id)}
 function openKeyH(x,y){return 'h:'+x+':'+y} function openKeyV(x,y){return 'v:'+x+':'+y}
 function openingAt(f,key){return project.openings?.[f]?.[key]||null}
@@ -363,6 +368,7 @@ function inFrame(x,y,z){const c=worldToCamera([x,y,z]),lim=Math.tan(observer.fov
 function edgeOpen(f,ax,ay,bx,by){const A=roomAt(f,ax,ay),B=roomAt(f,bx,by),ca=cellClass(f,A),cb=cellClass(f,B);
   if(A===B&&ca===cb)return true;if(ca==='hole'||cb==='hole')return true;if(ca==='outside'&&cb==='outside')return true;
   if(f==='ground'&&(A==='schody'||B==='schody')&&modelStairs().length)return true;
+  if(f==='ground'&&stairEntryEdges.has(ax!==bx?openKeyV(Math.max(ax,bx),ay):openKeyH(ax,Math.max(ay,by))))return true;
   const key=ax!==bx?openKeyV(Math.max(ax,bx),ay):openKeyH(ax,Math.max(ay,by)),op=openingAt(f,key);
   if(!op)return false;if(['opening','hst','window'].includes(op))return true;return doorModeFor(f,key)!=='closed'}
 function seeTo(tx,tz){const f=observer.floor,c=grid().cellMeters,ox=observer.x,oz=observer.z,d=Math.hypot(tx-ox,tz-oz);if(d<.05)return true;
@@ -590,7 +596,7 @@ function addStraightStairs(){
 }
 function cellClass(f,id){if(!id||isExteriorVoid(f,id))return 'outside';if(isHole(f,id))return 'hole';return 'room'}
 function build3D(){
-  three.scenePolys=[];wallNodes={};computeStairExits();const g=grid(),c=g.cellMeters;
+  three.scenePolys=[];wallNodes={};computeStairExits();computeStairEntry();const g=grid(),c=g.cellMeters;
   for(const f of ['ground','upper']){
     const base=floorBase(f),h=floorHeight(f);
     for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){
@@ -616,6 +622,7 @@ function build3D(){
       const a=roomAt(f,x,y-1),b=roomAt(f,x,y),ca=cellClass(f,a),cb=cellClass(f,b);if(ca===cb&&a===b)continue;if(f==='ground'&&(a==='schody'||b==='schody')&&ca==='room'&&cb==='room'&&modelStairs().length)continue; // schody z modułu – otwarte do sąsiednich pomieszczeń
       const opKey=openKeyH(x,y),op=openingAt(f,opKey),opInfo=(curOpKey=opKey,curOpFloor=f,curOpInfo=op&&['window','door','hst'].includes(op)?HouserOpenings.resolve(project,f,opKey,op):null),roomA=ca==='room',roomB=cb==='room',holeA=ca==='hole',holeB=cb==='hole',insideA=roomA||holeA,insideB=roomB||holeB;curOut=!insideA?-1:(!insideB?1:0);
       const edgeH=f==='upper'?upperEdgeHeight('h',x,y,c):h;
+      if(f==='ground'&&stairEntryEdges.has(opKey)&&insideA&&insideB)continue; // wejście na schody
       if((holeA&&roomB)||(holeB&&roomA)){
         const roomId=roomA?a:b;
         if(f==='upper'&&stairExitEdges.has(opKey))continue; // wyjście ze schodów
@@ -630,6 +637,7 @@ function build3D(){
       const a=roomAt(f,x-1,y),b=roomAt(f,x,y),ca=cellClass(f,a),cb=cellClass(f,b);if(ca===cb&&a===b)continue;if(f==='ground'&&(a==='schody'||b==='schody')&&ca==='room'&&cb==='room'&&modelStairs().length)continue; // schody z modułu – otwarte do sąsiednich pomieszczeń
       const opKey=openKeyV(x,y),op=openingAt(f,opKey),opInfo=(curOpKey=opKey,curOpFloor=f,curOpInfo=op&&['window','door','hst'].includes(op)?HouserOpenings.resolve(project,f,opKey,op):null),roomA=ca==='room',roomB=cb==='room',holeA=ca==='hole',holeB=cb==='hole',insideA=roomA||holeA,insideB=roomB||holeB;curOut=!insideA?-1:(!insideB?1:0);
       const edgeH=f==='upper'?upperEdgeHeight('v',x,y,c):h;
+      if(f==='ground'&&stairEntryEdges.has(opKey)&&insideA&&insideB)continue; // wejście na schody
       if((holeA&&roomB)||(holeB&&roomA)){
         const roomId=roomA?a:b;
         if(f==='upper'&&stairExitEdges.has(opKey))continue; // wyjście ze schodów
