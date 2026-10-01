@@ -135,7 +135,7 @@ function drawRoofWindow(q,info,t0,t1){ const r=roofSpec(),eps=.04,a0=t0+.05,a1=t
   addQuad(pts[0],pts[1],pts[2],pts[3],'#e5e7eb',{stroke:fr,line:1.2});
   const cx=pts.reduce((s,p)=>s+p[0],0)/4,cy=pts.reduce((s,p)=>s+p[1],0)/4,cz=pts.reduce((s,p)=>s+p[2],0)/4,sh=p=>[cx+(p[0]-cx)*.82,cy+(p[1]-cy)*.82+.01,cz+(p[2]-cz)*.82];
   addQuad(sh(pts[0]),sh(pts[1]),sh(pts[2]),sh(pts[3]),'#87c8eb',{stroke:'#1d4ed8',line:1,alpha:.9});
-  const bl=HouserOpenings.blindOf(project,info); if(bl&&bl.look!=='band'&&bl.look!=='curtain'){ const s2=p=>{const v=sh(p);v[1]+=.012;return v}; addQuad(s2(pts[0]),s2(pts[1]),s2(pts[2]),s2(pts[3]),bl.color,{stroke:bl.color,line:.6,alpha:.6}); } } // markizeta / roleta na oknie dachowym
+  const bl=HouserOpenings.blindOf(project,info); if(bl){ const s2=p=>{const v=sh(p);v[1]+=.012;return v}; addQuad(s2(pts[0]),s2(pts[1]),s2(pts[2]),s2(pts[3]),bl.color,{stroke:bl.color,line:.6,alpha:bl.look==='band'||bl.look==='curtain'?.75:.6}); } } // markizeta / roleta na oknie dachowym
 function drawWallOpening(q,base,t0,t1,info){ info=info||HouserOpenings.resolve(project,q.f,q.key,q.type); const c=C(),len=t1-t0,glassCol=q.type==='hst'?'#8fcbe0':'#9cc8e7',frame='#f8fafc',fr='#64748b',fw=.07;
   const out=(q.o==='v'?(q.screenSide==='left'?-1:1):(q.screenSide==='top'?-1:1));
   const P=(t,y,d)=>q.o==='v'?[q.a*c+out*d,y,t]:[t,y,q.b*c+out*d];           // t wzdłuż ściany, y wysokość, d odsunięcie od lica
@@ -155,6 +155,7 @@ function drawWallOpening(q,base,t0,t1,info){ info=info||HouserOpenings.resolve(p
   // osłona z zewnątrz: kaseta rolety / żaluzji nad oknem albo markiza
   const bl=HouserOpenings.blindOf(project,info),tp=Math.max(top(a0),top(a1));
   if(bl?.look==='box'){ poly(a0-.02,a1+.02,top,t=>top(t)+.2,.16,bl.color,{stroke:'#334155',line:.8}); addPoly([P(a0-.02,top(a0),0),P(a1+.02,top(a1),0),P(a1+.02,top(a1),.16),P(a0-.02,top(a0),.16)],bl.color,'#334155',.6,1); } // kaseta wzdłuż górnej krawędzi okna
+  if(bl&&(bl.look==='band'||bl.look==='curtain')) poly(a0+fw,a1-fw,t=>top(t)-fw-(top(t)-y0)*.35,t=>top(t)-fw,.02,bl.color,{stroke:'#cbd5e1',line:.6}); // osłona wewnętrzna widoczna przez szybę
   if(bl?.look==='awning') addPoly([P(a0-.05,tp+.3,.02),P(a1+.05,tp+.3,.02),P(a1+.05,tp-.1,.85),P(a0-.05,tp-.1,.85)],bl.color,'#7c2d12',.8,.95);
 }
 function buildChimney(){ if(!opts.chimney) return; const c=C(); for(const n of project.structure?.chimney||[]){ const x=n%W(),z=Math.floor(n/W()),cx=(x+.5)*c,cz=(z+.5)*c,Hh=roofY(cx,cz)+.75; addBox(x*c+.08,0,z*c+.08,(x+1)*c-.08,Hh,(z+1)*c-.08,'#565b62',{stroke:'#2f3338'}); } }

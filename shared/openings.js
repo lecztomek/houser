@@ -51,10 +51,19 @@
   // jak narysować osłonę (prosto): box – kaseta rolety/żaluzji nad oknem na zewnątrz, awning – markiza (pochyła płachta), band – roleta wewnętrzna, curtain – zasłony po bokach od środka
   const BLIND_LOOK={curtain:{look:'curtain',color:'#e6d8bf'},internal:{look:'band',color:'#eeebe4'},awning:{look:'awning',color:'#c2532d'},screen:{look:'box',color:'#80868f'},external:{look:'box',color:'#5b6470'},venetian:{look:'box',color:'#9a9184'}};
   const blindOf=(project,info)=>{const k=info?.blind||project?.solarSettings?.blinds||'none';return BLIND_LOOK[k]?{kind:k,...BLIND_LOOK[k]}:null};
+  // ceny orientacyjne (z montażem): okno zł/m² × mnożnik wariantu (nietypowy kształt = robione na wymiar), okno dachowe za sztukę, osłony zł/m² z minimum za sztukę
+  const PRICE={window:1300,hst:3000,roof:3800,minWin:900};
+  const VPRICE={window:{standard:1,low:1.05,balcony:1.15,transom:1.15,sloped:1.6,slopedLow:1.6,slopedFull:1.7,knee:1.2},hst:{hst:1,fixedLow:.7}};
+  const BLIND_PRICE={curtain:[150,300],internal:[250,350],awning:[900,1500],screen:[1100,1600],external:[800,1200],venetian:[1300,2000]};
+  const ROOF_BLIND_PRICE={curtain:300,internal:550,awning:900,screen:1100,external:2200,venetian:2200};
+  function price(project,info,area,base){if(base!=='window'&&base!=='hst')return null;const roof=base==='window'&&info.shape==='roof',k=VPRICE[base]?.[info.variant]??1;
+    const win=roof?PRICE.roof:Math.max(base==='window'?PRICE.minWin:0,area*PRICE[base]*k);
+    const bk=info.blind||project?.solarSettings?.blinds||'none',bp=BLIND_PRICE[bk];const blind=!bp?0:roof?ROOF_BLIND_PRICE[bk]:Math.max(bp[1],area*bp[0]);
+    return {win,blind,k,blindKind:bp?bk:null}}
   // podpis ustawień otworu – sąsiednie kratki z tym samym podpisem to jedno okno / drzwi
   const sig=i=>[i.variant,i.slope,i.angle,i.rise,i.sill,i.height,i.blind].join('|');
   function runExtent(project,floor,key){const ops=project?.openings?.[floor]||{},base=ops[key],[o,aS,bS]=key.split(':'),a=+aS,b=+bS,v=sig(resolve(project,floor,key,base));
     const k=i=>o==='h'?'h:'+i+':'+b:'v:'+a+':'+i,same=i=>ops[k(i)]===base&&sig(resolve(project,floor,k(i),base))===v,at=o==='h'?a:b;
     let from=at,to=at;while(same(from-1))from--;while(same(to+1))to++;return {from,to,at}}
-  global.HouserOpenings={VARIANTS,DEFAULT,BASE_NAMES,variantsFor,resolve,setVariant,slopedTop,runExtent,sig,BLIND,BLIND_NAMES,BLIND_LOOK,blindOf};
+  global.HouserOpenings={VARIANTS,DEFAULT,BASE_NAMES,variantsFor,resolve,setVariant,slopedTop,runExtent,sig,BLIND,BLIND_NAMES,BLIND_LOOK,blindOf,PRICE,VPRICE,price};
 })(window);

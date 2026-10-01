@@ -561,6 +561,17 @@ function addBlind3D(orient,x,z,len,base,sill,top,info,exterior){const b=exterior
   else if(b.look==='band')q(-h,h,top-.16,top,-.03,-.03,b.color);
   else if(b.look==='curtain'&&curOpKey){const e=HouserOpenings.runExtent(project,curOpFloor,curOpKey),w=.22;
     if(e.at===e.from)q(-h-.05,-h+w,0.05,Math.min(top+.2,floorHeight(curOpFloor)-.03),-.06,-.06,b.color);if(e.at===e.to)q(h-w,h+.05,0.05,Math.min(top+.2,floorHeight(curOpFloor)-.03),-.06,-.06,b.color)}}
+// okna dachowe w połaci (od środka): szyba pod skosem + osłona (roleta wewnętrzna – jasny pas, zewnętrzna / markizeta – ciemniejsza)
+function addRoofWindows3D(){if(!roofEnabled())return;const f='upper',c=grid().cellMeters,ops=project.openings?.[f]||{},pitch=(HouserModel.normalize(project.elevationSettings||{}).roofPitch||35)*Math.PI/180,cs=Math.cos(pitch);
+  for(const [key,base] of Object.entries(ops)){if(base!=='window')continue;const info=HouserOpenings.resolve(project,f,key,base);if(info.shape!=='roof')continue;
+    const e=HouserOpenings.runExtent(project,f,key);if(e.at!==e.from)continue;const [o,aS,bS]=key.split(':'),a=+aS,b=+bS,L=(o==='h'?b:a)*c;
+    const inA=o==='h'?cellClass(f,roomAt(f,a,b-1))!=='outside':cellClass(f,roomAt(f,a-1,b))!=='outside',dir=inA?-1:1; // w którą stronę od ściany jest wnętrze
+    const d0=Math.max(.1,+info.sill||.5)*cs,d1=d0+Math.max(.4,+info.height||1.2)*cs,t0=e.from*c+.05,t1=(e.to+1)*c-.05;
+    const P=(t,d,k)=>{const x=o==='h'?t:L+dir*d,z=o==='h'?L+dir*d:t;return [x,roofAbsYAt(x,z)-k,z]};
+    const q=(da,db,ta,tb,k,col,al)=>addQuad(P(ta,da,k),P(tb,da,k),P(tb,db,k),P(ta,db,k),col,{stroke:col,alpha:al});
+    q(d0,d1,t0,t1,.03,'#f8fafc',1);q(d0+.06,d1-.06,t0+.06,t1-.06,.035,'#9fd0f0',.9);
+    const bl=HouserOpenings.blindOf(project,info);if(!bl)continue;
+    if(bl.look==='band'||bl.look==='curtain')q(d1-(d1-d0)*.45,d1-.06,t0+.06,t1-.06,.05,bl.color,.95);else q(d0+.06,d1-.06,t0+.06,t1-.06,.04,bl.color,.55)}}
 // balustrada wnęki (loggii) na piętrze: krawędź komórki-wnęki od strony, gdzie nie ma już budynku
 function addLoggiaRails(){const f='upper',g=grid(),c=g.cellMeters,base=floorBase(f),isV=(x,y)=>{const id=roomAt(f,x,y);return !!id&&isExteriorVoid(f,id)},
   out=(x,y)=>{const id=roomAt(f,x,y);return !id||(cellClass(f,id)==='outside'&&!isExteriorVoid(f,id))},gOcc=(x,y)=>cellClass('ground',roomAt('ground',x,y))!=='outside';
@@ -671,7 +682,7 @@ function build3D(){
       if(!insideA&&!insideB)continue;if(insideA&&insideB&&a===b&&ca===cb)continue;addWall2D('v',x*c,(y+.5)*c,c,edgeH,base,op,!insideA||!insideB)
     }
   }
-  flushWallNodes();addDoorLeaves();addLoggiaRails();addRoof3D();
+  flushWallNodes();addDoorLeaves();addLoggiaRails();addRoof3D();addRoofWindows3D();
   if(modelStairs().length)addStairsFromModel();else addStraightStairs();
   if(settings.showChimney&&Array.isArray(project.structure?.chimney)){
     const c=grid().cellMeters;

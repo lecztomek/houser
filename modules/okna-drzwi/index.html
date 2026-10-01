@@ -43,6 +43,8 @@ svg{display:block;width:100%;height:auto}
 @media(max-width:900px){.wrap{height:auto;min-height:100vh}.wrap>*{overflow:visible!important;max-height:none!important}}
 .ctl.sub{margin-top:6px}
 .btn.mv{padding:2px 8px;min-height:28px}
+.price{grid-column:2;font-size:12px;color:#334155}.price .up{color:#b45309}
+.sum{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 10px;margin:6px 0 4px;font-size:13px}.sum small{display:block;color:#475569;font-weight:400;margin-top:2px}
 </style>
 </head>
 <body>
@@ -94,7 +96,7 @@ function runs(){
       let inA,inB,side;
       if(o==='h'){inA=inside(f,a,b-1);inB=inside(f,a,b);side=inA&&!inB?'bottom':(!inA&&inB?'top':'inside')}
       else{inA=inside(f,a-1,b);inB=inside(f,a,b);side=inA&&!inB?'right':(!inA&&inB?'left':'inside')}
-      const line=o==='h'?b:a,along=o==='h'?a:b,v=O.resolve(project,f,key,base).variant,gk=[f,o,line,side,base,v].join('|');
+      const line=o==='h'?b:a,along=o==='h'?a:b,v=O.sig(O.resolve(project,f,key,base)),gk=[f,o,line,side,base,v].join('|');
       (groups[gk]=groups[gk]||{f,o,line,side,base,items:[]}).items.push({key,along,a,b});
     }
     for(const grp of Object.values(groups)){grp.items.sort((p,q)=>p.along-q.along);let cur=null;
@@ -132,6 +134,8 @@ function renderList(){
   if(!project)return;
   const inner=runs().filter(r=>r.facade==='inside').length;if(inner){const n=document.createElement('p');n.className='hint';n.innerHTML='Drzwi między pomieszczeniami ('+inner+') ustawiasz w module <a href="#" id="goInner">Drzwi wewnętrzne</a>.';L.appendChild(n);n.querySelector('a').onclick=e=>{e.preventDefault();window.HouserNav&&HouserNav.go('drzwi-wewnetrzne')}}
   const all=runs().filter(r=>r.facade!=='inside');if(!all.length){L.innerHTML='<div class="empty">Brak okien i drzwi na rzucie.</div>';return}
+  {const ps=all.map(priceOf).filter(Boolean),w=ps.reduce((a,p)=>a+p.win,0),b=ps.reduce((a,p)=>a+p.blind,0),odd=ps.filter(p=>p.k>1.01).length;
+    if(ps.length){const t=document.createElement('div');t.className='sum';t.innerHTML='<b><span>Okna i drzwi tarasowe: ≈ '+zl(w)+'</span>'+(b?' <span>+ osłony ≈ '+zl(b)+'</span>':'')+'</b><small><span>z montażem, orientacyjnie – trafia do Wyceny</span>'+(odd?' · <span>nietypowe kształty: '+odd+' szt.</span>':'')+'</small>';L.appendChild(t)}}
   for(const fac of ORD){const rs=all.filter(r=>r.facade===fac);if(!rs.length)continue;
     const h=document.createElement('h3');h.className='fac';h.textContent=fac==='inside'?'Drzwi wewnętrzne':'Elewacja: '+PL[fac];L.appendChild(h);
     rs.sort((p,q)=>floors().indexOf(p.f)-floors().indexOf(q.f)||p.h0-q.h0);
@@ -155,11 +159,17 @@ function renderList(){
       if(r.base==='window'||r.base==='hst'){const bl=document.createElement('select');bl.title='Osłona (roleta, żaluzja, markiza) wpływa na nagrzewanie latem (moduł Nasłonecznienie)';bl.innerHTML='<option value="">osłona: jak w Nasłonecznieniu</option>'+Object.entries(O.BLIND_NAMES).map(([k,n])=>'<option value="'+k+'">'+n+'</option>').join('');bl.value=r.info.blind||'';bl.onchange=()=>upd({blind:bl.value});ctl.append(bl)}
       if(r.base==='door'){const vs=document.createElement('select');vs.title='Jak te drzwi wyglądają na podglądzie 3D i na wizualizacji';vs.innerHTML='<option value="">jak domyślnie we Wnętrzu 3D</option><option value="open">otwarte</option><option value="closed">zamknięte</option><option value="none">bez skrzydła (sam otwór)</option>';vs.value=project.openingVariants?.[r.f]?.[r.keys[0]]?.view||'';
         vs.onchange=()=>{O.setVariant(project,r.f,r.keys,{variant:r.info.variant,view:vs.value});selected=r.id;commit()};const lb=document.createElement('span');lb.textContent=' · w 3D:';ctl.append(lb,vs)}
-      if(!ctl.parentNode)d.appendChild(ctl);for(const w of warnings(r)){const e=document.createElement('div');e.className='warn';e.textContent='⚠ '+w;d.appendChild(e)}
+      if(!ctl.parentNode)d.appendChild(ctl);
+      const pr=priceOf(r);if(pr){const e=document.createElement('div');e.className='price';e.innerHTML='<span>≈ '+zl(pr.win)+'</span>'+(pr.k>1.01?' <span class="up">(nietypowy kształt +'+Math.round((pr.k-1)*100)+'%)</span>':'')+(pr.blind?' <span>+ osłona '+zl(pr.blind)+'</span>':'');d.appendChild(e)}
+      for(const w of warnings(r)){const e=document.createElement('div');e.className='warn';e.textContent='⚠ '+w;d.appendChild(e)}
       d.addEventListener('click',e=>{if(['SELECT','INPUT','OPTION'].includes(e.target.tagName))return;selected=r.id;if(r.facade!=='inside')facade=r.facade;renderAll()});
       L.appendChild(d)}
   }
 }
+// cena okna / HST i osłony – ta sama, którą liczy Wycena (shared/openings.js), z mnożnikiem jakości okien z modułu Ocieplenie
+const zl=v=>(Math.round(v/100)*100).toLocaleString('pl-PL')+' zł';
+function priceOf(r){if(r.facade==='inside'||(r.base!=='window'&&r.base!=='hst'))return null;const pr=O.price(project,r.info,r.len*(+r.info.height||1.2),r.base);if(!pr)return null;
+  const id=r.base==='hst'?'hst':r.info.shape==='roof'?'roofwin':'windows',ek=+project.envelopePriceK?.[id]>0?+project.envelopePriceK[id]:1;return {...pr,win:pr.win*ek}}
 function num(v,onChange){const e=document.createElement('input');e.type='number';e.step='0.05';e.min='0';e.value=(+v).toFixed(2);e.addEventListener('change',()=>{const x=Number(e.value);if(Number.isFinite(x))onChange(x)});return e}
 
 // ---------- elewacja
@@ -190,7 +200,8 @@ function renderElev(){
     el('polygon',{points:ins.map(([h,y])=>X(h)+','+Y(y)).join(' '),fill:col,'fill-opacity':r.base==='door'?1:.8,stroke:'#64748b'},g);
     if(i.leaves===2||(r.base!=='door'&&r.len>1.2)){const n=i.leaves===2?1:Math.max(1,Math.round(r.len/1.1)-1);for(let k=1;k<=n;k++){const h=r.h0+.05+(r.len-.1)*k/(n+1);el('line',{x1:X(h),y1:Y(pts[0][1]),x2:X(h),y2:Y(Math.min(pts[2][1],pts[3][1])),stroke:'#f8fafc','stroke-width':4},g)}}
     const bl=r.base!=='door'?O.blindOf(project,i):null; // osłona widoczna z zewnątrz
-    if(bl&&i.shape==='roof'&&!gable&&bl.look!=='band'&&bl.look!=='curtain')el('polygon',{points:ins.map(([h,y])=>X(h)+','+Y(y)).join(' '),fill:bl.color,'fill-opacity':.45},g);
+    if(bl&&i.shape==='roof'&&!gable)el('polygon',{points:ins.map(([h,y])=>X(h)+','+Y(y)).join(' '),fill:bl.color,'fill-opacity':bl.look==='band'||bl.look==='curtain'?.55:.45},g);
+    else if(bl&&(bl.look==='band'||bl.look==='curtain')){const t3=ins[3][1],t2=ins[2][1],dy=(Math.min(t2,t3)-ins[0][1])*.35;el('polygon',{points:[[ins[3][0],t3-dy],[ins[2][0],t2-dy],ins[2],ins[3]].map(([h,y])=>X(h)+','+Y(y)).join(' '),fill:bl.color,'fill-opacity':.9,stroke:'#cbd5e1'},g)} // osłona wewnętrzna widoczna przez szybę
     else if(bl){const tp=Math.max(pts[2][1],pts[3][1]),a=r.h0+.02,b=r.h1-.02,ta=pts[3][1],tb=pts[2][1]; // kaseta biegnie wzdłuż górnej krawędzi (też skośnej)
       if(bl.look==='box')el('polygon',{points:[[a,ta],[b,tb],[b,tb+.2],[a,ta+.2]].map(([h,y])=>X(h)+','+Y(y)).join(' '),fill:bl.color,stroke:'#334155'},g);
       if(bl.look==='awning')el('polygon',{points:[[a-.05,tp+.35],[b+.05,tp+.35],[b+.1,tp+.05],[a-.1,tp+.05]].map(([h,y])=>X(h)+','+Y(y)).join(' '),fill:bl.color,'fill-opacity':.85,stroke:'#7c2d12'},g)}
