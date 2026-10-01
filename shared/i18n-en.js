@@ -3247,4 +3247,10 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "roleta zewnętrzna":"external roller shutter",
 "żaluzja zewnętrzna (fasadowa)":"external venetian blind",
 "osłona: jak w Nasłonecznieniu":"shading: as in Sunlight",
-"Osłona (roleta, żaluzja, markiza) wpływa na nagrzewanie latem (moduł Nasłonecznienie)":"Shading (blind, shutter, awning) affects summer overheating (Sunlight module)"};
+"Osłona (roleta, żaluzja, markiza) wpływa na nagrzewanie latem (moduł Nasłonecznienie)":"Shading (blind, shutter, awning) affects summer overheating (Sunlight module)",
+"Ocieplenie nie jest jeszcze wybrane":"Insulation has not been chosen yet",
+"Pola po lewej to tylko propozycja – nic nie jest zapisane w projekcie.":"The fields on the left are only a suggestion – nothing is saved in the project yet.",
+"Energia, Wycena i Porównanie liczą teraz z domyślnych współczynników U z modułu Energia (ściany {n}, propozycja obok: {n}).":"Energy, Cost estimate and Comparison currently use the default U-values from the Energy module (walls {n}, suggestion here: {n}).",
+"Zmień dowolne pole albo zapisz propozycję.":"Change any field or save the suggestion.",
+"Zapisz tę propozycję w projekcie":"Save this suggestion in the project",
+"nie wybrano (domyślne U)":"not chosen (default U)"};
