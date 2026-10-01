@@ -33,13 +33,16 @@
       const emu=global.HOUSER_FIREBASE_EMULATOR; // tylko testy lokalne
       if(emu){U.connectAuthEmulator(auth,emu.auth,{disableWarnings:true});F.connectFirestoreEmulator(db,emu.host,emu.port)}
       fb={U,F,auth,db};
+      U.getRedirectResult(auth).catch(e=>{console.error('Logowanie (przekierowanie):',e);global.alert?.('Logowanie nie powiodło się: '+(e.message||e.code)+'\nSpróbuj jeszcze raz albo w innej przeglądarce (np. Chrome).')});
       await new Promise(res=>{let first=true;U.onAuthStateChanged(auth,u=>{
         user=u?{uid:u.uid,name:u.displayName||u.email||'',email:u.email||'',photo:u.photoURL||''}:null;
         if(first){first=false;res()}authCbs.forEach(cb=>{try{cb(user)}catch(e){console.error(e)}});emit()})});
       return true})().catch(e=>{console.error('Firebase:',e);readyP=null;throw e});
     return readyP}
 
-  async function signIn(){await init();const p=new fb.U.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});
+  // okno logowania musi się otworzyć od razu po dotknięciu przycisku (inaczej telefon je blokuje) – stąd bez czekania, gdy Firebase jest już wczytany
+  async function signIn(){if(!fb){await init();if(!global.confirm('Połączono z kontem Google. Zalogować się teraz?'))return}
+    const p=new fb.U.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});
     try{await fb.U.signInWithPopup(fb.auth,p)}
     catch(e){if(['auth/popup-blocked','auth/operation-not-supported-in-this-environment'].includes(e.code))return fb.U.signInWithRedirect(fb.auth,p);
       if(['auth/popup-closed-by-user','auth/cancelled-popup-request'].includes(e.code))return;throw e}}
