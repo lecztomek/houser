@@ -42,6 +42,7 @@ h1{font-size:21px;margin:0 0 4px}
     <label>Sortuj: <select id="sort">
       <option value="score">ogólna ocena</option><option value="value">cena do jakości</option><option value="cost">najtańsza budowa</option><option value="m2">najtańszy m²</option><option value="bills">najniższe rachunki</option><option value="area">największy metraż</option>
     </select></label>
+    <label><input type="checkbox" id="smp" checked> gotowe domy (wzory do porównania)</label>
     <label><input type="checkbox" id="pub"> z publicznej galerii (domy innych osób)</label>
     <span class="hint" id="st"></span>
   </div>
@@ -80,7 +81,7 @@ const cls=s=>s>=7.5?'c-ok':s>=5?'c-mid':'c-bad',col=s=>s>=7.5?'#22c55e':s>=5?'#f
 const projName=p=>p?.definitionSnapshot?.name||p?.definitionName||p?.name||'bez nazwy';
 const top_=(()=>{try{return window.top!==window&&window.top.HouserStore?window.top:null}catch(_){return null}})();
 const cloud=()=>{try{return top_?.HouserCloud||null}catch(_){return null}};
-const SRC={current:'bieżący',local:'w tej przeglądarce',cloud:'w chmurze',pub:'galeria publiczna',sample:'gotowy dom'};
+const SRC={current:'bieżący',local:'w tej przeglądarce',cloud:'w chmurze',pub:'galeria publiczna',sample:'gotowy dom – wzór, nie ma go w Twoich projektach'};
 const cache={};let rows=[],busy=0;
 // wszystkie domy (bez powtórzeń – ten sam projekt z różnych miejsc liczy się raz)
 async function sources(withPub){const out=[],seen=new Set(),cur=HouserStore.load()?.project,add=o=>{if(o.pid&&seen.has(o.pid))return;if(o.pid)seen.add(o.pid);out.push(o)};
@@ -126,7 +127,7 @@ function render(){const L=$('list'),key=$('sort').value;
 }
 async function run(){const my=++busy;rows=[];const seenStates=new Set();$('st').textContent='';render();
   const list=await sources($('pub').checked);let k=0;
-  for(const o of list){if(my!==busy)return;$('st').textContent='liczę '+(++k)+' z '+list.length+'…';
+  for(const o of list){if(my!==busy)return;if(o.src==='sample'&&!$('smp').checked)continue;$('st').textContent='liczę '+(++k)+' z '+list.length+'…';
     const ck=o.src+':'+o.id;let res=o.src!=='current'?cache[ck]:null;
     if(!res){let p=null;try{p=await o.get()}catch(_){}
       const m=p?measure(p):null;res=m?{m,plan:planSvg(p),sk:JSON.stringify([p.state,p.openings||{}])}:null;if(o.src!=='current')cache[ck]=res}
@@ -135,6 +136,8 @@ async function run(){const my=++busy;rows=[];const seenStates=new Set();$('st').
     if(res){rows.push({o,...res});render()}await new Promise(r=>setTimeout(r,0))}
   if(my===busy){busy=0;$('st').textContent=rows.length+' domów';render()}}
 $('sort').onchange=render;$('pub').onchange=run;
+try{if(localStorage.getItem('houser:ranking-samples')==='0')$('smp').checked=false}catch(_){}
+$('smp').onchange=()=>{try{localStorage.setItem('houser:ranking-samples',$('smp').checked?'1':'0')}catch(_){}run()};
 try{const s=localStorage.getItem('houser:ranking-sort');if(s&&SORT[s])$('sort').value=s}catch(_){}
 $('sort').addEventListener('change',()=>{try{localStorage.setItem('houser:ranking-sort',$('sort').value)}catch(_){}});
 run();let t=null;HouserStore.subscribe(()=>{clearTimeout(t);t=setTimeout(run,800)});
