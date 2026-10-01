@@ -27,6 +27,7 @@ modules/
   co-poprawic/               podsumowanie analiz: 5 najważniejszych poprawek, zalety i wady, oceny modułów (advisors.js – po jednym „doradcy” na moduł)
   porownanie/               2–4 domy obok siebie (koszt z etapami, energia, ogrzewanie, wentylacja, codzienność, słońce, akustyka, hydraulika, schowki) + ocena ogólna wg wag
   wyglad/                   wygląd z zewnątrz wg zasad kompozycji (wyrównanie i osie okien, symetria szczytów, rozmiary okien, puste ściany, dach); engine.js = HouserLooks
+  oszczednosci/             zmiany obniżające koszt (okna, osłony, ocieplenie, elewacja, ogrzewanie, wentylacja, taras, komin) z kosztem, rachunkami i oceną po zmianie; engine.js = HouserSavings
   ranking/                  ranking wszystkich domów (bieżący, w przeglądarce, w chmurze, gotowe, opcjonalnie galeria publiczna): ocena z Co poprawić, koszt budowy, rachunki, cena do jakości
   balkony/                  balkony na piętrze: wystające albo nad częścią parteru (piętro mniejsze) – balustrada, łącznik termiczny, wyjście z pokoju
   ocieplenie/               ocieplenie i elewacja: mur, ocieplenie (rodzaj, grubość), dach, podłoga, okna, mostki → współczynniki U do Energii, ceny do Wyceny

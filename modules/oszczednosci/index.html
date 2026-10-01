@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oszczędności</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:var(--hs-bg,#f1f5f9)}
+.wrap{max-width:1100px;margin:0 auto;padding:18px 16px 40px;display:flex;flex-direction:column;gap:14px}
+h1{font-size:21px;margin:0 0 4px}
+.lead,.hint{font-size:13px;color:var(--hs-muted);line-height:1.5;margin:0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:10px 14px}
+.tile .l{font-size:12px;color:var(--hs-muted)}.tile .v{font-size:22px;font-weight:800}.tile .s{font-size:12px;color:var(--hs-muted)}
+h2{font-size:16px;margin:6px 0 0}
+.ch{display:grid;grid-template-columns:1fr auto;gap:6px 14px;align-items:center;background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:10px 14px;box-shadow:var(--hs-shadow)}
+.ch .t{font-weight:700;font-size:14px}.ch .w{font-size:12.5px;color:#475569;margin-top:2px}
+.nums{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:6px;font-size:13px}.nums .k{display:block;font-size:11.5px;color:var(--hs-muted)}
+.pos{color:#15803d}.neg{color:#b91c1c}.mid{color:#b45309}
+.empty{padding:30px;text-align:center;color:var(--hs-muted);background:var(--hs-panel);border-radius:var(--hs-radius-lg)}
+@media (max-width:560px){.ch{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div><h1>Oszczędności</h1><p class="lead"><span>Proste zmiany w projekcie, które obniżają koszt budowy.</span> <span>Każdą liczę na kopii domu: o ile spada koszt, jak zmieniają się rachunki i czy ocena domu się pogarsza.</span> <span>Na górze są zmiany, które prawie nie obniżają oceny.</span></p></div>
+  <div id="out"><div class="empty">Liczę…</div></div>
+  <p class="hint"><span>Bilans w 15 lat = oszczędność na budowie minus 15 lat wyższych rachunków (albo plus niższych).</span> <span>„Zastosuj” zmienia bieżący projekt – można to cofnąć przyciskiem Cofnij na górze strony.</span></p>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/stairs.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/balconies.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="../../shared/furniture.js"></script>
+<script src="../naslonecznienie/sun.js"></script>
+<script src="../naslonecznienie/calc.js"></script>
+<script src="../../shared/energy.js"></script>
+<script src="../../shared/cost.js"></script>
+<script src="../przepisy/engine.js"></script>
+<script src="../codziennosc/engine.js"></script>
+<script src="../akustyka/engine.js"></script>
+<script src="../hydraulika/engine.js"></script>
+<script src="../schowki/engine.js"></script>
+<script src="../../shared/hvac.js"></script>
+<script src="../../shared/heating.js"></script>
+<script src="../../shared/heating-system.js"></script>
+<script src="../ocieplenie/engine.js"></script>
+<script src="../wyglad/engine.js"></script>
+<script src="../co-poprawic/advisors.js"></script>
+<script src="engine.js"></script>
+<script>
+const $=id=>document.getElementById(id),S=HouserSavings;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nf=(v,d=0)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const zl=v=>v==null||!Number.isFinite(v)?'–':(Math.round(v/100)*100).toLocaleString('pl-PL')+' zł';
+const sg=v=>(v>0?'+':v<0?'−':'')+zl(Math.abs(v)).replace(/^−/,'');
+let run=0;
+async function render(project){const my=++run,O=$('out');
+  if(!project||!(project.grid||project.definitionSnapshot?.grid)){O.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej albo narysuj rzut w <b>Układzie pomieszczeń</b>.</div>';return}
+  const B=S.measure(S.prep(project));if(my!==run)return;
+  const head='<div class="tiles"><div class="tile"><div class="l">Koszt budowy teraz</div><div class="v">'+zl(B.cost)+'</div></div><div class="tile"><div class="l">Rachunki rocznie</div><div class="v">'+zl(B.bills)+'</div><div class="s">ogrzewanie i ciepła woda</div></div><div class="tile"><div class="l">Ocena domu</div><div class="v">'+(B.score!=null?nf(B.score,1)+' / 10':'–')+'</div><div class="s">jak w module Co poprawić</div></div></div>';
+  O.innerHTML=head+'<div class="empty" id="prog">Sprawdzam zmiany…</div>';
+  const res=[];let i=0;
+  for(const ch of S.CHANGES){if(my!==run)return;const pr=document.getElementById('prog');if(pr)pr.textContent='Sprawdzam zmiany… '+(++i)+' z '+S.CHANGES.length;
+    await new Promise(r=>setTimeout(r,0));let v=null;try{v=S.variant(project,ch)}catch(e){console.error(ch.id,e)}if(!v)continue;
+    const M=S.measure(v),save=B.cost-M.cost,dB=(M.bills??0)-(B.bills??0),dS=(M.score??0)-(B.score??0),bal=save-S.YEARS*dB;
+    if(Math.abs(save)<100&&Math.abs(dB)<10)continue;res.push({ch,save,dB,dS,bal})}
+  if(my!==run)return;
+  const grp=[['Bez straty jakości',r=>r.dS>=-.1&&r.bal>0],['Niewielki spadek oceny',r=>r.dS<-.1&&r.dS>=-.35&&r.bal>0],['Oszczędność kosztem jakości lub rachunków',()=>true]],used=new Set();
+  let h=head;
+  if(!res.length)h+='<div class="empty">Nie znalazłem prostych zmian, które obniżą koszt tego domu – już jest dość oszczędny.</div>';
+  for(const [name,fn] of grp){const L=res.filter(r=>!used.has(r)&&fn(r)).sort((a,b)=>b.bal-a.bal);if(!L.length)continue;L.forEach(r=>used.add(r));
+    h+='<h2>'+name+'</h2>'+L.map(r=>'<div class="ch"><div><div class="t">'+esc(r.ch.name)+'</div><div class="w">'+esc(r.ch.why)+'</div><div class="nums">'+
+      '<span><span class="k">budowa</span><b class="'+(r.save>0?'pos':'neg')+'">'+(r.save>0?'−':'+')+zl(Math.abs(r.save))+'</b></span>'+
+      '<span><span class="k">rachunki / rok</span><b class="'+(r.dB>=50?'neg':r.dB<=-50?'pos':'')+'">'+(Math.abs(r.dB)<50?'bez zmian':(r.dB>0?'+':'−')+zl(Math.abs(r.dB)))+'</b></span>'+
+      '<span><span class="k">ocena domu</span><b class="'+(r.dS<-.35?'neg':r.dS<-.1?'mid':'pos')+'">'+(Math.abs(r.dS)<.05?'bez zmian':(r.dS>0?'+':'−')+nf(Math.abs(r.dS),1))+'</b></span>'+
+      '<span><span class="k">bilans w 15 lat</span><b class="'+(r.bal>0?'pos':'neg')+'">'+(r.bal>0?'zyskujesz ':'tracisz ')+zl(Math.abs(r.bal))+'</b></span></div></div>'+
+      '<button class="hs-btn" data-id="'+r.ch.id+'">Zastosuj</button></div>').join('')}
+  O.innerHTML=h;
+  O.onclick=e=>{const b=e.target.closest('[data-id]');if(!b)return;const ch=S.CHANGES.find(c=>c.id===b.dataset.id);if(!ch||!confirm('Zastosować zmianę: „'+ch.name+'”?'))return;
+    HouserStore.update(p=>S.variant(p,ch)||p,'oszczednosci');render(HouserStore.load()?.project)}}
+const rec=HouserStore.load();render(rec?rec.project:null);let t=null;HouserStore.subscribe(r=>{clearTimeout(t);t=setTimeout(()=>render(r.project),600)});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>
