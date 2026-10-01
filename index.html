@@ -468,6 +468,9 @@ async function openCloud(id,noAsk){if(!noAsk&&!(await confirmReplace()))return;
   catch(e){alert('Nie udało się otworzyć projektu z chmury: '+e.message)}}
 async function openLocal(id){if(!(await confirmReplace()))return;const r=await HouserLibrary.get(id);if(!r)return alert('Nie ma już tego projektu.');
   try{await openProject(r.project,'library');refreshViews()}catch(e){alert(e.message)}}
+// otwieranie domu z modułów (np. Ranking domów): gotowy dom (plik z examples/), z tej przeglądarki albo z chmury
+window.HouserOpen={async sample(file){if(!(await confirmReplace()))return false;try{const p=await (await fetch('examples/'+file)).json();await openProject(p,'sample');refreshViews();return true}catch(e){alert('Nie udało się otworzyć domu: '+e.message);return false}},
+  local:id=>openLocal(id).then(()=>true),cloud:id=>openCloud(id).then(()=>true)};
 // ---------- projekty w tej przeglądarce: bieżący zapisuje się sam po każdej zmianie
 let libTimer=null;
 function libTouch(){clearTimeout(libTimer);libTimer=setTimeout(libSave,1200)}

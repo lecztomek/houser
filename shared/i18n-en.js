@@ -3289,4 +3289,10 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "z montażem, orientacyjnie – trafia do Wyceny":"installed, approximate – goes to the Cost estimate",
 "nietypowe kształty: {n} szt.":"non-standard shapes: {n} pcs",
 "Rolety, żaluzje, markizy":"Roller blinds, venetian blinds, awnings",
-"moduł Okna i drzwi (osłona przy oknie) albo Nasłonecznienie":"Windows & doors module (shading per window) or Sunlight"};
+"moduł Okna i drzwi (osłona przy oknie) albo Nasłonecznienie":"Windows & doors module (shading per window) or Sunlight",
+"Otwórz ten dom":"Open this house",
+"Co poprawić →":"What to improve →",
+"Otwórz Ranking ze strony głównej, żeby przechodzić do domów.":"Open the Ranking from the home page to switch between houses.",
+"Otworzyć dom „{q}”?\nBieżący projekt zostaje zapisany i wrócisz do niego z listy projektów.":"Open the house „{q}”?\nThe current project stays saved and you can return to it from the project list.",
+"Otworzyć dom „{q}”?":"Open the house „{q}”?",
+"Bieżący projekt zostaje zapisany i wrócisz do niego z listy projektów.":"The current project stays saved and you can return to it from the project list."};
