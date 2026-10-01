@@ -117,7 +117,7 @@
        invest:gravInvest,yearly:heatG,fan:0,air:4,
        pros:['najtańsza w budowie','bez prądu i serwisu'],cons:['działa tylko przy różnicy temperatur – latem prawie stoi','dużo ciepła ucieka z powietrzem','w szczelnym domu – wilgoć i duszno','hałas i smog z zewnątrz przez nawiewniki']},
       {k:'exhaust',name:'Mechaniczna wywiewna (hybrydowa)',how:'wentylator wyciąga powietrze z kuchni i łazienek, świeże wpływa przez nawiewniki higrosterowane w oknach',
-       invest:2500+exDuct*50+exN*120+supN*350+1500,yearly:heatX, // wentylator centralny, przewody, kratki, nawiewniki higrosterowane, montażfan:40*8760/1000*pEl,air:6,
+       invest:2500+exDuct*50+exN*120+supN*350+1500,yearly:heatX,fan:40*8760/1000*pEl,air:6, // invest: wentylator centralny, przewody, kratki, nawiewniki higrosterowane, montaż
        pros:['stały przepływ niezależnie od pogody','tanio i prosto','dobra do remontu i domów bez miejsca na kanały'],cons:['bez odzysku ciepła – straty jak przy grawitacyjnej','nawiewniki: zimne powietrze i hałas z zewnątrz','bez filtrowania powietrza']},
       {k:'mvhr',name:'Rekuperacja',how:'centrala z wymiennikiem: nawiew do pokoi, wywiew z kuchni i łazienek, odzysk ok. 85% ciepła',
        invest:res.cost.total,yearly:heatM,fan:res.fanCost||0,air:9,

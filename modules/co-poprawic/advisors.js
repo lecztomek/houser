@@ -46,7 +46,7 @@
   ];
   function collect(project){
     const mods=[],all=[];
-    for(const A of ADVISORS){if(typeof global[A.need]==='undefined')continue;let r;try{r=A.run(project)}catch(e){console.warn(A.id,e);continue}
+    for(const A of ADVISORS){if(typeof global[A.need]==='undefined')continue;let r;try{r=A.run(project)}catch(e){console.warn(A.id,e);continue}if(r&&r.score!=null&&!Number.isFinite(r.score)){console.warn(A.id,'ocena nie jest liczbą – pomijam');r.score=null} // jeden zepsuty moduł nie może zepsuć oceny ogólnej
       const m={...A,score:r.score==null?null:Math.round(r.score*10)/10,items:r.items,good:r.good||[]};mods.push(m);
       for(const it of r.items)all.push({...it,mod:A.id,modName:A.name,prio:it.p*A.w})}
     all.sort((a,b)=>b.prio-a.prio);
