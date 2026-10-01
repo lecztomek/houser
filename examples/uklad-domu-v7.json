@@ -21,7 +21,7 @@
         "rooms": [
           {
             "id": "wiatrolap",
-            "name": "Wiatrolap",
+            "name": "Wiatrołap",
             "color": "#f59e0b",
             "kind": "room"
           },
@@ -33,7 +33,7 @@
           },
           {
             "id": "spizarnia",
-            "name": "Spizarnia",
+            "name": "Spiżarnia",
             "color": "#a78bfa",
             "kind": "room"
           },
@@ -57,7 +57,7 @@
           },
           {
             "id": "lazienka_dol",
-            "name": "Lazienka dol",
+            "name": "Łazienka parter",
             "color": "#67e8f9",
             "kind": "room"
           },
@@ -82,42 +82,42 @@
         ]
       },
       "upper": {
-        "name": "Pietro / poddasze",
+        "name": "Piętro / poddasze",
         "subtitle": "ten sam obrys; schody proste; brak osobnej szafy gospodarczej",
         "rooms": [
           {
             "id": "hol_gora",
-            "name": "Hol pietra",
+            "name": "Hol piętra",
             "color": "#9ca3af",
             "kind": "room"
           },
           {
             "id": "schody",
-            "name": "Schody / otwor w stropie",
+            "name": "Schody / otwór w stropie",
             "color": "#64748b",
             "kind": "room"
           },
           {
             "id": "sypialnia",
-            "name": "Sypialnia glowna",
+            "name": "Sypialnia główna",
             "color": "#3b82f6",
             "kind": "room"
           },
           {
             "id": "pokoj_2",
-            "name": "Pokoj 2",
+            "name": "Pokój 2",
             "color": "#22c55e",
             "kind": "room"
           },
           {
             "id": "pokoj_3",
-            "name": "Pokoj 3",
+            "name": "Pokój 3",
             "color": "#14b8a6",
             "kind": "room"
           },
           {
             "id": "lazienka_gora",
-            "name": "Lazienka gora",
+            "name": "Łazienka piętro",
             "color": "#06b6d4",
             "kind": "room"
           },
@@ -2048,5 +2048,92 @@
     "upperHeight": 2.8,
     "roofHeight": 2.5,
     "ridge": "north-south"
+  },
+  "heatingSystem": {
+    "main": "hp_air",
+    "devices": {
+      "main": {
+        "f": "ground",
+        "x": 14,
+        "y": 10
+      },
+      "out": {
+        "f": "ground",
+        "x": 18,
+        "y": 10
+      },
+      "dhw": {
+        "f": "ground",
+        "x": 14,
+        "y": 9
+      },
+      "man:ground": {
+        "f": "ground",
+        "x": 13,
+        "y": 10
+      },
+      "man:upper": {
+        "f": "upper",
+        "x": 14,
+        "y": 10
+      }
+    }
+  },
+  "openingVariants": {
+    "upper": {
+      "h:2:0": {
+        "blind": "venetian"
+      },
+      "h:3:0": {
+        "blind": "venetian"
+      },
+      "h:15:0": {
+        "blind": "external"
+      },
+      "h:16:0": {
+        "blind": "external"
+      },
+      "v:18:7": {
+        "blind": "external"
+      },
+      "v:18:8": {
+        "blind": "external"
+      },
+      "v:18:14": {
+        "blind": "external"
+      },
+      "v:18:15": {
+        "blind": "external"
+      },
+      "v:18:16": {
+        "blind": "external"
+      },
+      "v:0:6": {
+        "blind": "external"
+      },
+      "v:0:7": {
+        "blind": "external"
+      },
+      "v:0:8": {
+        "blind": "external"
+      },
+      "v:0:13": {
+        "blind": "external"
+      },
+      "v:0:14": {
+        "blind": "external"
+      },
+      "v:0:15": {
+        "blind": "external"
+      }
+    },
+    "ground": {
+      "v:18:15": {
+        "blind": "external"
+      },
+      "v:18:16": {
+        "blind": "external"
+      }
+    }
   }
 }
