@@ -108,5 +108,27 @@
    "Wentylacja": 9.6,
    "Rekuperacja": 7
   }
+ },
+ "zefir-2.json": {
+  "overall": 7.5,
+  "cost": 962732,
+  "Qh": 8182,
+  "bills": 4426,
+  "area": 165.5,
+  "mods": {
+   "Przepisy": 10,
+   "Codzienność": 6.3,
+   "Schowki i szafy": 8.8,
+   "Akustyka": 6.2,
+   "Nasłonecznienie": 4,
+   "Energia": 6.7,
+   "Ocieplenie i elewacja": 7,
+   "Wygląd": 8.4,
+   "Balkony": null,
+   "Hydraulika": 5.7,
+   "Ogrzewanie": 9.5,
+   "Wentylacja": 9.7,
+   "Rekuperacja": 7
+  }
  }
 }

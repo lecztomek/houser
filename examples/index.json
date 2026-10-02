@@ -18,5 +18,10 @@
   "file": "nowoczesna-stodola.json",
   "name": "Nowoczesna stodoła",
   "desc": "Wąska bryła 15 × 7 m, dach 45° bez okapów, przeszklony szczyt, antresola nad salonem."
+ },
+ {
+  "file": "zefir-2.json",
+  "name": "Zefir 2",
+  "desc": "Wzorowany na projekcie Zefir 2: 11 × 8,5 m, parter + poddasze użytkowe, dach 42°, pokój/biuro na parterze, 3 sypialnie na poddaszu, pustka nad salonem, pergola z zadaszeniem, kominek z płaszczem wodnym + pompa ciepła, rekuperacja."
  }
 ]
