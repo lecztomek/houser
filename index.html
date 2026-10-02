@@ -397,7 +397,7 @@ function renderBar(){const rec=HouserStore.load();$('pbName').textContent=rec?pr
   const me=HouserCloud.user?.();R.hidden=!rec; // zawsze widać, czyj to dom
   try{localStorage.setItem('houser:guest',isGuest()?'1':'0');localStorage.setItem('houser:user-name',me?.name||'')}catch(_){} // dla pasków w modułach
   const chip=(cls,lg,sh)=>'<span class="rochip'+cls+'"><span class="lg">'+lg+'</span><span class="sh">'+sh+'</span></span>';
-  R.innerHTML=ro?chip('',(ro.src==='base'?'📚 Baza Housera':'👥 Społeczność · autor: '+esc(ro.owner||'nieznany'))+' – tylko podgląd',(ro.src==='base'?'📚 Baza Housera':'👥 '+esc(ro.owner||'Społeczność'))+' · podgląd')+(isGuest()?'<button class="pbtn primary" id="pbCopy"><span class="lg">Zaloguj się, żeby zrobić kopię</span><span class="sh">Zaloguj</span></button>':'<button class="pbtn primary" id="pbCopy"><span class="lg">⧉ Zrób kopię do siebie</span><span class="sh">⧉ Kopia do siebie</span></button>')
+  R.innerHTML=ro?chip('','👥 Nie mój · autor: '+esc(ro.src==='base'?'Houser':(ro.owner||'nieznany'))+' – tylko podgląd','👥 '+esc(ro.src==='base'?'Houser':(ro.owner||'nie mój'))+' · podgląd')+(isGuest()?'<button class="pbtn primary" id="pbCopy"><span class="lg">Zaloguj się, żeby zrobić kopię</span><span class="sh">Zaloguj</span></button>':'<button class="pbtn primary" id="pbCopy"><span class="lg">⧉ Zrób kopię do siebie</span><span class="sh">⧉ Kopia do siebie</span></button>')
     :!guest&&me&&rec?.project?.sharedEdit?chip(' shared','✏️ Wspólny dom · autor: '+esc(rec.project.sharedEdit.owner||'?')+' – możesz zmieniać','✏️ Wspólny · '+esc(rec.project.sharedEdit.owner||'?'))
     :!guest&&me?chip(' mine','🏠 Mój dom · '+esc(me.name||me.email||''),'🏠 Mój dom')
     :guest?chip('','👁 Tylko podgląd – zaloguj się, żeby projektować','👁 Bez konta · tylko podgląd')+'<button class="pbtn primary" id="pbLogin2">Zaloguj</button>':'';
@@ -416,7 +416,8 @@ async function openProject(obj,label){
   if(!project.state&&!project.definitionSnapshot&&HouserDefinition.isDefinition(project))project=HouserDefinition.projectFromDefinition(project);
   if(!project.definitionSnapshot&&!project.state)throw new Error('Nie rozpoznaję pliku – brak definicji pomieszczeń i rzutu.');
   // gotowy dom i nowy projekt to zawsze nowy projekt (własna galeria); plik zachowuje swój identyfikator
-  if(label==='sample'||label==='preview'||label==='new'||!project.projectId)project.projectId=HouserStore.newId();
+  if(label==='preview'&&project.readOnly?.src==='base'&&project.fromSample)project.projectId=baseId(project.fromSample);
+  else if(label==='sample'||label==='preview'||label==='new'||!project.projectId)project.projectId=HouserStore.newId();
   const before=curJSON;
   if(!HouserStore.save(project,'plik'))throw new Error('Nie udało się zapisać projektu w przeglądarce (za mało miejsca?).');
   lsSet(LAST_SAVE,label==='file'?new Date().toISOString():'');
@@ -533,7 +534,7 @@ async function openSample(file,sample){if(!(await confirmReplace()))return false
     for(const m of await HouserLibrary.list()){if(own)break;const r=await HouserLibrary.get(m.id);const p=r?.project;if(p&&(p.fromSample===file||(!p.fromSample&&projName(p)===name&&JSON.stringify(p.state)===JSON.stringify(sample.state))))own=r}
     if(own&&own.project.projectId===HouserStore.load()?.project?.projectId){toast('Ten dom jest już otwarty.');return true}
     if(own&&confirm('Masz już swoją kopię domu „'+projName(own.project)+'” (zmiana '+fmtTime(own.updatedAt)+').\n\nOK – otwórz swoją kopię\nAnuluj – obejrzyj wzór (podgląd)')){await openProject(own.project,'library');refreshViews();return true}
-    const p=JSON.parse(JSON.stringify(sample));p.fromSample=file;p.readOnly={src:'base',owner:'baza Housera'};await openProject(p,'preview');refreshViews();return true}
+    const p=JSON.parse(JSON.stringify(sample));p.fromSample=file;p.readOnly={src:'base',owner:'Houser'};await openProject(p,'preview');refreshViews();return true}
   catch(err){alert('Nie udało się wczytać: '+err.message);return false}}
 // otwieranie domu z modułów (np. Ranking domów): gotowy dom (plik z examples/), z tej przeglądarki albo z chmury
 window.HouserOpen={async sample(file){let p;try{p=await (await fetch('examples/'+file)).json()}catch(e){alert('Nie udało się otworzyć domu: '+e.message);return false}return openSample(file,p)},
@@ -642,16 +643,23 @@ const norm=t=>String(t||'').trim().toLowerCase();
 async function paintBase(){const el=$('pmBase');if(!el)return;let L;try{L=await loadSamples()}catch(e){el.innerHTML='<div class="empty2">Nie udało się wczytać domów z bazy.</div>';return}
   const cur=HouserStore.load()?.project,isCur=m=>cur?.readOnly?.src==='base'&&cur.fromSample===m.file,mine=await ownCopies();if(!$('pmBase'))return;
   // dom z bazy, który już masz u siebie (ten sam dom – otwarty kiedyś z bazy albo zaimportowany), jest na liście Twoich projektów – tu go nie powtarzamy
-  const rows=L.map((m,i)=>({m,i})); // kopia do siebie to inny dom – oryginał z bazy zostaje na liście
+  const inCloud=new Set([...(cloudLists.pub||[]),...(cloudLists.mine||[])].map(x=>x.id));
+  const rows=L.map((m,i)=>({m,i})).filter(({m})=>!inCloud.has(baseId(m.file))); // kopia do siebie to inny dom; dom Housera wgrany już do chmury przychodzi z chmury (bez dubla)
   el.innerHTML=rows.length?rows.map(({m,i})=>'<div class="prow other'+(isCur(m)?' cur1':'')+'" data-i="'+i+'"><div class="pth">'+(m.cover?'<img alt="" loading="lazy" src="examples/'+esc(m.cover)+'">':planSvg(m.project))+'</div><div class="pinfo"><b><span class="own0">Nie mój</span>'+esc(m.name)+'</b><small>autor: Houser · '+esc(m.desc||'')+'</small><div>'+chips(stats(m.project))+'</div></div><div class="pacts">'+(isCur(m)?'<span class="go">✓ otwarty</span>':'<button class="btn2 sm primary" data-a="base">👁 Podgląd</button>')+'<button class="btn2 sm" data-a="blink" title="Link otwiera ten dom od razu">🔗</button></div></div>').join(''):'';
-  el.querySelectorAll('[data-a="base"]').forEach(b=>b.onclick=async()=>{const m=SAMPLES[+b.closest('[data-i]').dataset.i];if(await openSample(m.file,m.project))renderProjects(true)});el.querySelectorAll('[data-a="blink"]').forEach(b=>b.onclick=()=>copyLink('baza:'+SAMPLES[+b.closest('[data-i]').dataset.i].file.replace(/\.json$/,'')))}
+  el.querySelectorAll('[data-a="base"]').forEach(b=>b.onclick=async()=>{const m=SAMPLES[+b.closest('[data-i]').dataset.i];if(await openSample(m.file,m.project))renderProjects(true)});el.querySelectorAll('[data-a="blink"]').forEach(b=>b.onclick=()=>copyLink(baseId(SAMPLES[+b.closest('[data-i]').dataset.i].file)))}
 // link do bieżącego domu: dom z bazy, cudzy publiczny albo Twój udostępniony (prywatnego nikt inny nie otworzy)
-const curLinkId=(p,st)=>p?.readOnly?.src==='base'&&p.fromSample?'baza:'+p.fromSample.replace(/\.json$/,''):p?.readOnly?.pid?p.readOnly.pid:p?.sharedEdit?.pid?p.sharedEdit.pid:st?.linked&&isPub(st.vis)?st.pid:null;
+const baseId=file=>String(file||'').replace(/\.json$/,''); // dom autora „Houser” (wbudowany w stronę): id = nazwa pliku
+const curLinkId=(p,st)=>p?.readOnly?.src==='base'&&p.fromSample?baseId(p.fromSample):p?.readOnly?.pid?p.readOnly.pid:p?.sharedEdit?.pid?p.sharedEdit.pid:st?.linked&&isPub(st.vis)?st.pid:null;
 const PM_F='houser:pm-filter',PM_V='houser:pm-view'; // filtr i widok listy (kafle / lista)
 function pmCounts(){const L=$('pmList');if(!L)return;const own=L.querySelectorAll('.prow:not(.other)').length,oth=L.querySelectorAll('.prow.other').length,n=(k,v)=>{const e=$('pmN_'+k);if(e)e.textContent=v};n('all',own+oth);n('mine',own);n('other',oth)}
+async function seedHouser(){const u=HouserCloud.user();if(!u)return alert('Najpierw zaloguj się na konto, które ma być autorem „Houser”.');
+  const L=await loadSamples();if(!confirm('Wgrać '+L.length+' domów do chmury jako publiczne domy konta „'+u.name+'”?\n\nAutor w aplikacji będzie się nazywał tak jak to konto – najlepiej zrób to na osobnym koncie Google o nazwie „Houser”. Id domów = nazwy plików, więc dotychczasowe linki dalej działają.'))return;
+  let ok=0;const base=location.origin+location.pathname.replace(/[^/]*$/,'');for(const m of L){try{await HouserCloud.publishAs(baseId(m.file),m.project,{visibility:'public',cover:m.cover?base+'examples/'+m.cover:'',desc:m.desc||''});ok++}catch(e){alert('„'+m.name+'”: '+e.message)}}
+  toast('Wgrano do chmury: '+ok+' z '+L.length);cloudLists.t=0;wantCloudLists()}
 function renderProjects(noLoad){const el=$('pm');if(!el)return;const rec=HouserStore.load(),st=HouserCloud.status(),u=st.user,p=rec?.project,curId=p?.projectId;
   let h='<h1>Projekty</h1><p class="lead">'+(isGuest()?'Bez konta możesz tylko oglądać domy. Zaloguj się, żeby mieć swoje.':'Dom zapisuje się sam po każdej zmianie na Twoim koncie. Eksport do pliku JSON to kopia zapasowa.')+'</p>'+
     '<div class="pmbar"><button class="btn2 primary" id="pmNew">＋ Nowy pusty projekt</button><label class="btn2">⤒ Importuj z pliku<input type="file" id="pmImport" accept="application/json,.json" hidden></label>'+(cmpList().length?'<a class="btn2" href="#porownanie">⚖ W porównaniu: '+cmpList().length+'/'+CMP_MAX+' → otwórz</a>':'')+'</div>';
+  if(new URLSearchParams(location.search).get('admin')==='houser')h+='<div class="login"><p>🛠 <b>Domy Housera w chmurze</b> – wgrywa wbudowane domy jako publiczne domy zalogowanego konta (najlepiej osobne konto Google „Houser”). Potem są w chmurze jak domy każdego innego autora.</p><button class="btn2 primary" id="pmSeed">Wgraj domy Housera</button></div>';
   h+='<h2 class="sec">Bieżący projekt</h2>';
   if(!p)h+='<div class="login"><p>Nie masz otwartego projektu. Zacznij nowy, zaimportuj plik albo otwórz projekt z listy poniżej.</p></div>';
   else{const s=stats(p),last=MODULES.find(m=>m.id===lsGet(LAST_MOD))||MODULES.find(m=>m.id==='projektowanie');
@@ -676,7 +684,7 @@ function renderProjects(noLoad){const el=$('pm');if(!el)return;const rec=HouserS
   const pubOthers=(cloudLists.pub||[]).filter(m=>!u||m.owner!==u.uid);
   h+='<div class="plist'+(guest?' guest':'')+(pv==='tiles'?' tiles':'')+'" id="pmList" data-f="'+pf+'">'+(guest?'':all.length?all.map(m=>pmRow(m,m.id===curId)).join(''):'<div class="login mineOnly"><p>Tu pojawią się Twoje domy – każdy zapisuje się sam po pierwszej zmianie.</p></div>')+pubOthers.map(m=>'<div class="prow other" data-pub="'+esc(m.id)+'"><div class="pth">'+(thumbImg(m)||'')+'</div><div class="pinfo"><b><span class="own0">Nie mój</span>'+esc(m.name||'bez nazwy')+'</b><small>autor: '+esc(m.ownerName||'?')+'</small><span class="vis pub">'+VIS_LABEL[m.visibility==='public_edit'?'public_edit':'public']+'</span></div><div class="pacts"><button class="btn2 sm primary" data-a="pubopen">'+(m.visibility==='public_edit'&&u?'✏️ Otwórz':'👁 Podgląd')+'</button><button class="btn2 sm" data-a="publink" title="Link otwiera ten dom od razu">🔗</button></div></div>').join('')+'<div id="pmBase" style="display:contents"></div></div>';
   el.innerHTML=h;fillCovers(el);pmCounts();paintBase().then(pmCounts);el.querySelectorAll('#pmV [data-v]').forEach(b=>b.onclick=()=>{lsSet(PM_V,b.dataset.v);$('pmList').classList.toggle('tiles',b.dataset.v==='tiles');el.querySelectorAll('#pmV .fchip').forEach(x=>x.classList.toggle('on',x===b))});el.querySelectorAll('#pmF [data-f]').forEach(b=>b.onclick=()=>{lsSet(PM_F,b.dataset.f);$('pmList').dataset.f=b.dataset.f;el.querySelectorAll('#pmF .fchip').forEach(x=>x.classList.toggle('on',x===b))});el.querySelectorAll('[data-a="pubopen"]').forEach(b=>b.onclick=()=>openCloud(b.closest('[data-pub]').dataset.pub));el.querySelectorAll('[data-a="publink"]').forEach(b=>b.onclick=()=>copyLink(b.closest('[data-pub]').dataset.pub));autoTidy(all);coverOf(p).then(c=>{const t=$('pmCurThumb');if(!c||!t)return;t.classList.add('hasCover');t.innerHTML='<img class="coverImg" alt="" src="'+c+'"><div class="miniPlan">'+planSvg(p)+'</div><a class="galLink" href="#galeria">Galeria →</a>'}).catch(()=>{});
-  $('pmNew').onclick=newEmpty;$('pmImport').onchange=e=>{const f=e.target.files[0];e.target.value='';importFile(f)};
+  $('pmNew').onclick=newEmpty;if($('pmSeed'))$('pmSeed').onclick=seedHouser;$('pmImport').onchange=e=>{const f=e.target.files[0];e.target.value='';importFile(f)};
   if($('pmRename'))$('pmRename').onclick=renameCurrent;if($('pmExport'))$('pmExport').onclick=()=>downloadProject(HouserStore.load().project);
   if($('pmDup'))$('pmDup').onclick=()=>isGuest()?doLogin():duplicateCurrent();if($('pmLink'))$('pmLink').onclick=()=>copyLink(curLinkId(p,st));if($('pmVis'))$('pmVis').onchange=async e=>{const v=e.target.value;if((await setVis(st.pid,v))===false)e.target.value=st.vis||'private'};el.querySelectorAll('select[data-vis]').forEach(sel=>{const m0=sel.value;sel.onchange=async()=>{if((await setVis(sel.closest('.prow').dataset.id,sel.value))===false)sel.value=m0}});
   if($('pmOn'))$('pmOn').onclick=()=>{HouserCloud.enable(st.pid);HouserCloud.saveNow().then(()=>{cloudLists.t=0;wantCloudLists()})};if($('pmLogin'))$('pmLogin').onclick=doLogin;
@@ -709,10 +717,11 @@ HouserStore.subscribe(onStoreChange);
 try{HouserStore.projectId()}catch(_){}
 HouserStore.subscribe(renderBar);HouserStore.subscribe(()=>{if(onHome())renderHome()});renderBar();renderUndo();setInterval(renderBar,30000);
 show(location.hash.slice(1)||'projekty');
-// link do domu: ?dom=<id w chmurze> albo ?dom=baza:<plik> – otwiera dom od razu (cudzy w podglądzie)
+// link do domu: ?dom=<id> – otwiera dom od razu (cudzy w podglądzie); dom autora „Houser” ma id = nazwa pliku (stare linki ?dom=baza:… też działają)
 (async()=>{const q=new URLSearchParams(location.search),d=q.get('dom');if(!d)return;try{
-  {const c=HouserStore.load()?.project;if(c&&(c.fromSample===d.slice(5)+'.json'&&d.startsWith('baza:')||c.projectId===d||c.readOnly?.pid===d||c.sharedEdit?.pid===d)){syncUrl();return}} // ten dom jest już otwarty (np. odświeżenie strony)
-  if(d.startsWith('baza:')){await HouserOpen.sample(d.slice(5)+'.json');return}
+  const bid=d.startsWith('baza:')?d.slice(5):d;let isBase=false;try{isBase=(await (await fetch('examples/index.json')).json()).some(m=>baseId(m.file)===bid)}catch(_){}
+  {const c=HouserStore.load()?.project;if(c&&((isBase&&c.fromSample===bid+'.json')||c.projectId===d||c.readOnly?.pid===d||c.sharedEdit?.pid===d)){syncUrl();return}} // ten dom jest już otwarty (np. odświeżenie strony)
+  if(isBase){if(HouserCloud.enabled){try{await HouserCloud.init();if(await HouserCloud.fetchProject(bid).then(()=>true,()=>false)){await openCloud(bid,true);return}}catch(_){}}await HouserOpen.sample(bid+'.json');return}
   try{await HouserCloud.init()}catch(_){}try{const c=HouserStore.load()?.project;if(c&&HouserCloud.status().pid===d){toast('Ten dom jest już otwarty.');return}}catch(_){}
   await openCloud(d)}finally{domPending=false;syncUrl()}})();
 </script>

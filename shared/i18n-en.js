@@ -3558,4 +3558,7 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "Na rzucie przeciągasz schody co 5 cm. Strzałki na klawiaturze: 5 cm (z Shift – 50 cm).":"Drag the stairs on the plan in 5 cm steps. Keyboard arrows: 5 cm (with Shift – 50 cm).",
 "Poziomo na rzucie (← →)":"Horizontal on the plan (← →)","Pionowo na rzucie (↑ ↓)":"Vertical on the plan (↑ ↓)",
 "wschód – zachód":"east – west","północ – południe":"north – south",
-"Układzie pomieszczeń":"Room layout"};
+"Układzie pomieszczeń":"Room layout",
+"Wgraj domy Housera":"Upload Houser houses",
+"Najpierw zaloguj się na konto, które ma być autorem „Houser”.":"First sign in to the account that should be the author „Houser”.",
+"👥 Nie mój · autor: {q} – tylko podgląd":"👥 Not mine · author: {q} – view only"};

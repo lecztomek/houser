@@ -48,7 +48,7 @@
   function paint(){var S=window.HouserStore,p=S&&S.load()&&S.load().project,why=S&&S.lockReason?S.lockReason():null,name='';try{name=localStorage.getItem('houser:user-name')||''}catch(e){}
     if(!p){bar.style.display='none';return}bar.style.display='';
     var narrow=window.innerWidth<700; // na telefonie krótko, w jednej linii
-    if(why==='ro'){var ro=p.readOnly||{};bar.className='hs-lockbar ro';bar.innerHTML=narrow?'👁 Podgląd · '+(ro.src==='base'?'baza Housera':esc(ro.owner||'społeczność'))+' – nic się nie zapisuje':'👁 Tylko podgląd · '+(ro.src==='base'?'baza Housera':'społeczność · autor: '+esc(ro.owner||'nieznany'))+' – zmiany nie są zapisywane. Żeby pracować nad tym domem, zrób kopię do siebie (przycisk na górze strony).'}
+    if(why==='ro'){var ro=p.readOnly||{};bar.className='hs-lockbar ro';var au=ro.src==='base'?'Houser':(ro.owner||'nieznany');bar.innerHTML=narrow?'👁 Podgląd · '+esc(au)+' – nic się nie zapisuje':'👁 Tylko podgląd · autor: '+esc(au)+' – zmiany nie są zapisywane. Żeby pracować nad tym domem, zrób kopię do siebie (przycisk na górze strony).'}
     else if(why==='guest'){bar.className='hs-lockbar ro';bar.innerHTML=narrow?'👁 Bez konta – tylko podgląd':'👁 Tylko podgląd – bez konta zmiany nie są zapisywane. Zaloguj się na górze strony, żeby projektować.'}
     else if(p.sharedEdit){bar.className='hs-lockbar shared';bar.innerHTML=narrow?'✏️ Wspólny dom · '+esc(p.sharedEdit.owner||'')+' – zmiany zapisują się':'✏️ Wspólny dom · autor: '+esc(p.sharedEdit.owner||'nieznany')+' – możesz zmieniać, zmiany zapisują się w tym samym domu'}
     else{bar.className='hs-lockbar mine';bar.innerHTML='🏠 Mój dom'+(name?' · '+esc(name):'')+' – zmiany zapisują się same'}}

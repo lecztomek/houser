@@ -142,6 +142,14 @@
     for(const d of ph.docs){const id='g'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);await fb.F.setDoc(D('projects',newId,'photos',id),d.data());ids.push(id)}
     await fb.F.setDoc(D('projects',newId),{photoIds:ids},{merge:true});return newId}
 
+  // publiczny dom pod podanym id (np. wbudowane domy autora „Houser” – id = nazwa pliku, te same linki ?dom=…);
+  // zapisuje zalogowany użytkownik jako autor; istniejący cudzy dom o tym id – błąd
+  async function publishAs(pid,project,opt={}){await init();need();let meta=null;try{meta=await getData('projects',pid)}catch(e){if(e.code!=='permission-denied')throw e;meta={owner:null}}
+    if(meta&&meta.owner!==user.uid)throw new Error('Dom „'+pid+'” ma już innego autora.');
+    const p=forCloud({...JSON.parse(JSON.stringify(project)),projectId:pid});delete p.fromSample;const d=await describe(p),now=new Date().toISOString(),rev=Math.random().toString(36).slice(2,10);
+    await fb.F.setDoc(D('projects',pid),{owner:user.uid,ownerName:user.name,ownerPhoto:user.photo,name:d.name||'bez nazwy',visibility:opt.visibility||'public',createdAt:meta?.createdAt||now,updatedAt:now,rev,stats:d.stats||null,plan:d.plan||'',cover:opt.cover||meta?.cover||'',photoIds:meta?.photoIds||[],desc:opt.desc||''});
+    await fb.F.setDoc(D('projects',pid,'content','main'),{json:JSON.stringify(p),updatedAt:now});return pid}
+
   // automatyczny zapis powiązanego projektu po zmianach (projekt: 3 s, zdjęcia: 1,5 s od ostatniej zmiany)
   let timer=null,want={project:false,photos:false},busy=false;
   function touch(what){if(!enabled||!user)return;const pid=curPid();if(!eligible(pid)){emit();return}
@@ -159,6 +167,6 @@
   const hooks={};
   global.HouserCloud={enabled,init,signIn,signOut,_testSignIn,user:()=>user,onAuth:cb=>authCbs.push(cb),onStatus:cb=>statusCbs.push(cb),status,
     configure(o){if(o.describe)describe=o.describe;Object.assign(hooks,o.hooks||{})},
-    saveProject,open,listMine,listPublic,setVisibility,remove,unlink,enable,fetchProject,duplicate,touch,saveNow,isLinked:pid=>!!linkOf(pid),isOff:pid=>!!(pid&&links()[pid]?.off),
+    saveProject,publishAs,open,listMine,listPublic,setVisibility,remove,unlink,enable,fetchProject,duplicate,touch,saveNow,isLinked:pid=>!!linkOf(pid),isOff:pid=>!!(pid&&links()[pid]?.off),
     resolveConflict:async keepLocal=>{op={state:'idle',at:null,msg:''};if(keepLocal){const rec=HouserStore.load();await saveProject(rec.project,{force:true});await pushPhotos(rec.project.projectId);setOp('saved')}else emit()}};
 })(window);
