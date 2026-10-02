@@ -3566,4 +3566,6 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "Dosuń do ściany":"Push to the wall",
 "Pranie wysuszysz na balkonie: {n} m od pralni.":"You can dry laundry on the balcony: {n} m from the laundry.",
 "Na balkon trzeba wejść po schodach.":"The balcony is up the stairs.",
-"Zamień okno przy balkonie na drzwi balkonowe":"Change the window by the balcony into a balcony door"};
+"Zamień okno przy balkonie na drzwi balkonowe":"Change the window by the balcony into a balcony door",
+"zapisze się za chwilę":"will save shortly",
+"Zmiany zapisują się w chmurze najwyżej raz na minutę (i od razu, gdy zamkniesz kartę lub otworzysz inny dom)":"Changes are saved to the cloud at most once a minute (and right away when you close the tab or open another house)"};

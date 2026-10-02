@@ -150,18 +150,24 @@
     await fb.F.setDoc(D('projects',pid),{owner:user.uid,ownerName:user.name,ownerPhoto:user.photo,name:d.name||'bez nazwy',visibility:opt.visibility||'public',createdAt:meta?.createdAt||now,updatedAt:now,rev,stats:d.stats||null,plan:d.plan||'',cover:opt.cover||meta?.cover||'',photoIds:meta?.photoIds||[],desc:opt.desc||''});
     await fb.F.setDoc(D('projects',pid,'content','main'),{json:JSON.stringify(p),updatedAt:now});return pid}
 
-  // automatyczny zapis powiązanego projektu po zmianach (projekt: 3 s, zdjęcia: 1,5 s od ostatniej zmiany)
-  let timer=null,want={project:false,photos:false},busy=false;
+  // automatyczny zapis powiązanego projektu po zmianach: chwilę po ostatniej zmianie, ale najwyżej raz na minutę
+  // (zmiany z tej minuty idą jednym zapisem); od razu przy zamknięciu / schowaniu karty i przy otwieraniu innego domu (saveNow)
+  const MIN_GAP=60000,QUIET={project:3000,photos:1500};let timer=null,want={project:false,photos:false},busy=false,lastSave=0;
   function touch(what){if(!enabled||!user)return;const pid=curPid();if(!eligible(pid)){emit();return}
-    want[what==='photos'?'photos':'project']=true;if(op.state==='conflict')return;clearTimeout(timer);setOp('pending');timer=setTimeout(flush,want.project?3000:1500)}
+    want[what==='photos'?'photos':'project']=true;if(op.state==='conflict')return;clearTimeout(timer);setOp('pending');
+    const wait=Math.max(want.project?QUIET.project:QUIET.photos,MIN_GAP-(Date.now()-lastSave));timer=setTimeout(flush,wait)}
   async function flush(){if(busy){clearTimeout(timer);timer=setTimeout(flush,1000);return}
     const rec=HouserStore.load(),pid=rec?.project?.projectId;if(!eligible(pid)){setOp('idle');return}
-    busy=true;setOp('saving');const w=want;want={project:false,photos:false};
+    busy=true;setOp('saving');lastSave=Date.now();const w=want;want={project:false,photos:false};
     try{if(w.project||!linkOf(pid)){const r=await saveProject(rec.project);if(r.conflict){setOp('conflict');hooks.conflict?.(r.conflict);return}}
       if(w.photos)await pushPhotos(curPid());setOp('saved')}
     catch(e){console.error(e);want={project:want.project||w.project,photos:want.photos||w.photos};setOp('error',e.message||String(e))}
     finally{busy=false}}
   global.addEventListener('online',()=>{if(op.state==='error')touch('project')});
+  // karta znika / zamyka się – zapisz od razu to, co czeka
+  const flushPending=()=>{if(op.state==='pending'&&(want.project||want.photos)){clearTimeout(timer);flush()}};
+  global.document?.addEventListener?.('visibilitychange',()=>{if(global.document.visibilityState==='hidden')flushPending()});
+  global.addEventListener('pagehide',flushPending);
   function saveNow(){clearTimeout(timer);want.project=true;want.photos=true;return flush()}
 
   const hooks={};
