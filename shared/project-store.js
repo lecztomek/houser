@@ -19,8 +19,13 @@
     try{global.HouserLock?.flash?.()}catch(_){}
     if(userEdit){reverting=true;setTimeout(()=>{try{sessionStorage.setItem('houser:ro-flash','1')}catch(_){}location.reload()},700)}} // zmiana z ręki – wracamy do zapisanego stanu
   // source: nazwa modułu, który zapisuje (np. 'projektowanie')
+  // czy „nowy” projekt to tylko uporządkowany stary: te same wartości, najwyżej dopisane pola (np. wyliczona wysokość dachu, inna kolejność kluczy)
+  function onlyTidied(n,o){if(o===undefined)return true;if(o===null||typeof o!=='object')return n===o;if(n===null||typeof n!=='object'||Array.isArray(n)!==Array.isArray(o))return false;
+    if(Array.isArray(o))return n.length===o.length&&o.every((v,i)=>onlyTidied(n[i],v));return Object.keys(o).every(k=>onlyTidied(n[k],o[k]))}
+  function sameHouse(project){const cur=load()?.project;if(!cur||!project)return false;const strip=p=>{const c={...p};delete c.savedAt;delete c.definitionFingerprint;return c};return onlyTidied(strip(project),strip(cur))}
   function save(project,source){
-    if(!global.HOUSER_SHELL&&lockReason()){blocked();return false}
+    // podgląd: zapis bez prawdziwej zmiany (moduł tylko uporządkował projekt, np. po przełączeniu piętra) – pomijamy po cichu, bez cofania
+    if(!global.HOUSER_SHELL&&lockReason()){if(!sameHouse(project))blocked();return false}
     const rec={project,source:source||'',writer:selfId,updatedAt:new Date().toISOString()};
     try{localStorage.setItem(KEY,JSON.stringify(rec));return true;}catch(_){return false;}
   }
