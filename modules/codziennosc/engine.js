@@ -75,7 +75,14 @@ function build(project){
           const ox=x+dx,oy=y+dy,e={id:exits.length,node:fi*N+y*W+x,room:a,type:t,key,ox,oy,x,y,terrace:nearTerr(ox,oy)};exits.push(e);a.exits.push(e);
           (exitByNode.get(e.node)||exitByNode.set(e.node,[]).get(e.node)).push(e)}}}});
   // łazienka „przy sypialni” (tylko z sypialni / garderoby) = prywatna
-  for(const r of list){const ns=[...r.nb.keys()].map(k=>rooms[k]);r.ensuite=(r.roles.has('bath')||r.roles.has('wc'))&&ns.length>0&&ns.every(n=>n.roles.has('bedroom')||n.roles.has('wardrobe'))}
+  // prywatna = da się do niej wejść tylko z sypialni albo przez garderobę, która sama otwiera się tylko na sypialnię (nie na hol)
+  // owners – sypialnie, z których jest ta łazienka; via – garderoby po drodze
+  for(const r of list){r.owners=new Set();r.via=new Set();const isB=r.roles.has('bath')||r.roles.has('wc');if(!isB){r.ensuite=false;continue}
+    const ns=[...r.nb.keys()].map(k=>rooms[k]);let ok=ns.length>0;
+    for(const n of ns){if(n.roles.has('bedroom'))r.owners.add(n.key);
+      else if(n.roles.has('wardrobe')){r.via.add(n.key);for(const k2 of n.nb.keys()){const m=rooms[k2];if(m===r)continue;if(m.roles.has('bedroom'))r.owners.add(m.key);else if(!(m.roles.has('bath')||m.roles.has('wc')))ok=false}}
+      else ok=false}
+    r.ensuite=ok&&r.owners.size>0}
   const isPrivate=r=>r.roles.has('bedroom')||r.roles.has('wardrobe')||r.roles.has('study')||r.ensuite;
   // schody
   const stairLinks=[],stairAdj=new Map(),notes=[];
@@ -188,6 +195,11 @@ function evaluate(project,settings){
   const leg=(from,to,r,extra)=>Object.assign({from,to,r},extra||{});
   const fmt=v=>(Math.round(v*10)/10).toLocaleString('pl-PL',{maximumFractionDigits:1});
   // kary za omijanie: strefa prywatna mocno, salon lekko (ludzie wybierają drogę przez hol, jeśli jest)
+  // łazienki, do których wolno pójść z sypialni b: wspólne + prywatne tej sypialni; najpierw szukamy na jej kondygnacji
+  const bathsFor=b=>baths.filter(x=>!x.ensuite||x.owners.has(b.key));
+  const bathRoute=(b,from,opt={})=>{const own=bathsFor(b);if(!own.length)return null;const ex=new Set(own.flatMap(x=>[x.key,...x.via]));
+    const go=L=>L.length?route(M,src(from),L.map(x=>x.center),{avoid:AV({...opt,except:ex})}):null;
+    return go(own.filter(x=>x.fi===b.fi))||go(own)};
   const AV=(opt={})=>r=>{if(opt.except&&opt.except.has(r.key))return 0;const k=cat(r);return k==='private'?(opt.priv??12):k==='living'?(opt.living??2):k==='kitchen'?(opt.kitchen??0):0};
   const lo0=arr=>arr.slice().sort((a,b)=>a.fi-b.fi||b.area-a.area);
   const kitchens=lo0(byRole('kitchen')),kitchen=kitchens[0];
@@ -211,7 +223,8 @@ function evaluate(project,settings){
 
   const mk=(def)=>({id:def.id,name:def.name,desc:def.desc,weight:wset[def.id]!=null&&isFinite(+wset[def.id])?+wset[def.id]:def.w,enabled:!off[def.id],why:[],hints:[],legs:[],applicable:true,score:null});
   const na=(s,reason,hint)=>{s.applicable=false;s.reason=reason;if(hint)s.hints.push(hint);return s};
-  const crossCats=r=>{const o={private:[],living:[],kitchen:[],other:[]};for(const x of r.crossed)o[cat(x)].push(x);return o};
+  // garderoba, przez którą wchodzi się do docelowej łazienki, to część drogi do łazienki – nie „cudzy pokój”
+  const crossCats=r=>{const o={private:[],living:[],kitchen:[],other:[]},via=r.end?.room?.via;for(const x of r.crossed){if(via&&via.has(x.key))continue;o[cat(x)].push(x)}return o};
   const noExit='Na rzucie parteru nie ma drzwi zewnętrznych ani HST.';
 
   for(const def of SCEN){const s=mk(def);out.push(s);
@@ -345,14 +358,13 @@ function evaluate(project,settings){
       if(!bedrooms.length){na(s,'Brak sypialni na rzucie.');continue}
       if(!baths.length){na(s,'Brak łazienki i WC na rzucie.','Dodaj łazienkę przy sypialniach.');continue}
       const sc=[];let worst=null;
-      for(const b of bedrooms){const own=baths.filter(x=>!x.ensuite||x.nb.has(b.key));
-        const r=route(M,src(anchor(b,'bed')),own.map(x=>x.center),{avoid:AV({priv:8,living:3,except:new Set(own.map(x=>x.key))})});
+      for(const b of bedrooms){const r=bathRoute(b,anchor(b,'bed'),{priv:8,living:3});
         if(!r){sc.push(0);s.legs.push(leg(b.name,'Łazienka',null));continue}
         const x=crossCats(r);let v=lin(r.dist,5,16)-4*r.floors-(x.living.length?2:0)-(x.private.length?2:0);
         s.legs.push(leg(b.name,r.end.room.name,r));sc.push(clamp(v));if(!worst||v<worst.v)worst={v,b,r,x}}
       const mean=sc.reduce((a,b)=>a+b,0)/sc.length,min=Math.min(...sc);
       s.score=.7*mean+.3*min;s.dist=worst?worst.r.dist:null;
-      const ens=bedrooms.filter(b=>baths.some(x=>x.nb.has(b.key)));
+      const ens=bedrooms.filter(b=>baths.some(x=>x.ensuite&&x.owners.has(b.key)||x.nb.has(b.key)));
       if(ens.length)s.why.push('Łazienka bezpośrednio przy sypialni: {n}.'.replace('{n}',ens.length));
       if(worst){s.why.push('Najdalej: {n} m do łazienki.'.replace('{n}',fmt(worst.r.dist)));
         if(worst.r.floors){s.why.push('Z sypialni do łazienki trzeba zejść po schodach – niebezpieczne w nocy.');s.hints.push('Dodaj łazienkę lub WC na kondygnacji sypialni.')}
@@ -363,8 +375,7 @@ function evaluate(project,settings){
     }
     else if(def.id==='poranek'){
       if(!bedrooms.length||!kitchen||!baths.length){na(s,'Potrzebne: sypialnia, łazienka i kuchnia.');continue}
-      const b=master,own=baths.filter(x=>!x.ensuite||x.nb.has(b.key));
-      const r1_=route(M,src(anchor(b,'bed')),own.map(x=>x.center),{avoid:AV({except:new Set(own.map(x=>x.key))})});
+      const b=master,r1_=bathRoute(b,anchor(b,'bed'));
       if(!r1_){na(s,'Nie da się dojść z sypialni do łazienki.');continue}
       const kA=anchor(kitchen,'kitchen'),r2=route(M,src(r1_.end.room.center),[kA],{avoid:AV({living:1})});
       if(!r2){na(s,'Nie da się dojść do kuchni.');continue}

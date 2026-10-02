@@ -39,6 +39,8 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
 {const p=clone(base),s0=W.HouserSolar.compute(p).house.season;p.outdoorStructures=[];const s1=W.HouserSolar.compute(p).house.season;ok(s1>=s0,'zadaszony taras nie zwiększa zysków od słońca');
  const b=clone(base);for(const f of Object.keys(b.openings||{}))for(const [k,t] of Object.entries(b.openings[f]))if(t==='window'||t==='hst'){b.openingVariants=b.openingVariants||{};b.openingVariants[f]=b.openingVariants[f]||{};b.openingVariants[f][k]={...(b.openingVariants[f][k]||{}),blind:'external'}}
  const so=W.HouserSolar.compute(b).house.season;ok(Math.abs(so-W.HouserSolar.compute(base).house.season)<1,'rolety nie zmieniają zysków zimą (podniesione w sezonie grzewczym)');}
+{const sj=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','stodola-jasna.json'),'utf8')),D=W.HouserDaily.evaluate(sj),noc=(D.scenarios||[]).find(x=>x.id==='noc');
+ ok(noc&&noc.legs.length>=3&&noc.legs.every(l=>l.r&&l.r.floors===0),'Codzienność noc: z każdej sypialni do łazienki na tej samej kondygnacji '+JSON.stringify(noc?.legs.map(l=>[l.from,l.to,l.r?.floors])));}
 {const R=W.HouserAdvice.collect(base),n=R.mods.filter(m=>m.score!=null).length;ok(n>=8,'Co poprawić: ocenia co najmniej 8 modułów ('+n+')');}
 
 // ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować
