@@ -1,35 +1,41 @@
 [
  {
+  "id": "pmuxqdb4woaya8x",
   "file": "dom-energooszczedny.json",
   "name": "Dom parterowy energooszczędny",
   "desc": "12 × 9 m, ok. 108 m²: dwie sypialnie, salon z kuchnią i tarasem od południa, wejście od wschodu, okna w jednej linii, pompa ciepła i rekuperacja, bez komina.",
   "cover": "covers/dom-energooszczedny.jpg"
  },
  {
+  "id": "pmus7myrdbiaxs9",
   "file": "dom-parterowy.json",
   "name": "Dom parterowy z garażem",
   "desc": "Wszystko na jednym poziomie: 3 sypialnie, salon z kominkiem otwarty na kuchnię, garaż w bryle, zadaszony taras od południa.",
   "cover": "covers/dom-parterowy.jpg"
  },
  {
+  "id": "pmv5bc6dgecfcgi",
   "file": "dom-z-poddaszem.json",
   "name": "Dom z poddaszem użytkowym",
   "desc": "Kostka 10 × 10 m: dzienna strefa na parterze, 4 pokoje na poddaszu z oknami dachowymi, schody w holu.",
   "cover": "covers/dom-z-poddaszem.jpg"
  },
  {
+  "id": "pmv3yf7y5c3haqx",
   "file": "nowoczesna-stodola.json",
   "name": "Nowoczesna stodoła",
   "desc": "Wąska bryła 15 × 7 m, dach 45° bez okapów, przeszklony szczyt, antresola nad salonem.",
   "cover": "covers/nowoczesna-stodola.jpg"
  },
  {
+  "id": "pmus5hqag2euhm5",
   "file": "zefir-2.json",
   "name": "Zefir 2",
   "desc": "Wzorowany na projekcie Zefir 2: 11 × 8,5 m, parter + poddasze użytkowe, dach 42°, pokój/biuro na parterze, 3 sypialnie na poddaszu, pustka nad salonem, pergola z zadaszeniem, kominek z płaszczem wodnym + pompa ciepła, rekuperacja.",
   "cover": "covers/zefir-2.jpg"
  },
  {
+  "id": "pmv6xuo9f99isnb",
   "file": "stodola-jasna.json",
   "name": "Stodoła Jasna",
   "desc": "Wzorowana na projekcie Stodoła z antresolą: 7,5 × 10 m, poddasze użytkowe 40°, salon z antresolą i przeszkleniami od podłogi do sufitu, 2 sypialnie (jedna z łazienką i garderobą), 2 balkony, taras z pergolą, kominek z płaszczem + pompa ciepła",
