@@ -3523,4 +3523,5 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "Nie moje":"Not mine",
 "Mój":"Mine",
 "Tu pojawią się Twoje domy – każdy zapisuje się sam po pierwszej zmianie.":"Your houses will appear here – each saves itself after the first change.",
-"Bez konta możesz tylko oglądać domy. Zaloguj się, żeby mieć swoje domy – zapisują się w chmurze, otworzysz je na każdym urządzeniu i sam zdecydujesz, kto je widzi.":"Without an account you can only view houses. Sign in to have your own houses – they are saved in the cloud, open on any device, and you decide who can see them."};
+"Bez konta możesz tylko oglądać domy. Zaloguj się, żeby mieć swoje domy – zapisują się w chmurze, otworzysz je na każdym urządzeniu i sam zdecydujesz, kto je widzi.":"Without an account you can only view houses. Sign in to have your own houses – they are saved in the cloud, open on any device, and you decide who can see them.",
+"Usunięto duplikaty: {q}":"Removed duplicates: {q}"};

@@ -581,15 +581,22 @@ async function findUntouched(all){const cur=HouserStore.load()?.project?.project
   // 1) kopia gotowego domu, w której nic nie zmieniono
   for(const m of localList){if(m.id===cur)continue;const r=await HouserLibrary.get(m.id);const p=r?.project;if(!p)continue;
     if(base.includes(JSON.stringify([p.state,p.openings||{}]))&&await noPhotos(m)){out.push({...m,why:'nieruszona kopia gotowego domu'});seen.add(m.id)}}
-  // 2) kilka domów o tej samej nazwie (powstały przy wielokrotnym otwieraniu wzoru) – zostaje najnowszy albo ten ze zdjęciami
-  const by={};for(const m of all||[])(by[(m.name||'').trim().toLowerCase()]=by[(m.name||'').trim().toLowerCase()]||[]).push(m);
+  // 2) kilka moich domów o tej samej nazwie – zostaje najnowszy ze zdjęciami (a gdy żaden nie ma zdjęć – najnowszy), reszta to duplikaty
+  const by={},u=HouserCloud.user(),own=m=>!m.owner||m.owner===u?.uid;for(const m of (all||[]).filter(own))(by[(m.name||'').trim().toLowerCase()]=by[(m.name||'').trim().toLowerCase()]||[]).push(m);
   for(const g of Object.values(by)){if(g.length<2)continue;g.sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||''));
-    const keep=g.find(m=>m.id===cur)||g.find(m=>m.cover)||g[0];
-    for(const m of g)if(m!==keep&&m.id!==cur&&!seen.has(m.id)&&await noPhotos(m)){out.push({...m,why:'druga kopia „'+m.name+'” (zostaje nowsza z '+fmtTime(keep.updatedAt)+')'});seen.add(m.id)}}
+    const ph=[];for(const m of g)if(!(await noPhotos(m)))ph.push(m);const keep=ph[0]||g[0];
+    for(const m of g)if(m!==keep&&!seen.has(m.id)){out.push({...m,keep,why:'duplikat „'+m.name+'” (zostaje nowszy'+(ph.length?' ze zdjęciami':'')+' z '+fmtTime(keep.updatedAt)+')'});seen.add(m.id)}}
   return out}
-async function tidyUntouched(L){if(!confirm('Usunąć '+L.length+' zbędnych kopii?\n\n'+L.map(m=>'• '+m.name+' ('+fmtTime(m.updatedAt)+')').join('\n')+'\n\nNowsze wersje i domy ze zdjęciami zostają.'))return;
-  const mine=new Set((cloudLists.mine||[]).map(m=>m.id));for(const m of L){try{if(mine.has(m.id))await HouserCloud.remove(m.id)}catch(e){console.error(e)}await HouserLibrary.remove(m.id)}
-  toast('Usunięto '+L.length+' kopii');localList=await HouserLibrary.list();cloudLists.t=0;wantCloudLists();renderProjects(true)}
+async function tidyUntouched(L){const cur=HouserStore.load()?.project?.projectId,mine=new Set((cloudLists.mine||[]).map(m=>m.id));let swap=null;
+  for(const m of L){if(m.id===cur)swap=m.keep||null;try{if(mine.has(m.id))await HouserCloud.remove(m.id)}catch(e){console.error(e)}await HouserLibrary.remove(m.id);for(const r of await HouserGallery.list(m.id))await HouserGallery.remove(r.id)}
+  localList=await HouserLibrary.list();cloudLists.t=0;
+  if(swap){try{mine.has(swap.id)&&!localList.some(x=>x.id===swap.id)?await openCloud(swap.id,true):await openLocal(swap.id)}catch(e){console.error(e)}}
+  toast('Usunięto duplikaty: '+L.map(m=>m.name).join(', '));wantCloudLists();renderProjects(true)}
+// porządki robią się same: po wczytaniu listy (a po zalogowaniu – także chmury) duplikaty i nieruszone kopie znikają
+let tidyBusy=false;const tidyTried=new Set(); // każdy duplikat próbujemy usunąć raz na wczytanie strony (bez pętli, gdy chmura odmówi)
+async function autoTidy(all){if(tidyBusy||isGuest())return;const u=HouserCloud.user();if(u&&!cloudLists.mine)return;tidyBusy=true;
+  try{const L=(await findUntouched(all)).filter(m=>!tidyTried.has(m.id));L.forEach(m=>tidyTried.add(m.id));if(L.length)await tidyUntouched(L);else return}catch(e){console.error(e);return}finally{tidyBusy=false}
+  renderProjects(true)} // jeszcze raz na świeżej liście (np. po usunięciu nieruszonych kopii zostały duplikaty)
 async function fillCovers(root){if(!root)return;for(const el of root.querySelectorAll('[data-id]')){const th=el.querySelector('.thumb,.pth');if(!th)continue;
   const c=await curCover(el.dataset.id);if(c)th.innerHTML='<img alt="" src="'+c+'">'}}
 const fl=m=>m.stats?Math.round(m.stats.area)+' m² · '+m.stats.fl+' · ':'';
@@ -659,11 +666,10 @@ function renderProjects(noLoad){const el=$('pm');if(!el)return;const rec=HouserS
   h+='<h2 class="sec">Domy</h2>'+(guest?'':'<div class="pmfilter" id="pmF">'+[['all','Wszystkie'],['mine','Moje'],['other','Nie moje']].map(([k,t])=>'<button class="fchip'+(pf===k?' on':'')+'" data-f="'+k+'">'+t+' <span class="n" id="pmN_'+k+'"></span></button>').join('')+'</div>');
   if(st.enabled&&!u)h+='<div class="login"><p>Bez konta możesz tylko oglądać domy. Zaloguj się, żeby mieć swoje domy – zapisują się w chmurze, otworzysz je na każdym urządzeniu i sam zdecydujesz, kto je widzi.</p><button class="btn2 primary" id="pmLogin">'+GICON+' Zaloguj przez Google</button></div>';
   if(u&&!cloudLists.mine)h+='<div class="empty2">Wczytuję projekty z chmury…</div>';
-  h+='<div class="login" id="pmTidy" hidden></div>';
   // jedna lista: moje domy, potem cudze (społeczność i baza Housera – autor „Houser”); filtr tylko ukrywa wiersze
   const pubOthers=(cloudLists.pub||[]).filter(m=>!u||m.owner!==u.uid);
   h+='<div class="plist'+(guest?' guest':'')+'" id="pmList" data-f="'+pf+'">'+(guest?'':all.length?all.map(m=>pmRow(m,m.id===curId)).join(''):'<div class="login mineOnly"><p>Tu pojawią się Twoje domy – każdy zapisuje się sam po pierwszej zmianie.</p></div>')+pubOthers.map(m=>'<div class="prow other" data-pub="'+esc(m.id)+'"><div class="pth">'+(thumbImg(m)||'')+'</div><div class="pinfo"><b><span class="own0">Nie mój</span>'+esc(m.name||'bez nazwy')+'</b><small>autor: '+esc(m.ownerName||'?')+'</small><span class="vis pub">'+VIS_LABEL[m.visibility==='public_edit'?'public_edit':'public']+'</span></div><div class="pacts"><button class="btn2 sm primary" data-a="pubopen">'+(m.visibility==='public_edit'&&u?'✏️ Otwórz':'👁 Podgląd')+'</button><button class="btn2 sm" data-a="publink" title="Link otwiera ten dom od razu">🔗</button></div></div>').join('')+'<div id="pmBase" style="display:contents"></div></div>';
-  el.innerHTML=h;fillCovers(el);pmCounts();paintBase().then(pmCounts);el.querySelectorAll('#pmF [data-f]').forEach(b=>b.onclick=()=>{lsSet(PM_F,b.dataset.f);$('pmList').dataset.f=b.dataset.f;el.querySelectorAll('#pmF .fchip').forEach(x=>x.classList.toggle('on',x===b))});el.querySelectorAll('[data-a="pubopen"]').forEach(b=>b.onclick=()=>openCloud(b.closest('[data-pub]').dataset.pub));el.querySelectorAll('[data-a="publink"]').forEach(b=>b.onclick=()=>copyLink(b.closest('[data-pub]').dataset.pub));(guest?Promise.resolve([]):findUntouched(all)).then(L=>{if(!L.length||!$('pmTidy'))return;$('pmTidy').hidden=false;$('pmTidy').innerHTML='<p>🧹 Do posprzątania ('+L.length+'):</p><ul>'+L.map(m=>'<li><b>'+esc(m.name)+'</b> · zmiana '+fmtTime(m.updatedAt)+' – '+esc(m.why)+'</li>').join('')+'</ul><button class="btn2" id="pmTidyGo">Usuń te kopie</button>';$('pmTidyGo').onclick=()=>tidyUntouched(L)});coverOf(p).then(c=>{const t=$('pmCurThumb');if(!c||!t)return;t.classList.add('hasCover');t.innerHTML='<img class="coverImg" alt="" src="'+c+'"><div class="miniPlan">'+planSvg(p)+'</div><a class="galLink" href="#galeria">Galeria →</a>'}).catch(()=>{});
+  el.innerHTML=h;fillCovers(el);pmCounts();paintBase().then(pmCounts);el.querySelectorAll('#pmF [data-f]').forEach(b=>b.onclick=()=>{lsSet(PM_F,b.dataset.f);$('pmList').dataset.f=b.dataset.f;el.querySelectorAll('#pmF .fchip').forEach(x=>x.classList.toggle('on',x===b))});el.querySelectorAll('[data-a="pubopen"]').forEach(b=>b.onclick=()=>openCloud(b.closest('[data-pub]').dataset.pub));el.querySelectorAll('[data-a="publink"]').forEach(b=>b.onclick=()=>copyLink(b.closest('[data-pub]').dataset.pub));autoTidy(all);coverOf(p).then(c=>{const t=$('pmCurThumb');if(!c||!t)return;t.classList.add('hasCover');t.innerHTML='<img class="coverImg" alt="" src="'+c+'"><div class="miniPlan">'+planSvg(p)+'</div><a class="galLink" href="#galeria">Galeria →</a>'}).catch(()=>{});
   $('pmNew').onclick=newEmpty;$('pmImport').onchange=e=>{const f=e.target.files[0];e.target.value='';importFile(f)};
   if($('pmRename'))$('pmRename').onclick=renameCurrent;if($('pmExport'))$('pmExport').onclick=()=>downloadProject(HouserStore.load().project);
   if($('pmDup'))$('pmDup').onclick=duplicateCurrent;if($('pmLink'))$('pmLink').onclick=()=>copyLink(curLinkId(p,st));if($('pmVis'))$('pmVis').onchange=async e=>{const v=e.target.value;if((await setVis(st.pid,v))===false)e.target.value=st.vis||'private'};el.querySelectorAll('select[data-vis]').forEach(sel=>{const m0=sel.value;sel.onchange=async()=>{if((await setVis(sel.closest('.prow').dataset.id,sel.value))===false)sel.value=m0}});
