@@ -3549,4 +3549,10 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "Duplikuj":"Duplicate",
 "Eksportuj do pliku JSON":"Export to JSON file",
 "Kopiuj link – otwiera ten dom od razu (inni widzą go w podglądzie)":"Copy link – opens this house right away (others see it as a preview)",
-"Usuń":"Delete"};
+"Usuń":"Delete",
+"Położenie (od lewego górnego rogu siatki)":"Position (from the top-left corner of the grid)",
+"od lewej [m]":"from left [m]","od góry [m]":"from top [m]",
+"Przesuń o 5 cm:":"Move by 5 cm:","Dosuń do ściany:":"Push to wall:",
+"w lewo":"left","w górę":"up","w dół":"down","w prawo":"right",
+"do ściany po lewej":"to the wall on the left","do ściany u góry":"to the wall at the top","do ściany u dołu":"to the wall at the bottom","do ściany po prawej":"to the wall on the right",
+"Na rzucie przeciągasz schody co 5 cm. Strzałki na klawiaturze: 5 cm (z Shift – 50 cm).":"Drag the stairs on the plan in 5 cm steps. Keyboard arrows: 5 cm (with Shift – 50 cm)."};

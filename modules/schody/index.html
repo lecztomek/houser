@@ -43,6 +43,8 @@ html,body{height:100%;margin:0}
 #plan{display:block;touch-action:none;user-select:none}
 .empty{padding:40px 24px;text-align:center;color:var(--hs-muted);max-width:420px}
 @media(max-width:900px){.wrap{grid-template-columns:1fr;height:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}}
+.pos{margin-top:12px;border-top:1px solid var(--hs-line);padding-top:10px}.ptitle{font:700 12px var(--hs-font);margin-bottom:6px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.nudge{display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--hs-muted)}.nudge span{min-width:104px}.nudge .btn{min-width:32px}
 </style>
 </head>
 <body>
@@ -71,6 +73,11 @@ html,body{height:100%;margin:0}
       <div class="field" id="turnField"><label>Skręt</label><select id="pTurn"><option value="left">w lewo</option><option value="right">w prawo</option></select></div>
     </div>
     <div class="row" style="margin-top:10px"><button id="rotL" class="btn">↺ Obróć</button><button id="rotR" class="btn">↻ Obróć</button><button id="del" class="btn danger">Usuń schody</button></div>
+    <div class="pos"><div class="ptitle">Położenie (od lewego górnego rogu siatki)</div>
+      <div class="grid2"><div class="field"><label>od lewej [m]</label><input id="pX" type="number" step="0.05"></div><div class="field"><label>od góry [m]</label><input id="pY" type="number" step="0.05"></div></div>
+      <div class="nudge"><span>Przesuń o 5 cm:</span><button class="btn" data-n="-1,0" title="w lewo">←</button><button class="btn" data-n="0,-1" title="w górę">↑</button><button class="btn" data-n="0,1" title="w dół">↓</button><button class="btn" data-n="1,0" title="w prawo">→</button></div>
+      <div class="nudge"><span>Dosuń do ściany:</span><button class="btn" data-w="left" title="do ściany po lewej">⇤</button><button class="btn" data-w="up" title="do ściany u góry">⤒</button><button class="btn" data-w="down" title="do ściany u dołu">⤓</button><button class="btn" data-w="right" title="do ściany po prawej">⇥</button></div>
+      <p class="hint">Na rzucie przeciągasz schody co 5 cm. Strzałki na klawiaturze: 5 cm (z Shift – 50 cm).</p></div>
     <div class="stats" id="stats"></div>
   </div>
   <p class="hint">Kliknij na rzucie, aby wstawić lub przenieść schody (przeciągnij je myszą). Strzałka pokazuje kierunek wchodzenia. Szary kreskowany obszar to otwór w stropie piętra.</p>
@@ -92,6 +99,21 @@ const gh=()=>HouserModel.normalize(project?.elevationSettings||{}).groundHeight;
 function cellAt(f,x,y){const g=grid(),s=project?.state?.[f];if(!g||!s||x<0||y<0||x>=g.width||y>=g.height)return null;return (Array.isArray(s[0])?s[y]?.[x]:s[y*g.width+x])||null}
 function setCell(f,x,y,v){const g=grid(),s=project.state[f];if(Array.isArray(s[0]))s[y][x]=v;else s[y*g.width+x]=v}
 const stair=()=>project?.stairs?.[0]||null; // na razie jedne schody w domu
+// położenie schodów w kratkach z dokładnością do 5 cm (x, y mogą być ułamkowe – geometria liczy w metrach)
+const STEP_M=.05,snapC=v=>{const c=grid()?.cellMeters||.5,st=STEP_M/c;return Math.round(Math.round(v/st)*st*1000)/1000};
+function moveBy(dxm,dym){const s=stair();if(!s)return;const c=grid().cellMeters;s.x=snapC(s.x+dxm/c);s.y=snapC(s.y+dym/c);commit()}
+// ściana = brzeg domu albo granica dwóch pomieszczeń bez przejścia/drzwi (na kondygnacji, na której stoją schody)
+function wallAt(o,b,i){const lo=floors()[0],g=grid(),ops=project.openings?.[lo]||{},out=v=>!v||rooms(lo).find(r=>r.id===v)?.kind==='exteriorVoid';
+  const [a,c]=o==='v'?[cellAt(lo,b-1,i),cellAt(lo,b,i)]:[cellAt(lo,i,b-1),cellAt(lo,i,b)];
+  if(out(a)||out(c))return true;return a!==c&&!ops[o==='v'?'v:'+b+':'+i:'h:'+i+':'+b]}
+function toWall(dir){const s=stair();if(!s)return;const g=grid(),c=g.cellMeters,bb=S.geometry(s,c,gh()).bbox,eps=1e-6;
+  const rows=[];for(let y=Math.floor(bb.z0/c+eps);y<Math.ceil(bb.z1/c-eps);y++)rows.push(y);const cols=[];for(let x=Math.floor(bb.x0/c+eps);x<Math.ceil(bb.x1/c-eps);x++)cols.push(x);
+  let d=0;
+  if(dir==='right'){for(let b=Math.ceil(bb.x1/c-eps);b<=g.width;b++)if(rows.some(r=>wallAt('v',b,r))){d=b*c-bb.x1;break}}
+  if(dir==='left'){for(let b=Math.floor(bb.x0/c+eps);b>=0;b--)if(rows.some(r=>wallAt('v',b,r))){d=b*c-bb.x0;break}}
+  if(dir==='down'){for(let b=Math.ceil(bb.z1/c-eps);b<=g.height;b++)if(cols.some(x=>wallAt('h',b,x))){d=b*c-bb.z1;break}}
+  if(dir==='up'){for(let b=Math.floor(bb.z0/c+eps);b>=0;b--)if(cols.some(x=>wallAt('h',b,x))){d=b*c-bb.z0;break}}
+  if(Math.abs(d)<.001)return;if(dir==='left'||dir==='right')s.x=Math.round((s.x+d/c)*1000)/1000;else s.y=Math.round((s.y+d/c)*1000)/1000;commit()}
 
 function setProject(p,src){project=p&&(p.grid||p.definitionSnapshot?.grid)?p:null;source=src||'';renderAll()}
 
@@ -142,13 +164,17 @@ function renderSide(){
   for(const [id,name] of Object.entries(S.TYPES)){const b=document.createElement('button');b.className='type'+(s?.type===id||(!s&&pendingType===id)?' active':'');b.disabled=!project;b.innerHTML='<svg viewBox="0 0 64 48">'+ICONS[id]+'</svg>'+name;
     b.onclick=()=>{if(s){const keep={x:s.x,y:s.y,rot:s.rot,width:s.width};Object.assign(s,S.defaults(id,gh()),keep,{type:id});if(id==='spiral')s.width=Math.min(s.width,.9);commit()}else{pendingType=id;renderAll()}};$('types').appendChild(b)}
   if(!s)return;
-  const set=(id,v)=>{if(document.activeElement!==$(id))$(id).value=v};set('pWidth',s.width);set('pRisers',s.risers);set('pTread',s.tread);set('pTurn',s.turn||'left');
+  const set=(id,v)=>{if(document.activeElement!==$(id))$(id).value=v};set('pWidth',s.width);set('pRisers',s.risers);set('pTread',s.tread);set('pTurn',s.turn||'left');set('pX',(s.x*grid().cellMeters).toFixed(2));set('pY',(s.y*grid().cellMeters).toFixed(2));
   $('turnField').style.visibility=s.type==='straight'?'hidden':'visible';
   const k=S.comfort(s,gh()),geo=S.geometry(s,grid().cellMeters,gh()),bb=geo.bbox,c=S.cells(s,grid().cellMeters,gh(),grid().width,grid().height);
   $('stats').innerHTML=[['Wysokość stopnia',(k.rise*100).toFixed(1)+' cm'],['Wygoda 2h + s',(k.step*100).toFixed(0)+' cm <span class="'+(k.ok?'ok':'warn')+'">'+(k.ok?'✓':'(zalecane 59–66, h ≤ 19)')+'</span>'],['Obrys',(bb.x1-bb.x0).toFixed(2)+' × '+(bb.z1-bb.z0).toFixed(2)+' m'],['Zajmuje na parterze',(c.lower.length*grid().cellMeters**2).toFixed(2)+' m²'],['Otwór w stropie',c.upper.length+' kratek']].map(([a,b])=>'<span>'+a+'</span><span>'+b+'</span>').join('');
 }
 let pendingType='U';
 for(const [id,k] of [['pWidth','width'],['pRisers','risers'],['pTread','tread'],['pTurn','turn']])$(id).addEventListener('change',()=>{const s=stair();if(!s)return;const v=$(id).value;s[k]=k==='turn'?v:Number(v)||s[k];commit()});
+document.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{const [dx,dy]=b.dataset.n.split(',').map(Number);moveBy(dx*STEP_M,dy*STEP_M)});
+document.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>toWall(b.dataset.w));
+for(const [id,k] of [['pX','x'],['pY','y']])$(id).addEventListener('change',()=>{const s=stair();if(!s)return;const v=parseFloat(String($(id).value).replace(',','.'));if(!Number.isFinite(v))return;s[k]=snapC(v/grid().cellMeters);commit()});
+document.addEventListener('keydown',e=>{if(!stair()||/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName||''))return;const m={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];if(!m)return;e.preventDefault();const st=e.shiftKey?.5:STEP_M;moveBy(m[0]*st,m[1]*st)});
 $('rotL').onclick=()=>{const s=stair();if(s){s.rot=((s.rot||0)+270)%360;commit()}};
 $('rotR').onclick=()=>{const s=stair();if(s){s.rot=((s.rot||0)+90)%360;commit()}};
 $('del').onclick=()=>{const s=stair();if(!s||!confirm('Usunąć schody? Otwór w stropie piętra zostanie zamknięty (kratki dostaną sąsiednie pomieszczenie).'))return;const cells=s._cells;project.stairs=[];const [lo,up]=floors();if(cells){for(const [x,y] of cells.upper||[])if(up&&cellAt(up,x,y)==='schody')setCell(up,x,y,null);if(up)fillFromNeighbors(up,cells.upper||[])}renderAll();HouserStore.save(project,'schody')};
@@ -196,7 +222,7 @@ document.addEventListener('pointerdown',e=>{const svg=$('plan');if(!project||!sv
     s={id:'st'+Date.now().toString(36),...S.defaults(pendingType,gh()),x:Math.floor(m.x),y:Math.floor(m.y)};project.stairs=[s];commit();return}
   if(e.target.closest('#stairG')){drag={dx:m.x-s.x,dy:m.y-s.y,moved:false};return}
   s.x=Math.floor(m.x);s.y=Math.floor(m.y);commit()});
-document.addEventListener('pointermove',e=>{if(!drag)return;const s=stair(),m=cellFromEvent(e),nx=Math.round(m.x-drag.dx),ny=Math.round(m.y-drag.dy);if(nx!==s.x||ny!==s.y){s.x=nx;s.y=ny;drag.moved=true;renderPlan()}});
+document.addEventListener('pointermove',e=>{if(!drag)return;const s=stair(),m=cellFromEvent(e),nx=snapC(m.x-drag.dx),ny=snapC(m.y-drag.dy);if(nx!==s.x||ny!==s.y){s.x=nx;s.y=ny;drag.moved=true;renderPlan()}});
 document.addEventListener('pointerup',()=>{if(!drag)return;const d=drag;drag=null;if(d.moved)commit()});
 window.addEventListener('resize',renderPlan);
 if(window.ResizeObserver)new ResizeObserver(()=>{if(!drag)renderPlan()}).observe(document.querySelector('.main'));

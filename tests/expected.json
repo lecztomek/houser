@@ -89,13 +89,13 @@
  },
  "stodola-jasna.json": {
   "overall": 7.4,
-  "cost": 959597,
-  "Qh": 12208,
-  "bills": 5357,
-  "area": 124.88,
+  "cost": 959721,
+  "Qh": 12216,
+  "bills": 5359,
+  "area": 125.25,
   "mods": {
    "Przepisy": 10,
-   "Codzienność": 8.7,
+   "Codzienność": 8.6,
    "Schowki i szafy": 9.3,
    "Akustyka": 5.7,
    "Nasłonecznienie": 6.7,
