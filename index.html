@@ -531,7 +531,7 @@ async function openLocal(id){if(!(await confirmReplace()))return;const r=await H
 async function openSample(file,sample){if(!(await confirmReplace()))return false;
   try{let own=null;const name=projName(sample),cur=HouserStore.load()?.project;
     if(cur&&(cur.fromSample===file||(!cur.fromSample&&projName(cur)===name&&JSON.stringify(cur.state)===JSON.stringify(sample.state)))){toast('Ten dom jest już otwarty.');return true}
-    for(const m of await HouserLibrary.list()){if(own)break;const r=await HouserLibrary.get(m.id);const p=r?.project;if(p&&(p.fromSample===file||(!p.fromSample&&projName(p)===name&&JSON.stringify(p.state)===JSON.stringify(sample.state))))own=r}
+    try{for(const m of await HouserLibrary.list()){if(own)break;const r=await HouserLibrary.get(m.id);const p=r?.project;if(p&&(p.fromSample===file||(!p.fromSample&&projName(p)===name&&JSON.stringify(p.state)===JSON.stringify(sample.state))))own=r}}catch(e){console.warn('Szukanie kopii pominięte:',e)} // baza w przeglądarce nie odpowiada (Safari) – i tak otwieramy podgląd
     if(own&&own.project.projectId===HouserStore.load()?.project?.projectId){toast('Ten dom jest już otwarty.');return true}
     if(own&&confirm('Masz już swoją kopię domu „'+projName(own.project)+'” (zmiana '+fmtTime(own.updatedAt)+').\n\nOK – otwórz swoją kopię\nAnuluj – obejrzyj wzór (podgląd)')){await openProject(own.project,'library');refreshViews();return true}
     const p=JSON.parse(JSON.stringify(sample));p.fromSample=file;p.readOnly={src:'base',owner:'Houser'};await openProject(p,'preview');refreshViews();return true}
@@ -693,7 +693,7 @@ function renderProjects(noLoad){const el=$('pm');if(!el)return;const rec=HouserS
   if($('pmRename'))$('pmRename').onclick=renameCurrent;if($('pmExport'))$('pmExport').onclick=()=>downloadProject(HouserStore.load().project);
   if($('pmDup'))$('pmDup').onclick=()=>isGuest()?doLogin():duplicateCurrent();if($('pmLink'))$('pmLink').onclick=()=>copyLink(curLinkId(p,st));if($('pmVis'))$('pmVis').onchange=async e=>{const v=e.target.value;if((await setVis(st.pid,v))===false)e.target.value=st.vis||'private'};el.querySelectorAll('select[data-vis]').forEach(sel=>{const m0=sel.value;sel.onchange=async()=>{if((await setVis(sel.closest('.prow').dataset.id,sel.value))===false)sel.value=m0}});
   if($('pmOn'))$('pmOn').onclick=()=>{HouserCloud.enable(st.pid);HouserCloud.saveNow().then(()=>{cloudLists.t=0;wantCloudLists()})};if($('pmLogin'))$('pmLogin').onclick=doLogin;
-  el.querySelectorAll('.prow [data-a]').forEach(b=>b.onclick=async()=>{const id=b.closest('.prow').dataset.id,a=b.dataset.a,m=byId.get(id);if(!m)return;
+  el.querySelectorAll('.prow[data-id] [data-a]').forEach(b=>b.onclick=async()=>{const id=b.closest('.prow').dataset.id,a=b.dataset.a,m=byId.get(id);if(!m)return;
     const useCloud=m.cloud&&(!m.local||(m.updatedAt||'')>(m.localAt||m.updatedAt||'')); // nowsza wersja wygrywa
     if(a==='open'){await (useCloud?openCloud(id):openLocal(id));goToHouse(id);return}
     if(a==='dup')return m.cloud&&!m.local?duplicateCloud(m):duplicateLocal(id);
