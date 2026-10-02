@@ -76,6 +76,7 @@ svg{display:block;width:100%;height:auto;max-height:62vh}
     </div>
     <div class="field"><label>Kalenica biegnie</label>
       <select id="ridge"><option value="east-west">Wschód – Zachód</option><option value="north-south">Północ – Południe</option></select>
+      <p class="hint" id="ridgeHint" style="margin:6px 0 0"></p>
     </div>
     <div class="field"><label title="Na ile dach wystaje przed ściany okapowe (te pod dolną krawędzią połaci)">Okap – wysunięcie przed ściany okapowe [cm]</label><input id="eaveOv" type="number" min="0" max="150" step="5"></div>
     <div class="field"><label title="Na ile dach wystaje przed ściany szczytowe (te z trójkątem)">Wysunięcie przy szczytach (boki) [cm]</label><input id="gableOv" type="number" min="0" max="150" step="5"></div>
@@ -106,6 +107,12 @@ let settings={...HouserModel.DEF};   // ustawienia bryły
 
 function grid(){return project?.grid||project?.definitionSnapshot?.grid||{width:18,height:18,cellMeters:.5}}
 function gridTop(){return project?.orientation?.top||'north'}
+// kalenica względem rzutu (poziomo / pionowo) – strony świata wynikają z ustawienia domu w Układzie pomieszczeń (jedno miejsce)
+const RDIR_PL={north:'północ',east:'wschód',south:'południe',west:'zachód'};
+function ridgeLabels(){const t=gridTop(),ewHoriz=t==='north'||t==='south',o=$('ridge').options;
+  for(const op of o){const horiz=(op.value==='east-west')===ewHoriz;op.textContent=(horiz?'Poziomo na rzucie (← →)':'Pionowo na rzucie (↑ ↓)')+' · '+(op.value==='east-west'?'wschód – zachód':'północ – południe')}
+  $('ridgeHint').innerHTML='Góra rzutu: <b>'+RDIR_PL[t]+'</b>. Strony świata ustawiasz w jednym miejscu – w <a href="#" id="toLayout">Układzie pomieszczeń</a> („Góra siatki”); dach obraca się wtedy razem z domem.';
+  $('toLayout').onclick=e=>{e.preventDefault();try{if(window.top!==window)window.top.location.hash='projektowanie';else location.href='../projektowanie/'}catch(_){location.href='../projektowanie/'}}}
 function dims(){ // wymiary w metrach: w poprzek kalenicy (span) i wzdłuż (length)
   const g=grid(),wx=g.width*g.cellMeters,dz=g.height*g.cellMeters;
   return HouserModel.slopesAcrossX(settings.ridge,gridTop())?{span:wx,length:dz}:{span:dz,length:wx};
@@ -131,7 +138,7 @@ function commit(){
 function syncInputs(){
   const g=geom(),attic=g.upperType==='attic',act=document.activeElement;
   const set=(id,v)=>{if($(id)!==act)$(id).value=v};
-  set('groundHeight',g.groundHeight);set('kneeWall',g.kneeWall);set('upperHeight',g.upperHeight);set('roofPitch',g.roofPitch);set('pitchRange',g.roofPitch);set('ridge',g.ridge);set('eaveOv',Math.round(g.eaveOverhang*100));set('gableOv',Math.round(g.gableOverhang*100));set('soffit',g.soffit);
+  set('groundHeight',g.groundHeight);set('kneeWall',g.kneeWall);set('upperHeight',g.upperHeight);set('roofPitch',g.roofPitch);set('pitchRange',g.roofPitch);ridgeLabels();set('ridge',g.ridge);set('eaveOv',Math.round(g.eaveOverhang*100));set('gableOv',Math.round(g.gableOverhang*100));set('soffit',g.soffit);
   for(const b of $('upperTypeSeg').children)b.classList.toggle('active',b.dataset.v===g.upperType);
   $('kneeField').hidden=!attic;$('upperField').hidden=g.upperType==='none';
   const upN=project?(()=>{const f=project.definitionSnapshot?.floorOrder?.[1]||'upper',st=project.state?.[f]||[],fl=Array.isArray(st[0])?st.flat():st,rm=Object.fromEntries((project.definitionSnapshot?.floors?.[f]?.rooms||[]).map(r=>[r.id,r]));return fl.filter(v=>v&&rm[v]?.kind!=='exteriorVoid').length})():0;

@@ -3555,4 +3555,7 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "Przesuń o 5 cm:":"Move by 5 cm:","Dosuń do ściany:":"Push to wall:",
 "w lewo":"left","w górę":"up","w dół":"down","w prawo":"right",
 "do ściany po lewej":"to the wall on the left","do ściany u góry":"to the wall at the top","do ściany u dołu":"to the wall at the bottom","do ściany po prawej":"to the wall on the right",
-"Na rzucie przeciągasz schody co 5 cm. Strzałki na klawiaturze: 5 cm (z Shift – 50 cm).":"Drag the stairs on the plan in 5 cm steps. Keyboard arrows: 5 cm (with Shift – 50 cm)."};
+"Na rzucie przeciągasz schody co 5 cm. Strzałki na klawiaturze: 5 cm (z Shift – 50 cm).":"Drag the stairs on the plan in 5 cm steps. Keyboard arrows: 5 cm (with Shift – 50 cm).",
+"Poziomo na rzucie (← →)":"Horizontal on the plan (← →)","Pionowo na rzucie (↑ ↓)":"Vertical on the plan (↑ ↓)",
+"wschód – zachód":"east – west","północ – południe":"north – south",
+"Układzie pomieszczeń":"Room layout"};

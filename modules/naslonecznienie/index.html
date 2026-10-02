@@ -73,6 +73,7 @@ td.num,th.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-n
 <aside class="side">
   <h1 class="hs-title">Nasłonecznienie i przegrzewanie</h1>
   <p class="hs-sub">Ile ciepła od słońca wpada przez okna do każdego pomieszczenia latem i zimą. Pokazuje, które pokoje mogą się przegrzewać i co pomoże: okap, rolety, markiza. Ustawienia zapisują się w projekcie.</p>
+  <p class="hs-sub" id="orientNote"></p>
   <div class="section">
     <h3>Szyby</h3>
     <div class="field"><label>Współczynnik g szyby (przepuszczalność energii słońca)</label>
@@ -247,6 +248,8 @@ function renderIrr(pitch){pitch=Math.round(pitch);if($('irr').dataset.p!==String
 let C=null;
 function render(){
   const M=$('main');if(!project||!(project.grid||project.definitionSnapshot?.grid)){M.innerHTML='<div class="empty">Brak projektu. Narysuj rzut w <b>Układzie pomieszczeń</b> albo kliknij „Przykład” na pasku u góry.</div>';renderIrr(40);return}
+  {const t=project.orientation?.top||'north',PLd={north:'północ',east:'wschód',south:'południe',west:'zachód'};$('orientNote').innerHTML='🧭 Góra rzutu: <b>'+PLd[t]+'</b> – strony świata ustawiasz w jednym miejscu, w <a href="#" id="toLayout">Układzie pomieszczeń</a> („Góra siatki”).';
+   $('toLayout').onclick=e=>{e.preventDefault();try{if(window.top!==window)window.top.location.hash='projektowanie';else location.href='../projektowanie/'}catch(_){location.href='../projektowanie/'}}}
   renderSide();
   try{C=compute()}catch(e){console.error(e);M.innerHTML='<div class="empty">Nie udało się policzyć nasłonecznienia dla tego projektu.</div>';return}
   renderIrr(C.G.roofPitch);
