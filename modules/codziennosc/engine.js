@@ -24,7 +24,7 @@ function rolesOf(name){
   const n=String(name||''),r=new Set();for(const k in RE)if(RE[k].test(n))r.add(k);
   if(r.has('garage'))return new Set(['garage']);
   if(r.has('wardrobe'))return new Set(['wardrobe']);
-  if(r.has('laundry'))r.delete('bath');
+  // „Łazienka/Pralnia” to i łazienka, i pralnia (wcześniej rola łazienki znikała – noc szła do łazienki piętro niżej)
   if(r.has('living')||r.has('study')||r.has('kitchen')||r.has('dining'))r.delete('bedroom');
   if(r.has('bath')||r.has('wc'))r.delete('bedroom');
   if(r.has('bath'))r.delete('wc');
