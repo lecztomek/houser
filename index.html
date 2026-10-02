@@ -561,12 +561,19 @@ const thumbImg=m=>m.cover?'<img alt="" src="'+esc(m.cover)+'">':m.plan?'<img alt
 // okładka domu: z galerii w tej przeglądarce, a gdy jej tu nie ma – ta zapisana w chmurze
 async function curCover(pid){try{const c=await HouserGallery.cover(pid);if(c?.thumb)return c.thumb}catch(_){}return (cloudLists.mine||[]).find(m=>m.id===pid)?.cover||null}
 // porządki: kopie gotowych domów, w których nic nie zmieniono (powstawały przy każdym otwarciu wzoru) i bez zdjęć
-async function findUntouched(){const cur=HouserStore.load()?.project?.projectId,out=[];let base=[];
-  try{const man=await (await fetch('examples/index.json')).json();base=await Promise.all(man.map(async m=>{const p=await (await fetch('examples/'+m.file)).json();return JSON.stringify([p.state,p.openings||{}])}))}catch(_){return out}
+async function findUntouched(all){const cur=HouserStore.load()?.project?.projectId,out=[],seen=new Set();let base=[];
+  try{const man=await (await fetch('examples/index.json')).json();base=await Promise.all(man.map(async m=>{const p=await (await fetch('examples/'+m.file)).json();return JSON.stringify([p.state,p.openings||{}])}))}catch(_){}
+  const noPhotos=async m=>!(await HouserGallery.list(m.id)).length&&!m.cover;
+  // 1) kopia gotowego domu, w której nic nie zmieniono
   for(const m of localList){if(m.id===cur)continue;const r=await HouserLibrary.get(m.id);const p=r?.project;if(!p)continue;
-    if(base.includes(JSON.stringify([p.state,p.openings||{}]))&&!(await HouserGallery.list(m.id)).length)out.push(m)}
+    if(base.includes(JSON.stringify([p.state,p.openings||{}]))&&await noPhotos(m)){out.push({...m,why:'nieruszona kopia gotowego domu'});seen.add(m.id)}}
+  // 2) kilka domów o tej samej nazwie (powstały przy wielokrotnym otwieraniu wzoru) – zostaje najnowszy albo ten ze zdjęciami
+  const by={};for(const m of all||[])(by[(m.name||'').trim().toLowerCase()]=by[(m.name||'').trim().toLowerCase()]||[]).push(m);
+  for(const g of Object.values(by)){if(g.length<2)continue;g.sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||''));
+    const keep=g.find(m=>m.id===cur)||g.find(m=>m.cover)||g[0];
+    for(const m of g)if(m!==keep&&m.id!==cur&&!seen.has(m.id)&&await noPhotos(m)){out.push({...m,why:'druga kopia „'+m.name+'” (zostaje nowsza z '+fmtTime(keep.updatedAt)+')'});seen.add(m.id)}}
   return out}
-async function tidyUntouched(L){if(!confirm('Usunąć '+L.length+' nieruszonych kopii gotowych domów?\n\n'+L.map(m=>'• '+m.name).join('\n')+'\n\nTwoje zmienione domy zostają.'))return;
+async function tidyUntouched(L){if(!confirm('Usunąć '+L.length+' zbędnych kopii?\n\n'+L.map(m=>'• '+m.name+' ('+fmtTime(m.updatedAt)+')').join('\n')+'\n\nNowsze wersje i domy ze zdjęciami zostają.'))return;
   const mine=new Set((cloudLists.mine||[]).map(m=>m.id));for(const m of L){try{if(mine.has(m.id))await HouserCloud.remove(m.id)}catch(e){console.error(e)}await HouserLibrary.remove(m.id)}
   toast('Usunięto '+L.length+' kopii');localList=await HouserLibrary.list();cloudLists.t=0;wantCloudLists();renderProjects(true)}
 async function fillCovers(root){if(!root)return;for(const el of root.querySelectorAll('[data-id]')){const th=el.querySelector('.thumb,.pth');if(!th)continue;
@@ -620,7 +627,7 @@ function renderProjects(noLoad){const el=$('pm');if(!el)return;const rec=HouserS
   if(u&&!cloudLists.mine)h+='<div class="empty2">Wczytuję projekty z chmury…</div>';
   h+='<div class="login" id="pmTidy" hidden></div>';
   h+=all.length?'<div class="plist">'+all.map(m=>pmRow(m,m.id===curId)).join('')+'</div>':'<div class="login"><p>Tu pojawią się Twoje projekty – każdy zapisuje się sam po pierwszej zmianie.</p></div>';
-  el.innerHTML=h;fillCovers(el);findUntouched().then(L=>{if(!L.length||!$('pmTidy'))return;$('pmTidy').hidden=false;$('pmTidy').innerHTML='<p>🧹 Masz '+L.length+' '+(L.length===1?'nieruszoną kopię':'nieruszone kopie')+' gotowych domów (otwarte, ale nic w nich nie zmieniłeś): <b>'+L.map(m=>esc(m.name)).join(', ')+'</b>.</p><button class="btn2" id="pmTidyGo">Usuń te kopie</button>';$('pmTidyGo').onclick=()=>tidyUntouched(L)});if(p?.projectId)curCover(p.projectId).then(c=>{const t=$('pmCurThumb');if(!c||!t)return;t.classList.add('hasCover');t.innerHTML='<img class="coverImg" alt="" src="'+c+'"><div class="miniPlan">'+planSvg(p)+'</div><a class="galLink" href="#galeria">Galeria →</a>'}).catch(()=>{});
+  el.innerHTML=h;fillCovers(el);findUntouched(all).then(L=>{if(!L.length||!$('pmTidy'))return;$('pmTidy').hidden=false;$('pmTidy').innerHTML='<p>🧹 Do posprzątania ('+L.length+'):</p><ul>'+L.map(m=>'<li><b>'+esc(m.name)+'</b> · zmiana '+fmtTime(m.updatedAt)+' – '+esc(m.why)+'</li>').join('')+'</ul><button class="btn2" id="pmTidyGo">Usuń te kopie</button>';$('pmTidyGo').onclick=()=>tidyUntouched(L)});if(p?.projectId)curCover(p.projectId).then(c=>{const t=$('pmCurThumb');if(!c||!t)return;t.classList.add('hasCover');t.innerHTML='<img class="coverImg" alt="" src="'+c+'"><div class="miniPlan">'+planSvg(p)+'</div><a class="galLink" href="#galeria">Galeria →</a>'}).catch(()=>{});
   $('pmNew').onclick=newEmpty;$('pmImport').onchange=e=>{const f=e.target.files[0];e.target.value='';importFile(f)};
   if($('pmRename'))$('pmRename').onclick=renameCurrent;if($('pmExport'))$('pmExport').onclick=()=>downloadProject(HouserStore.load().project);
   if($('pmDup'))$('pmDup').onclick=duplicateCurrent;if($('pmVis'))$('pmVis').onclick=()=>setVis(st.pid,st.vis==='public'?'private':'public');

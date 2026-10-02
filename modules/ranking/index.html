@@ -126,13 +126,14 @@ function render(){const L=$('list'),key=$('sort').value;
       n('rachunki / rok',m.bills!=null?nf(Math.round(m.bills/100)*100)+' zł':'–',key==='bills')+n('metraż',nf(m.area)+' m²',key==='area')+n('pokoje',String(m.beds))+'</div>'+
     '<div class="pm">'+(r.o.src==='current'?'<button class="hs-btn go" data-go="co-poprawic">Co poprawić →</button>':'<button class="hs-btn go" data-open="'+esc(r.o.src+'|'+r.o.id)+'">'+(notMine(r.o)?'👁 Podgląd':'Otwórz ten dom')+'</button>')+(m.best?'<span class="g">▲ <span>'+esc(m.best.name)+'</span> '+nf(m.best.score,1)+'</span>':'')+(m.worst&&m.worst.score<7?'<span class="b">▼ <span>'+esc(m.worst.name)+'</span> '+nf(m.worst.score,1)+'</span>':'')+'</div></div></div>'}).join('');
 }
-async function run(){const my=++busy;rows=[];const seenStates=new Set();$('st').textContent='';render();
+async function run(){const my=++busy;rows=[];const seenStates=new Set(),myFp=new Set();$('st').textContent='';render();
   const list=await sources($('pub').checked);let k=0;
   for(const o of list){if(my!==busy)return;$('st').textContent='liczę '+(++k)+' z '+list.length+'…';
     const ck=o.src+':'+o.id;let res=o.src!=='current'?cache[ck]:null;
     if(!res){let p=null;try{p=await o.get()}catch(_){}
-      const m=p?measure(p):null;res=m?{m,plan:planSvg(p),sk:JSON.stringify([p.state,p.openings||{}])}:null;if(o.src!=='current')cache[ck]=res}
-    if(res&&(o.src==='sample'||o.src==='base')&&seenStates.has(res.sk))continue; // gotowy dom otwarty bez zmian – już jest na liście jako Twój projekt
+      const m=p?measure(p):null;res=m?{m,plan:planSvg(p),sk:JSON.stringify([p.state,p.openings||{}]),fp:p.definitionFingerprint||''}:null;if(o.src!=='current')cache[ck]=res}
+    if(res&&(o.src==='sample'||o.src==='base')&&(seenStates.has(res.sk)||(res.fp&&myFp.has(res.fp))))continue; // masz już swoją wersję tego wzoru
+    if(res&&!notMine(o)&&res.fp)myFp.add(res.fp); // gotowy dom otwarty bez zmian – już jest na liście jako Twój projekt
     if(res)seenStates.add(res.sk);
     if(res){rows.push({o,...res});render()}await new Promise(r=>setTimeout(r,0))}
   if(my===busy){busy=0;$('st').textContent=rows.length+' domów';render()}}

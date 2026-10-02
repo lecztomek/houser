@@ -41,6 +41,13 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  const so=W.HouserSolar.compute(b).house.season;ok(Math.abs(so-W.HouserSolar.compute(base).house.season)<1,'rolety nie zmieniają zysków zimą (podniesione w sezonie grzewczym)');}
 {const R=W.HouserAdvice.collect(base),n=R.mods.filter(m=>m.score!=null).length;ok(n>=8,'Co poprawić: ocenia co najmniej 8 modułów ('+n+')');}
 
+// ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować
+console.log('• składnia skryptów');
+{const vm=require('vm'),walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?(['node_modules','.git'].includes(e.name)?[]:walk(path.join(d,e.name))):[path.join(d,e.name)]);
+ for(const f of walk(ROOT).filter(f=>/\.(js|html)$/.test(f)&&!f.includes(path.sep+'tests'+path.sep))){const rel=path.relative(ROOT,f),src=fs.readFileSync(f,'utf8');
+   const parts=f.endsWith('.js')?[src]:[...src.matchAll(/<script(?![^>]*\bsrc=)(?![^>]*type=["']?module)[^>]*>([\s\S]*?)<\/script>/g)].map(m=>m[1]);
+   for(const code of parts){let err=null;try{new vm.Script(code,{filename:rel})}catch(e){err=e.message}ok(!err,rel+': błąd składni – '+err)}}}
+
 // ---------- 3) zapisane wyniki
 const EXP=path.join(__dirname,'expected.json');
 if(UPDATE||!fs.existsSync(EXP)){fs.writeFileSync(EXP,JSON.stringify(snap,null,1)+'\n');console.log('• zapisano wyniki wzorcowe: tests/expected.json')}
