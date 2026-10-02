@@ -91,6 +91,7 @@ main{position:relative;min-height:0}
 .btn2.cmpon{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8}
 .pmbar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}
 .plist{display:flex;flex-direction:column;gap:8px}
+.btn2.ib{min-width:34px;padding-left:0;padding-right:0;justify-content:center}.pacts .icons{display:inline-flex;gap:4px}.pacts .visSel{font-size:12.5px;padding:5px 6px;max-width:200px}
 .pmtools{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:-4px 0 10px}.pmtools .pmfilter{margin:0}.pmview{display:flex;gap:6px}
 .plist.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
 .plist.tiles>.login{grid-column:1/-1}
@@ -576,12 +577,8 @@ const thumbImg=m=>m.cover?'<img alt="" src="'+esc(m.cover)+'">':m.plan?'<img alt
 // okładka domu: z galerii w tej przeglądarce, a gdy jej tu nie ma – ta zapisana w chmurze
 async function curCover(pid){try{const c=await HouserGallery.cover(pid);if(c?.thumb)return c.thumb}catch(_){}return (cloudLists.mine||[]).find(m=>m.id===pid)?.cover||null}
 // porządki: kopie gotowych domów, w których nic nie zmieniono (powstawały przy każdym otwarciu wzoru) i bez zdjęć
-async function findUntouched(all){const cur=HouserStore.load()?.project?.projectId,out=[],seen=new Set();let base=[];
-  try{const man=await (await fetch('examples/index.json')).json();base=await Promise.all(man.map(async m=>{const p=await (await fetch('examples/'+m.file)).json();return JSON.stringify([p.state,p.openings||{}])}))}catch(_){}
+async function findUntouched(all){const out=[],seen=new Set();
   const noPhotos=async m=>!(await HouserGallery.list(m.id)).length&&!m.cover;
-  // 1) kopia gotowego domu, w której nic nie zmieniono
-  for(const m of localList){if(m.id===cur)continue;const r=await HouserLibrary.get(m.id);const p=r?.project;if(!p)continue;
-    if(base.includes(JSON.stringify([p.state,p.openings||{}]))&&await noPhotos(m)){out.push({...m,why:'nieruszona kopia gotowego domu'});seen.add(m.id)}}
   // 2) kilka moich domów o tej samej nazwie – zostaje najnowszy ze zdjęciami (a gdy żaden nie ma zdjęć – najnowszy), reszta to duplikaty
   const by={},u=HouserCloud.user(),own=m=>!m.owner||m.owner===u?.uid;for(const m of (all||[]).filter(own))(by[(m.name||'').trim().toLowerCase()]=by[(m.name||'').trim().toLowerCase()]||[]).push(m);
   for(const g of Object.values(by)){if(g.length<2)continue;g.sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||''));
@@ -621,13 +618,14 @@ const inCmp=(src,id)=>cmpList().some(x=>x.src===src&&x.id===id);
 function toggleCmp(src,id){let l=cmpList();if(l.some(x=>x.src===src&&x.id===id))l=l.filter(x=>!(x.src===src&&x.id===id));
   else{if(l.length>=CMP_MAX){alert('Porównanie ma już '+CMP_MAX+' domy – usuń któryś, żeby dodać nowy.');return}l.push({src,id});toast('Dodano do porównania ('+l.length+'/'+CMP_MAX+')')}
   lsSet(CMP_KEY,JSON.stringify(l));const f=frames.porownanie?.querySelector('iframe');try{f&&f.contentWindow.location.reload()}catch(_){}renderProjects(true)}
-const cmpBtn=(src,id,big)=>{const on=inCmp(src,id);return '<button class="btn2'+(big?'':' sm')+(on?' cmpon':'')+'" data-cmp="'+esc(src+'|'+id)+'" title="'+(on?'Usuń z porównania':'Dodaj do porównania (maks. '+CMP_MAX+')')+'">'+(on?'✓ ⚖ w porównaniu':'⚖ Do porównania')+'</button>'};
+const cmpBtn=(src,id,big,icon)=>{const on=inCmp(src,id);return '<button class="btn2'+(big?'':' sm')+(icon?' ib':'')+(on?' cmpon':'')+'" data-cmp="'+esc(src+'|'+id)+'" title="'+(on?'Usuń z porównania':'Dodaj do porównania (maks. '+CMP_MAX+')')+'">'+(icon?(on?'✓⚖':'⚖'):(on?'✓ ⚖ w porównaniu':'⚖ Do porównania'))+'</button>'};
 // ---------- moduł Projekty
-function pmRow(m,cur){const pub=isPub(m.visibility),a=(k,t,ti)=>'<button class="btn2 sm" data-a="'+k+'"'+(ti?' title="'+ti+'"':'')+'>'+t+'</button>';
-  const where=(m.cloud?'<span class="vis'+(pub?' pub':'')+'">☁ '+(VIS_LABEL[m.visibility]||VIS_LABEL.private)+'</span>':'<span class="vis">☁ zapisze się na koncie przy zmianie</span>');
+// wiersz / kafel mojego domu: Otwórz + uprawnienia, reszta jako małe ikony z podpowiedzią (żeby nie rozpychały układu)
+function pmRow(m,cur){const pub=isPub(m.visibility),own=m.cloud&&(!m.owner||m.owner===HouserCloud.user()?.uid),ib=(k,t,ti)=>'<button class="btn2 sm ib" data-a="'+k+'" title="'+ti+'">'+t+'</button>';
+  const where=m.cloud?(own?'':'<span class="vis'+(pub?' pub':'')+'">☁ '+(VIS_LABEL[m.visibility]||VIS_LABEL.private)+'</span>'):'<span class="vis">☁ zapisze się na koncie przy zmianie</span>';
   return '<div class="prow'+(cur?' cur1':'')+'" data-id="'+esc(m.id)+'"><div class="pth">'+(thumbImg(m)||'')+'</div><div class="pinfo"><b><span class="own1">Mój</span>'+esc(m.name||'bez nazwy')+'</b><small>'+esc(fl(m))+'zmiana '+fmtTime(m.updatedAt)+'</small>'+where+'</div><div class="pacts">'+
-    (cur?'<span class="go">✓ otwarty</span>':'<button class="btn2 sm primary" data-a="open">Otwórz</button>')+cmpBtn(m.cloud&&!m.local?'cloud':'local',m.id)+a('dup','⧉ Duplikuj')+a('exp','⤓ Eksportuj','Pobierz plik JSON')+
-    (m.cloud&&(!m.owner||m.owner===HouserCloud.user()?.uid)?visSel(m.visibility,'data-vis="1"'):'')+(m.cloud&&pub?a('link','🔗 Kopiuj link','Link otwiera ten dom od razu (inni widzą go w podglądzie)'):'')+(cur?'':a('del','🗑','Usuń'))+'</div></div>'}
+    (cur?'<span class="go">✓ otwarty</span>':'<button class="btn2 sm primary" data-a="open">Otwórz</button>')+(own?visSel(m.visibility,'data-vis="1"'):'')+
+    '<span class="icons">'+cmpBtn(m.cloud&&!m.local?'cloud':'local',m.id,false,true)+ib('dup','⧉','Duplikuj')+ib('exp','⤓','Eksportuj do pliku JSON')+(m.cloud&&pub?ib('link','🔗','Kopiuj link – otwiera ten dom od razu (inni widzą go w podglądzie)'):'')+(cur?'':ib('del','🗑','Usuń'))+'</span></div></div>'}
 function curCmpSrc(id){if(localList.some(m=>m.id===id))return 'local';if(HouserCloud.isLinked(id))return 'cloud';return 'current'}
 const sampleCover=p=>p?.fromSample&&p.readOnly?.src==='base'?'examples/covers/'+p.fromSample.replace(/\.json$/,'.jpg'):null;
 const coverOf=p=>sampleCover(p)?Promise.resolve(sampleCover(p)):p?.projectId?curCover(p.projectId):Promise.resolve(null);
@@ -640,7 +638,7 @@ const norm=t=>String(t||'').trim().toLowerCase();
 async function paintBase(){const el=$('pmBase');if(!el)return;let L;try{L=await loadSamples()}catch(e){el.innerHTML='<div class="empty2">Nie udało się wczytać domów z bazy.</div>';return}
   const cur=HouserStore.load()?.project,isCur=m=>cur?.readOnly?.src==='base'&&cur.fromSample===m.file,mine=await ownCopies();if(!$('pmBase'))return;
   // dom z bazy, który już masz u siebie (ten sam dom – otwarty kiedyś z bazy albo zaimportowany), jest na liście Twoich projektów – tu go nie powtarzamy
-  const rows=L.map((m,i)=>({m,i})).filter(({m})=>!mine.some(o=>o.fromSample===m.file||norm(o.name)===norm(m.name)));
+  const rows=L.map((m,i)=>({m,i})); // kopia do siebie to inny dom – oryginał z bazy zostaje na liście
   el.innerHTML=rows.length?rows.map(({m,i})=>'<div class="prow other'+(isCur(m)?' cur1':'')+'" data-i="'+i+'"><div class="pth">'+(m.cover?'<img alt="" loading="lazy" src="examples/'+esc(m.cover)+'">':planSvg(m.project))+'</div><div class="pinfo"><b><span class="own0">Nie mój</span>'+esc(m.name)+'</b><small>autor: Houser · '+esc(m.desc||'')+'</small><div>'+chips(stats(m.project))+'</div></div><div class="pacts">'+(isCur(m)?'<span class="go">✓ otwarty</span>':'<button class="btn2 sm primary" data-a="base">👁 Podgląd</button>')+'<button class="btn2 sm" data-a="blink" title="Link otwiera ten dom od razu">🔗</button></div></div>').join(''):'';
   el.querySelectorAll('[data-a="base"]').forEach(b=>b.onclick=async()=>{const m=SAMPLES[+b.closest('[data-i]').dataset.i];if(await openSample(m.file,m.project))renderProjects(true)});el.querySelectorAll('[data-a="blink"]').forEach(b=>b.onclick=()=>copyLink('baza:'+SAMPLES[+b.closest('[data-i]').dataset.i].file.replace(/\.json$/,'')))}
 // link do bieżącego domu: dom z bazy, cudzy publiczny albo Twój udostępniony (prywatnego nikt inny nie otworzy)
@@ -661,6 +659,7 @@ function renderProjects(noLoad){const el=$('pm');if(!el)return;const rec=HouserS
   const cloudIds=new Set((u&&cloudLists.mine||[]).map(m=>m.id)),byId=new Map();
   for(const m of localList)byId.set(m.id,{...m,local:true});
   for(const m of (u&&cloudLists.mine)||[]){const o=byId.get(m.id);byId.set(m.id,o?{...o,...m,cover:m.cover||o.cover,plan:o.plan||m.plan,updatedAt:(m.updatedAt||'')>(o.updatedAt||'')?m.updatedAt:o.updatedAt,local:true,cloud:true,localAt:o.updatedAt}:{...m,cloud:true})}
+  if(p&&curId&&!byId.has(curId)&&canSave(p)&&!p.sharedEdit)byId.set(curId,{id:curId,name:projName(p),updatedAt:rec.updatedAt,local:true,stats:stats(p),visibility:st.vis||undefined,cloud:!!st.linked});
   const all=[...byId.values()].sort((a,b)=>(b.id===curId)-(a.id===curId)||(b.updatedAt||'').localeCompare(a.updatedAt||''));
   // bez konta nie ma autora, więc nie ma „moich” domów – sama lista domów do oglądania (bez filtra)
   const guest=isGuest(),pf=guest?'all':(lsGet(PM_F)||'all');

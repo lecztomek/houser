@@ -3545,4 +3545,8 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "☰ Lista":"☰ List",
 "Projekty – Twoje domy i domy innych":"Projects – your houses and other people's",
 "brak – wybierz dom w Projektach":"none – choose a house in Projects",
-"Brak projektu – wybierz dom w Projektach.":"No project – choose a house in Projects."};
+"Brak projektu – wybierz dom w Projektach.":"No project – choose a house in Projects.",
+"Duplikuj":"Duplicate",
+"Eksportuj do pliku JSON":"Export to JSON file",
+"Kopiuj link – otwiera ten dom od razu (inni widzą go w podglądzie)":"Copy link – opens this house right away (others see it as a preview)",
+"Usuń":"Delete"};

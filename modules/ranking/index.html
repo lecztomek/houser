@@ -100,7 +100,7 @@ async function sources(withPub){const out=[],seen=new Set(),cur=HouserStore.load
   const mineNames=new Set(out.filter(o=>o.mine).map(o=>norm(o.name)));
   if(withPub||guest){
     if(C)try{for(const m of await C.listPublic()){if(uid&&m.owner===uid)continue;add({src:'pub',id:m.id,pid:m.id,name:m.name,owner:m.ownerName||'',edit:m.visibility==='public_edit',cur:m.id===curKey,get:async()=>m.id===curKey&&cur?cur:(await C.fetchProject(m.id))?.project})}}catch(_){}
-    try{for(const m of await (await fetch('../../examples/index.json')).json()){if(mineNames.has(norm(m.name)))continue; // masz ten dom u siebie
+    try{for(const m of await (await fetch('../../examples/index.json')).json()){ // kopia do siebie to inny dom – oryginał też jest w rankingu
       add({src:'base',id:m.file,key:'base:'+m.file,name:m.name,owner:'Houser',cur:'base:'+m.file===curKey,get:async()=>await (await fetch('../../examples/'+m.file)).json()})}}catch(_){}}
   // bieżący cudzy dom, którego nie ma na żadnej liście (np. link) – też raz
   if(cur&&!curMine&&!seen.has(curKey))add({src:'current',id:'current',key:curKey,name:projName(cur),owner:cur.readOnly?.owner||cur.sharedEdit?.owner||'',edit:!!cur.sharedEdit,cur:true,get:async()=>cur});
@@ -144,7 +144,7 @@ async function run(){const my=++busy;rows=[];const seenStates=new Set(),myFp=new
     const ck=o.src+':'+o.id;let res=!o.cur?cache[ck]:null;
     if(!res){let p=null;try{p=await o.get()}catch(_){}
       const m=p?measure(p):null;res=m?{m,plan:planSvg(p),sk:JSON.stringify([p.state,p.openings||{}]),fp:p.definitionFingerprint||''}:null;if(!o.cur)cache[ck]=res}
-    if(res&&(o.src==='sample'||o.src==='base')&&(seenStates.has(res.sk)||(res.fp&&myFp.has(res.fp))))continue; // masz już swoją wersję tego wzoru
+    
     if(res&&!notMine(o)&&res.fp)myFp.add(res.fp); // gotowy dom otwarty bez zmian – już jest na liście jako Twój projekt
     if(res)seenStates.add(res.sk);
     if(res){rows.push({o,...res});render()}await new Promise(r=>setTimeout(r,0))}
