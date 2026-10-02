@@ -111,7 +111,11 @@ function build(project){
     }
     if(!stairLinks.length&&list.some(r=>r.fi>0))notes.push('nostairs');
   }
-  const M={project,W,H,c,N,F,floors,lo,floorName,cellRoom,holes,rooms,list,exits,exitByNode,stairLinks,stairAdj,terr,isPrivate,notes,def,st,openings:floors.map(f=>op(f))};
+  // balkony: kratki pokoju przy drzwiach / HST na balkon (piętro) – cel np. do suszenia prania
+  const balc=[];{const bs=new Set();for(const b of project.balconies||[])for(const [x,y] of b.cells||[])bs.add(x+','+y);
+    if(bs.size)floors.forEach((f,fi)=>{if(fi===0)return;const O=op(f);for(const k of bs){const [x,y]=k.split(',').map(Number);
+      for(const [dx,dy,key] of [[0,1,'h:'+x+':'+(y+1)],[0,-1,'h:'+x+':'+y],[1,0,'v:'+(x+1)+':'+y],[-1,0,'v:'+x+':'+y]]){const r=walk(fi,x+dx,y+dy);if(r&&PASS[O[key]])balc.push({node:fi*N+(y+dy)*W+x+dx,room:r})}}})}
+  const M={project,W,H,c,N,F,floors,lo,floorName,cellRoom,holes,rooms,list,exits,exitByNode,stairLinks,stairAdj,terr,isPrivate,notes,def,st,balc,openings:floors.map(f=>op(f))};
   return M;
 }
 
@@ -275,7 +279,11 @@ function evaluate(project,settings){
       if(fam.length){const rb=route(M,src(anchor(mLeg.b,'bed')),fam.map(b=>b.center),{avoid:AV()});if(rb&&rb.end.room){const r2=route(M,src(rb.end.room.center),[la],{avoid:AV({except:new Set([l.key])})});if(r2){dB=r2.dist;s.legs.push(leg(rb.end.room.name,l.name,r2))}}}
       const dirty=dB!=null?(best.avg+dB)/2:best.avg;
       // suszenie: na zewnątrz
-      let dD=null,rD=null;if(exits.length){rD=route(M,src(la),exitNodes(garden),{avoid:AV({living:4})});if(rD){dD=rD.dist;s.legs.push(leg(l.name,rD.exitUsed.at(-1)?.terrace?'Taras':'Ogród',rD,{note:'suszenie'}))}}
+      // suszenie: bliżej z dwóch – ogród / taras albo balkon (wyjście z pokoju na piętrze)
+      let dD=null,rD=null,toB=false;const rOut=exits.length?route(M,src(la),exitNodes(garden),{avoid:AV({living:4})}):null;
+      const rBal=M.balc.length?route(M,src(la),M.balc.map(b=>b.node),{avoid:AV({living:4,except:new Set(M.balc.map(b=>b.room.key))})}):null;
+      if(rBal&&(!rOut||rBal.dist+(rBal.floors?2:0)<=rOut.dist+(rOut.floors?2:0))){rD=rBal;toB=true}else rD=rOut;
+      if(rD){dD=rD.dist;s.legs.push(leg(l.name,toB?'Balkon':rD.exitUsed.at(-1)?.terrace?'Taras':'Ogród',rD,{note:'suszenie'}));if(toB)s.why.push('Pranie wysuszysz na balkonie: {n} m od pralni.'.replace('{n}',fmt(dD)))}
       // czyste: do garderoby / sypialni głównej
       const wards=byRole('wardrobe');let dC=best.avg,rC=null;
       if(wards.length){rC=route(M,src(la),wards.map(w=>w.center),{avoid:AV({except:new Set(wards.map(w=>w.key))})});if(rC){dC=rC.dist;s.legs.push(leg(l.name,rC.end.room.name,rC,{note:'czyste'}))}}
@@ -288,7 +296,7 @@ function evaluate(project,settings){
       if(dD!=null){if(l.exits.length){score+=.5;s.why.push('Pralnia ma własne wyjście na zewnątrz – szybko rozwiesisz pranie.')}
         else if(dD<=5)score+=.3;
         else if(dD>12){score-=1;s.why.push('Do suszenia na zewnątrz daleko: {n} m.'.replace('{n}',fmt(dD)));s.hints.push('Dodaj drzwi z pralni do ogrodu lub na taras – do suszenia prania.')}
-        if(rD.floors){score-=.5;s.why.push('Suszenie na zewnątrz wymaga zejścia po schodach – przyda się suszarka lub balkon.')}}
+        if(rD.floors){score-=.5;s.why.push(toB?'Na balkon trzeba wejść po schodach.':'Suszenie na zewnątrz wymaga zejścia po schodach – przyda się suszarka lub balkon.')}}
       if(mode==='bath'){score-=1;s.hints.push('Wydziel pralnię (choćby 2–3 m²) – pranie nie będzie blokować łazienki.')}
       if(!wards.length)s.hints.push('Garderoba obok sypialni skróci drogę z czystym praniem.');
       s.score=score;s.dist=best.avg;

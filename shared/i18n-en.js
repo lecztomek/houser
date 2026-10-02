@@ -3562,4 +3562,8 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "Wgraj domy Housera":"Upload Houser houses",
 "Najpierw zaloguj się na konto, które ma być autorem „Houser”.":"First sign in to the account that should be the author „Houser”.",
 "👥 Nie mój · autor: {q} – tylko podgląd":"👥 Not mine · author: {q} – view only",
-"Zamień na okna":"Change to windows"};
+"Zamień na okna":"Change to windows",
+"Dosuń do ściany":"Push to the wall",
+"Pranie wysuszysz na balkonie: {n} m od pralni.":"You can dry laundry on the balcony: {n} m from the laundry.",
+"Na balkon trzeba wejść po schodach.":"The balcony is up the stairs.",
+"Zamień okno przy balkonie na drzwi balkonowe":"Change the window by the balcony into a balcony door"};

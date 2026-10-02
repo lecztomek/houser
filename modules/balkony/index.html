@@ -64,6 +64,13 @@ function save(){const out=JSON.parse(JSON.stringify(B.list(project)));HouserStor
 $('bPaint').onclick=()=>{brush='paint';$('bPaint').classList.add('active');$('bErase').classList.remove('active')};
 $('bErase').onclick=()=>{brush='erase';$('bErase').classList.add('active');$('bPaint').classList.remove('active')};
 function paint(x,y,on){if(!B.paintable(project,x,y,MARGIN))return false;const m=B.map(project),k=B.key(x,y);if(on===m.has(k))return false;const set=new Set(m.keys());on?set.add(k):set.delete(k);project.balconies=B.fromCells(set,B.list(project));return true}
+// przesunięcie balkonu do najbliższej ściany piętra (najmniejszy ruch w jednym z 4 kierunków; bez nachodzenia na dom i inne balkony)
+// okna w ścianie piętra, która styka się z balkonem (kandydaci na drzwi balkonowe)
+function winsAt(b){const [,up]=fl(),ops=project.openings?.[up]||{},out=[];for(const [x,y] of b.cells||[])for(const [dx,dy,k] of [[0,-1,'h:'+x+':'+y],[0,1,'h:'+x+':'+(y+1)],[-1,0,'v:'+x+':'+y],[1,0,'v:'+(x+1)+':'+y]])if(occ(up,x+dx,y+dy)&&ops[k]==='window'&&!out.includes(k))out.push(k);return out}
+function snapToWall(b){const [,up]=fl(),others=new Set(B.list(project).filter(x=>x!==b).flatMap(x=>(x.cells||[]).map(([x0,y0])=>x0+','+y0)));let best=null;
+  for(let d=1;d<=8&&!best;d++)for(const [dx,dy] of [[0,-1],[0,1],[-1,0],[1,0]]){const c2=(b.cells||[]).map(([x,y])=>[x+dx*d,y+dy*d]);
+    if(c2.some(([x,y])=>occ(up,x,y)||others.has(x+','+y)))continue;if(c2.some(([x,y])=>[[1,0],[-1,0],[0,1],[0,-1]].some(([ax,ay])=>occ(up,x+ax,y+ay)))){best=c2;break}}
+  if(!best)return false;b.cells=best;return true}
 function renderSide(){
   const L=$('list');if(!project){L.innerHTML='<div class="hint" style="margin:0">Brak projektu.</div>';return}
   if(!hasUp()){L.innerHTML='<div class="hint" style="margin:0">Dom nie ma piętra ani poddasza – balkony są możliwe tylko na piętrze.</div>';return}
@@ -72,13 +79,16 @@ function renderSide(){
     d.innerHTML='<input type="text" placeholder="Balkon '+(i+1)+'" value="'+esc(b.label)+'"><small>'+(it.kind==='cantilever'?'wystający':'nad parterem')+' · '+fmt(it.area)+' m²'+(it.cantA&&it.depth?' · wysięg '+fmt(it.depth)+' m':'')+(it.rooms.length?' · przy: '+it.rooms.map(esc).join(', '):'')+'</small>'+
       '<select data-k="rail">'+Object.entries(B.RAIL).map(([k,v])=>'<option value="'+k+'"'+(b.rail===k?' selected':'')+'>balustrada '+v+'</option>').join('')+'</select>'+
       (it.cantA>0?'<label><input type="checkbox" data-k="tb"'+(b.thermalBreak?' checked':'')+'> łącznik termiczny (izolowane mocowanie płyty)</label>':'')+
-      (!it.door?'<div class="warn">⚠ Nie ma wyjścia na balkon – dodaj drzwi lub HST na ścianie piętra przy balkonie (moduł Układ pomieszczeń).</div>':'')+
+      (!it.rooms.length?'<div class="warn">⚠ Balkon nie przylega do ściany piętra – wisi w powietrzu i nie da się na niego wyjść. <button class="btn" data-snap="1">Dosuń do ściany</button></div>':'')+
+      (it.rooms.length&&!it.door?'<div class="warn">⚠ Nie ma wyjścia na balkon – dodaj drzwi lub HST na ścianie piętra przy balkonie (moduł Układ pomieszczeń).'+(winsAt(b).length?' <button class="btn" data-towin="1">Zamień okno przy balkonie na drzwi balkonowe</button>':'')+'</div>':'')+
       (it.depth>1.8?'<div class="warn">⚠ Wysięg ponad 1,8 m – taki balkon zwykle potrzebuje słupów lub wsporników.</div>':'')+
       (it.cantA>0&&!b.thermalBreak?'<div class="warn">⚠ Płyta bez łącznika termicznego to duży mostek cieplny (straty ciepła, wilgoć przy ścianie).</div>':'')+
       '<button class="btn danger">Usuń</button>';
     d.querySelector('input[type=text]').onchange=e=>{b.label=e.target.value.trim();save();renderPlan()};
     d.querySelector('[data-k=rail]').onchange=e=>{b.rail=e.target.value;save()};
     const tb=d.querySelector('[data-k=tb]');if(tb)tb.onchange=e=>{b.thermalBreak=e.target.checked;save();renderSide()};
+    const tw=d.querySelector('[data-towin]');if(tw)tw.onclick=()=>{const ks=winsAt(b),up=fl()[1];HouserStore.update(p=>{p.openingVariants=p.openingVariants||{};p.openingVariants[up]=p.openingVariants[up]||{};for(const k of ks){p.openings[up][k]='hst';const bl=p.openingVariants[up][k]?.blind;p.openingVariants[up][k]={variant:'hst',sill:0,height:2.2,...(bl?{blind:bl}:{})}}},'balkony');setProject(HouserStore.load().project)};
+    const sn=d.querySelector('[data-snap]');if(sn)sn.onclick=()=>{if(snapToWall(b)){save();renderAll()}else alert('Nie znalazłem ściany piętra w pobliżu (do 4 m) – narysuj balkon przy ścianie.')};
     d.querySelector('.danger').onclick=()=>{project.balconies=B.list(project).filter(x=>x!==b);save();renderAll()};
     L.appendChild(d)});
   const dead=B.deadDoors(project);
