@@ -84,10 +84,16 @@ function renderSide(){
   if(S.items.length)L.insertAdjacentHTML('beforeend','<p class="hint">Razem '+fmt(S.area)+' m² · balustrada '+fmt(S.rail)+' m. Balkony liczą się w Wycenie, bilansie energii (mostki cieplne przy płycie) i zacienianiu okien parteru w Nasłonecznieniu.</p>');
 }
 function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
-function renderPlan(){
+// przerysowanie rzutu przy malowaniu nie może przewijać strony do góry: zachowaj wysokość karty i przewinięcie
+function renderPlan(){const card=$('card'),main=document.querySelector('.main'),se=document.scrollingElement,keep={m:main?.scrollTop||0,ml:main?.scrollLeft||0,d:se?.scrollTop||0};
+  if(card.offsetHeight)card.style.minHeight=card.offsetHeight+'px';
+  try{renderPlanInner()}finally{card.style.minHeight='';if(main){main.scrollTop=keep.m;main.scrollLeft=keep.ml}if(se)se.scrollTop=keep.d}}
+function renderPlanInner(){
   const card=$('card');if(!project){card.innerHTML='<div class="empty">Brak projektu. Narysuj rzut w module <b>Układ pomieszczeń</b>.</div>';return}
   if(!hasUp()){card.innerHTML='<div class="empty">Dom nie ma piętra – ustaw piętro lub poddasze w module <b>Kondygnacje i dach</b>.</div>';return}
-  card.innerHTML='<div class="planTitle"><div>Piętro / poddasze · balkony</div><span>'+(brush==='erase'?'gumka':'pędzel: balkon')+'</span></div><svg id="plan"></svg><div class="legend"><span><i style="background:#e2e8f0;border:1px solid #94a3b8"></i>parter pod spodem</span><span><i style="background:#fb923c"></i>balkon wystający</span><span><i style="background:#fdba74;border:1px dashed #ea580c"></i>balkon nad parterem</span><span><i style="background:#fff;border:2px solid #0f172a"></i>ściany piętra</span></div>';
+  // karta budowana raz – przy malowaniu podmieniamy tylko zawartość <svg> (ten sam element pod palcem/myszą: gest się nie urywa)
+  let svg0=$('plan');if(!svg0||!card.contains(svg0)){  card.innerHTML='<div class="planTitle"><div>Piętro / poddasze · balkony</div><span>'+(brush==='erase'?'gumka':'pędzel: balkon')+'</span></div><svg id="plan"></svg><div class="legend"><span><i style="background:#e2e8f0;border:1px solid #94a3b8"></i>parter pod spodem</span><span><i style="background:#fb923c"></i>balkon wystający</span><span><i style="background:#fdba74;border:1px dashed #ea580c"></i>balkon nad parterem</span><span><i style="background:#fff;border:2px solid #0f172a"></i>ściany piętra</span></div>';}
+  else{const t=card.querySelector('.planTitle span');if(t)t.textContent=brush==='erase'?'gumka':'pędzel: balkon';svg0.replaceChildren()}
   const svg=$('plan'),g=grid(),W=g.width,H=g.height,[lo,up]=fl(),TW=(W+2*MARGIN)*PX,TH=(H+2*MARGIN)*PX;
   svg.setAttribute('viewBox',[-MARGIN*PX,-MARGIN*PX,TW,TH].join(' '));const main=document.querySelector('.main'),avail=Math.max(300,Math.min(main.clientWidth-60,900));svg.setAttribute('width',Math.round(avail));const k=TW/Math.round(avail);
   const P=v=>v*PX;el('rect',{x:-MARGIN*PX,y:-MARGIN*PX,width:TW,height:TH,fill:'#eef5e9'},svg);
@@ -107,9 +113,11 @@ function renderPlan(){
 }
 function cellFromEvent(e){const svg=$('plan'),pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());return {x:Math.floor(p.x/PX),y:Math.floor(p.y/PX)}}
 document.addEventListener('contextmenu',e=>{if($('plan')?.contains(e.target))e.preventDefault()});
-document.addEventListener('pointerdown',e=>{const svg=$('plan');if(!project||!svg||!svg.contains(e.target))return;e.preventDefault();painting={on:!(e.button===2||brush==='erase'),changed:false};const c=cellFromEvent(e);if(paint(c.x,c.y,painting.on)){painting.changed=true;renderPlan()}});
+document.addEventListener('pointerdown',e=>{const svg=$('plan');if(!project||!svg||!svg.contains(e.target))return;e.preventDefault();try{svg.setPointerCapture(e.pointerId)}catch(_){} // gest przypięty do rzutu, nie do kratki, która zaraz się przerysuje
+  painting={on:!(e.button===2||brush==='erase'),changed:false};const c=cellFromEvent(e);if(paint(c.x,c.y,painting.on)){painting.changed=true;renderPlan()}});
 document.addEventListener('pointermove',e=>{if(!painting)return;const c=cellFromEvent(e);if(paint(c.x,c.y,painting.on)){painting.changed=true;renderPlan()}});
-document.addEventListener('pointerup',()=>{if(!painting)return;const ch=painting.changed;painting=null;renderAll();if(ch)save()});
+const endPaint=()=>{if(!painting)return;const ch=painting.changed;painting=null;renderAll();if(ch)save()};
+document.addEventListener('pointerup',endPaint);document.addEventListener('pointercancel',endPaint);
 window.addEventListener('resize',()=>project&&renderPlan());
 function renderAll(){renderSide();renderPlan()}
 function setProject(p){project=p&&(p.grid||p.definitionSnapshot?.grid)?p:null;renderAll()}
