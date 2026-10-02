@@ -23,5 +23,10 @@
   "file": "zefir-2.json",
   "name": "Zefir 2",
   "desc": "Wzorowany na projekcie Zefir 2: 11 × 8,5 m, parter + poddasze użytkowe, dach 42°, pokój/biuro na parterze, 3 sypialnie na poddaszu, pustka nad salonem, pergola z zadaszeniem, kominek z płaszczem wodnym + pompa ciepła, rekuperacja."
+ },
+ {
+  "file": "stodola-jasna.json",
+  "name": "Stodoła Jasna",
+  "desc": "Wzorowana na projekcie Stodoła z antresolą: 7,5 × 10 m, poddasze użytkowe 40°, salon z antresolą i przeszkleniami od podłogi do sufitu, 2 sypialnie (jedna z łazienką i garderobą), 2 balkony, taras z pergolą, kominek z płaszczem + pompa ciepła"
  }
 ]

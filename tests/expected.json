@@ -87,6 +87,28 @@
    "Rekuperacja": 7
   }
  },
+ "stodola-jasna.json": {
+  "overall": 7.1,
+  "cost": 967689,
+  "Qh": 12988,
+  "bills": 5588,
+  "area": 128.75,
+  "mods": {
+   "Przepisy": 8,
+   "Codzienność": 8.2,
+   "Schowki i szafy": 8.2,
+   "Akustyka": 4.9,
+   "Nasłonecznienie": 8.6,
+   "Energia": 1.8,
+   "Ocieplenie i elewacja": 7,
+   "Wygląd": 7.9,
+   "Balkony": 10,
+   "Hydraulika": 9.1,
+   "Ogrzewanie": 8.7,
+   "Wentylacja": 4,
+   "Rekuperacja": null
+  }
+ },
  "uklad-domu-v7.json": {
   "overall": 8.3,
   "cost": 895012,
