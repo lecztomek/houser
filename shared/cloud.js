@@ -119,7 +119,9 @@
 
   const sortNew=a=>a.sort((x,y)=>(y.updatedAt||'').localeCompare(x.updatedAt||''));
   async function listMine(){await init();need();const s=await fb.F.getDocs(fb.F.query(fb.F.collection(fb.db,'projects'),fb.F.where('owner','==',user.uid)));return sortNew(s.docs.map(d=>({id:d.id,...d.data()})))}
-  async function listPublic(){await init();const s=await fb.F.getDocs(fb.F.query(fb.F.collection(fb.db,'projects'),fb.F.where('visibility','in',['public','public_edit']),fb.F.limit(60)));return sortNew(s.docs.map(d=>({id:d.id,...d.data()})))}
+  // dwa osobne zapytania: starsze reguły (bez 'public_edit') odrzuciłyby całe zapytanie „in” i lista byłaby pusta
+  async function listPublic(){await init();const q=v=>fb.F.getDocs(fb.F.query(fb.F.collection(fb.db,'projects'),fb.F.where('visibility','==',v),fb.F.limit(60))).then(s=>s.docs.map(d=>({id:d.id,...d.data()})));
+    const [a,b]=await Promise.all([q('public'),q('public_edit').catch(()=>[])]);return sortNew([...a,...b])}
   async function setVisibility(pid,vis){await init();need();await fb.F.setDoc(D('projects',pid),{visibility:vis},{merge:true});if(links()[pid])setLink(pid,{vis});emit()}
   async function remove(pid){await init();need();
     const ph=await fb.F.getDocs(fb.F.collection(fb.db,'projects',pid,'photos'));for(const d of ph.docs)await fb.F.deleteDoc(d.ref);
