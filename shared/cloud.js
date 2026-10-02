@@ -19,11 +19,11 @@
   const emit=()=>statusCbs.forEach(cb=>{try{cb(status())}catch(e){console.error(e)}});
   const setOp=(state,msg)=>{op={state,at:state==='saved'?new Date().toISOString():op.at,msg:msg||''};emit()};
   const curPid=()=>HouserStore.load()?.project?.projectId||null;
-  function linkOf(pid){const L=pid&&links()[pid];return L&&!L.off&&user&&L.owner===user.uid?L:null}
+  function linkOf(pid){const L=pid&&links()[pid];return L&&!L.off&&user&&(L.owner===user.uid||L.edit)?L:null} // edit: cudzy dom „publiczny – edytowalny”
   // czy projekt ma się zapisywać w chmurze (po zalogowaniu – każdy, chyba że użytkownik go z chmury usunął)
-  const eligible=pid=>!!(user&&pid&&!links()[pid]?.off&&!HouserStore.load()?.project?.readOnly); // podgląd cudzego domu nie trafia do chmury
+  const eligible=pid=>!!(user&&pid&&!links()[pid]?.off&&!HouserStore.load()?.project?.readOnly&&(!HouserStore.load()?.project?.sharedEdit||links()[pid]?.edit)); // podgląd cudzego domu nie trafia do chmury
   // stan dla paska projektu
-  function status(){const pid=curPid(),L=linkOf(pid);return {enabled,ready:!!fb,user,pid,linked:!!L,off:!!(pid&&links()[pid]?.off),vis:L?.vis||null,savedAt:L?.at||null,...op}}
+  function status(){const pid=curPid(),L=linkOf(pid);return {enabled,ready:!!fb,user,pid,linked:!!L,own:!!(L&&L.owner===user?.uid),off:!!(pid&&links()[pid]?.off),vis:L?.vis||null,savedAt:L?.at||null,...op}}
 
   function init(){
     if(!enabled)return Promise.resolve(false);if(readyP)return readyP;
@@ -52,7 +52,7 @@
   const D=(...p)=>fb.F.doc(fb.db,...p);
   async function getData(...p){const s=await fb.F.getDoc(D(...p));return s.exists()?s.data():null}
   const need=()=>{if(!user)throw new Error('Zaloguj się, żeby korzystać z chmury.')};
-  function forCloud(p){const o={...p};delete o.visualizations;delete o.houserFile;return o}
+  function forCloud(p){const o={...p};delete o.visualizations;delete o.houserFile;delete o.readOnly;delete o.sharedEdit;return o}
 
   // nowy identyfikator dla bieżącego projektu (np. plik kogoś innego – jego identyfikator w chmurze jest zajęty); galeria idzie razem z nim
   async function rekey(project){const old=project.projectId,nid=HouserStore.newId();
@@ -65,16 +65,17 @@
     if(!project.projectId){project.projectId=HouserStore.newId();HouserStore.update(p=>{p.projectId=project.projectId},'chmura');hooks.localWrite?.()}
     let pid=project.projectId,meta=null;
     try{meta=await getData('projects',pid)}catch(e){if(e.code!=='permission-denied')throw e;meta={owner:null}}
-    if(meta&&meta.owner!==user.uid){pid=await rekey(project);meta=null}
+    const co=!!(meta&&meta.owner!==user.uid&&meta.visibility==='public_edit'); // współautor: zapis w tym samym domu, autor i uprawnienia bez zmian
+    if(meta&&meta.owner!==user.uid&&!co){pid=await rekey(project);meta=null}
     const L=links()[pid];
     if(meta&&!opt.force&&(!L||L.rev!==meta.rev))return {conflict:meta,pid};
     const now=new Date().toISOString(),rev=Math.random().toString(36).slice(2,10),d=await describe(project);
     const vis=opt.visibility||meta?.visibility||'private',json=JSON.stringify(forCloud(project));
     if(json.length>900000)throw new Error('Projekt jest za duży do zapisania w chmurze.');
-    await fb.F.setDoc(D('projects',pid),{owner:user.uid,ownerName:user.name,ownerPhoto:user.photo,name:d.name||'bez nazwy',visibility:vis,
+    await fb.F.setDoc(D('projects',pid),{owner:co?meta.owner:user.uid,ownerName:co?(meta.ownerName||''):user.name,ownerPhoto:co?(meta.ownerPhoto||''):user.photo,name:d.name||'bez nazwy',visibility:vis,editedBy:user.name,
       createdAt:meta?.createdAt||now,updatedAt:now,rev,stats:d.stats||null,plan:d.plan||'',cover:meta?.cover||'',photoIds:meta?.photoIds||[]});
     await fb.F.setDoc(D('projects',pid,'content','main'),{json,updatedAt:now});
-    setLink(pid,{owner:user.uid,rev,at:now,vis});
+    setLink(pid,{owner:co?meta.owner:user.uid,edit:co,rev,at:now,vis});
     if(!meta)await pushPhotos(pid); // pierwszy zapis – od razu zdjęcia z galerii
     return {ok:true,pid}}
 
@@ -85,7 +86,7 @@
     if(before&&image.length+before.length+(r.thumb||'').length>950000)before=await HouserGallery.resize(before,900,.72);
     if(before&&image.length+before.length+(r.thumb||'').length>950000)before=null;
     return {caption:r.caption||'',order:r.order,cover:!!r.cover,source:r.source||'upload',createdAt:r.createdAt,image,thumb:r.thumb||'',before,ref:r.ref||null}}
-  async function pushPhotos(pid){need();const meta=await getData('projects',pid);if(!meta||meta.owner!==user.uid)return;
+  async function pushPhotos(pid){need();const meta=await getData('projects',pid);if(!meta||(meta.owner!==user.uid&&meta.visibility!=='public_edit'))return;
     const items=await HouserGallery.list(pid);
     for(const r of items){const s=sig(r);
       if(!r.cloudUp)await fb.F.setDoc(D('projects',pid,'photos',r.id),await photoDoc(r));
@@ -109,15 +110,16 @@
   async function open(pid){await init();
     const meta=await getData('projects',pid);if(!meta)throw new Error('Nie ma takiego projektu w chmurze.');
     const c=await getData('projects',pid,'content','main');if(!c?.json)throw new Error('Projekt w chmurze jest pusty.');
-    const project=JSON.parse(c.json),own=!!user&&meta.owner===user.uid;
-    project.projectId=own?pid:HouserStore.newId();
-    if(own)setLink(pid,{owner:user.uid,rev:meta.rev,at:meta.updatedAt,vis:meta.visibility});
-    await pullPhotos(pid,project.projectId,own);
-    return {project,own,meta}}
+    // własny albo „publiczny – edytowalny” (zalogowany): ten sam dom, zapis wraca do chmury; inaczej podgląd z nowym identyfikatorem
+    const project=JSON.parse(c.json),own=!!user&&meta.owner===user.uid,edit=!own&&!!user&&meta.visibility==='public_edit';
+    project.projectId=own||edit?pid:HouserStore.newId();
+    if(own||edit)setLink(pid,{owner:meta.owner,edit,rev:meta.rev,at:meta.updatedAt,vis:meta.visibility});
+    await pullPhotos(pid,project.projectId,own||edit);
+    return {project,own,edit,meta}}
 
   const sortNew=a=>a.sort((x,y)=>(y.updatedAt||'').localeCompare(x.updatedAt||''));
   async function listMine(){await init();need();const s=await fb.F.getDocs(fb.F.query(fb.F.collection(fb.db,'projects'),fb.F.where('owner','==',user.uid)));return sortNew(s.docs.map(d=>({id:d.id,...d.data()})))}
-  async function listPublic(){await init();const s=await fb.F.getDocs(fb.F.query(fb.F.collection(fb.db,'projects'),fb.F.where('visibility','==','public'),fb.F.limit(60)));return sortNew(s.docs.map(d=>({id:d.id,...d.data()})))}
+  async function listPublic(){await init();const s=await fb.F.getDocs(fb.F.query(fb.F.collection(fb.db,'projects'),fb.F.where('visibility','in',['public','public_edit']),fb.F.limit(60)));return sortNew(s.docs.map(d=>({id:d.id,...d.data()})))}
   async function setVisibility(pid,vis){await init();need();await fb.F.setDoc(D('projects',pid),{visibility:vis},{merge:true});if(links()[pid])setLink(pid,{vis});emit()}
   async function remove(pid){await init();need();
     const ph=await fb.F.getDocs(fb.F.collection(fb.db,'projects',pid,'photos'));for(const d of ph.docs)await fb.F.deleteDoc(d.ref);
