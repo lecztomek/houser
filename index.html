@@ -91,6 +91,15 @@ main{position:relative;min-height:0}
 .btn2.cmpon{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8}
 .pmbar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}
 .plist{display:flex;flex-direction:column;gap:8px}
+.pmtools{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:-4px 0 10px}.pmtools .pmfilter{margin:0}.pmview{display:flex;gap:6px}
+.plist.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.plist.tiles>.login{grid-column:1/-1}
+.plist.tiles .prow{grid-template-columns:1fr;align-items:stretch;padding:0;overflow:hidden;gap:0}
+.plist.tiles .prow .pth{width:100%;height:170px;border-radius:0}
+.plist.tiles .prow .pth svg{width:100%;height:100%}
+.plist.tiles .pinfo{padding:10px 12px 4px}.plist.tiles .pinfo b{white-space:normal}
+.plist.tiles .pinfo small{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.plist.tiles .pacts{justify-content:flex-start;padding:4px 12px 12px;grid-column:auto}
 .prow{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:14px;align-items:center;background:#fff;border:1px solid #dbe2ea;border-radius:14px;padding:10px}
 .prow.cur1{border-color:#86efac}
 .pmfilter{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 10px}.fchip{font:inherit;font-size:13px;font-weight:600;padding:6px 12px;border-radius:999px;border:1px solid #cbd5e1;background:#fff;color:#334155;cursor:pointer}.fchip.on{background:#1e293b;color:#fff;border-color:#1e293b}.fchip .n{opacity:.6;font-weight:500}
@@ -144,7 +153,7 @@ main{position:relative;min-height:0}
 .view{position:absolute;top:0;right:0;bottom:0;left:0;display:none;outline:none}
 .view.active{display:block}
 iframe{width:100%;height:100%;border:0;display:block;background:#fff}
-#start,#projekty{overflow:auto;padding:28px 16px}
+#projekty{overflow:auto;padding:28px 16px}
 .wrap{max-width:1000px;margin:0 auto}
 h1{margin:0 0 6px;font-size:26px}
 .lead{color:var(--muted);margin:0 0 22px;line-height:1.5}
@@ -217,7 +226,7 @@ a{color:var(--accent)}
 <body>
 <aside id="nav">
   <div class="navtop">
-    <a class="brand" id="brand" href="#start" title="Strona startowa – lista modułów"><span class="mark"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></svg></span><span>Houser</span></a>
+    <a class="brand" id="brand" href="#projekty" title="Projekty – Twoje domy i domy innych"><span class="mark"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></svg></span><span>Houser</span></a>
     <button class="burger" id="burger" title="Menu – pokaż nazwy modułów"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <button class="burger navclose" id="navClose" title="Zamknij menu" aria-label="Zamknij menu"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
   </div>
@@ -236,16 +245,6 @@ a{color:var(--accent)}
   <a id="openExt" class="ext" href="#" target="_blank" rel="noopener" hidden title="Otwórz bieżący moduł w osobnej karcie">↗</a>
 </div>
 <main id="views">
-  <section id="start" class="view">
-    <div class="wrap">
-      <h1>Start</h1>
-      <p class="lead" id="homeLead">Zaloguj się (Google), żeby projektować swoje domy – zapisują się same na Twoim koncie, na każdym urządzeniu. Bez konta możesz oglądać domy innych.</p>
-      <h2 class="sec">Bieżący projekt</h2>
-      <div id="curProj"></div>
-      <div id="recentSec" hidden><h2 class="sec">Ostatnie projekty <a class="seclink" href="#projekty">Wszystkie projekty →</a></h2><div class="gallery" id="recent"></div></div>
-      <div id="cloudPubSec" hidden><h2 class="sec">Projekty publiczne</h2><p class="lead small">Domy udostępnione przez innych. Otwierasz kopię – oryginał autora się nie zmienia.</p><div class="gallery" id="cloudPub"></div></div>
-    </div>
-  </section>
   <section id="projekty" class="view"><div class="wrap" id="pm"></div></section>
 </main>
 </div>
@@ -358,7 +357,7 @@ if(cards){  if(m.group!==lastGroup){lastGroup=m.group;const h=document.createEle
   c.onclick=()=>{location.hash=m.id;};cards.appendChild(c);}
 });
 function show(id){
-  const m=MODULES.find(x=>x.id===id);if(!m&&id!=='projekty')id='start';
+  const m=MODULES.find(x=>x.id===id);if(!m)id='projekty'; // jedna strona główna: Projekty (dawny Start scalony z Projektami)
   if(m&&!frames[id]){
     const sec=document.createElement('section');sec.className='view';sec.id='view-'+id;
     const f=document.createElement('iframe');f.src=m.src;f.title=m.name;
@@ -366,8 +365,8 @@ function show(id){
   }
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v===(m?frames[id]:document.getElementById(id))));
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.id===id));
-  document.getElementById('brand').classList.toggle('active',id==='start');
-  if(m){try{localStorage.setItem('houser:last-module',m.id)}catch(_){}}else setTimeout(()=>{try{id==='projekty'?renderProjects():renderHome()}catch(e){console.error(e)}},0);
+  document.getElementById('brand').classList.toggle('active',id==='projekty');
+  if(m){try{localStorage.setItem('houser:last-module',m.id)}catch(_){}}else setTimeout(()=>{try{renderProjects()}catch(e){console.error(e)}},0);
   openExt.hidden=!m;if(m)openExt.href=m.src;
   document.title=(m?m.name+' – ':id==='projekty'?'Projekty – ':'')+'Houser';
 }
@@ -391,7 +390,7 @@ const modName=id=>MODULES.find(m=>m.id===id)?.name||({plik:'wczytanie pliku / no
 let roWarned=false;
 const isGuest=()=>HouserCloud.enabled&&!HouserCloud.user(); // bez konta – tylko przeglądanie
 const canSave=p=>!!p&&!p.readOnly&&!isGuest();
-function renderBar(){const rec=HouserStore.load();$('pbName').textContent=rec?projName(rec.project):'brak – wybierz dom na stronie startowej';
+function renderBar(){const rec=HouserStore.load();$('pbName').textContent=rec?projName(rec.project):'brak – wybierz dom w Projektach';
   const ro=rec?.project?.readOnly,guest=!ro&&isGuest(),R=$('pbRo');
   $('pbMeta').innerHTML=rec&&!ro&&!guest?('zmiana '+fmtTime(rec.updatedAt)+(modName(rec.source)?' ('+modName(rec.source)+')':'')):'';
   const me=HouserCloud.user?.();R.hidden=!rec; // zawsze widać, czyj to dom
@@ -459,7 +458,8 @@ async function renderGallery(){const el=$('gallery');if(!el)return;
   el.innerHTML=SAMPLES.map((m,i)=>'<button class="hcard'+(cur&&cur===m.project.definitionFingerprint?' loaded':'')+'" data-i="'+i+'"><div class="thumb">'+planSvg(m.project)+'</div><h3>'+esc(m.name)+'</h3><div>'+chips(stats(m.project))+'</div><p>'+esc(m.desc)+'</p><span class="go">'+(cur&&cur===m.project.definitionFingerprint?'✓ wczytany – kliknij, żeby wczytać od nowa':'Wczytaj ten dom →')+'</span></button>').join('');
   el.querySelectorAll('.hcard').forEach(b=>b.onclick=async()=>{const m=SAMPLES[+b.dataset.i];if(await openSample(m.file,m.project))renderHome()});
 }
-function renderHome(){renderCur();renderGallery();renderCloudHome()}
+const onHome=()=>{const h=location.hash;return !h||h==='#start'||h==='#projekty'};
+function renderHome(){if(onHome())renderProjects(true)}
 // ---------- Cofnij / Ponów – wspólne dla wszystkich modułów
 // Historia bieżącego projektu (w pamięci tej karty). Szybkie kolejne zapisy z tego samego modułu (np. malowanie) łączymy w jeden krok.
 const undoStack=[],redoStack=[],HIST_MAX=60;let curJSON=(()=>{const r=HouserStore.load();return r?JSON.stringify(r.project):null})(),lastPush={t:0,src:''};
@@ -570,7 +570,7 @@ async function loadCloudLists(){if(cloudLoading){cloudAgain=true;return}cloudLoa
   if(cloudAgain||(HouserCloud.user()?.uid||null)!==uid){cloudAgain=false;return loadCloudLists()} // w trakcie zmieniło się konto
   refreshViews(true)}
 function wantCloudLists(){if(!HouserCloud.enabled)return;HouserCloud.init().then(()=>{if(!cloudLists.mine||Date.now()-(cloudLists.t||0)>20000)loadCloudLists()}).catch(()=>{})}
-function refreshViews(noLoad){const h=location.hash;if(!h||h==='#start'){renderCur();paintRecent();paintPublic()}if(h==='#projekty')renderProjects(noLoad);renderBar()}
+function refreshViews(noLoad){if(onHome())renderProjects(noLoad);renderBar()}
 const thumbImg=m=>m.cover?'<img alt="" src="'+esc(m.cover)+'">':m.plan?'<img alt="" class="plan" src="'+esc(m.plan)+'">':'';
 // okładka z galerii tej przeglądarki (★) ma pierwszeństwo – tak samo dla projektów lokalnych i z chmury; bez zdjęć zostaje rzut
 // okładka domu: z galerii w tej przeglądarce, a gdy jej tu nie ma – ta zapisana w chmurze
@@ -609,10 +609,10 @@ function recentItems(){const u=HouserCloud.user(),seen=new Set(),out=[];
 function paintRecent(){const el=$('recent'),sec=$('recentSec');if(!el)return;const cur=HouserStore.load()?.project?.projectId,items=recentItems().filter(m=>m.id!==cur).slice(0,4);
   sec.hidden=!items.length;el.innerHTML=items.map(m=>'<button class="hcard rcard" data-id="'+esc(m.id)+'" data-w="'+m.where+'"><div class="thumb">'+(thumbImg(m)||planSvg({}))+'</div><h3>'+esc(m.name||'bez nazwy')+'</h3><div class="cmeta">'+(m.where==='cloud'?'☁':'💻')+' '+esc(fl(m))+'zmiana '+fmtTime(m.updatedAt)+'</div><span class="go">Otwórz →</span></button>').join('');
   el.querySelectorAll('.rcard').forEach(b=>b.onclick=()=>b.dataset.w==='cloud'?openCloud(b.dataset.id):openLocal(b.dataset.id));fillCovers(el)}
-function paintPublic(){const u=HouserCloud.user(),others=(cloudLists.pub||[]).filter(m=>!u||m.owner!==u.uid);$('cloudPubSec').hidden=!others.length;
+function paintPublic(){if(!$('cloudPubSec'))return;const u=HouserCloud.user(),others=(cloudLists.pub||[]).filter(m=>!u||m.owner!==u.uid);$('cloudPubSec').hidden=!others.length;
   $('cloudPub').innerHTML=others.map(m=>'<div class="hcard ccard" data-id="'+esc(m.id)+'"><div class="thumb" data-a="open">'+(thumbImg(m)||planSvg({}))+'</div><h3>'+esc(m.name||'bez nazwy')+'</h3><div>'+chips(m.stats)+'</div><div class="owner">'+avatar({photo:m.ownerPhoto,name:m.ownerName})+esc(m.ownerName||'')+'</div><div class="cacts"><button class="btn2 sm primary" data-a="open">'+(m.visibility==='public_edit'&&u?'✏️ Otwórz – można zmieniać':'👁 Podgląd')+'</button></div></div>').join('');
   $('cloudPub').querySelectorAll('[data-a="open"]').forEach(b=>b.onclick=()=>openCloud(b.closest('.ccard').dataset.id))}
-function renderCloudHome(){if(HouserCloud.enabled)$('homeLead').textContent=isGuest()?'Bez konta możesz oglądać domy. Zaloguj się (Google), żeby projektować swoje – zapisują się same na Twoim koncie, na każdym urządzeniu.':'Dom zapisuje się sam na Twoim koncie, na każdym urządzeniu. Zacznij od pustego projektu albo otwórz któryś ze swoich domów – potem idziesz po kolei przez moduły z menu po lewej.';
+function renderCloudHome(){if(!$('homeLead'))return;if(HouserCloud.enabled)$('homeLead').textContent=isGuest()?'Bez konta możesz oglądać domy. Zaloguj się (Google), żeby projektować swoje – zapisują się same na Twoim koncie, na każdym urządzeniu.':'Dom zapisuje się sam na Twoim koncie, na każdym urządzeniu. Zacznij od pustego projektu albo otwórz któryś ze swoich domów – potem idziesz po kolei przez moduły z menu po lewej.';
   HouserLibrary.list().then(l=>{localList=l;paintRecent()}).catch(()=>{});paintRecent();paintPublic();wantCloudLists()}
 // ---------- porównanie domów (wspólna lista z modułem Porównanie, maks. 4)
 const CMP_KEY='houser:compare',CMP_MAX=4;
@@ -645,7 +645,7 @@ async function paintBase(){const el=$('pmBase');if(!el)return;let L;try{L=await 
   el.querySelectorAll('[data-a="base"]').forEach(b=>b.onclick=async()=>{const m=SAMPLES[+b.closest('[data-i]').dataset.i];if(await openSample(m.file,m.project))renderProjects(true)});el.querySelectorAll('[data-a="blink"]').forEach(b=>b.onclick=()=>copyLink('baza:'+SAMPLES[+b.closest('[data-i]').dataset.i].file.replace(/\.json$/,'')))}
 // link do bieżącego domu: dom z bazy, cudzy publiczny albo Twój udostępniony (prywatnego nikt inny nie otworzy)
 const curLinkId=(p,st)=>p?.readOnly?.src==='base'&&p.fromSample?'baza:'+p.fromSample.replace(/\.json$/,''):p?.readOnly?.pid?p.readOnly.pid:p?.sharedEdit?.pid?p.sharedEdit.pid:st?.linked&&isPub(st.vis)?st.pid:null;
-const PM_F='houser:pm-filter';
+const PM_F='houser:pm-filter',PM_V='houser:pm-view'; // filtr i widok listy (kafle / lista)
 function pmCounts(){const L=$('pmList');if(!L)return;const own=L.querySelectorAll('.prow:not(.other)').length,oth=L.querySelectorAll('.prow.other').length,n=(k,v)=>{const e=$('pmN_'+k);if(e)e.textContent=v};n('all',own+oth);n('mine',own);n('other',oth)}
 function renderProjects(noLoad){const el=$('pm');if(!el)return;const rec=HouserStore.load(),st=HouserCloud.status(),u=st.user,p=rec?.project,curId=p?.projectId;
   let h='<h1>Projekty</h1><p class="lead">'+(isGuest()?'Bez konta możesz tylko oglądać domy. Zaloguj się, żeby mieć swoje.':'Dom zapisuje się sam po każdej zmianie na Twoim koncie. Eksport do pliku JSON to kopia zapasowa.')+'</p>'+
@@ -664,13 +664,15 @@ function renderProjects(noLoad){const el=$('pm');if(!el)return;const rec=HouserS
   const all=[...byId.values()].sort((a,b)=>(b.id===curId)-(a.id===curId)||(b.updatedAt||'').localeCompare(a.updatedAt||''));
   // bez konta nie ma autora, więc nie ma „moich” domów – sama lista domów do oglądania (bez filtra)
   const guest=isGuest(),pf=guest?'all':(lsGet(PM_F)||'all');
-  h+='<h2 class="sec">Domy</h2>'+(guest?'':'<div class="pmfilter" id="pmF">'+[['all','Wszystkie'],['mine','Moje'],['other','Nie moje']].map(([k,t])=>'<button class="fchip'+(pf===k?' on':'')+'" data-f="'+k+'">'+t+' <span class="n" id="pmN_'+k+'"></span></button>').join('')+'</div>');
+  const pv=lsGet(PM_V)||'tiles';
+  h+='<h2 class="sec">Domy</h2><div class="pmtools">'+(guest?'<span></span>':'<div class="pmfilter" id="pmF">'+[['all','Wszystkie'],['mine','Moje'],['other','Nie moje']].map(([k,t])=>'<button class="fchip'+(pf===k?' on':'')+'" data-f="'+k+'">'+t+' <span class="n" id="pmN_'+k+'"></span></button>').join('')+'</div>')+
+    '<div class="pmview" id="pmV">'+[['tiles','▦ Kafle'],['list','☰ Lista']].map(([k,t])=>'<button class="fchip'+(pv===k?' on':'')+'" data-v="'+k+'">'+t+'</button>').join('')+'</div></div>';
   if(st.enabled&&!u)h+='<div class="login"><p>Bez konta możesz tylko oglądać domy. Zaloguj się, żeby mieć swoje domy – zapisują się w chmurze, otworzysz je na każdym urządzeniu i sam zdecydujesz, kto je widzi.</p><button class="btn2 primary" id="pmLogin">'+GICON+' Zaloguj przez Google</button></div>';
   if(u&&!cloudLists.mine)h+='<div class="empty2">Wczytuję projekty z chmury…</div>';
   // jedna lista: moje domy, potem cudze (społeczność i baza Housera – autor „Houser”); filtr tylko ukrywa wiersze
   const pubOthers=(cloudLists.pub||[]).filter(m=>!u||m.owner!==u.uid);
-  h+='<div class="plist'+(guest?' guest':'')+'" id="pmList" data-f="'+pf+'">'+(guest?'':all.length?all.map(m=>pmRow(m,m.id===curId)).join(''):'<div class="login mineOnly"><p>Tu pojawią się Twoje domy – każdy zapisuje się sam po pierwszej zmianie.</p></div>')+pubOthers.map(m=>'<div class="prow other" data-pub="'+esc(m.id)+'"><div class="pth">'+(thumbImg(m)||'')+'</div><div class="pinfo"><b><span class="own0">Nie mój</span>'+esc(m.name||'bez nazwy')+'</b><small>autor: '+esc(m.ownerName||'?')+'</small><span class="vis pub">'+VIS_LABEL[m.visibility==='public_edit'?'public_edit':'public']+'</span></div><div class="pacts"><button class="btn2 sm primary" data-a="pubopen">'+(m.visibility==='public_edit'&&u?'✏️ Otwórz':'👁 Podgląd')+'</button><button class="btn2 sm" data-a="publink" title="Link otwiera ten dom od razu">🔗</button></div></div>').join('')+'<div id="pmBase" style="display:contents"></div></div>';
-  el.innerHTML=h;fillCovers(el);pmCounts();paintBase().then(pmCounts);el.querySelectorAll('#pmF [data-f]').forEach(b=>b.onclick=()=>{lsSet(PM_F,b.dataset.f);$('pmList').dataset.f=b.dataset.f;el.querySelectorAll('#pmF .fchip').forEach(x=>x.classList.toggle('on',x===b))});el.querySelectorAll('[data-a="pubopen"]').forEach(b=>b.onclick=()=>openCloud(b.closest('[data-pub]').dataset.pub));el.querySelectorAll('[data-a="publink"]').forEach(b=>b.onclick=()=>copyLink(b.closest('[data-pub]').dataset.pub));autoTidy(all);coverOf(p).then(c=>{const t=$('pmCurThumb');if(!c||!t)return;t.classList.add('hasCover');t.innerHTML='<img class="coverImg" alt="" src="'+c+'"><div class="miniPlan">'+planSvg(p)+'</div><a class="galLink" href="#galeria">Galeria →</a>'}).catch(()=>{});
+  h+='<div class="plist'+(guest?' guest':'')+(pv==='tiles'?' tiles':'')+'" id="pmList" data-f="'+pf+'">'+(guest?'':all.length?all.map(m=>pmRow(m,m.id===curId)).join(''):'<div class="login mineOnly"><p>Tu pojawią się Twoje domy – każdy zapisuje się sam po pierwszej zmianie.</p></div>')+pubOthers.map(m=>'<div class="prow other" data-pub="'+esc(m.id)+'"><div class="pth">'+(thumbImg(m)||'')+'</div><div class="pinfo"><b><span class="own0">Nie mój</span>'+esc(m.name||'bez nazwy')+'</b><small>autor: '+esc(m.ownerName||'?')+'</small><span class="vis pub">'+VIS_LABEL[m.visibility==='public_edit'?'public_edit':'public']+'</span></div><div class="pacts"><button class="btn2 sm primary" data-a="pubopen">'+(m.visibility==='public_edit'&&u?'✏️ Otwórz':'👁 Podgląd')+'</button><button class="btn2 sm" data-a="publink" title="Link otwiera ten dom od razu">🔗</button></div></div>').join('')+'<div id="pmBase" style="display:contents"></div></div>';
+  el.innerHTML=h;fillCovers(el);pmCounts();paintBase().then(pmCounts);el.querySelectorAll('#pmV [data-v]').forEach(b=>b.onclick=()=>{lsSet(PM_V,b.dataset.v);$('pmList').classList.toggle('tiles',b.dataset.v==='tiles');el.querySelectorAll('#pmV .fchip').forEach(x=>x.classList.toggle('on',x===b))});el.querySelectorAll('#pmF [data-f]').forEach(b=>b.onclick=()=>{lsSet(PM_F,b.dataset.f);$('pmList').dataset.f=b.dataset.f;el.querySelectorAll('#pmF .fchip').forEach(x=>x.classList.toggle('on',x===b))});el.querySelectorAll('[data-a="pubopen"]').forEach(b=>b.onclick=()=>openCloud(b.closest('[data-pub]').dataset.pub));el.querySelectorAll('[data-a="publink"]').forEach(b=>b.onclick=()=>copyLink(b.closest('[data-pub]').dataset.pub));autoTidy(all);coverOf(p).then(c=>{const t=$('pmCurThumb');if(!c||!t)return;t.classList.add('hasCover');t.innerHTML='<img class="coverImg" alt="" src="'+c+'"><div class="miniPlan">'+planSvg(p)+'</div><a class="galLink" href="#galeria">Galeria →</a>'}).catch(()=>{});
   $('pmNew').onclick=newEmpty;$('pmImport').onchange=e=>{const f=e.target.files[0];e.target.value='';importFile(f)};
   if($('pmRename'))$('pmRename').onclick=renameCurrent;if($('pmExport'))$('pmExport').onclick=()=>downloadProject(HouserStore.load().project);
   if($('pmDup'))$('pmDup').onclick=()=>isGuest()?doLogin():duplicateCurrent();if($('pmLink'))$('pmLink').onclick=()=>copyLink(curLinkId(p,st));if($('pmVis'))$('pmVis').onchange=async e=>{const v=e.target.value;if((await setVis(st.pid,v))===false)e.target.value=st.vis||'private'};el.querySelectorAll('select[data-vis]').forEach(sel=>{const m0=sel.value;sel.onchange=async()=>{if((await setVis(sel.closest('.prow').dataset.id,sel.value))===false)sel.value=m0}});
@@ -702,10 +704,10 @@ if(HouserCloud.enabled){
 }
 HouserStore.subscribe(onStoreChange);
 try{HouserStore.projectId()}catch(_){}
-HouserStore.subscribe(renderBar);HouserStore.subscribe(()=>{if(!location.hash||location.hash==='#start')renderHome()});renderBar();renderHome();renderUndo();setInterval(renderBar,30000);
-show(location.hash.slice(1)||'start');
+HouserStore.subscribe(renderBar);HouserStore.subscribe(()=>{if(onHome())renderHome()});renderBar();renderUndo();setInterval(renderBar,30000);
+show(location.hash.slice(1)||'projekty');
 // link do domu: ?dom=<id w chmurze> albo ?dom=baza:<plik> – otwiera dom od razu (cudzy w podglądzie)
-(async()=>{const q=new URLSearchParams(location.search),d=q.get('dom');if(!d)return;q.delete('dom');history.replaceState(null,'',location.pathname+(q.toString()?'?'+q:'')+(location.hash||'#start'));
+(async()=>{const q=new URLSearchParams(location.search),d=q.get('dom');if(!d)return;q.delete('dom');history.replaceState(null,'',location.pathname+(q.toString()?'?'+q:'')+(location.hash||'#projekty'));
   if(d.startsWith('baza:')){await HouserOpen.sample(d.slice(5)+'.json');return}
   try{await HouserCloud.init()}catch(_){}try{const c=HouserStore.load()?.project;if(c&&HouserCloud.status().pid===d){toast('Ten dom jest już otwarty.');return}}catch(_){}
   await openCloud(d)})();

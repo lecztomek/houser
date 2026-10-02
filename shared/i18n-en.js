@@ -3540,4 +3540,9 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "Nie masz innych domów.":"You have no other houses.",
 "Zdjęcia zapisują się razem z domem na Twoim koncie (nie trafiają do pliku eksportu).":"Photos are saved with the house in your account (not in the export file).",
 "otwarty teraz":"open now",
-"✏️ Wspólny":"✏️ Shared"};
+"✏️ Wspólny":"✏️ Shared",
+"▦ Kafle":"▦ Tiles",
+"☰ Lista":"☰ List",
+"Projekty – Twoje domy i domy innych":"Projects – your houses and other people's",
+"brak – wybierz dom w Projektach":"none – choose a house in Projects",
+"Brak projektu – wybierz dom w Projektach.":"No project – choose a house in Projects."};

@@ -119,7 +119,7 @@ async function load(){pid=HouserStore.load()?HouserStore.projectId():null;items=
 function render(){
   $('max').textContent=G.MAX;$('count').textContent=items.length+' / '+G.MAX;
   const full=items.length>=G.MAX,none=!pid;
-  $('sub').textContent=none?'Brak projektu – wybierz dom na stronie startowej.':projectName();
+  $('sub').textContent=none?'Brak projektu – wybierz dom w Projektach.':projectName();
   for(const id of ['fromAi','show','dlAll'])$(id).disabled=none||(id!=='fromAi'&&!items.length)||(id==='fromAi'&&full);
   $('upBtn').style.opacity=none||full?.45:1;$('up').disabled=none||full;
   const C=$('content');
