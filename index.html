@@ -501,6 +501,8 @@ function renderCloudBar(){const el=$('pbCloud'),acct=$('acct');if(!el)return;con
   if(u&&st.linked)h+=' <span class="vis'+(st.vis==='public'?' pub':'')+'">'+(VIS_LABEL[st.vis]||VIS_LABEL.private)+'</span>';
   el.innerHTML='<a href="#projekty" class="pblink" title="Projekty – eksport, import, duplikaty, udostępnianie">'+h+'</a>';
   if($('pbCloudRetry'))$('pbCloudRetry').onclick=e=>{e.preventDefault();HouserCloud.saveNow()}}
+const houseLink=d=>location.origin+location.pathname+'?dom='+encodeURIComponent(d);
+async function copyLink(d){const u=houseLink(d);try{await navigator.clipboard.writeText(u);toast('Skopiowano link do domu – wyślij go komuś, otworzy dom od razu')}catch(_){prompt('Link do domu (skopiuj):',u)}}
 async function setVis(pid,vis){if(vis==='public'&&!confirm('Projekt będzie widoczny dla wszystkich na stronie głównej (razem ze zdjęciami z galerii i Twoim imieniem). Udostępnić?'))return;
   try{await HouserCloud.setVisibility(pid,vis);toast(vis==='public'?'Projekt jest publiczny':'Projekt jest prywatny');cloudLists.t=0;refreshViews()}catch(e){alert('Nie udało się zmienić: '+e.message)}}
 async function openCloud(id,noAsk){if(!noAsk&&!(await confirmReplace()))return;
@@ -607,15 +609,23 @@ function pmRow(m,cur){const pub=m.visibility==='public',a=(k,t,ti)=>'<button cla
   const where=(m.local?'<span class="vis">💻 w tej przeglądarce</span>':'')+(m.cloud?'<span class="vis'+(pub?' pub':'')+'">☁ '+VIS_LABEL[pub?'public':'private']+'</span>':'');
   return '<div class="prow'+(cur?' cur1':'')+'" data-id="'+esc(m.id)+'"><div class="pth">'+(thumbImg(m)||'')+'</div><div class="pinfo"><b>'+esc(m.name||'bez nazwy')+'</b><small>'+esc(fl(m))+'zmiana '+fmtTime(m.updatedAt)+'</small>'+where+'</div><div class="pacts">'+
     (cur?'<span class="go">✓ otwarty</span>':'<button class="btn2 sm primary" data-a="open">Otwórz</button>')+cmpBtn(m.cloud&&!m.local?'cloud':'local',m.id)+a('dup','⧉ Duplikuj')+a('exp','⤓ Eksportuj','Pobierz plik JSON')+
-    (m.cloud?a('vis',pub?'🔒 Ustaw jako prywatny':'🌍 Udostępnij'):'')+(cur?'':a('del','🗑','Usuń'))+'</div></div>'}
+    (m.cloud?a('vis',pub?'🔒 Ustaw jako prywatny':'🌍 Udostępnij'):'')+(m.cloud&&pub?a('link','🔗 Kopiuj link','Link otwiera ten dom od razu (inni widzą go w podglądzie)'):'')+(cur?'':a('del','🗑','Usuń'))+'</div></div>'}
 function curCmpSrc(id){if(localList.some(m=>m.id===id))return 'local';if(HouserCloud.isLinked(id))return 'cloud';return 'current'}
 const sampleCover=p=>p?.fromSample&&p.readOnly?.src==='base'?'examples/covers/'+p.fromSample.replace(/\.json$/,'.jpg'):null;
 const coverOf=p=>sampleCover(p)?Promise.resolve(sampleCover(p)):p?.projectId?curCover(p.projectId):Promise.resolve(null);
 async function loadSamples(){if(!SAMPLES.length){const man=await (await fetch('examples/index.json')).json();SAMPLES=await Promise.all(man.map(async m=>({...m,project:await (await fetch('examples/'+m.file)).json()})))}return SAMPLES}
+// Twoja kopia domu z bazy (otwarta wcześniej jako wzór albo zaimportowana): ta sama nazwa albo fromSample – jej zdjęcia z Galerii pokazujemy przy domu z bazy
+async function ownCopies(){const out=[];for(const m of localList){let fs=null;try{fs=(await HouserLibrary.get(m.id))?.project?.fromSample||null}catch(_){}out.push({id:m.id,name:m.name,fromSample:fs,updatedAt:m.updatedAt,cloud:false})}
+  const u=HouserCloud.user();for(const m of (u&&cloudLists.mine)||[])if(!out.some(o=>o.id===m.id))out.push({id:m.id,name:m.name,updatedAt:m.updatedAt,cloud:true});return out}
+const norm=t=>String(t||'').trim().toLowerCase();
 async function paintBase(){const el=$('pmBase');if(!el)return;let L;try{L=await loadSamples()}catch(e){el.innerHTML='<div class="empty2">Nie udało się wczytać domów z bazy.</div>';return}
-  const cur=HouserStore.load()?.project,isCur=m=>cur?.readOnly?.src==='base'&&cur.fromSample===m.file;
-  el.innerHTML=L.map((m,i)=>'<div class="prow other'+(isCur(m)?' cur1':'')+'" data-i="'+i+'"><div class="pth">'+(m.cover?'<img alt="" loading="lazy" src="examples/'+esc(m.cover)+'">':planSvg(m.project))+'</div><div class="pinfo"><b>'+esc(m.name)+'</b><small>'+esc(m.desc||'')+'</small><div>'+chips(stats(m.project))+'</div></div><div class="pacts">'+(isCur(m)?'<span class="go">✓ otwarty</span>':'<button class="btn2 sm primary" data-a="base">👁 Podgląd</button>')+'</div></div>').join('');
-  el.querySelectorAll('[data-a="base"]').forEach(b=>b.onclick=async()=>{const m=SAMPLES[+b.closest('[data-i]').dataset.i];if(await openSample(m.file,m.project))renderProjects(true)})}
+  const cur=HouserStore.load()?.project,isCur=m=>cur?.readOnly?.src==='base'&&cur.fromSample===m.file,mine=await ownCopies();if(!$('pmBase'))return;
+  // dom z bazy, który już masz u siebie (ten sam dom – otwarty kiedyś z bazy albo zaimportowany), jest na liście Twoich projektów – tu go nie powtarzamy
+  const rows=L.map((m,i)=>({m,i})).filter(({m})=>!mine.some(o=>o.fromSample===m.file||norm(o.name)===norm(m.name)));
+  el.innerHTML=rows.length?rows.map(({m,i})=>'<div class="prow other'+(isCur(m)?' cur1':'')+'" data-i="'+i+'"><div class="pth">'+(m.cover?'<img alt="" loading="lazy" src="examples/'+esc(m.cover)+'">':planSvg(m.project))+'</div><div class="pinfo"><b>'+esc(m.name)+'</b><small>'+esc(m.desc||'')+'</small><div>'+chips(stats(m.project))+'</div></div><div class="pacts">'+(isCur(m)?'<span class="go">✓ otwarty</span>':'<button class="btn2 sm primary" data-a="base">👁 Podgląd</button>')+'<button class="btn2 sm" data-a="blink" title="Link otwiera ten dom od razu">🔗</button></div></div>').join(''):'<div class="empty2">Wszystkie domy z bazy masz już na swojej liście.</div>';
+  el.querySelectorAll('[data-a="base"]').forEach(b=>b.onclick=async()=>{const m=SAMPLES[+b.closest('[data-i]').dataset.i];if(await openSample(m.file,m.project))renderProjects(true)});el.querySelectorAll('[data-a="blink"]').forEach(b=>b.onclick=()=>copyLink('baza:'+SAMPLES[+b.closest('[data-i]').dataset.i].file.replace(/\.json$/,'')))}
+// link do bieżącego domu: dom z bazy, cudzy publiczny albo Twój udostępniony (prywatnego nikt inny nie otworzy)
+const curLinkId=(p,st)=>p?.readOnly?.src==='base'&&p.fromSample?'baza:'+p.fromSample.replace(/\.json$/,''):p?.readOnly?.pid?p.readOnly.pid:st?.linked&&st.vis==='public'?st.pid:null;
 function renderProjects(noLoad){const el=$('pm');if(!el)return;const rec=HouserStore.load(),st=HouserCloud.status(),u=st.user,p=rec?.project,curId=p?.projectId;
   let h='<h1>Projekty</h1><p class="lead">Projekt zapisuje się sam po każdej zmianie – w tej przeglądarce'+(st.enabled?', a po zalogowaniu także w chmurze':'')+'. Plik JSON (eksport) jest kopią zapasową albo sposobem na przeniesienie projektu bez konta.</p>'+
     '<div class="pmbar"><button class="btn2 primary" id="pmNew">＋ Nowy pusty projekt</button><label class="btn2">⤒ Importuj z pliku<input type="file" id="pmImport" accept="application/json,.json" hidden></label>'+(cmpList().length?'<a class="btn2" href="#porownanie">⚖ W porównaniu: '+cmpList().length+'/'+CMP_MAX+' → otwórz</a>':'')+'</div>';
@@ -625,7 +635,7 @@ function renderProjects(noLoad){const el=$('pm');if(!el)return;const rec=HouserS
     const where=p.readOnly?'👁 Podgląd cudzego domu – nic się nie zapisuje. Zrób kopię do siebie, żeby nad nim pracować.':!u?'💻 Zapisuje się sam w tej przeglądarce.'+(st.enabled?' Zaloguj się, żeby trzymać go też w chmurze.':''):st.off?'💻 Tylko w tej przeglądarce (usunięty z chmury).':st.linked?'☁ Zapisuje się sam w Twojej chmurze'+(st.savedAt?' · ostatnio '+fmtTime(st.savedAt):'')+'.':'☁ Zapisze się w chmurze przy pierwszej zmianie.';
     h+='<div class="cur"><div class="thumb" id="pmCurThumb">'+planSvg(p)+'</div><div><h3>'+esc(projName(p))+' <button class="btn2 sm" id="pmRename" title="Zmień nazwę">✎</button></h3><div>'+chips(s)+'</div><div class="meta">'+where+'</div>'+
       '<div class="acts"><a class="btn2 primary" href="#'+last.id+'">Kontynuuj: '+esc(last.name)+' →</a><button class="btn2" id="pmExport">⤓ Eksportuj do pliku</button><button class="btn2'+(p.readOnly?' primary':'')+'" id="pmDup">'+(p.readOnly?'⧉ Zrób kopię do siebie':'⧉ Duplikuj')+'</button>'+cmpBtn(curCmpSrc(curId),curId||'current',true)+
-      (u&&st.linked?'<button class="btn2" id="pmVis">'+(st.vis==='public'?'🔒 Ustaw jako prywatny':'🌍 Udostępnij publicznie')+'</button>':'')+(u&&st.off?'<button class="btn2" id="pmOn">☁ Zapisuj w chmurze</button>':'')+'</div></div></div>'}
+      (curLinkId(p,st)?'<button class="btn2" id="pmLink" title="Link otwiera ten dom od razu">🔗 Kopiuj link</button>':'')+(u&&st.linked?'<button class="btn2" id="pmVis">'+(st.vis==='public'?'🔒 Ustaw jako prywatny':'🌍 Udostępnij publicznie')+'</button>':'')+(u&&st.off?'<button class="btn2" id="pmOn">☁ Zapisuj w chmurze</button>':'')+'</div></div></div>'}
   // jedna lista: każdy dom raz – zapisany w tej przeglądarce, w chmurze albo w obu miejscach
   const cloudIds=new Set((u&&cloudLists.mine||[]).map(m=>m.id)),byId=new Map();
   for(const m of localList)byId.set(m.id,{...m,local:true});
@@ -639,18 +649,18 @@ function renderProjects(noLoad){const el=$('pm');if(!el)return;const rec=HouserS
   // cudze domy: ogólna baza Housera i publiczne domy innych – tylko podgląd (kopia do siebie przyciskiem w podglądzie)
   h+='<h2 class="sec">Z ogólnej bazy Housera <span class="ownNo">Nie mój</span></h2><p class="lead small">Gotowe domy do obejrzenia. Otwierają się w podglądzie – żeby coś zmienić, zrób kopię do siebie.</p><div class="plist" id="pmBase"><div class="empty2">Wczytuję…</div></div>';
   const pubOthers=(cloudLists.pub||[]).filter(m=>!u||m.owner!==u.uid);
-  if(pubOthers.length)h+='<h2 class="sec">Społeczność – domy innych <span class="ownNo">Nie mój</span></h2><div class="plist">'+pubOthers.map(m=>'<div class="prow other" data-pub="'+esc(m.id)+'"><div class="pth">'+(thumbImg(m)||'')+'</div><div class="pinfo"><b>'+esc(m.name||'bez nazwy')+'</b><small>autor: '+esc(m.ownerName||'?')+'</small></div><div class="pacts"><button class="btn2 sm primary" data-a="pubopen">👁 Podgląd</button></div></div>').join('')+'</div>';
-  el.innerHTML=h;fillCovers(el);paintBase();el.querySelectorAll('[data-a="pubopen"]').forEach(b=>b.onclick=()=>openCloud(b.closest('[data-pub]').dataset.pub));findUntouched(all).then(L=>{if(!L.length||!$('pmTidy'))return;$('pmTidy').hidden=false;$('pmTidy').innerHTML='<p>🧹 Do posprzątania ('+L.length+'):</p><ul>'+L.map(m=>'<li><b>'+esc(m.name)+'</b> · zmiana '+fmtTime(m.updatedAt)+' – '+esc(m.why)+'</li>').join('')+'</ul><button class="btn2" id="pmTidyGo">Usuń te kopie</button>';$('pmTidyGo').onclick=()=>tidyUntouched(L)});coverOf(p).then(c=>{const t=$('pmCurThumb');if(!c||!t)return;t.classList.add('hasCover');t.innerHTML='<img class="coverImg" alt="" src="'+c+'"><div class="miniPlan">'+planSvg(p)+'</div><a class="galLink" href="#galeria">Galeria →</a>'}).catch(()=>{});
+  if(pubOthers.length)h+='<h2 class="sec">Społeczność – domy innych <span class="ownNo">Nie mój</span></h2><div class="plist">'+pubOthers.map(m=>'<div class="prow other" data-pub="'+esc(m.id)+'"><div class="pth">'+(thumbImg(m)||'')+'</div><div class="pinfo"><b>'+esc(m.name||'bez nazwy')+'</b><small>autor: '+esc(m.ownerName||'?')+'</small></div><div class="pacts"><button class="btn2 sm primary" data-a="pubopen">👁 Podgląd</button><button class="btn2 sm" data-a="publink" title="Link otwiera ten dom od razu">🔗</button></div></div>').join('')+'</div>';
+  el.innerHTML=h;fillCovers(el);paintBase();el.querySelectorAll('[data-a="pubopen"]').forEach(b=>b.onclick=()=>openCloud(b.closest('[data-pub]').dataset.pub));el.querySelectorAll('[data-a="publink"]').forEach(b=>b.onclick=()=>copyLink(b.closest('[data-pub]').dataset.pub));findUntouched(all).then(L=>{if(!L.length||!$('pmTidy'))return;$('pmTidy').hidden=false;$('pmTidy').innerHTML='<p>🧹 Do posprzątania ('+L.length+'):</p><ul>'+L.map(m=>'<li><b>'+esc(m.name)+'</b> · zmiana '+fmtTime(m.updatedAt)+' – '+esc(m.why)+'</li>').join('')+'</ul><button class="btn2" id="pmTidyGo">Usuń te kopie</button>';$('pmTidyGo').onclick=()=>tidyUntouched(L)});coverOf(p).then(c=>{const t=$('pmCurThumb');if(!c||!t)return;t.classList.add('hasCover');t.innerHTML='<img class="coverImg" alt="" src="'+c+'"><div class="miniPlan">'+planSvg(p)+'</div><a class="galLink" href="#galeria">Galeria →</a>'}).catch(()=>{});
   $('pmNew').onclick=newEmpty;$('pmImport').onchange=e=>{const f=e.target.files[0];e.target.value='';importFile(f)};
   if($('pmRename'))$('pmRename').onclick=renameCurrent;if($('pmExport'))$('pmExport').onclick=()=>downloadProject(HouserStore.load().project);
-  if($('pmDup'))$('pmDup').onclick=duplicateCurrent;if($('pmVis'))$('pmVis').onclick=()=>setVis(st.pid,st.vis==='public'?'private':'public');
+  if($('pmDup'))$('pmDup').onclick=duplicateCurrent;if($('pmLink'))$('pmLink').onclick=()=>copyLink(curLinkId(p,st));if($('pmVis'))$('pmVis').onclick=()=>setVis(st.pid,st.vis==='public'?'private':'public');
   if($('pmOn'))$('pmOn').onclick=()=>{HouserCloud.enable(st.pid);HouserCloud.saveNow().then(()=>{cloudLists.t=0;wantCloudLists()})};if($('pmLogin'))$('pmLogin').onclick=doLogin;
   el.querySelectorAll('.prow [data-a]').forEach(b=>b.onclick=async()=>{const id=b.closest('.prow').dataset.id,a=b.dataset.a,m=byId.get(id);if(!m)return;
     const useCloud=m.cloud&&(!m.local||(m.updatedAt||'')>(m.localAt||m.updatedAt||'')); // nowsza wersja wygrywa
     if(a==='open')return useCloud?openCloud(id):openLocal(id);
     if(a==='dup')return m.cloud&&!m.local?duplicateCloud(m):duplicateLocal(id);
     if(a==='exp'){try{downloadProject(useCloud?(await HouserCloud.fetchProject(id)).project:(await HouserLibrary.get(id)).project)}catch(e){alert('Nie udało się pobrać: '+e.message)}return}
-    if(a==='vis')return setVis(id,m.visibility==='public'?'private':'public');
+    if(a==='vis')return setVis(id,m.visibility==='public'?'private':'public');if(a==='link')return copyLink(id);
     if(a==='del'){if(!confirm('Usunąć projekt „'+(m.name||'')+'” razem z jego zdjęciami?\n\n'+[m.local?'• z tej przeglądarki':'',m.cloud?'• z chmury':''].filter(Boolean).join('\n')+'\n\nTego nie da się cofnąć.'))return;
       try{if(m.cloud)await HouserCloud.remove(id);if(m.local)await HouserLibrary.remove(id);for(const r of await HouserGallery.list(id))await HouserGallery.remove(r.id);
         toast('Usunięto „'+(m.name||'')+'”');localList=await HouserLibrary.list();cloudLists.t=0;if(m.cloud)wantCloudLists();renderProjects(true)}catch(e){alert('Nie udało się usunąć: '+e.message)}}});
@@ -674,6 +684,11 @@ HouserStore.subscribe(onStoreChange);
 try{HouserStore.projectId()}catch(_){}
 HouserStore.subscribe(renderBar);HouserStore.subscribe(()=>{if(!location.hash||location.hash==='#start')renderHome()});renderBar();renderHome();renderUndo();setInterval(renderBar,30000);
 show(location.hash.slice(1)||'start');
+// link do domu: ?dom=<id w chmurze> albo ?dom=baza:<plik> – otwiera dom od razu (cudzy w podglądzie)
+(async()=>{const q=new URLSearchParams(location.search),d=q.get('dom');if(!d)return;q.delete('dom');history.replaceState(null,'',location.pathname+(q.toString()?'?'+q:'')+(location.hash||'#start'));
+  if(d.startsWith('baza:')){await HouserOpen.sample(d.slice(5)+'.json');return}
+  try{await HouserCloud.init()}catch(_){}try{const c=HouserStore.load()?.project;if(c&&HouserCloud.status().pid===d){toast('Ten dom jest już otwarty.');return}}catch(_){}
+  await openCloud(d)})();
 </script>
 </body>
 </html>

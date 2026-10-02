@@ -3492,4 +3492,10 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "Społeczność – domy innych":"Community – other people's houses",
 "Wczytuję…":"Loading…",
 "Nie udało się wczytać domów z bazy.":"Could not load the base houses.",
-"✓ otwarty":"✓ open"};
+"✓ otwarty":"✓ open",
+"Wszystkie domy z bazy masz już na swojej liście.":"You already have all base houses on your list.",
+"🔗 Kopiuj link":"🔗 Copy link",
+"Link otwiera ten dom od razu":"The link opens this house right away",
+"Link otwiera ten dom od razu (inni widzą go w podglądzie)":"The link opens this house right away (others see it as a preview)",
+"Skopiowano link do domu – wyślij go komuś, otworzy dom od razu":"House link copied – send it to someone, it opens the house right away",
+"Link do domu (skopiuj):":"House link (copy it):"};
