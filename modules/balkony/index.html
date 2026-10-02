@@ -81,6 +81,10 @@ function renderSide(){
     const tb=d.querySelector('[data-k=tb]');if(tb)tb.onchange=e=>{b.thermalBreak=e.target.checked;save();renderSide()};
     d.querySelector('.danger').onclick=()=>{project.balconies=B.list(project).filter(x=>x!==b);save();renderAll()};
     L.appendChild(d)});
+  const dead=B.deadDoors(project);
+  if(dead.length){const w=document.createElement('div');w.className='warn';w.innerHTML='⚠ Na piętrze są drzwi / przeszklenia do podłogi, które prowadzą donikąd ('+Math.max(1,Math.round(dead.length*grid().cellMeters*10)/10)+' m) – nie ma przed nimi balkonu. <button class="btn" id="deadFix">Zamień na okna</button>';L.appendChild(w);
+    $('deadFix').onclick=()=>{const up=fl()[1];HouserStore.update(p=>{p.openings=p.openings||{};p.openings[up]=p.openings[up]||{};p.openingVariants=p.openingVariants||{};p.openingVariants[up]=p.openingVariants[up]||{};
+      for(const k of dead){p.openings[up][k]='window';p.openingVariants[up][k]={...(p.openingVariants[up][k]?.blind?{blind:p.openingVariants[up][k].blind}:{}),variant:'standard',sill:.9,height:1.4}}},'balkony');setProject(HouserStore.load().project)}}
   if(S.items.length)L.insertAdjacentHTML('beforeend','<p class="hint">Razem '+fmt(S.area)+' m² · balustrada '+fmt(S.rail)+' m. Balkony liczą się w Wycenie, bilansie energii (mostki cieplne przy płycie) i zacienianiu okien parteru w Nasłonecznieniu.</p>');
 }
 function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}

@@ -37,5 +37,9 @@
       const roomNames=[...rooms].map(r=>project.definitionSnapshot?.floors?.[C.up]?.rooms?.find(q=>q.id===r)?.name||r);
       items.push({b,area:a,cantA:ca,overA:oa,contact:con,rail:rl,door,rooms:roomNames,depth:maxD,kind:ca>=oa?'cantilever':'overGround'})}
     return {items,area,cantA,overA,contact,contactBad,rail,psi:contact>0?(contactBad*.5+(contact-contactBad)*.15):0}}
-  global.HouserBalcony={RAIL,key,list,map,paintable,kind,fromCells,stats};
+  // drzwi / HST na piętrze, które prowadzą donikąd (za ścianą nie ma balkonu ani domu) – np. po usunięciu balkonu
+  function deadDoors(project){const C=ctx(project),m=map(project),ops=project.openings?.[C.up]||{},out=[];
+    for(const [k,t] of Object.entries(ops)){if(t!=='door'&&t!=='hst')continue;const [o,xs,ys]=k.split(':'),x=+xs,y=+ys,a=o==='h'?[x,y-1]:[x-1,y],b=[x,y],ia=C.occ(C.up,a[0],a[1]),ib=C.occ(C.up,b[0],b[1]);
+      if(ia===ib)continue;const outC=ia?b:a;if(!m.has(key(outC[0],outC[1])))out.push(k)}return out}
+  global.HouserBalcony={RAIL,key,list,map,paintable,kind,fromCells,stats,deadDoors};
 })(window);

@@ -3561,4 +3561,5 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "Układzie pomieszczeń":"Room layout",
 "Wgraj domy Housera":"Upload Houser houses",
 "Najpierw zaloguj się na konto, które ma być autorem „Houser”.":"First sign in to the account that should be the author „Houser”.",
-"👥 Nie mój · autor: {q} – tylko podgląd":"👥 Not mine · author: {q} – view only"};
+"👥 Nie mój · autor: {q} – tylko podgląd":"👥 Not mine · author: {q} – view only",
+"Zamień na okna":"Change to windows"};
