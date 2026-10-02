@@ -81,17 +81,29 @@ const cls=s=>s>=7.5?'c-ok':s>=5?'c-mid':'c-bad',col=s=>s>=7.5?'#22c55e':s>=5?'#f
 const projName=p=>p?.definitionSnapshot?.name||p?.definitionName||p?.name||'bez nazwy';
 const top_=(()=>{try{return window.top!==window&&window.top.HouserStore?window.top:null}catch(_){return null}})();
 const cloud=()=>{try{return top_?.HouserCloud||null}catch(_){return null}};
-const notMine=o=>['pub','base','sample'].includes(o.src)||!!o.ro;
-const SRC={current:'bieżący',local:'w tej przeglądarce',cloud:'w chmurze',pub:'ogólna baza',base:'ogólna baza',sample:'gotowy dom – wzór, nie ma go w Twoich projektach'};
+const notMine=o=>!o.mine;
 const cache={};let rows=[],busy=0;
 // wszystkie domy (bez powtórzeń – ten sam projekt z różnych miejsc liczy się raz)
-async function sources(withPub){const out=[],seen=new Set(),cur=HouserStore.load()?.project,add=o=>{if(o.pid&&seen.has(o.pid))return;if(o.pid)seen.add(o.pid);out.push(o)};
-  if(cur)add({src:'current',id:'current',pid:cur.projectId,name:projName(cur),ro:!!cur.readOnly,owner:cur.readOnly?.owner||'',get:async()=>cur});
-  try{for(const m of await HouserLibrary.list())add({src:'local',id:m.id,pid:m.id,name:m.name,get:async()=>(await HouserLibrary.get(m.id))?.project})}catch(_){}
-  const C=cloud();
-  if(C?.user?.())try{for(const m of await C.listMine())add({src:'cloud',id:m.id,pid:m.id,name:m.name,get:async()=>(await C.fetchProject(m.id))?.project})}catch(_){}
-  if(withPub&&C)try{const uid=C.user?.()?.uid;for(const m of await C.listPublic())if(uid&&m.owner===uid)add({src:'cloud',id:m.id,pid:m.id,name:m.name,get:async()=>(await C.fetchProject(m.id))?.project});else add({src:'pub',id:m.id,pid:m.id,name:m.name,owner:m.ownerName||'',get:async()=>(await C.fetchProject(m.id))?.project})}catch(_){}
-  if(withPub)try{for(const m of await (await fetch('../../examples/index.json')).json())add({src:'base',id:m.file,name:m.name,owner:'baza Houser',get:async()=>await (await fetch('../../examples/'+m.file)).json()})}catch(_){} // wzorcowe domy ogólnej bazy
+// te same zasady co w Projektach: dom jest mój, gdy jestem zalogowany i jestem jego autorem; bez konta nic nie jest moje.
+// Każdy dom raz: bieżący (otwarty) to ten sam dom co na liście – zaznaczamy go, a nie dodajemy drugi raz.
+const norm=t=>String(t||'').trim().toLowerCase();
+async function sources(withPub){const out=[],seen=new Set(),cur=HouserStore.load()?.project,C=cloud(),uid=C?.user?.()?.uid||null,guest=!!(C?.enabled&&!uid);
+  const add=o=>{const k=o.key||o.pid;if(k&&seen.has(k))return;if(k)seen.add(k);out.push(o)};
+  const curKey=cur?(cur.readOnly?.src==='base'&&cur.fromSample?'base:'+cur.fromSample:cur.readOnly?.pid||cur.sharedEdit?.pid||cur.projectId):null;
+  const curMine=!!cur&&!guest&&!cur.readOnly&&!cur.sharedEdit;
+  if(curMine)add({src:'current',id:'current',pid:cur.projectId,name:projName(cur),mine:true,cur:true,get:async()=>cur});
+  if(!guest){
+    try{for(const m of await HouserLibrary.list()){const r=await HouserLibrary.get(m.id),p=r?.project;if(!p||p.readOnly)continue;
+      if(p.sharedEdit){add({src:'local',id:m.id,pid:m.id,name:m.name,owner:p.sharedEdit.owner||'',edit:true,cur:m.id===curKey,get:async()=>p});continue}
+      add({src:'local',id:m.id,pid:m.id,name:m.name,mine:true,cur:m.id===curKey,get:async()=>p})}}catch(_){}
+    if(uid)try{for(const m of await C.listMine())add({src:'cloud',id:m.id,pid:m.id,name:m.name,mine:true,cur:m.id===curKey,get:async()=>(await C.fetchProject(m.id))?.project})}catch(_){}}
+  const mineNames=new Set(out.filter(o=>o.mine).map(o=>norm(o.name)));
+  if(withPub||guest){
+    if(C)try{for(const m of await C.listPublic()){if(uid&&m.owner===uid)continue;add({src:'pub',id:m.id,pid:m.id,name:m.name,owner:m.ownerName||'',edit:m.visibility==='public_edit',cur:m.id===curKey,get:async()=>m.id===curKey&&cur?cur:(await C.fetchProject(m.id))?.project})}}catch(_){}
+    try{for(const m of await (await fetch('../../examples/index.json')).json()){if(mineNames.has(norm(m.name)))continue; // masz ten dom u siebie
+      add({src:'base',id:m.file,key:'base:'+m.file,name:m.name,owner:'Houser',cur:'base:'+m.file===curKey,get:async()=>await (await fetch('../../examples/'+m.file)).json()})}}catch(_){}}
+  // bieżący cudzy dom, którego nie ma na żadnej liście (np. link) – też raz
+  if(cur&&!curMine&&!seen.has(curKey))add({src:'current',id:'current',key:curKey,name:projName(cur),owner:cur.readOnly?.owner||cur.sharedEdit?.owner||'',edit:!!cur.sharedEdit,cur:true,get:async()=>cur});
   return out}
 // liczby jednego domu
 function measure(p){const r={};const T=(k,fn)=>{try{r[k]=fn()}catch(e){console.error(k,e)}};
@@ -119,19 +131,19 @@ function render(){const L=$('list'),key=$('sort').value;
   const S=[...rows].sort((a,b)=>SORT[key](a)-SORT[key](b));
   const n=(k,v,sel)=>'<span'+(sel?' class="sel"':'')+'><span class="k">'+k+'</span><b>'+v+'</b></span>';
   L.onclick=e=>{const b=e.target.closest('[data-open],[data-go]');if(!b)return;if(b.dataset.go){if(top_)top_.location.hash=b.dataset.go;else location.href='../'+b.dataset.go+'/';return}openHouse(b.dataset.open)};
-  L.innerHTML=S.map((r,i)=>{const m=r.m;return '<div class="h'+(r.o.src==='current'?' cur':'')+(notMine(r.o)?' notmine':'')+'"><div class="rk">'+(i+1)+'</div><div class="th">'+r.plan+'</div><div>'+
-    '<div class="nm">'+(notMine(r.o)?'<span class="own no">Nie mój'+(r.o.owner?' · '+esc(r.o.owner):'')+'</span>':'<span class="own">Mój</span>')+esc(r.o.name)+'<small><span>'+SRC[r.o.src]+'</span> · <span>'+m.floors+'</span></small></div>'+
+  L.innerHTML=S.map((r,i)=>{const m=r.m;return '<div class="h'+(r.o.cur?' cur':'')+(notMine(r.o)?' notmine':'')+'"><div class="rk">'+(i+1)+'</div><div class="th">'+r.plan+'</div><div>'+
+    '<div class="nm">'+(notMine(r.o)?'<span class="own no">'+(r.o.edit?'✏️ Wspólny':'Nie mój')+(r.o.owner?' · '+esc(r.o.owner):'')+'</span>':'<span class="own">Mój</span>')+esc(r.o.name)+'<small>'+(r.o.cur?'<span>otwarty teraz</span> · ':'')+'<span>'+m.floors+'</span></small></div>'+
     '<div class="nums">'+n('ocena',(m.score!=null?'<span class="'+cls(m.score)+'">'+nf(m.score,1)+'</span><span class="sb"><i style="width:'+(m.score*10)+'%;background:'+col(m.score)+'"></i></span>':'–'),key==='score')+
       n('cena do jakości',r.value!=null?nf(r.value,1)+' / 10':'–',key==='value')+n('budowa',zl(m.cost),key==='cost')+n('za m²',m.cost?nf(m.cost/m.area)+' zł':'–',key==='m2')+
       n('rachunki / rok',m.bills!=null?nf(Math.round(m.bills/100)*100)+' zł':'–',key==='bills')+n('metraż',nf(m.area)+' m²',key==='area')+n('pokoje',String(m.beds))+'</div>'+
-    '<div class="pm">'+(r.o.src==='current'?'<button class="hs-btn go" data-go="co-poprawic">Co poprawić →</button>':'<button class="hs-btn go" data-open="'+esc(r.o.src+'|'+r.o.id)+'">'+(notMine(r.o)?'👁 Podgląd':'Otwórz ten dom')+'</button>')+(m.best?'<span class="g">▲ <span>'+esc(m.best.name)+'</span> '+nf(m.best.score,1)+'</span>':'')+(m.worst&&m.worst.score<7?'<span class="b">▼ <span>'+esc(m.worst.name)+'</span> '+nf(m.worst.score,1)+'</span>':'')+'</div></div></div>'}).join('');
+    '<div class="pm">'+(r.o.cur?'<button class="hs-btn go" data-go="co-poprawic">Co poprawić →</button>':'<button class="hs-btn go" data-open="'+esc(r.o.src+'|'+r.o.id)+'">'+(notMine(r.o)&&!r.o.edit?'👁 Podgląd':'Otwórz ten dom')+'</button>')+(m.best?'<span class="g">▲ <span>'+esc(m.best.name)+'</span> '+nf(m.best.score,1)+'</span>':'')+(m.worst&&m.worst.score<7?'<span class="b">▼ <span>'+esc(m.worst.name)+'</span> '+nf(m.worst.score,1)+'</span>':'')+'</div></div></div>'}).join('');
 }
 async function run(){const my=++busy;rows=[];const seenStates=new Set(),myFp=new Set();$('st').textContent='';render();
   const list=await sources($('pub').checked);let k=0;
   for(const o of list){if(my!==busy)return;$('st').textContent='liczę '+(++k)+' z '+list.length+'…';
-    const ck=o.src+':'+o.id;let res=o.src!=='current'?cache[ck]:null;
+    const ck=o.src+':'+o.id;let res=!o.cur?cache[ck]:null;
     if(!res){let p=null;try{p=await o.get()}catch(_){}
-      const m=p?measure(p):null;res=m?{m,plan:planSvg(p),sk:JSON.stringify([p.state,p.openings||{}]),fp:p.definitionFingerprint||''}:null;if(o.src!=='current')cache[ck]=res}
+      const m=p?measure(p):null;res=m?{m,plan:planSvg(p),sk:JSON.stringify([p.state,p.openings||{}]),fp:p.definitionFingerprint||''}:null;if(!o.cur)cache[ck]=res}
     if(res&&(o.src==='sample'||o.src==='base')&&(seenStates.has(res.sk)||(res.fp&&myFp.has(res.fp))))continue; // masz już swoją wersję tego wzoru
     if(res&&!notMine(o)&&res.fp)myFp.add(res.fp); // gotowy dom otwarty bez zmian – już jest na liście jako Twój projekt
     if(res)seenStates.add(res.sk);
@@ -143,6 +155,8 @@ $('pubSel').onchange=()=>{$('pub').checked=$('pubSel').value==='1';try{localStor
 
 try{const s=localStorage.getItem('houser:ranking-sort');if(s&&SORT[s])$('sort').value=s}catch(_){}
 $('sort').addEventListener('change',()=>{try{localStorage.setItem('houser:ranking-sort',$('sort').value)}catch(_){}});
+// bez konta nie ma „moich” domów – wybór „tylko moje / moje + baza” nie ma sensu
+try{const C=cloud();if(C?.enabled&&!C.user?.())$('pubSel').closest('label').hidden=true}catch(_){}
 run();let t=null;HouserStore.subscribe(()=>{clearTimeout(t);t=setTimeout(run,800)});
 </script>
 <script src="../../shared/nav.js"></script>

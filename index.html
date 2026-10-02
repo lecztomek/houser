@@ -239,7 +239,7 @@ a{color:var(--accent)}
   <section id="start" class="view">
     <div class="wrap">
       <h1>Start</h1>
-      <p class="lead" id="homeLead">Wszystko działa w przeglądarce, bez kont i serwera. Zacznij od pustego projektu albo otwórz któryś ze swoich domów – potem idziesz po kolei przez moduły z menu po lewej. Projekt zapisujesz na dysk jednym plikiem.</p>
+      <p class="lead" id="homeLead">Zaloguj się (Google), żeby projektować swoje domy – zapisują się same na Twoim koncie, na każdym urządzeniu. Bez konta możesz oglądać domy innych.</p>
       <h2 class="sec">Bieżący projekt</h2>
       <div id="curProj"></div>
       <div id="recentSec" hidden><h2 class="sec">Ostatnie projekty <a class="seclink" href="#projekty">Wszystkie projekty →</a></h2><div class="gallery" id="recent"></div></div>
@@ -397,7 +397,7 @@ function renderBar(){const rec=HouserStore.load();$('pbName').textContent=rec?pr
   const me=HouserCloud.user?.();R.hidden=!rec; // zawsze widać, czyj to dom
   try{localStorage.setItem('houser:guest',isGuest()?'1':'0');localStorage.setItem('houser:user-name',me?.name||'')}catch(_){} // dla pasków w modułach
   const chip=(cls,lg,sh)=>'<span class="rochip'+cls+'"><span class="lg">'+lg+'</span><span class="sh">'+sh+'</span></span>';
-  R.innerHTML=ro?chip('',(ro.src==='base'?'📚 Baza Housera':'👥 Społeczność · autor: '+esc(ro.owner||'nieznany'))+' – tylko podgląd',(ro.src==='base'?'📚 Baza Housera':'👥 '+esc(ro.owner||'Społeczność'))+' · podgląd')+'<button class="pbtn primary" id="pbCopy"><span class="lg">⧉ Zrób kopię do siebie</span><span class="sh">⧉ Kopia do siebie</span></button>'
+  R.innerHTML=ro?chip('',(ro.src==='base'?'📚 Baza Housera':'👥 Społeczność · autor: '+esc(ro.owner||'nieznany'))+' – tylko podgląd',(ro.src==='base'?'📚 Baza Housera':'👥 '+esc(ro.owner||'Społeczność'))+' · podgląd')+(isGuest()?'<button class="pbtn primary" id="pbCopy"><span class="lg">Zaloguj się, żeby zrobić kopię</span><span class="sh">Zaloguj</span></button>':'<button class="pbtn primary" id="pbCopy"><span class="lg">⧉ Zrób kopię do siebie</span><span class="sh">⧉ Kopia do siebie</span></button>')
     :!guest&&me&&rec?.project?.sharedEdit?chip(' shared','✏️ Wspólny dom · autor: '+esc(rec.project.sharedEdit.owner||'?')+' – możesz zmieniać','✏️ Wspólny · '+esc(rec.project.sharedEdit.owner||'?'))
     :!guest&&me?chip(' mine','🏠 Mój dom · '+esc(me.name||me.email||''),'🏠 Mój dom')
     :guest?chip('','👁 Tylko podgląd – zaloguj się, żeby projektować','👁 Bez konta · tylko podgląd')+'<button class="pbtn primary" id="pbLogin2">Zaloguj</button>':'';
@@ -495,7 +495,7 @@ HouserCloud.configure({
   describe:async p=>({name:projName(p),stats:stats(p),plan:await svgToJpeg(planSvg(p))}),
   hooks:{
     localWrite:()=>{const r=HouserStore.load();curJSON=r?JSON.stringify(r.project):null;renderBar()},
-    conflict:async meta=>{const keep=confirm('Projekt „'+(meta.name||'')+'” zmienił się w chmurze na innym urządzeniu ('+fmtTime(meta.updatedAt)+').\n\nOK – zachowaj wersję z tej przeglądarki i nadpisz chmurę.\nAnuluj – wczytaj wersję z chmury.');
+    conflict:async meta=>{const keep=confirm('Projekt „'+(meta.name||'')+'” zmienił się w chmurze na innym urządzeniu ('+fmtTime(meta.updatedAt)+').\n\nOK – zachowaj wersję z tego urządzenia i nadpisz chmurę.\nAnuluj – wczytaj wersję z chmury.');
       try{if(keep)await HouserCloud.resolveConflict(true);else{await HouserCloud.resolveConflict(false);await openCloud(HouserStore.load().project.projectId,true)}}catch(e){alert('Chmura: '+e.message)}}}});
 // ---------- stan zapisu na pasku (bez przycisku: po zalogowaniu zapis w chmurze jest automatyczny, bez – w tej przeglądarce)
 function renderCloudBar(){const el=$('pbCloud'),acct=$('acct');if(!el)return;const st=HouserCloud.status(),rec=HouserStore.load();
@@ -504,7 +504,8 @@ function renderCloudBar(){const el=$('pbCloud'),acct=$('acct');if(!el)return;con
     $('pbUser').title=u?'Konto: '+u.name+(u.email?' ('+u.email+')':''):'Zaloguj się przez Google – projekty w chmurze na każdym urządzeniu'}
   el.hidden=!rec;if(!rec)return;
   const L=(cls,ic,t,ti)=>'<span class="'+cls+'"'+(ti?' title="'+ti+'"':'')+'>'+ic+'<span class="lbl"> '+t+'</span></span>';let h;
-  if(!u||st.off)h=L('wait','💻','zapisany w tej przeglądarce','Projekt zapisuje się sam w tej przeglądarce. Po zalogowaniu – także w chmurze. Plik: moduł Projekty → Eksportuj.');
+  if(!u){el.innerHTML='';return} // bez konta nic się nie zapisuje – pasek „tylko podgląd” mówi wszystko
+  if(st.off)h=L('bad','⚠','nie zapisuje się na koncie','Ten dom usunięto z chmury – w Projektach włącz „Zapisuj w chmurze”.');
   else h={pending:L('wait','☁','zapisuję…'),saving:L('wait','☁','zapisuję…'),saved:L('ok','☁','zapisano '+fmtTime(st.at)),
     error:'<button class="pbtn" id="pbCloudRetry" title="'+esc(st.msg)+'">⚠<span class="lbl"> nie zapisano – ponów</span></button>',conflict:L('bad','⚠','konflikt wersji')}[st.state]||(st.linked?L('ok','☁','w chmurze'+(st.savedAt?' '+fmtTime(st.savedAt):'')):L('wait','☁','zapisze się przy zmianie','Zapisze się w chmurze przy pierwszej zmianie'));
   if(u&&st.linked)h+=' <span class="vis'+(isPub(st.vis)?' pub':'')+'">'+(VIS_LABEL[st.vis]||VIS_LABEL.private)+'</span>';
@@ -541,7 +542,7 @@ const flushLib=()=>libTimer?libSave():Promise.resolve();
 // przed zamianą bieżącego projektu: dopisz ostatnie zmiany (przeglądarka + chmura)
 async function confirmReplace(){const rec=HouserStore.load();if(!rec)return true;await flushLib();
   const st=HouserCloud.status();if(st.user&&!st.off&&['pending','saving'].includes(st.state)){try{await HouserCloud.saveNow()}catch(_){}}
-  const s2=HouserCloud.status();if(s2.user&&(s2.state==='error'||s2.state==='conflict'))return confirm('Ostatnie zmiany projektu „'+projName(rec.project)+'” nie zapisały się w chmurze (są w tej przeglądarce).\n\nKontynuować?');
+  const s2=HouserCloud.status();if(s2.user&&(s2.state==='error'||s2.state==='conflict'))return confirm('Ostatnie zmiany projektu „'+projName(rec.project)+'” nie zapisały się jeszcze na Twoim koncie (są na tym urządzeniu).\n\nKontynuować?');
   return true}
 // ---------- plik JSON
 function downloadProject(project){const out={...project,houserFile:{app:'houser',format:1,savedAt:new Date().toISOString()}};delete out.visualizations;
@@ -611,7 +612,7 @@ function paintRecent(){const el=$('recent'),sec=$('recentSec');if(!el)return;con
 function paintPublic(){const u=HouserCloud.user(),others=(cloudLists.pub||[]).filter(m=>!u||m.owner!==u.uid);$('cloudPubSec').hidden=!others.length;
   $('cloudPub').innerHTML=others.map(m=>'<div class="hcard ccard" data-id="'+esc(m.id)+'"><div class="thumb" data-a="open">'+(thumbImg(m)||planSvg({}))+'</div><h3>'+esc(m.name||'bez nazwy')+'</h3><div>'+chips(m.stats)+'</div><div class="owner">'+avatar({photo:m.ownerPhoto,name:m.ownerName})+esc(m.ownerName||'')+'</div><div class="cacts"><button class="btn2 sm primary" data-a="open">'+(m.visibility==='public_edit'&&u?'✏️ Otwórz – można zmieniać':'👁 Podgląd')+'</button></div></div>').join('');
   $('cloudPub').querySelectorAll('[data-a="open"]').forEach(b=>b.onclick=()=>openCloud(b.closest('.ccard').dataset.id))}
-function renderCloudHome(){if(HouserCloud.enabled)$('homeLead').textContent='Projekt zapisuje się sam – w tej przeglądarce, a po zalogowaniu (Google) także w chmurze, na każdym urządzeniu. Zacznij od pustego projektu albo otwórz któryś ze swoich domów – potem idziesz po kolei przez moduły z menu po lewej.';
+function renderCloudHome(){if(HouserCloud.enabled)$('homeLead').textContent=isGuest()?'Bez konta możesz oglądać domy. Zaloguj się (Google), żeby projektować swoje – zapisują się same na Twoim koncie, na każdym urządzeniu.':'Dom zapisuje się sam na Twoim koncie, na każdym urządzeniu. Zacznij od pustego projektu albo otwórz któryś ze swoich domów – potem idziesz po kolei przez moduły z menu po lewej.';
   HouserLibrary.list().then(l=>{localList=l;paintRecent()}).catch(()=>{});paintRecent();paintPublic();wantCloudLists()}
 // ---------- porównanie domów (wspólna lista z modułem Porównanie, maks. 4)
 const CMP_KEY='houser:compare',CMP_MAX=4;
@@ -623,7 +624,7 @@ function toggleCmp(src,id){let l=cmpList();if(l.some(x=>x.src===src&&x.id===id))
 const cmpBtn=(src,id,big)=>{const on=inCmp(src,id);return '<button class="btn2'+(big?'':' sm')+(on?' cmpon':'')+'" data-cmp="'+esc(src+'|'+id)+'" title="'+(on?'Usuń z porównania':'Dodaj do porównania (maks. '+CMP_MAX+')')+'">'+(on?'✓ ⚖ w porównaniu':'⚖ Do porównania')+'</button>'};
 // ---------- moduł Projekty
 function pmRow(m,cur){const pub=isPub(m.visibility),a=(k,t,ti)=>'<button class="btn2 sm" data-a="'+k+'"'+(ti?' title="'+ti+'"':'')+'>'+t+'</button>';
-  const where=(m.local?'<span class="vis">💻 w tej przeglądarce</span>':'')+(m.cloud?'<span class="vis'+(pub?' pub':'')+'">☁ '+(VIS_LABEL[m.visibility]||VIS_LABEL.private)+'</span>':'');
+  const where=(m.cloud?'<span class="vis'+(pub?' pub':'')+'">☁ '+(VIS_LABEL[m.visibility]||VIS_LABEL.private)+'</span>':'<span class="vis">☁ zapisze się na koncie przy zmianie</span>');
   return '<div class="prow'+(cur?' cur1':'')+'" data-id="'+esc(m.id)+'"><div class="pth">'+(thumbImg(m)||'')+'</div><div class="pinfo"><b><span class="own1">Mój</span>'+esc(m.name||'bez nazwy')+'</b><small>'+esc(fl(m))+'zmiana '+fmtTime(m.updatedAt)+'</small>'+where+'</div><div class="pacts">'+
     (cur?'<span class="go">✓ otwarty</span>':'<button class="btn2 sm primary" data-a="open">Otwórz</button>')+cmpBtn(m.cloud&&!m.local?'cloud':'local',m.id)+a('dup','⧉ Duplikuj')+a('exp','⤓ Eksportuj','Pobierz plik JSON')+
     (m.cloud&&(!m.owner||m.owner===HouserCloud.user()?.uid)?visSel(m.visibility,'data-vis="1"'):'')+(m.cloud&&pub?a('link','🔗 Kopiuj link','Link otwiera ten dom od razu (inni widzą go w podglądzie)'):'')+(cur?'':a('del','🗑','Usuń'))+'</div></div>'}
@@ -647,14 +648,14 @@ const curLinkId=(p,st)=>p?.readOnly?.src==='base'&&p.fromSample?'baza:'+p.fromSa
 const PM_F='houser:pm-filter';
 function pmCounts(){const L=$('pmList');if(!L)return;const own=L.querySelectorAll('.prow:not(.other)').length,oth=L.querySelectorAll('.prow.other').length,n=(k,v)=>{const e=$('pmN_'+k);if(e)e.textContent=v};n('all',own+oth);n('mine',own);n('other',oth)}
 function renderProjects(noLoad){const el=$('pm');if(!el)return;const rec=HouserStore.load(),st=HouserCloud.status(),u=st.user,p=rec?.project,curId=p?.projectId;
-  let h='<h1>Projekty</h1><p class="lead">Projekt zapisuje się sam po każdej zmianie – w tej przeglądarce'+(st.enabled?', a po zalogowaniu także w chmurze':'')+'. Plik JSON (eksport) jest kopią zapasową albo sposobem na przeniesienie projektu bez konta.</p>'+
+  let h='<h1>Projekty</h1><p class="lead">'+(isGuest()?'Bez konta możesz tylko oglądać domy. Zaloguj się, żeby mieć swoje.':'Dom zapisuje się sam po każdej zmianie na Twoim koncie. Eksport do pliku JSON to kopia zapasowa.')+'</p>'+
     '<div class="pmbar"><button class="btn2 primary" id="pmNew">＋ Nowy pusty projekt</button><label class="btn2">⤒ Importuj z pliku<input type="file" id="pmImport" accept="application/json,.json" hidden></label>'+(cmpList().length?'<a class="btn2" href="#porownanie">⚖ W porównaniu: '+cmpList().length+'/'+CMP_MAX+' → otwórz</a>':'')+'</div>';
   h+='<h2 class="sec">Bieżący projekt</h2>';
   if(!p)h+='<div class="login"><p>Nie masz otwartego projektu. Zacznij nowy, zaimportuj plik albo otwórz projekt z listy poniżej.</p></div>';
   else{const s=stats(p),last=MODULES.find(m=>m.id===lsGet(LAST_MOD))||MODULES.find(m=>m.id==='projektowanie');
-    const where=p.readOnly?'👁 Podgląd cudzego domu – nic się nie zapisuje. Zrób kopię do siebie, żeby nad nim pracować.':p.sharedEdit?'✏️ Wspólny dom – autor: '+esc(p.sharedEdit.owner||'?')+'. Twoje zmiany zapisują się w tym samym domu (widzi je autor i inni).':!u?'💻 Zapisuje się sam w tej przeglądarce.'+(st.enabled?' Zaloguj się, żeby trzymać go też w chmurze.':''):st.off?'💻 Tylko w tej przeglądarce (usunięty z chmury).':st.linked?'☁ Zapisuje się sam w Twojej chmurze'+(st.savedAt?' · ostatnio '+fmtTime(st.savedAt):'')+'.':'☁ Zapisze się w chmurze przy pierwszej zmianie.';
+    const where=p.readOnly?'👁 Podgląd cudzego domu – nic się nie zapisuje. Zrób kopię do siebie, żeby nad nim pracować.':p.sharedEdit?'✏️ Wspólny dom – autor: '+esc(p.sharedEdit.owner||'?')+'. Twoje zmiany zapisują się w tym samym domu (widzi je autor i inni).':!u?(st.enabled?'👁 Bez konta – tylko podgląd. Zaloguj się, żeby projektować.':'Zapisuje się sam.'):st.off?'⚠ Ten dom nie zapisuje się na koncie (usunięty z chmury) – włącz zapis poniżej.':st.linked?'☁ Zapisuje się sam na Twoim koncie'+(st.savedAt?' · ostatnio '+fmtTime(st.savedAt):'')+'.':'☁ Zapisze się na Twoim koncie przy pierwszej zmianie.';
     h+='<div class="cur"><div class="thumb" id="pmCurThumb">'+planSvg(p)+'</div><div><h3>'+esc(projName(p))+' <button class="btn2 sm" id="pmRename" title="Zmień nazwę">✎</button></h3><div>'+chips(s)+'</div><div class="meta">'+where+'</div>'+
-      '<div class="acts"><a class="btn2 primary" href="#'+last.id+'">Kontynuuj: '+esc(last.name)+' →</a><button class="btn2" id="pmExport">⤓ Eksportuj do pliku</button><button class="btn2'+(p.readOnly?' primary':'')+'" id="pmDup">'+(p.readOnly?'⧉ Zrób kopię do siebie':'⧉ Duplikuj')+'</button>'+cmpBtn(curCmpSrc(curId),curId||'current',true)+
+      '<div class="acts"><a class="btn2 primary" href="#'+last.id+'">Kontynuuj: '+esc(last.name)+' →</a><button class="btn2" id="pmExport">⤓ Eksportuj do pliku</button><button class="btn2'+(p.readOnly?' primary':'')+'" id="pmDup">'+(p.readOnly?(isGuest()?'Zaloguj się, żeby zrobić kopię':'⧉ Zrób kopię do siebie'):'⧉ Duplikuj')+'</button>'+cmpBtn(curCmpSrc(curId),curId||'current',true)+
       (curLinkId(p,st)?'<button class="btn2" id="pmLink" title="Link otwiera ten dom od razu">🔗 Kopiuj link</button>':'')+(u&&st.linked&&st.own?visSel(st.vis,'id="pmVis"'):'')+(u&&st.off?'<button class="btn2" id="pmOn">☁ Zapisuj w chmurze</button>':'')+'</div></div></div>'}
   // jedna lista: każdy dom raz – zapisany w tej przeglądarce, w chmurze albo w obu miejscach
   const cloudIds=new Set((u&&cloudLists.mine||[]).map(m=>m.id)),byId=new Map();
@@ -672,7 +673,7 @@ function renderProjects(noLoad){const el=$('pm');if(!el)return;const rec=HouserS
   el.innerHTML=h;fillCovers(el);pmCounts();paintBase().then(pmCounts);el.querySelectorAll('#pmF [data-f]').forEach(b=>b.onclick=()=>{lsSet(PM_F,b.dataset.f);$('pmList').dataset.f=b.dataset.f;el.querySelectorAll('#pmF .fchip').forEach(x=>x.classList.toggle('on',x===b))});el.querySelectorAll('[data-a="pubopen"]').forEach(b=>b.onclick=()=>openCloud(b.closest('[data-pub]').dataset.pub));el.querySelectorAll('[data-a="publink"]').forEach(b=>b.onclick=()=>copyLink(b.closest('[data-pub]').dataset.pub));autoTidy(all);coverOf(p).then(c=>{const t=$('pmCurThumb');if(!c||!t)return;t.classList.add('hasCover');t.innerHTML='<img class="coverImg" alt="" src="'+c+'"><div class="miniPlan">'+planSvg(p)+'</div><a class="galLink" href="#galeria">Galeria →</a>'}).catch(()=>{});
   $('pmNew').onclick=newEmpty;$('pmImport').onchange=e=>{const f=e.target.files[0];e.target.value='';importFile(f)};
   if($('pmRename'))$('pmRename').onclick=renameCurrent;if($('pmExport'))$('pmExport').onclick=()=>downloadProject(HouserStore.load().project);
-  if($('pmDup'))$('pmDup').onclick=duplicateCurrent;if($('pmLink'))$('pmLink').onclick=()=>copyLink(curLinkId(p,st));if($('pmVis'))$('pmVis').onchange=async e=>{const v=e.target.value;if((await setVis(st.pid,v))===false)e.target.value=st.vis||'private'};el.querySelectorAll('select[data-vis]').forEach(sel=>{const m0=sel.value;sel.onchange=async()=>{if((await setVis(sel.closest('.prow').dataset.id,sel.value))===false)sel.value=m0}});
+  if($('pmDup'))$('pmDup').onclick=()=>isGuest()?doLogin():duplicateCurrent();if($('pmLink'))$('pmLink').onclick=()=>copyLink(curLinkId(p,st));if($('pmVis'))$('pmVis').onchange=async e=>{const v=e.target.value;if((await setVis(st.pid,v))===false)e.target.value=st.vis||'private'};el.querySelectorAll('select[data-vis]').forEach(sel=>{const m0=sel.value;sel.onchange=async()=>{if((await setVis(sel.closest('.prow').dataset.id,sel.value))===false)sel.value=m0}});
   if($('pmOn'))$('pmOn').onclick=()=>{HouserCloud.enable(st.pid);HouserCloud.saveNow().then(()=>{cloudLists.t=0;wantCloudLists()})};if($('pmLogin'))$('pmLogin').onclick=doLogin;
   el.querySelectorAll('.prow [data-a]').forEach(b=>b.onclick=async()=>{const id=b.closest('.prow').dataset.id,a=b.dataset.a,m=byId.get(id);if(!m)return;
     const useCloud=m.cloud&&(!m.local||(m.updatedAt||'')>(m.localAt||m.updatedAt||'')); // nowsza wersja wygrywa
@@ -680,7 +681,7 @@ function renderProjects(noLoad){const el=$('pm');if(!el)return;const rec=HouserS
     if(a==='dup')return m.cloud&&!m.local?duplicateCloud(m):duplicateLocal(id);
     if(a==='exp'){try{downloadProject(useCloud?(await HouserCloud.fetchProject(id)).project:(await HouserLibrary.get(id)).project)}catch(e){alert('Nie udało się pobrać: '+e.message)}return}
     if(a==='link')return copyLink(id);
-    if(a==='del'){if(!confirm('Usunąć projekt „'+(m.name||'')+'” razem z jego zdjęciami?\n\n'+[m.local?'• z tej przeglądarki':'',m.cloud?'• z chmury':''].filter(Boolean).join('\n')+'\n\nTego nie da się cofnąć.'))return;
+    if(a==='del'){if(!confirm('Usunąć projekt „'+(m.name||'')+'” razem z jego zdjęciami?\n\nTego nie da się cofnąć.'))return;
       try{if(m.cloud)await HouserCloud.remove(id);if(m.local)await HouserLibrary.remove(id);for(const r of await HouserGallery.list(id))await HouserGallery.remove(r.id);
         toast('Usunięto „'+(m.name||'')+'”');localList=await HouserLibrary.list();cloudLists.t=0;if(m.cloud)wantCloudLists();renderProjects(true)}catch(e){alert('Nie udało się usunąć: '+e.message)}}});
   el.querySelectorAll('[data-cmp]').forEach(b=>b.onclick=e=>{e.stopPropagation();const [src,...r]=b.dataset.cmp.split('|');toggleCmp(src,src==='current'?'current':r.join('|'))});

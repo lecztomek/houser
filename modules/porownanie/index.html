@@ -72,13 +72,13 @@ tr.tot td{background:#f8fafc;font-weight:800;font-size:14px}
 <body>
 <div class="wrap">
   <h1>Porównanie domów</h1>
-  <p class="lead">Postaw obok siebie 2–4 projekty – swoje (z tej przeglądarki lub z chmury), bieżący albo gotowe domy. Wszystkie liczby są liczone tak samo jak w modułach Wycena, Energia, Codzienność, Nasłonecznienie i Akustyka. Najlepsza wartość w wierszu jest zielona, najsłabsza czerwona.</p>
+  <p class="lead">Postaw obok siebie 2–4 projekty – swoje, bieżący albo domy innych. Wszystkie liczby są liczone tak samo jak w modułach Wycena, Energia, Codzienność, Nasłonecznienie i Akustyka. Najlepsza wartość w wierszu jest zielona, najsłabsza czerwona.</p>
   <div id="overall" class="ov"></div>
   <div id="value" class="val"></div>
   <details class="wts" id="wtsBox"><summary>Co jest dla Ciebie ważne w ocenie ogólnej</summary><div class="wgrid" id="wts"></div><p class="hint">Każde kryterium daje 0–10 punktów: koszt za m² względem najtańszego z porównywanych, energia wg zapotrzebowania (15 kWh/m² = 10 pkt, 120 = 0), codzienność i akustyka – ich oceny, przegrzewanie – odsetek pokoi bez wysokiego ryzyka, hydraulika – jej ocena, ogrzewanie – koszt zaprojektowanej instalacji (albo najlepszego źródła) w okresie względem najtańszego z porównywanych, schowki i szafy – ich ocena, wentylacja – ocena wybranej metody (dopasowanie do domu i koszt), klimatyzacja – koszt (0 zł = 10 pkt, 40 tys. zł = 0), metraż – względem największego. Ocena ogólna to średnia ważona.</p></details>
   <div id="sum" class="sum"></div>
   <div class="tbl" id="tbl"><div class="empty">Wczytuję projekty…</div></div>
-  <p class="hint" style="margin-top:10px">Wybór porównywanych domów pamięta ta przeglądarka. Koszty i energia biorą ustawienia zapisane w każdym projekcie (ceny, U ścian itd.), więc różnice mogą wynikać także z ustawień.</p>
+  <p class="hint" style="margin-top:10px">Wybór porównywanych domów jest zapamiętany. Koszty i energia biorą ustawienia zapisane w każdym projekcie (ceny, U ścian itd.), więc różnice mogą wynikać także z ustawień.</p>
 </div>
 <script src="../../shared/house-model.js"></script>
 <script src="../../shared/openings.js"></script>
@@ -127,7 +127,7 @@ async function getProject(o){const k=o.src+':'+o.id;if(o.src==='current')return 
   return cache[k]=p||null}
 // wpis z listy porównania -> opcja (bieżący projekt może być zapisany jako 'local'/'cloud' z jego identyfikatorem)
 function findOpt(x){const o=options.find(o=>o.src===x.src&&o.id===x.id);if(o)return o;const cur=HouserStore.load()?.project;return cur&&x.id===cur.projectId?options.find(o=>o.src==='current'):null}
-const SRC_PL={current:'bieżący',local:'💻 w tej przeglądarce',cloud:'☁ w chmurze',sample:'gotowy dom'};
+const SRC_PL={current:'bieżący',local:'mój',cloud:'mój',sample:'gotowy dom'};
 
 // ---------- miniaturka rzutu
 function pastel(hex){const n=parseInt((hex||'#cbd5e1').slice(1),16),m=v=>Math.round(v+(255-v)*.45);return 'rgb('+m(n>>16&255)+','+m(n>>8&255)+','+m(n&255)+')'}
