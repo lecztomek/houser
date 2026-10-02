@@ -3486,4 +3486,10 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "👁 Bez konta – tylko podgląd":"👁 No account – view only",
 "Połączono z kontem Google. Zalogować się teraz?":"Connected to Google. Sign in now?",
 "Logowanie nie powiodło się: {q}":"Sign-in failed: {q}",
-"Spróbuj jeszcze raz albo w innej przeglądarce (np. Chrome).":"Try again or use another browser (e.g. Chrome)."};
+"Spróbuj jeszcze raz albo w innej przeglądarce (np. Chrome).":"Try again or use another browser (e.g. Chrome).",
+"Z ogólnej bazy Housera":"From the Houser base",
+"Gotowe domy do obejrzenia. Otwierają się w podglądzie – żeby coś zmienić, zrób kopię do siebie.":"Ready-made houses to look at. They open as a preview – to change something, make your own copy.",
+"Społeczność – domy innych":"Community – other people's houses",
+"Wczytuję…":"Loading…",
+"Nie udało się wczytać domów z bazy.":"Could not load the base houses.",
+"✓ otwarty":"✓ open"};
