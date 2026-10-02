@@ -3516,4 +3516,10 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "✏️ Wspólny dom · {q} – zmiany zapisują się":"✏️ Shared house · {q} – changes are saved",
 "✏️ Wspólny dom · autor: {q} – możesz zmieniać, zmiany zapisują się w tym samym domu":"✏️ Shared house · author: {q} – you can edit, changes are saved in the same house",
 "✏️ Otwórz":"✏️ Open",
-"✏️ Otwórz – można zmieniać":"✏️ Open – editable"};
+"✏️ Otwórz – można zmieniać":"✏️ Open – editable",
+"Domy":"Houses",
+"Wszystkie":"All",
+"Moje":"Mine",
+"Nie moje":"Not mine",
+"Mój":"Mine",
+"Tu pojawią się Twoje domy – każdy zapisuje się sam po pierwszej zmianie.":"Your houses will appear here – each saves itself after the first change."};
