@@ -21,10 +21,14 @@
   ];
   const DEF={unit:'auto',kitchen:'electric',ac:'auto',acThreshold:3};
   const PRICE={unit:[[250,9000],[350,11500],[450,14000],[600,17500],[1e9,21000]],duct:75,plenum:1400,vent:280,intake:2600,labour:4500,ceiling:900,
-    split:[[2.6,5600],[3.5,6600],[5,8600],[1e9,10500]],multiOut:6500,multiIn:2600,acPipe:160,acInterior:2500,fanW:.3};
+    split:[[2.6,5600],[3.5,6600],[5,8600],[1e9,10500]],multiOut:6500,multiIn:2600,acPipe:160,acInterior:2500,fanW:.2,wallUnit:2900,wallFan:600};
   const roleOf=name=>ROLES.find(r=>r.re.test(name||''))||{k:'other',role:'sup',flow:()=>20,name:'inne',people:0};
   const price=(tab,v)=>tab.find(([m])=>v<=m)[1];
 
+  // cena ciepła z instalacji grzewczej tego domu (zł za kWh ciepła na ogrzewanie, moduł Instalacja grzewcza); bez niej – pompa ciepła
+  function heatPrice(project,S){let p=S?S.pEl/S.scop:.3,from='pompa ciepła (domyślnie)';
+    if(global.HouserHeatSys)try{const R=HouserHeatSys.evaluate(project);if(R.E.Qh>0&&R.fuelCO>0){p=R.fuelCO/R.E.Qh;from=R.name}}catch(e){console.error(e)}
+    return {p,from}}
   function evaluate(project,settings){
     const set={...DEF,...(settings||{})};
     const q=HouserQuantities.compute(project),c=q.c,lo=q.lo,up=q.up,G=q.G,hasUp=q.net[up]>0;
@@ -72,9 +76,9 @@
     const cost={unit:price(PRICE.unit,flow),ducts:ductLen*PRICE.duct,plenum:2*PRICE.plenum,vents:vents*PRICE.vent,intake:PRICE.intake,labour:PRICE.labour,ceilings:hardRooms*PRICE.ceiling};
     cost.total=Object.values(cost).reduce((a,b)=>a+b,0);
     // ---------- potrzeba rekuperacji: szczelność, pomieszczenia bez okien, oszczędność energii
-    let saving=null,fanCost=null,payback=null,heatSave=null;
+    let saving=null,fanCost=null,payback=null,heatSave=null,hp=null;
     try{const es=project.energySettings||{};const pg={...project,energySettings:{...es,vent:'grav'}},pm={...project,energySettings:{...es,vent:'mech',eta:es.eta??85}};
-      const Eg=HouserEnergy.compute(pg),Em=HouserEnergy.compute(pm),S=Em.s,priceHeat=S.pEl/S.scop;
+      const Eg=HouserEnergy.compute(pg),Em=HouserEnergy.compute(pm),S=Em.s,priceHeat=(hp=heatPrice(project,S)).p;
       heatSave=Math.max(0,Eg.Qh-Em.Qh);fanCost=PRICE.fanW*flow*8760/1000*S.pEl;saving=heatSave*priceHeat-fanCost;payback=saving>50?cost.total/saving:null}catch(e){console.error(e)}
     const inf=Number.isFinite(+project.energySettings?.inf)?+project.energySettings.inf:.1;
     const dark=ex.filter(r=>r.win<.2&&(r.R.k==='bath'||r.R.k==='wc'));
@@ -100,44 +104,57 @@
     const hot=solar?solar.list.filter(s=>s.risk>=3&&byKey[s.key]?.role==='sup').length:0,warm=solar?solar.list.filter(s=>s.risk===2&&byKey[s.key]?.role==='sup').length:0;
     const acNeed=hot>=2||solar?.list.some(s=>s.risk>=3&&s.attic)?'high':hot+warm>=2?'mid':'low';
     const acDiff=acRooms.length?Math.max(0,10-acRooms.filter(r=>!r.ext).length*2-(acRooms.length>4?1:0)):10;
-    return {q,set,rooms,sup,ex,flow,persons,supSum,exSum,unit,unitLoft,loftFloor,loftUnit,ductLen,vents,avgDuct,hardRooms,difficulty:diff,dIss,cost,heatSave,fanCost,saving,payback,need,why,dark,
+    return {q,set,rooms,sup,ex,flow,persons,supSum,exSum,unit,unitLoft,loftFloor,loftUnit,ductLen,vents,avgDuct,hardRooms,difficulty:diff,dIss,cost,heatSave,fanCost,saving,payback,need,why,dark,heatPrice:hp,
       ac:{rooms:acRooms,split:acSplit,multi:acMulti,best:acRooms.length?Math.min(acSplit,acMulti):0,need:acNeed,hot,warm,difficulty:acDiff},hasUp,lo,up,W:q.W,H:q.H,c};
   }
   // ---------- porównanie metod wentylacji dla tego domu (grawitacyjna / mechaniczna wywiewna / rekuperacja)
   function methods(project,settings,res){
     res=res||evaluate(project,settings);const q=res.q,hasUp=res.hasUp,years=20;
-    let Eg=null,Em=null,Ex=null,S=null;try{const es=project.energySettings||{};Eg=HouserEnergy.compute({...project,energySettings:{...es,vent:'grav'}});Em=HouserEnergy.compute({...project,energySettings:{...es,vent:'mech',eta:es.eta??85}});Ex=HouserEnergy.compute({...project,energySettings:{...es,vent:'exhaust'}});S=Em.s}catch(e){console.error(e)}
-    const pHeat=S?S.pEl/S.scop:.3,pEl=S?S.pEl:1.1,inf=Number.isFinite(+project.energySettings?.inf)?+project.energySettings.inf:.1,airtight=inf<=.2;
+    let Eg=null,Em=null,Ex=null,Ed=null,S=null;try{const es=project.energySettings||{};Eg=HouserEnergy.compute({...project,energySettings:{...es,vent:'grav'}});Em=HouserEnergy.compute({...project,energySettings:{...es,vent:'mech',eta:es.eta??85}});Ex=HouserEnergy.compute({...project,energySettings:{...es,vent:'exhaust'}});Ed=HouserEnergy.compute({...project,energySettings:{...es,vent:'decentral'}});S=Em.s}catch(e){console.error(e)}
+    const {p:pHeat,from:heatFrom}=res.heatPrice||heatPrice(project,S);const pEl=S?S.pEl:1.1,inf=Number.isFinite(+project.energySettings?.inf)?+project.energySettings.inf:.1,airtight=inf<=.2;
     const exN=res.ex.length,supN=res.sup.length,exDuct=res.ex.reduce((a,r)=>a+r.duct,0);
     // grawitacja: osobny kanał w kominie z każdego pomieszczenia (spiżarnia / garderoba – kratka do sąsiedniego), długość od sufitu do ok. 0,5 m nad kalenicę
     const topY=(q.G.ridgeY||6)+.5,chLen=r=>Math.max(2,topY-((r.f===q.lo?0:q.G.groundHeight)+2.5)),gravInvest=res.ex.reduce((a,r)=>a+(r.R?.k==='wardrobe'?120:300+chLen(r)*200),0)+supN*150;
-    const heatG=Eg?Eg.Qh*pHeat:0,heatM=Em?Em.Qh*pHeat:0,heatX=Ex?Ex.Qh*pHeat:heatG;
+    const heatG=Eg?Eg.Qh*pHeat:0,heatM=Em?Em.Qh*pHeat:0,heatX=Ex?Ex.Qh*pHeat:heatG,heatD=Ed?Ed.Qh*pHeat:heatM;
+    // rekuperatory ścienne: jeden w każdym pokoju (duży – dwa), w kuchni i łazience z oknem / ścianą zewnętrzną; pomieszczenia bez ściany zewnętrznej – wentylator z kanałem
+    const wallRooms=[...res.sup,...res.ex].filter(r=>r.R?.k!=='wardrobe'),inner=wallRooms.filter(r=>!(r.extEdges>0)),wallN=wallRooms.filter(r=>r.extEdges>0).reduce((a,r)=>a+(r.area>30?2:1),0);
+    const decInvest=wallN*PRICE.wallUnit+inner.length*PRICE.wallFan+1500;
     const list=[
       {k:'grav',name:'Wentylacja grawitacyjna',how:'kanały wentylacyjne w kominie z kuchni, łazienek, WC i pralni + nawiewniki w oknach',
        invest:gravInvest,yearly:heatG,fan:0,air:4,
        pros:['najtańsza w budowie','bez prądu i serwisu'],cons:['działa tylko przy różnicy temperatur – latem prawie stoi','dużo ciepła ucieka z powietrzem','w szczelnym domu – wilgoć i duszno','hałas i smog z zewnątrz przez nawiewniki']},
-      {k:'exhaust',name:'Mechaniczna wywiewna (hybrydowa)',how:'wentylator wyciąga powietrze z kuchni i łazienek, świeże wpływa przez nawiewniki higrosterowane w oknach',
-       invest:2500+exDuct*50+exN*120+supN*350+1500,yearly:heatX,fan:40*8760/1000*pEl,air:6, // invest: wentylator centralny, przewody, kratki, nawiewniki higrosterowane, montaż
+      {k:'hybrid',name:'Wentylacja hybrydowa',how:'kanały grawitacyjne w kominie z wentylatorami hybrydowymi na wylotach – włączają się, gdy ciąg naturalny jest za słaby (latem, przy wietrze), + nawiewniki w oknach',
+       invest:gravInvest+exN*1300,yearly:heatG,fan:exN*4*8760/1000*pEl,air:5,
+       pros:['działa przez cały rok, także latem','prosta i tania – kanały jak przy grawitacyjnej','wentylatory pracują tylko, gdy trzeba'],cons:['bez odzysku ciepła','nawiewniki w oknach: zimne powietrze i hałas z zewnątrz','potrzebny komin z kanałami z każdego pomieszczenia']},
+      {k:'exhaust',name:'Mechaniczna wywiewna',how:'wentylator wyciąga powietrze z kuchni i łazienek, świeże wpływa przez nawiewniki higrosterowane w oknach',
+       invest:2500+exDuct*50+exN*120+supN*350+1500,yearly:heatX,fan:30*8760/1000*pEl,air:6, // invest: wentylator centralny, przewody, kratki, nawiewniki higrosterowane, montaż
        pros:['stały przepływ niezależnie od pogody','tanio i prosto','dobra do remontu i domów bez miejsca na kanały'],cons:['bez odzysku ciepła – straty jak przy grawitacyjnej','nawiewniki: zimne powietrze i hałas z zewnątrz','bez filtrowania powietrza']},
-      {k:'mvhr',name:'Rekuperacja',how:'centrala z wymiennikiem: nawiew do pokoi, wywiew z kuchni i łazienek, odzysk ok. 85% ciepła',
+      {k:'decentral',name:'Rekuperatory ścienne (bez kanałów)',how:'w ścianie zewnętrznej każdego pokoju urządzenie z wentylatorem i wymiennikiem, pracujące parami na zmianę (nawiew / wywiew); odzysk ok. 65%',
+       invest:decInvest,yearly:heatD,fan:(wallN*4+inner.length*6)*8760/1000*pEl,air:7,
+       pros:['odzysk ciepła bez kanałów i sufitów podwieszanych','dobre do domu, w którym trudno poprowadzić kanały, i do remontu','montaż pokój po pokoju'],cons:['otwór w ścianie i urządzenie w każdym pokoju','szum wentylatora w sypialni (ok. 20–30 dB)','niższy odzysk niż centrala, słabsza filtracja','pomieszczenia bez ściany zewnętrznej wymagają osobnego wentylatora']},
+      {k:'mvhr',name:'Rekuperacja (centrala z kanałami)',how:'centrala z wymiennikiem: nawiew do pokoi, wywiew z kuchni i łazienek, odzysk ok. 85% ciepła',
        invest:res.cost.total,yearly:heatM,fan:res.fanCost||0,air:9,
        pros:['odzysk ciepła','filtrowane świeże powietrze przy zamkniętych oknach','cisza – okna mogą być zamknięte'],cons:['najdroższa w budowie','wymiana filtrów 2–3 razy w roku (ok. 300 zł/rok)','kanały trzeba zaplanować przed stropami i sufitami']},
     ];
-    for(const m of list){m.service=m.k==='mvhr'?300:m.k==='exhaust'?100:0;m.year=m.yearly+m.fan+m.service;m.total=m.invest+years*m.year;
+    for(const m of list){m.service={mvhr:300,decentral:200,exhaust:100,hybrid:50}[m.k]||0;m.year=m.yearly+m.fan+m.service;m.total=m.invest+years*m.year;
       // dopasowanie do tego domu 0–10
       let fit=m.air;const why=[];
       if(m.k==='grav'){if(airtight){fit-=3;why.push('dom szczelny – grawitacja nie da rady')}if(res.dark.length){fit-=1;why.push('pomieszczenia bez okna wymagają pewnego wywiewu')}if(hasUp){fit-=.5;why.push('kanały z piętra muszą iść przez komin nad dach')}if(!airtight){fit+=2;why.push('dom mniej szczelny – grawitacja zadziała')}}
+      if(m.k==='hybrid'){if(airtight){fit-=1.5;why.push('dom szczelny – nawiewniki w oknach to za mało świeżego powietrza bez stałego wywiewu')}else{fit+=1.5;why.push('dom mniej szczelny – wentylacja hybrydowa zadziała')}if(hasUp){fit-=.5;why.push('kanały z piętra muszą iść przez komin nad dach')}}
+      if(m.k==='decentral'){if(airtight){fit+=1;why.push('szczelny dom – odzysk ciepła bez kanałów')}if(res.difficulty<6){fit+=1.5;why.push('trudno poprowadzić kanały – rekuperatory ścienne ich nie potrzebują')}
+        if(inner.length){fit-=Math.min(2,inner.length*.5);why.push(inner.length+' '+pl(inner.length,'pomieszczenie','pomieszczenia','pomieszczeń')+' bez ściany zewnętrznej ('+inner.slice(0,3).map(r=>r.name).join(', ')+') – tam osobny wentylator')}
+        if(wallN>8){fit-=1;why.push(wallN+' urządzeń w ścianach – dużo otworów i serwisu')}}
       if(m.k==='exhaust'){if(airtight){fit+=1;why.push('szczelny dom potrzebuje stałego wywiewu')}if(res.difficulty<6){fit+=1.5;why.push('trudno poprowadzić kanały nawiewne – wywiewna ich nie potrzebuje')}}
       if(m.k==='mvhr'){if(airtight){fit+=1;why.push('szczelny, energooszczędny dom – rekuperacja to standard')}if(res.difficulty<6){fit-=2;why.push('trudny montaż kanałów w tym układzie')}else if(res.difficulty>=8){fit+=.5;why.push('łatwy montaż – kanały po strychu')}}
       m.fit=Math.max(0,Math.min(10,Math.round(fit*10)/10));m.why=why}
     const minTotal=Math.min(...list.map(m=>m.total));
     for(const m of list)m.score=Math.round((.6*m.fit+.4*10*minTotal/m.total)*10)/10;
     const best=[...list].sort((a,b)=>b.score-a.score)[0];
-    const VK={mech:'mvhr',exhaust:'exhaust',grav:'grav'},chosenK=VK[HouserEnergy.settings(project).vent]||'mvhr',chosen=list.find(m=>m.k===chosenK);
-    return {list,best,chosen,years,airtight,inf,res};
+    const VK={mech:'mvhr',exhaust:'exhaust',grav:'grav',decentral:'decentral',hybrid:'hybrid'},chosenK=VK[HouserEnergy.settings(project).vent]||'mvhr',chosen=list.find(m=>m.k===chosenK);
+    return {list,best,chosen,years,airtight,inf,res,pHeat,heatFrom};
   }
   const fmt1=v=>(Math.round(v*10)/10).toLocaleString('pl-PL'),fmt0=v=>Math.round(v).toLocaleString('pl-PL');
   const pl=(n,a,b,c)=>{const d=n%10,t=n%100;return n===1?a:d>=2&&d<=4&&(t<12||t>14)?b:c};
-  const VENT_OF={mvhr:'mech',exhaust:'exhaust',grav:'grav'};
-  global.HouserHVAC={VENT_OF,ROLES,DEF,PRICE,roleOf,evaluate,methods};
+  const VENT_OF={mvhr:'mech',exhaust:'exhaust',grav:'grav',decentral:'decentral',hybrid:'hybrid'};
+  global.HouserHVAC={heatPrice,VENT_OF,ROLES,DEF,PRICE,roleOf,evaluate,methods};
 })(window);

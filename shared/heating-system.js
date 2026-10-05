@@ -54,7 +54,7 @@
     const hFloor=(q.G.groundHeight||2.8)+.3;
     const occ=(f,x,y)=>q.rooms.find(r=>r.f===f&&r.cells.some(([a,b])=>a===x&&b===y));
     // zapotrzebowanie na ciepło w pokojach (przegrody pokoju), przeskalowane do bilansu z modułu Energia
-    const U=S.U,br=S.bridge,eta=S.vent==='mech'?S.eta/100:0,heatedUp=q.net[up]>0;
+    const U=S.U,br=S.bridge,eta=HouserEnergy.ventEta(S),heatedUp=q.net[up]>0;
     const rooms=q.rooms.map(r=>{const key=r.f+'|'+r.id,n=r.name||'',garage=re.garage.test(n);const h=r.f===lo?q.G.groundHeight:(q.attic?(r.minH+r.maxH)/2:q.G.upperHeight);
       const glaz=r.winA+r.hstA,wall=Math.max(0,r.extEdges*c*q.hWall[r.f]-glaz);
       let Hr=wall*(U.wall+br)+glaz*U.win+r.roofWinA*U.roofwin+.34*r.area*h*(.5*(1-eta)+S.inf);

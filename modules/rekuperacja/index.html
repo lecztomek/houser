@@ -82,6 +82,8 @@ tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
 <script src="../../shared/energy.js"></script>
 <script src="../naslonecznienie/sun.js"></script>
 <script src="../naslonecznienie/calc.js"></script>
+<script src="../../shared/heating.js"></script>
+<script src="../../shared/heating-system.js"></script>
 <script src="../../shared/hvac.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -125,12 +127,12 @@ function render(){
   if($('unit').dataset.v!==opts){$('unit').innerHTML=opts;$('unit').dataset.v=opts}$('unit').value=[...$('unit').options].some(o=>o.value===s.unit)?s.unit:'auto';
   $('kitchen').value=s.kitchen;
   const R=res,dv=R.difficulty>=8?'ok':R.difficulty>=6?'mid':'bad';
-  let h='';{const v=HouserEnergy.settings(project).vent;if(v!=='mech')h+='<div class="card" style="background:#fffbeb;border-color:#fcd34d"><b>W projekcie wybrano: '+(v==='exhaust'?'wentylację mechaniczną wywiewną':'wentylację grawitacyjną')+'.</b> <span class="hint">Rekuperacja poniżej to wariant do rozważenia – wybór zmienisz w module Wentylacja.</span></div>'}
+  let h='';{const v=HouserEnergy.settings(project).vent;if(v!=='mech')h+='<div class="card" style="background:#fffbeb;border-color:#fcd34d"><b>W projekcie wybrano: '+({exhaust:'wentylację mechaniczną wywiewną',decentral:'rekuperatory ścienne (bez kanałów)',hybrid:'wentylację hybrydową'}[v]||'wentylację grawitacyjną')+'.</b> <span class="hint">Rekuperacja poniżej to wariant do rozważenia – wybór zmienisz w module Wentylacja.</span></div>'}
   h+='<div class="tiles"><div class="tile"><div class="l">Jak bardzo potrzebna</div><div class="v"><span class="need '+R.need+'">'+NEED[R.need]+'</span></div><div class="s">strumień domu '+R.flow+' m³/h</div></div>'+
     '<div class="tile"><div class="l">Trudność montażu</div><div class="v c-'+dv+'">'+fmt(R.difficulty)+' <small>/ 10 (10 = łatwo)</small></div><div class="s">centrala: '+(R.unitLoft?'strych':esc(R.unit?.name||'—'))+' · kanały ok. '+Math.round(R.ductLen)+' m</div></div>'+
     '<div class="tile"><div class="l">Koszt rekuperacji</div><div class="v">'+zl(R.cost.total)+'</div><div class="s">z montażem, orientacyjnie</div></div>'+
     '<div class="tile"><div class="l">Oszczędność na ogrzewaniu</div><div class="v">'+(R.saving!=null?zl(Math.max(0,R.saving))+' <small>na rok</small>':'–')+'</div><div class="s">'+(R.heatSave!=null?'mniej ciepła o '+Math.round(R.heatSave).toLocaleString('pl-PL')+' kWh/rok, prąd na wentylatory ok. '+zl(R.fanCost)+'/rok':'')+(R.payback?' · zwrot ok. '+Math.round(R.payback)+' lat':'')+'</div></div></div>';
-  h+='<div class="grid2"><div class="card"><h3>Dlaczego '+NEED[R.need]+'</h3><ul class="why">'+R.why.map(w=>'<li>'+esc(w)+'</li>').join('')+'</ul>'+(R.payback&&R.payback>15?'<p class="hint" style="margin-top:8px">Zwrot z samej oszczędności energii jest długi (przy pompie ciepła ciepło jest tanie) – rekuperację robi się głównie dla jakości powietrza i szczelnego domu.</p>':'')+'</div>'+
+  h+='<div class="grid2"><div class="card"><h3>Dlaczego '+NEED[R.need]+'</h3><ul class="why">'+R.why.map(w=>'<li>'+esc(w)+'</li>').join('')+'</ul>'+(R.payback&&R.payback>15?'<p class="hint" style="margin-top:8px">Zwrot z samej oszczędności energii jest długi '+(R.heatPrice?'(ciepło z instalacji „'+esc(R.heatPrice.from)+'” kosztuje ok. '+fmt(R.heatPrice.p,2)+' zł/kWh)':'')+' – rekuperację robi się głównie dla jakości powietrza i szczelnego domu.</p>':'')+'</div>'+
     '<div class="card"><h3>Trudność montażu</h3>'+(R.dIss.length?'<ul class="iss">'+R.dIss.map(i=>'<li><span class="pen">−'+fmt(i.p)+'</span>'+esc(i.text)+'<span class="tip">'+esc(i.tip)+'</span></li>').join('')+'</ul>':'<p class="hint c-ok">Łatwo: centrala blisko, kanały prowadzone po strychu, bez sufitów podwieszanych.</p>')+'</div></div>';
   h+='<div class="card"><h3>Schemat</h3><p class="hint">Niebieskie – nawiew świeżego powietrza (↓), pomarańczowe – wywiew zużytego (↑), szare – komunikacja (powietrze przepływa przez podcięcia drzwi). R – centrala; linie to kierunek kanałów, nie ich trasa.</p><div class="plans">'+[R.lo,R.up].map(planSVG).join('')+'</div>'+
     '<div class="legend"><span><i style="background:#dbeafe"></i>nawiew</span><span><i style="background:#ffedd5"></i>wywiew</span><span><i style="background:#f1f5f9"></i>komunikacja</span><span><i style="background:#0f766e"></i>centrala</span></div></div>';

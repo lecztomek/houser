@@ -17,7 +17,7 @@
    "Balkony": null,
    "Hydraulika": 9.3,
    "Ogrzewanie": 9.5,
-   "Wentylacja": 9.4,
+   "Wentylacja": 9.6,
    "Rekuperacja": 10
   }
  },
@@ -39,7 +39,7 @@
    "Balkony": null,
    "Hydraulika": 8.8,
    "Ogrzewanie": 9.5,
-   "Wentylacja": 9.6,
+   "Wentylacja": 9.7,
    "Rekuperacja": 10
   }
  },
@@ -61,7 +61,7 @@
    "Balkony": null,
    "Hydraulika": 9.8,
    "Ogrzewanie": 9.5,
-   "Wentylacja": 9.8,
+   "Wentylacja": 10,
    "Rekuperacja": 7.5
   }
  },
@@ -83,7 +83,7 @@
    "Balkony": null,
    "Hydraulika": 8.5,
    "Ogrzewanie": 9.5,
-   "Wentylacja": 9.7,
+   "Wentylacja": 9.9,
    "Rekuperacja": 7
   }
  },
@@ -127,7 +127,7 @@
    "Balkony": null,
    "Hydraulika": 7,
    "Ogrzewanie": 10,
-   "Wentylacja": 9.6,
+   "Wentylacja": 9.8,
    "Rekuperacja": 7
   }
  },
@@ -149,7 +149,7 @@
    "Balkony": null,
    "Hydraulika": 5.7,
    "Ogrzewanie": 9.5,
-   "Wentylacja": 9.7,
+   "Wentylacja": 9.8,
    "Rekuperacja": 7
   }
  }

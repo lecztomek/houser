@@ -43,9 +43,9 @@ ul.cons li::marker{content:'− ';color:#b91c1c;font-weight:800}
 <body>
 <div class="wrap">
   <h1>Wentylacja</h1>
-  <p class="lead">Porównanie sposobów wentylacji dla tego domu: grawitacyjna, mechaniczna wywiewna (hybrydowa) i rekuperacja – koszt zrobienia, koszt roczny (ogrzewanie + prąd wentylatorów + serwis), koszt w 20 lat, jakość powietrza i na ile dana metoda pasuje do tego domu.</p>
+  <p class="lead">Porównanie sposobów wentylacji dla tego domu: grawitacyjna, hybrydowa, mechaniczna wywiewna, rekuperatory ścienne i rekuperacja z centralą – koszt zrobienia, koszt roczny (ogrzewanie + prąd wentylatorów + serwis), koszt w 20 lat, jakość powietrza i na ile dana metoda pasuje do tego domu.</p>
   <div id="out"><div class="empty">Liczę…</div></div>
-  <p class="hint" style="margin-top:14px">Koszty orientacyjne, z montażem. Koszt roczny obejmuje całe ogrzewanie domu (pompą ciepła, wg modułu Energia), bo metody różnią się głównie tym, ile ciepła ucieka z powietrzem. Ocena = 60% dopasowanie do domu + 40% koszt w 20 lat względem najtańszej metody.</p>
+  <p class="hint" style="margin-top:14px">Koszty orientacyjne, z montażem. Koszt roczny obejmuje całe ogrzewanie domu (tym, co wybrano w module Instalacja grzewcza), bo metody różnią się głównie tym, ile ciepła ucieka z powietrzem. Ocena = 60% dopasowanie do domu + 40% koszt w 20 lat względem najtańszej metody.</p>
   <div class="links"><a class="btn" href="../rekuperacja/" id="lnkRek">Szczegóły rekuperacji →</a><a class="btn" href="../klimatyzacja/" id="lnkAc">Klimatyzacja →</a></div>
 </div>
 <script src="../../shared/house-model.js"></script>
@@ -55,6 +55,8 @@ ul.cons li::marker{content:'− ';color:#b91c1c;font-weight:800}
 <script src="../../shared/energy.js"></script>
 <script src="../naslonecznienie/sun.js"></script>
 <script src="../naslonecznienie/calc.js"></script>
+<script src="../../shared/heating.js"></script>
+<script src="../../shared/heating-system.js"></script>
 <script src="../../shared/hvac.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -76,11 +78,12 @@ function render(){
   let h=top+'<div class="best"><div><div class="hint">Najlepiej pasuje do tego domu</div><div class="big">'+esc(M.best.name)+'</div></div><div class="s">'+(M.airtight?'Dom jest szczelny (infiltracja '+fmt(M.inf,2)+' 1/h) – potrzebna wentylacja mechaniczna.':'Dom jest mniej szczelny (infiltracja '+fmt(M.inf,2)+' 1/h) – wentylacja grawitacyjna ma szansę działać.')+'</div></div>';
   h+='<div class="methods">'+[...M.list].sort((a,b)=>b.score-a.score).map(m=>'<div class="m'+(m===M.best?' win':'')+(m.k===ck?' pick':'')+'"><h2>'+esc(m.name)+(m.k===ck?'<span class="badge">wybrana</span>':'')+'</h2><div class="how">'+esc(m.how)+'</div>'+
     '<div class="score"><span class="n '+cls(m.score)+'">'+fmt(m.score)+'</span><span class="hint">/ 10 ocena · dopasowanie do domu '+fmt(m.fit)+' / 10</span></div>'+
-    '<div class="kv"><span>Koszt zrobienia</span><b>'+zl(m.invest)+'</b><span>Koszt roczny</span><b>'+zl(m.year)+' / rok</b><span class="hint">w tym prąd wentylatorów i serwis</span><b class="hint">'+zl(m.fan+m.service)+' / rok</b><span>Koszt w '+M.years+' lat</span><b>'+zl(m.total)+'</b></div>'+
+    '<div class="kv"><span>Koszt zrobienia</span><b>'+zl(m.invest)+'</b><span>Ogrzewanie domu + wentylacja</span><b>'+zl(m.year)+' / rok</b><span class="hint">w tym prąd wentylatorów i serwis</span><b class="hint">'+zl(m.fan+m.service)+' / rok</b><span>Koszt w '+M.years+' lat</span><b>'+zl(m.total)+'</b></div>'+
     '<div class="bar" title="koszt w '+M.years+' lat"><i style="width:'+Math.round(m.total/maxT*100)+'%"></i></div>'+
     '<div class="kv"><span>Jakość powietrza</span><b>'+m.air+' / 10</b></div>'+
     (m.why.length?'<ul class="why">'+m.why.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'')+
     '<ul class="pros">'+m.pros.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul><ul class="cons">'+m.cons.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>').join('')+'</div>';
+  h+='<p class="hint" style="margin-top:10px">Koszt ciepła traconego z powietrzem liczony po ok. '+fmt(M.pHeat,2)+' zł/kWh – ogrzewanie: '+esc(M.heatFrom)+' (zmienisz w module Instalacja grzewcza). Infiltracja i ceny prądu – moduł Energia.</p>';
   O.innerHTML=h;
   $('pickV').onchange=e=>{const v=HouserHVAC.VENT_OF[e.target.value];project.energySettings={...(project.energySettings||{}),vent:v};HouserStore.update(p=>{p.energySettings={...(p.energySettings||{}),vent:v}},'wentylacja');render()};
 }

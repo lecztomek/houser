@@ -54,7 +54,7 @@ function cs(){const s=project.costSettings||{};return {std:STD[s.std]?s.std:'std
 // koszty z modułów (gdy ich obliczenia są załadowane na stronie): wentylacja wybrana w module Wentylacja, instalacja
 // grzewcza z modułu Instalacja grzewcza, wod-kan z Hydrauliki, klimatyzacja. Bez nich – stawki za m² jak wyżej.
 function fromModules(){const D={};const T=f=>{try{return f()}catch(e){console.warn(e);return null}};
-  if(global.HouserHVAC){const M=T(()=>HouserHVAC.methods(project,project.hvacSettings));if(M?.chosen)D.vent={name:'Wentylacja: '+M.chosen.name.toLowerCase(),total:M.chosen.invest,how:'z modułu Wentylacja'};
+  if(global.HouserHVAC){const M=T(()=>HouserHVAC.methods(project,project.hvacSettings));if(M?.chosen)D.vent={name:'Wentylacja: '+M.chosen.name.replace(/^Wentylacja /,'').toLowerCase(),total:M.chosen.invest,how:'z modułu Wentylacja'};
     const V=M?.res;if(V?.ac&&V.ac.rooms.length)D.ac={name:'Klimatyzacja ('+V.ac.rooms.length+' '+(V.ac.rooms.length===1?'pokój':V.ac.rooms.length<5?'pokoje':'pokoi')+')',total:V.ac.best,how:'z modułu Klimatyzacja – włącz, jeśli planujesz'}}
   // instalacja grzewcza: zaprojektowana albo domyślna (pompa ciepła + podłogówka) – liczona tak samo jak w Ogrzewaniu i Porównaniu
   if(global.HouserHeatSys){const R=T(()=>HouserHeatSys.evaluate(project));if(R){const src=R.designed?'z modułu Instalacja grzewcza':'domyślna instalacja (nie zaprojektowano w module Instalacja grzewcza)';D.heatsrc={name:'Źródło ciepła: '+R.name.toLowerCase(),total:R.investSrc,how:src+' – źródła, bufor, komin'};D.floorheat={name:'Instalacja grzewcza w pokojach',total:R.invest-R.investSrc,how:src+' – podłogówka, grzejniki, rozdzielacze, rury'}}}

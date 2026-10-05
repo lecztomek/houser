@@ -24,7 +24,10 @@ for(const f of examples){const p=JSON.parse(fs.readFileSync(path.join(ROOT,'exam
    const fa=W.HouserHeatSys.evaluate({...p,heatingSystem:{main:'fireplace_air',extra:'hp_air'}});ok(fin(fa.year)&&fa.year>0&&fa.loops===0&&fa.sys.extra==='none'&&fa.dhwSrc==='el',f+': kominek powietrzny bez instalacji wodnej');
    const hs=W.HouserHeatSys.evaluate({...p,heatingSystem:{main:'hp_air',extra:'stove'}});ok(fin(hs.year)&&hs.sys.extra==='stove'&&hs.share>0&&hs.cost.some(x=>/Koza/.test(x.name)),f+': pompa ciepła + koza');
    ok(fa.elShare>=.1&&fa.elShare<1&&fa.cost.some(x=>/DGP/.test(x.name)),f+': kominek powietrzny – DGP i udział prądu '+fa.elShare)}
-  const M=W.HouserHVAC.methods(p,p.hvacSettings);for(const m of M.list){ok(fin(m.invest)&&fin(m.total)&&fin(m.score)&&fin(m.fan),f+': wentylacja '+m.k+' '+JSON.stringify([m.invest,m.fan,m.total,m.score]))}
+  const M=W.HouserHVAC.methods(p,p.hvacSettings);{const g=k=>M.list.find(m=>m.k===k);ok(M.list.length===5&&g('mvhr').yearly<=g('decentral').yearly&&g('decentral').yearly<g('exhaust').yearly&&g('exhaust').yearly<=g('grav').yearly&&g('hybrid').yearly===g('grav').yearly,f+': wentylacja – kolejność strat ciepła');
+   ok(['decentral','hybrid'].every(v=>fin(W.HouserEnergy.compute({...p,energySettings:{...(p.energySettings||{}),vent:v}}).Qh)),f+': Energia z nowymi rodzajami wentylacji');
+   ok(W.HouserHVAC.methods({...p,energySettings:{...(p.energySettings||{}),vent:'decentral'}},p.hvacSettings).chosen?.k==='decentral',f+': wybór rekuperatorów ściennych')}
+for(const m of M.list){ok(fin(m.invest)&&fin(m.total)&&fin(m.score)&&fin(m.fan),f+': wentylacja '+m.k+' '+JSON.stringify([m.invest,m.fan,m.total,m.score]))}
   const S=W.HouserSolar.compute(p);ok(fin(S.house.season)&&S.house.season>=0,f+': słońce w sezonie');
   const L=W.HouserLooks.evaluate(p);ok(L.score==null||(fin(L.score)&&L.score>=0&&L.score<=10),f+': wygląd '+L.score);
   const A=W.HouserAdvice.collect(p);ok(fin(A.overall)&&A.overall>0&&A.overall<=10,f+': ocena ogólna '+A.overall);

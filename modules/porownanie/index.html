@@ -211,7 +211,7 @@ const ROWS=[
   ['Wentylacja'],
   ['Wentylacja – wybrana','sposób wentylacji wybrany w projekcie (moduł Wentylacja) – liczy się w bilansie energii; niżej – jego ocena dla tego domu',m=>m.VM?.chosen?.name,v=>v||'–',null,m=>m.VM?.chosen?'ocena '+nf(m.VM.chosen.score,1)+' / 10':''],
   ['Wentylacja – najlepsza dla domu','sposób wentylacji z najwyższą oceną – wg modułu Wentylacja',m=>m.VM?.best.name,v=>v||'–',null,m=>m.VM?'koszt zrobienia '+zl(m.VM.best.invest):''],
-  ['Wentylacja – koszt zrobienia','wybranej metody wentylacji (rekuperacja, wywiewna albo grawitacyjna) – z montażem',m=>m.VM?.chosen?.invest,zl,'low',m=>m.VM?.chosen?m.VM.chosen.name:''],
+  ['Wentylacja – koszt zrobienia','wybranej metody wentylacji (rekuperacja, rekuperatory ścienne, wywiewna, hybrydowa albo grawitacyjna) – z montażem',m=>m.VM?.chosen?.invest,zl,'low',m=>m.VM?.chosen?m.VM.chosen.name:''],
   ['Rekuperacja – trudność montażu','0–10, gdzie 10 = łatwo (centrala blisko, kanały po strychu); tylko gdy wybrano rekuperację',m=>m.VM?.chosen?.k==='mvhr'?m.V?.difficulty:null,v=>v==null?'nie dotyczy':nf(v,1)+' / 10','high',m=>m.VM?.chosen?.k==='mvhr'&&m.V?'kanały ok. '+nf(m.V.ductLen)+' m':m.VM?.chosen?'wybrano: '+m.VM.chosen.name.toLowerCase():''],
   ['Klimatyzacja'],
   ['Klimatyzacja – pokoje','ile pokoi potrzebuje klimatyzatora (wg ryzyka przegrzania)',m=>m.V?.ac.rooms.length,v=>v==null?'–':nf(v)+' '+plF(v,'pokój','pokoje','pokoi'),'low'],
