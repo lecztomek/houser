@@ -116,8 +116,8 @@ const devLabel=d=>d.startsWith('man:')?'Rozdzielacz – '+(FLOOR_PL[d.slice(4)]|
 const devKind=d=>d.startsWith('man:')?'man':d;
 
 $('main').innerHTML=Object.entries(HS.SOURCES).map(([k,v])=>'<option value="'+k+'">'+v.name+'</option>').join('');
-function fillExtra(){const s=sys();$('extra').innerHTML=Object.entries(HS.EXTRAS).filter(([k])=>k!==s.main).map(([k,v])=>'<option value="'+k+'">'+v.name+'</option>').join('')}
-$('main').onchange=()=>save(s=>{s.main=$('main').value;if(s.extra===s.main)s.extra='none';if(s.main==='electric'&&HS.EXTRAS[s.extra].hydro)s.extra='none'});
+function fillExtra(){const s=sys(),air=HS.SOURCES[s.main]?.air;$('extra').innerHTML=Object.entries(HS.EXTRAS).filter(([k,v])=>k!==s.main&&!(air&&(v.hydro||v.room))).map(([k,v])=>'<option value="'+k+'">'+v.name+'</option>').join('')}
+$('main').onchange=()=>save(s=>{s.main=$('main').value;if(s.extra===s.main)s.extra='none';if((s.main==='electric'||HS.SOURCES[s.main].air)&&HS.EXTRAS[s.extra].hydro)s.extra='none';if(HS.SOURCES[s.main].air&&HS.EXTRAS[s.extra].room)s.extra='none'});
 $('extra').onchange=()=>save(s=>{s.extra=$('extra').value;s.share=HS.EXTRAS[s.extra].share||0});
 $('share').oninput=()=>{$('shareL').textContent='Udział źródła alternatywnego w ogrzewaniu: '+$('share').value+'%'};
 $('share').onchange=()=>save(s=>{s.share=+$('share').value});
@@ -129,7 +129,7 @@ $('allFloor').onclick=()=>save(s=>{for(const r of R.rooms)if(!r.garage&&r.area>=
 $('allRad').onclick=()=>save(s=>{for(const r of R.rooms)if(!r.garage&&r.area>=2)s.emitters[r.key]=r.bath?'ladder':'rad'});
 $('resetEmit').onclick=()=>save(s=>{s.emitters={}});
 
-function renderSide(){
+function renderSide(){$("allFloor").hidden=$("allRad").hidden=!!R?.air;
   $('noProj').hidden=!!project;$('ui').hidden=!project;if(!project)return;
   const s=sys();fillExtra();$('main').value=s.main;$('extra').value=s.extra;
   $('shareF').hidden=s.extra==='none';$('share').value=s.share;$('shareL').textContent='Udział źródła alternatywnego w ogrzewaniu: '+s.share+'%';
@@ -144,13 +144,13 @@ function renderSide(){
   const L=$('rooms');L.innerHTML='';
   for(const f of floors()){const rs=R.rooms.filter(r=>r.f===f);if(!rs.length)continue;L.insertAdjacentHTML('beforeend','<div class="hint" style="margin:6px 0 0;font-weight:700">'+esc(FLOOR_PL[f]||f)+'</div>');
     for(const r of rs){const row=document.createElement('div');const bad=!r.garage&&r.ok===false;row.className='room'+(bad?' bad':'');
-      row.innerHTML='<span><b>'+esc(r.name)+'</b> <small>'+fmt(r.area)+' m²'+(r.garage?'':' ('+fmt(r.load/1000,1)+' kW)')+'</small></span><select>'+EMIT_OPTS.map(o=>'<option value="'+o+'"'+(o===r.emit?' selected':'')+'>'+HS.EMIT[o]+'</option>').join('')+'</select>';
+      row.innerHTML='<span><b>'+esc(r.name)+'</b> <small>'+fmt(r.area)+' m²'+(r.garage?'':' ('+fmt(r.load/1000,1)+' kW)')+'</small></span><select>'+(R.air?HS.AIR_EMIT:EMIT_OPTS).map(o=>'<option value="'+o+'"'+(o===r.emit?' selected':'')+'>'+HS.EMIT[o]+'</option>').join('')+'</select>';
       row.querySelector('select').onchange=e=>save(s=>{s.emitters[r.key]=e.target.value});L.appendChild(row)}}
 }
 function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
 function renderPlan(){
   const card=$('card');if(!project){card.innerHTML='<div class="empty">Brak projektu.</div>';return}
-  const fl=floors();card.innerHTML='<div class="planTitle"><div class="row" id="tabs"></div><span>'+(tool?'kliknij na rzucie: '+esc(devLabel(tool)):'wybierz urządzenie po lewej, żeby je wstawić')+'</span></div><svg id="plan"></svg><div class="legend"><span><i style="background:repeating-linear-gradient(45deg,#fb923c 0 2px,#fff7ed 2px 6px)"></i>podłogówka</span><span><i style="background:#3b82f6"></i>grzejnik / drabinka</span><span><i style="background:#fecaca;border:1px solid #dc2626"></i>ogrzewanie nie wystarczy</span><span><i style="background:#374151"></i>komin</span></div>';
+  const fl=floors();card.innerHTML='<div class="planTitle"><div class="row" id="tabs"></div><span>'+(tool?'kliknij na rzucie: '+esc(devLabel(tool)):'wybierz urządzenie po lewej, żeby je wstawić')+'</span></div><svg id="plan"></svg><div class="legend"><span><i style="background:repeating-linear-gradient(45deg,#fb923c 0 2px,#fff7ed 2px 6px)"></i>podłogówka</span><span><i style="background:#3b82f6"></i>grzejnik / drabinka</span>'+(R.air?'<span><i style="background:#ea580c;height:3px"></i>kanał ciepłego powietrza (DGP)</span>':'')+'<span><i style="background:#fecaca;border:1px solid #dc2626"></i>ogrzewanie nie wystarczy</span><span><i style="background:#374151"></i>komin</span></div>';
   for(const f of fl){const b=document.createElement('button');b.className='btn'+(f===floor?' active':'');b.textContent=FLOOR_PL[f]||f;b.onclick=()=>{floor=f;if(tool==='out'&&f!==fl[0])tool=null;renderAll()};$('tabs').appendChild(b)}
   const svg=$('plan'),g=grid(),c=g.cellMeters,M=MARGIN*c,Wm=g.width*c,Hm=g.height*c;
   svg.setAttribute('viewBox',[-M*PX,-M*PX,(Wm+2*M)*PX,(Hm+2*M)*PX].join(' '));
@@ -171,6 +171,8 @@ function renderPlan(){
   const pipe=(a,b,col,w,dash)=>{const [x1,y1]=P(a),[x2,y2]=P(b);el('path',{d:'M'+x1+' '+y1+' L'+x2+' '+y1+' L'+x2+' '+y2,fill:'none',stroke:col,'stroke-width':w*k,'stroke-dasharray':dash||'','stroke-linecap':'round','pointer-events':'none'},svg)};
   const man=R.devs['man:'+floor];
   if(man)for(const r of R.rooms.filter(r=>r.f===floor&&r.emit!=='none'&&!R.elec)){let best=null,bd=1e9;for(const [x,y] of r.cells){const d=Math.abs(x-man.x)+Math.abs(y-man.y);if(d<bd){bd=d;best={x,y}}}if(best&&bd>0)pipe(man,best,'#16a34a',1.5,'3 3')}
+  const fp=R.air&&R.devs.main;
+  if(fp)for(const r of R.rooms.filter(r=>r.f===floor&&r.emit==='dgp'&&!(fp.room&&r.key===fp.room.f+'|'+fp.room.id))){let best=null,bd=1e9;for(const [x,y] of r.cells){const d=Math.abs(x-fp.x)+Math.abs(y-fp.y);if(d<bd){bd=d;best={x,y}}}if(best)pipe(fp.f===floor?fp:{x:fp.x,y:fp.y},best,'#ea580c',2,fp.f===floor?'':'8 4')}
   const src=R.devs.main||R.devs.extra;
   if(src)for(const f of R.floorsW){const m=R.devs['man:'+f];if(!m)continue;if(src.f===floor&&m.f===floor)pipe(src,m,'#dc2626',3);else if(src.f===floor)pipe(src,{x:m.x,y:m.y},'#dc2626',3,'8 4');else if(m.f===floor)pipe({x:src.x,y:src.y},m,'#dc2626',3,'8 4')}
   if(R.devs.out&&floor===fl[0]){const inU=R.devs.main&&HS.SOURCES[R.sys.main].out?R.devs.main:R.devs.extra||R.devs.main;if(inU&&inU.f===floor)pipe(R.devs.out,inU,'#475569',3)}

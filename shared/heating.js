@@ -29,6 +29,8 @@
        invest:Math.max(10000,load*900+3000),perKWh:pEl,fixed:0,service:0,comfort:10,pros:['najtańsze w instalacji','zero obsługi i serwisu'],cons:['najdroższe rachunki – ma sens tylko w domu pasywnym albo z dużą fotowoltaiką']},
       {k:'fireplace_water',name:'Kominek z płaszczem wodnym',how:'kominek z wkładem z płaszczem wodnym w salonie, podłączony do bufora ciepła – grzeje cały dom i wodę; latem wodę grzeje grzałka',
        invest:22000+6000+(chimney?0:7000),perKWh:null,fixed:0,service:400,comfort:3,pros:['ogień w salonie i ciepło w całym domu','tanie paliwo (drewno)','niezależność od gazu, a przy braku prądu – od pompy obiegowej z UPS'],cons:['palenie codziennie w sezonie – gdy nikt nie pali, dom stygnie','potrzebny bufor ciepła i drugie źródło na wyjazdy (grzałka, pompa ciepła)','noszenie drewna do salonu i sprzątanie popiołu','latem ciepła woda z prądu']},
+      {k:'fireplace_air',name:'Kominek z wkładem (powietrzny, DGP)',how:'kominek w salonie, ciepłe powietrze rozprowadzane kanałami (DGP) do pokoi; łazienki i ciepła woda na prąd',
+       invest:18000+6000+(chimney?0:7000)+Math.max(3000,load*350),perKWh:null,fixed:0,service:300,comfort:4,pros:['najtańsza instalacja z ogniem w salonie – bez wody, bufora i rozdzielaczy','tanie paliwo (drewno)','ciepło szybko – od rozpalenia do ciepłego salonu kilkanaście minut'],cons:['palenie codziennie w sezonie – gdy nikt nie pali, dom stygnie','nierówne ciepło: salon najcieplejszy, dalsze pokoje i piętro chłodniejsze','łazienki i ciepła woda z prądu','noszenie drewna i sprzątanie popiołu, kurz w kanałach DGP']},
       {k:'hp_fire',name:'Pompa ciepła + kominek',how:'pompa ciepła powietrze–woda i kominek z wkładem w salonie, który dogrzewa część domu',
        invest:hpInvest+18000+(chimney?0:7000),perKWh:null,fixed:0,service:450,comfort:9,pros:['klimat „żywego ognia” w salonie','kominek obniża rachunki w mrozy','ogrzewanie działa też przy braku prądu (kominek)'],cons:['kominek to dodatkowy koszt i komin','noszenie drewna i sprzątanie']},
     ];
@@ -39,11 +41,12 @@
     for(const m of list){
       if(m.k==='hp_fire'){const wood=S.pWood/S.woodKWh/.78,hp=pEl/scopAir;m.rate=f*wood+(1-f)*hp}
       else if(m.k==='wood'||m.k==='fireplace_water')m.rate=S.pWood/S.woodKWh/EFF[m.k];
+      else if(m.k==='fireplace_air')m.rate=.7*S.pWood/S.woodKWh/.78+.3*pEl; /* ok. 30% ciepła z prądu: łazienki, dalsze pokoje, dni bez palenia */
       else m.rate=m.perKWh;
       const summer=EFF[m.k]?m.rate*EFF[m.k]/.6:m.rate;
-      m.dhwMain=m.k==='hp_air'||m.k==='hp_fire'?pEl/(S.scop*.8):m.k==='hp_ground'?pEl/(4.6*.8):.5*m.rate+.5*summer; // woda przez cały rok z tego źródła
+      m.dhwMain=m.k==='fireplace_air'?pEl:m.k==='hp_air'||m.k==='hp_fire'?pEl/(S.scop*.8):m.k==='hp_ground'?pEl/(4.6*.8):.5*m.rate+.5*summer; // woda przez cały rok z tego źródła
       m.dhwRate=m.k==='wood'||m.k==='fireplace_water'?.5*m.rate+.5*pEl:m.dhwMain;                                    // założenie w porównaniu
-      m.dhwNote=m.k.startsWith('hp')?'ciepła woda z pompy (wyższa temperatura – niższa sprawność)':m.k==='gas'?'ciepła woda z kotła':m.k==='electric'?'ciepła woda z grzałki':m.k==='wood'||m.k==='fireplace_water'?'ciepła woda: zimą z '+(m.k==='wood'?'kotła':'kominka')+', latem z grzałki (latem się nie pali)':'ciepła woda z kotła także latem (wtedy sprawność ok. 60%)';
+      m.dhwNote=m.k.startsWith('hp')?'ciepła woda z pompy (wyższa temperatura – niższa sprawność)':m.k==='gas'?'ciepła woda z kotła':m.k==='electric'||m.k==='fireplace_air'?'ciepła woda z grzałki':m.k==='wood'||m.k==='fireplace_water'?'ciepła woda: zimą z '+(m.k==='wood'?'kotła':'kominka')+', latem z grzałki (latem się nie pali)':'ciepła woda z kotła także latem (wtedy sprawność ok. 60%)';
       m.fuelCO=E.Qh*m.rate;m.fuelCWU=E.Qw*m.dhwRate;m.fuel=m.fuelCO+m.fuelCWU;m.perKWh=m.fuel/Math.max(1,Q);
       m.year=m.fuel+m.fixed+m.service;m.total=m.invest+years*m.year;
       // dopasowanie do tego domu 0–10
@@ -62,6 +65,12 @@
         if(!q.rooms.some(r=>/salon|dzienn/i.test(r.name||'')))add(-1,'brak salonu, w którym stałby kominek');
         if(!utility)add(-1,'brak pomieszczenia technicznego na bufor ciepła');
         if(EU<=40)add(-1.5,'dom energooszczędny – kominek łatwo przegrzeje salon, a instalacja wodna jest przewymiarowana');else if(EU>70)add(.5,'duże zapotrzebowanie – kominek odda dużo ciepła do całego domu');
+        add(-1,'wymaga codziennego palenia w sezonie')}
+      if(m.k==='fireplace_air'){if(!chimney)add(-1,'w projekcie nie ma komina – trzeba go dobudować przy kominku');else add(.5,'komin jest w projekcie');
+        if(!q.rooms.some(r=>/salon|dzienn/i.test(r.name||'')))add(-1.5,'brak salonu, w którym stałby kominek');
+        if(load>10)add(-2,'moc domu '+load.toFixed(1)+' kW – jeden kominek powietrzny nie ogrzeje całego domu');else if(load<=6)add(1,'mała moc domu ('+load.toFixed(1)+' kW) – kominek z DGP da radę');
+        if(q.net[q.up]>0)add(-1,'dom piętrowy – ciepłe powietrze gorzej dociera na piętro');
+        if(EU<=30)add(-1,'dom bardzo energooszczędny – kominek łatwo przegrzeje salon');
         add(-1,'wymaga codziennego palenia w sezonie')}
       if(m.k==='electric'){if(EU<=25)add(3,'dom prawie pasywny – prąd wystarczy');else if(EU<=45)add(-1,'przy tym zapotrzebowaniu rachunki będą wysokie');else add(-4,'przy '+Math.round(EU)+' kWh/m² rachunki za prąd będą bardzo wysokie');if(set.pv==='yes')add(1,'fotowoltaika pomaga')}
       if(m.k==='hp_fire'){if(EU<=70)add(1.5,'dom energooszczędny – pompa pracuje wydajnie');if(floor)add(.5,'podłogówka');if(!chimney)add(-1,'trzeba dobudować komin do kominka');else add(.5,'komin jest w projekcie')}

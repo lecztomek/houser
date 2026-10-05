@@ -11,6 +11,7 @@
     coal:{name:'Kocioł na ekogroszek',dev:'Kocioł na ekogroszek',short:'Węgiel',foot:2,hydro:true,flue:true,solid:true},
     wood:{name:'Kocioł zgazowujący drewno',dev:'Kocioł na drewno',short:'Drewno',foot:1,hydro:true,flue:true,solid:true},
     fireplace_water:{name:'Kominek z płaszczem wodnym',dev:'Kominek z płaszczem wodnym',short:'Kominek',foot:0,hydro:true,flue:true,room:true},
+    fireplace_air:{name:'Kominek z wkładem (powietrzny, DGP)',dev:'Kominek z DGP',short:'Kominek',foot:0,flue:true,room:true,air:true},
     electric:{name:'Ogrzewanie elektryczne',dev:null,short:'Prąd',foot:0},
   };
   const EXTRAS={
@@ -24,27 +25,29 @@
     wood:{name:'Kocioł na drewno',dev:'Kocioł na drewno',short:'Drewno',share:50,hydro:true,flue:true,solid:true,foot:1},
     electric:{name:'Grzałka / grzejniki elektryczne (zapas)',share:3,invest:1500,service:0},
   };
-  const EMIT={floor:'podłogówka','floor+ladder':'podłogówka + drabinka','floor+rad':'podłogówka + grzejnik',rad:'grzejnik',ladder:'drabinka',none:'bez ogrzewania'};
+  const EMIT={floor:'podłogówka','floor+ladder':'podłogówka + drabinka','floor+rad':'podłogówka + grzejnik',rad:'grzejnik',ladder:'drabinka',none:'bez ogrzewania',dgp:'nawiew z kominka (DGP)',el:'grzejnik elektryczny'};
   const DEVS={main:'Źródło ciepła',extra:'Źródło alternatywne',out:'Jednostka zewnętrzna',buffer:'Bufor ciepła',dhw:'Zasobnik ciepłej wody',man:'Rozdzielacz'};
   const DEF={main:'hp_air',extra:'none',share:null,buffer:'auto',dhw:200,dhwSrc:'auto'};
   // ciepła woda (CWU) – osobno od ogrzewania pokoi (CO)
   const DHW={auto:{name:'dobierz automatycznie'},main:{name:'ze źródła głównego przez cały rok'},main_el:{name:'zimą ze źródła głównego, latem grzałka elektryczna'},hp_dhw:{name:'osobna pompa ciepła do ciepłej wody',invest:7500,service:100},
     el:{name:'grzałka / podgrzewacz elektryczny',invest:2500},solar:{name:'kolektory słoneczne + dogrzewanie ze źródła głównego',invest:13000,service:150},extra:{name:'ze źródła alternatywnego'}};
-  const PRICE={floorM2:170,manifold:3500,rad:1100,ladder:1400,pipeM:60,mainM:130,outM:300,czopuch:1500,chimney:7000,flue2:2500,dhwTank:4000};
+  const PRICE={dgpUnit:2500,dgpOut:600,dgpM:90,elRoom:1200,elBath:1400,floorM2:170,manifold:3500,rad:1100,ladder:1400,pipeM:60,mainM:130,outM:300,czopuch:1500,chimney:7000,flue2:2500,dhwTank:4000};
   const BUF={0:[0,0],100:[2500,.3],200:[3500,.4],300:[4200,.5],500:[5500,.7],800:[7500,1],1000:[8500,1.1]};
   const re={bath:/łazien|lazien/i,wc:/\bwc\b|toalet/i,util:/techn|kotłown|kotlown|kotł|kotl/i,garage:/garaż|garaz/i,bed:/sypial|pokój|pokoj|gabinet|dziec|gości|gosci/i,living:/salon|dzienny|jadal/i,kitchen:/kuchni|aneks/i,stairs:/schod/i};
   const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
   const fm=v=>fmt(v,1)+' m';
 
-  function defaultEmit(r){const n=r.name||'';if(re.garage.test(n)||re.stairs.test(n))return 'none';if(re.bath.test(n))return 'floor+ladder';if(r.area<3&&!re.wc.test(n))return 'none';return 'floor'}
-  function normalize(project){const s={...DEF,...(project.heatingSystem||{})};if(!SOURCES[s.main])s.main=DEF.main;if(!EXTRAS[s.extra]||s.extra===s.main)s.extra='none';
+  // kominek powietrzny: pokoje z nawiewem DGP, łazienki z grzejnikiem elektrycznym
+  const AIR_EMIT=['dgp','el','none'];
+  function defaultEmit(r,air){const n=r.name||'';if(air){if(re.garage.test(n)||re.stairs.test(n)||(r.area<3&&!re.wc.test(n)))return 'none';return re.bath.test(n)||re.wc.test(n)?'el':'dgp'}if(re.garage.test(n)||re.stairs.test(n))return 'none';if(re.bath.test(n))return 'floor+ladder';if(r.area<3&&!re.wc.test(n))return 'none';return 'floor'}
+  function normalize(project){const s={...DEF,...(project.heatingSystem||{})};if(!SOURCES[s.main])s.main=DEF.main;if(!EXTRAS[s.extra]||s.extra===s.main||(SOURCES[s.main].air&&(EXTRAS[s.extra].hydro||EXTRAS[s.extra].room)))s.extra='none';
     s.share=Number.isFinite(+s.share)&&s.share!==null?Math.max(0,Math.min(80,+s.share)):(EXTRAS[s.extra].share||0);s.devices={...(s.devices||{})};s.emitters={...(s.emitters||{})};return s}
   // które urządzenia są potrzebne przy wybranych źródłach
   function needed(s,floorsWithWater){const out=[];if(SOURCES[s.main].dev)out.push('main');const ex=EXTRAS[s.extra];if(ex.dev)out.push('extra');
     if(SOURCES[s.main].out||ex.out)out.push('out');out.push('dhw');if(s.buffer!=='0'&&s.buffer!==0)out.push('buffer');for(const f of floorsWithWater)out.push('man:'+f);return out}
 
   function evaluate(project){
-    const designed=!!project.heatingSystem,s=normalize(project);
+    const designed=!!project.heatingSystem,s=normalize(project),air=!!SOURCES[s.main].air;
     const HS={...HouserHeating.DEF,...(project.heatingSettings||{})};
     const E=HouserEnergy.compute(project),q=E.q,S=E.s,c=q.c,lo=q.lo,up=q.up,W=q.W,H=q.H;
     const hFloor=(q.G.groundHeight||2.8)+.3;
@@ -55,11 +58,11 @@
       const glaz=r.winA+r.hstA,wall=Math.max(0,r.extEdges*c*q.hWall[r.f]-glaz);
       let Hr=wall*(U.wall+br)+glaz*U.win+r.roofWinA*U.roofwin+.34*r.area*h*(.5*(1-eta)+S.inf);
       if(r.f===lo)Hr+=r.area*(U.floor+br)*.6;if(r.f===up||!heatedUp)Hr+=r.area*(U.roof+br)*(q.attic&&r.f===up?1.15:1);
-      const emit=s.emitters[key]||defaultEmit(r);return {key,f:r.f,id:r.id,name:n,area:r.area,cells:r.cells,garage,bath:re.bath.test(n),Hr:garage?0:Hr,emit,emitAuto:!s.emitters[key]}});
+      let emit=s.emitters[key];if(!emit||AIR_EMIT.includes(emit)!==air&&emit!=='none')emit=defaultEmit(r,air);return {key,f:r.f,id:r.id,name:n,area:r.area,cells:r.cells,garage,bath:re.bath.test(n),Hr:garage?0:Hr,emit,emitAuto:!s.emitters[key]}});
     const sumH=rooms.reduce((a,r)=>a+r.Hr,0)||1,k=E.Htot/sumH;
     for(const r of rooms){r.load=r.Hr*k*E.dT;r.wpm=r.area>0?r.load/r.area:0}
     const elec=s.main==='electric';
-    const water=r=>!elec&&r.emit!=='none';
+    const water=r=>!elec&&!air&&r.emit!=='none';
     const floorsW=[lo,up].filter(f=>rooms.some(r=>r.f===f&&water(r)));
     const need=needed(s,floorsW);
     // pomieszczenie techniczne / garaż – domyślne miejsce urządzeń
@@ -68,8 +71,11 @@
     const issues=[],good=[];const add=(p,text,tip,cost)=>issues.push({p,text,tip,cost:cost||0});
     // urządzenia: wstawione na rzut albo założone
     const devs={};for(const d of need){const v=s.devices[d];let pos=v&&Number.isFinite(v.x)?{...v}:null,placed=!!pos;
-      if(!pos){if(d==='out'){const m=devs.main||centre(util);pos=nearestOutside(m)}else if(d.startsWith('man:')){const f=d.slice(4),m=devs.main||centre(util);pos=f===m.f?{...m}:{...m,f}}else if((d==='extra'&&EXTRAS[s.extra].room)||(d==='main'&&SOURCES[s.main].room)){pos=centre(rooms.find(r=>re.living.test(r.name)&&r.f===lo)||util)}else pos={...(devs.main||centre(util))}}
+      if(!pos){if(d==='out'){const m=devs.main||centre(util);pos=nearestOutside(m)}else if(d.startsWith('man:')){const f=d.slice(4),m=devs.main||centre(util);pos=f===m.f?{...m}:{...m,f}}else if((d==='extra'&&EXTRAS[s.extra].room)||(d==='main'&&SOURCES[s.main].room)){const lr=rooms.find(r=>re.living.test(r.name)&&r.f===lo)||util;pos=byChimney(lr)||centre(lr)}else pos={...(devs.main||centre(util))}}
       pos.room=d==='out'?null:occ(pos.f,pos.x,pos.y)||null;devs[d]={...pos,placed,type:d}}
+    // kominek domyślnie przy kominie w salonie (jeśli komin jest w tym pomieszczeniu lub tuż obok)
+    function byChimney(r){if(!r)return null;const ch=(project.structure?.chimney||[]).map(n=>({x:n%W,y:Math.floor(n/W)}));let best=null,bd=1e9;
+      for(const [x,y] of r.cells)for(const c_ of ch){const d=Math.max(Math.abs(c_.x-x),Math.abs(c_.y-y));if(d<bd&&!(c_.x===x&&c_.y===y)){bd=d;best={f:r.f,x,y}}}return bd<=1?best:null}
     function nearestOutside(m){let best=null,bd=1e9;for(let y=-1;y<=H;y++)for(let x=-1;x<=W;x++){if(occ(lo,x,y))continue;const nb=[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>occ(lo,x+a,y+b));if(!nb)continue;const d=Math.abs(x-m.x)+Math.abs(y-m.y);if(d<bd){bd=d;best={f:lo,x,y}}}return best||{f:lo,x:-1,y:0}}
     const unplacedIssue=()=>{const unplaced=need.filter(d=>!devs[d].placed);
     if(designed&&unplaced.length)add(0,'Nie wstawiono na rzut: '+unplaced.map(d=>d.startsWith('man:')?(d.slice(4)===lo?'Rozdzielacz na parterze':'Rozdzielacz na piętrze'):DEVS[d]).join(', ')+' – liczę tak, jakby stały w pomieszczeniu „'+(util?.name||'?')+'”.','Wstaw urządzenia na rzut w module Instalacja grzewcza, żeby policzyć dokładne odległości.');};
@@ -80,7 +86,7 @@
     const emitters=fA>=rA?'floor':'radiators';
     const C=HouserHeating.compare(project,{...HS,emitters}),M=C.list.find(m=>m.k===s.main),SRC=SOURCES[s.main],EX=EXTRAS[s.extra];
     // źródło główne
-    addC(SRC.name,s.main==='fireplace_water'?M.invest-6000-(C.chimney?0:7000):s.main==='wood'?M.invest-7000-(C.chimney?0:7000):s.main==='pellet'||s.main==='coal'?M.invest-(C.chimney?0:7000):M.invest,s.main==='electric'?'maty / grzejniki elektryczne w pokojach':'urządzenie z montażem'+(s.main==='hp_air'||s.main==='hp_ground'||s.main==='gas'?', z zasobnikiem ciepłej wody':''));
+    addC(SRC.name,air?18000:s.main==='fireplace_water'?M.invest-6000-(C.chimney?0:7000):s.main==='wood'?M.invest-7000-(C.chimney?0:7000):s.main==='pellet'||s.main==='coal'?M.invest-(C.chimney?0:7000):M.invest,s.main==='electric'?'maty / grzejniki elektryczne w pokojach':air?'wkład kominkowy z obudową i montażem':'urządzenie z montażem'+(s.main==='hp_air'||s.main==='hp_ground'||s.main==='gas'?', z zasobnikiem ciepłej wody':''));
 
     // źródło dodatkowe
     let exInv=0,exPer=0,exService=0;
@@ -89,7 +95,8 @@
       exPer=EX.eff?S.pWood/S.woodKWh/EX.eff:s.extra==='electric'?S.pEl*(HS.pv==='yes'?.6:1):(m.rate??m.perKWh);addC(EX.name,exInv,EX.how||'drugie urządzenie z montażem')}
     // ciepła woda: skąd i za ile (zł za kWh ciepłej wody)
     const pElP=S.pEl*(HS.pv==='yes'?.6:1),manual=['wood','fireplace_water'].includes(s.main);
-    let dhwSrc=s.dhwSrc;if(!DHW[dhwSrc]||dhwSrc==='auto')dhwSrc=manual?'main_el':s.main==='electric'?'el':'main';
+    let dhwSrc=s.dhwSrc;if(!DHW[dhwSrc]||dhwSrc==='auto'||(air&&(dhwSrc==='main'||dhwSrc==='main_el')))dhwSrc=manual?'main_el':s.main==='electric'||air?'el':'main';
+    if(air&&(s.dhwSrc==='main'||s.dhwSrc==='main_el'))issues.push({p:.3,text:'Kominek powietrzny nie grzeje wody – ciepła woda liczona z grzałki elektrycznej.',tip:'Możesz wybrać osobną pompę ciepła do ciepłej wody albo kolektory słoneczne.',cost:0});
     if(dhwSrc==='extra'&&!EX.hydro)dhwSrc=manual?'main_el':'main';
     const dMain=HS.pv==='yes'&&s.main.startsWith('hp_')?pElP/(s.main==='hp_ground'?4.6*.8:S.scop*.8):M.dhwMain; // woda z tego źródła przez cały rok (latem kocioł ma niższą sprawność)
     const dhwRate=dhwSrc==='main'?dMain:dhwSrc==='main_el'?.5*dMain+.5*pElP:dhwSrc==='el'?pElP:dhwSrc==='hp_dhw'?pElP/2.8:dhwSrc==='solar'?.4*dMain:exPer;
@@ -107,7 +114,7 @@
       else if(s.main==='coal'&&load<8){rec=200;recWhy='najmniejsze kotły na ekogroszek mają ok. 10 kW – przy małym domu bufor wydłuża pracę kotła'}
       else if(s.main==='pellet'&&load<8){rec=200;recWhy='najmniejsze kotły na pellet mają ok. 10 kW – przy małym domu bufor wydłuża pracę kotła'}
       else if(SRC.out&&emitters==='radiators'){rec=100;recWhy='pompa z grzejnikami pracuje spokojniej z małym buforem'}
-    if(elec)rec=0;
+    if(elec||air)rec=0;
     let buf=s.buffer==='auto'?rec:+s.buffer||0;buf=[0,100,200,300,500,800,1000].find(v=>v>=buf)??1000;
     if(!buf){const i=need.indexOf('buffer');if(i>=0)need.splice(i,1);delete devs.buffer}
     unplacedIssue();
@@ -137,6 +144,22 @@
       addC('Rury do pokoi',leadPipe*PRICE.pipeM,'ok. '+fmt(leadPipe,0)+' m (zasilanie + powrót)',1);
       addC('Rury źródło → rozdzielacze',mainPipe*2*PRICE.mainM,'ok. '+fmt(mainPipe,1)+' m trasy');
       if(rA>0&&(SRC.out||s.main==='hp_ground'))add(.5,'Pompa ciepła z grzejnikami pracuje z niższą sprawnością niż z podłogówką.','Grzejniki muszą być większe (niskotemperaturowe) – tam, gdzie się da, lepsza podłogówka.')}
+    // kominek powietrzny: kanały ciepłego powietrza (DGP) od kominka do pokoi, łazienki na prąd
+    let dgpN=0,dgpM=0,elN=0,airLoad=0,elLoad=0;
+    if(air){const fp=devs.main,fpKey=fp?.room?fp.room.f+'|'+fp.room.id:null;let far=null;
+      for(const r of rooms){if(r.garage||r.emit==='none')continue;
+        if(r.emit==='el'){elN++;elLoad+=r.load;continue}
+        airLoad+=r.load;if(r.key===fpKey){r.lead=0;continue}
+        const ct=centre(r),d=fp?dist(fp,ct):0;r.lead=d;dgpN++;dgpM+=d;if(d>9&&(!far||d>far.lead))far=r}
+      if(dgpN)addC('Rozprowadzenie ciepłego powietrza (DGP)',PRICE.dgpUnit+dgpN*PRICE.dgpOut+dgpM*PRICE.dgpM,dgpN+' nawiewów, ok. '+fmt(dgpM,0)+' m kanałów w izolacji, wentylator',1);
+      const elBathN=rooms.filter(r=>r.emit==='el'&&(r.bath||re.wc.test(r.name))).length;
+      if(elN)addC('Grzejniki elektryczne ('+elN+')',elBathN*PRICE.elBath+(elN-elBathN)*PRICE.elRoom,elBathN?'w łazienkach drabinki / maty elektryczne':'',1);
+      if(far)add(Math.min(1.5,.5+(far.lead-9)/6),'Do pokoju „'+far.name+'” kanał DGP ma ok. '+fm(far.lead)+' – ciepłe powietrze dojdzie wyraźnie chłodniejsze.','Postaw kominek bliżej środka domu albo w dalszych pokojach daj grzejnik elektryczny.');
+      const kw=airLoad/1000;if(kw>11)add(Math.min(2,1+(kw-11)/4),'Kominek z DGP ma ogrzać pokoje potrzebujące ok. '+fmt(kw)+' kW – typowy wkład daje 8–12 kW, z czego część zostaje w salonie.','Część pokoi ogrzej prądem albo wybierz kominek z płaszczem wodnym / pompę ciepła.');
+      else good.push('Kominek z DGP ogrzeje '+(dgpN+1)+' pomieszcz. (ok. '+fmt(kw)+' kW w mróz).');
+      if(rooms.some(r=>r.f===up&&r.emit==='dgp')&&devs.main?.f===lo)add(.5,'Ciepłe powietrze z kominka idzie na piętro – kanały w ścianach lub w zabudowie, pokoje na piętrze bywają chłodniejsze.','');
+      if(devs.main?.room&&!re.living.test(devs.main.room.name||''))add(.3,'Kominek stoi w pomieszczeniu „'+devs.main.room.name+'”, a zwykle stawia się go w salonie.','');
+      if(s.extra==='none')add(1,'Kominek powietrzny jako jedyne źródło – gdy nikt nie pali (wyjazd, choroba), dom stygnie.','Dodaj zapas: grzejniki elektryczne w pokojach (źródło alternatywne „Grzałka / grzejniki elektryczne”).')}
     // jednostka zewnętrzna
     if(devs.out){const o=devs.out,inU=devs.main&&SOURCES[s.main].out?devs.main:devs.extra||devs.main;
       if(occ(lo,o.x,o.y))add(1.5,'Jednostka zewnętrzna stoi w środku domu.','Postaw ją na zewnątrz przy ścianie.');
@@ -186,18 +209,18 @@
     for(const r of rooms){if(r.garage){if(r.emit!=='none')r.note='garaż zwykle się nie ogrzewa';continue}
       const capF=r.area*.85*(r.bath?T_FLOOR.bath:T_FLOOR.def),capL=/ladder/.test(r.emit)?500:0;
       if(r.emit==='none'){r.ok=r.load<400||r.area<4;if(!r.ok)add(Math.min(1,.4+r.load/3000),'Pokój „'+r.name+'” jest bez ogrzewania, a traci ok. '+fmt(r.load/1000,1)+' kW – będzie chłodny.','Dodaj podłogówkę albo grzejnik.')}
-      else if(elec)r.ok=true;
+      else if(elec||air)r.ok=!(air&&r.emit==='dgp'&&r.lead>12);
       else if(r.emit==='floor'||r.emit==='floor+ladder'){r.cap=capF+capL;r.ok=r.cap>=r.load;if(!r.ok)add(Math.min(1.5,.5+(r.load-r.cap)/1500),'W pokoju „'+r.name+'” sama podłogówka nie da rady: potrzeba ok. '+Math.round(r.wpm)+' W/m², a podłoga odda ok. '+Math.round(r.cap/r.area)+' W/m² (duże okna / zewnętrzne ściany).','Dołóż grzejnik („podłogówka + grzejnik”) albo zmniejsz okna / popraw izolację.')}
       else r.ok=true}
     const noHeat=rooms.filter(r=>!r.garage&&!r.ok&&r.emit!=='none').length;if(!noHeat&&rooms.some(r=>/floor/.test(r.emit)))good.push('Podłogówka wystarczy we wszystkich pokojach, w których jest.');
     // koszt instalacji i rachunki
     const invest=cost.reduce((a,x)=>a+x.v,0),investSrc=cost.filter(x=>!x.room).reduce((a,x)=>a+x.v,0);const f=s.extra==='none'?0:s.share/100;
-    const mainRate=M.rate??M.perKWh,fuelCO=E.Qh*f*exPer+E.Qh*(1-f)*mainRate,fuelCWU=E.Qw*dhwRate,fuel=fuelCO+fuelCWU;
+    const elSh=air?Math.max(.1,elLoad/Math.max(1,airLoad+elLoad)):0,mainRate=air?(1-elSh)*S.pWood/S.woodKWh/.78+elSh*pElP:M.rate??M.perKWh,fuelCO=E.Qh*f*exPer+E.Qh*(1-f)*mainRate,fuelCWU=E.Qw*dhwRate,fuel=fuelCO+fuelCWU;
     const fixed=(s.main==='gas'||s.extra==='gas')?480:0,service=M.service+exService+(DHW[dhwSrc].service||0);const year=fuel+fixed+service;const years=+HS.years||20,total=invest+years*year;
     // trudność montażu 0–10
     const pen=issues.reduce((a,x)=>a+x.p,0),ease=Math.max(0,Math.min(10,Math.round((10-pen)*10)/10));
     const name=SRC.name+(s.extra!=='none'?' + '+EX.name.replace(/ \(.*\)/,'').toLowerCase():'');
-    return {designed,sys:s,name,E,C,rooms,devs,need,floors,floorsW,util,issues:issues.sort((a,b)=>b.p-a.p),good,dhwSrc,dhwName:DHW[dhwSrc].name,dhwRate,fuelCO,fuelCWU,cost,invest,investSrc,totalSrc:investSrc+years*year,fuel,fixed,service,year,years,total,ease,buffer:buf,bufRec:rec,share:f,emitters,loops,radN,ladN,floorM2,elec,mainPipe,leadPipe};
+    return {designed,sys:s,name,E,C,rooms,devs,need,floors,floorsW,util,issues:issues.sort((a,b)=>b.p-a.p),good,dhwSrc,dhwName:DHW[dhwSrc].name,dhwRate,fuelCO,fuelCWU,cost,invest,investSrc,totalSrc:investSrc+years*year,fuel,fixed,service,year,years,total,ease,buffer:buf,bufRec:rec,share:f,emitters,loops,radN,ladN,floorM2,elec,air,dgpN,dgpM,elN,elShare:elSh,mainPipe,leadPipe};
   }
-  global.HouserHeatSys={DHW,SOURCES,EXTRAS,EMIT,DEVS,DEF,PRICE,defaultEmit,normalize,needed,evaluate};
+  global.HouserHeatSys={AIR_EMIT,DHW,SOURCES,EXTRAS,EMIT,DEVS,DEF,PRICE,defaultEmit,normalize,needed,evaluate};
 })(window);

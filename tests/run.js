@@ -20,6 +20,9 @@ for(const f of examples){const p=JSON.parse(fs.readFileSync(path.join(ROOT,'exam
   const C=W.HouserCost.compute(p);ok(fin(C.total)&&C.total>0,f+': koszt '+C.total);ok(C.rows.every(r=>fin(r.value)&&r.value>=0),f+': pozycje wyceny '+C.rows.filter(r=>!fin(r.value)).map(r=>r.id));
   ok(C.total/q.usableTotal>2500&&C.total/q.usableTotal<15000,f+': zł/m² '+Math.round(C.total/q.usableTotal));
   const HS=W.HouserHeatSys.evaluate(p);ok(fin(HS.year)&&HS.year>0,f+': rachunki '+HS.year);ok(fin(HS.invest),f+': inwestycja w ogrzewanie');
+  {const Hc=W.HouserHeating.compare(p,{});ok(Hc.list.every(m=>fin(m.invest)&&fin(m.year)&&fin(m.fit)),f+': porównanie źródeł ciepła');
+   const fa=W.HouserHeatSys.evaluate({...p,heatingSystem:{main:'fireplace_air',extra:'hp_air'}});ok(fin(fa.year)&&fa.year>0&&fa.loops===0&&fa.sys.extra==='none'&&fa.dhwSrc==='el',f+': kominek powietrzny bez instalacji wodnej');
+   ok(fa.elShare>=.1&&fa.elShare<1&&fa.cost.some(x=>/DGP/.test(x.name)),f+': kominek powietrzny – DGP i udział prądu '+fa.elShare)}
   const M=W.HouserHVAC.methods(p,p.hvacSettings);for(const m of M.list){ok(fin(m.invest)&&fin(m.total)&&fin(m.score)&&fin(m.fan),f+': wentylacja '+m.k+' '+JSON.stringify([m.invest,m.fan,m.total,m.score]))}
   const S=W.HouserSolar.compute(p);ok(fin(S.house.season)&&S.house.season>=0,f+': słońce w sezonie');
   const L=W.HouserLooks.evaluate(p);ok(L.score==null||(fin(L.score)&&L.score>=0&&L.score<=10),f+': wygląd '+L.score);
