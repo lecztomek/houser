@@ -6,7 +6,7 @@
   const CONDITION_TYPE_NAMES={minArea:'Min. powierzchnia',maxArea:'Maks. powierzchnia',fullPainted:'Cały obrys wypełniony',contiguousAll:'Spójność pomieszczeń',adjacent:'Pomieszczenia sąsiadują',notAdjacent:'Pomieszczenia nie sąsiadują',edge:'Pomieszczenie przy elewacji',exactOverlay:'Dokładne pokrycie pionowe',overlapMin:'Min. pokrycie pionowe',sharedEdgeMin:'Min. wspólna ściana',minRoomWidth:'Min. szerokość pomieszczenia',edgeLengthMin:'Min. długość na elewacji',validOpenings:'Poprawność otworów',openingBetween:'Min. otwór między pokojami',exteriorOpening:'Min. otwór zewnętrzny',reachableRooms:'Dostępność przez otwory'};
   const SEVERITY={hard:'Twardy',medium:'Ważny',soft:'Miękki'};
   const DIR_PL={north:'północ',east:'wschód',south:'południe',west:'zachód',any:'dowolna'};
-  const DEFAULT_OPENING_TYPES=[{id:'door',name:'Drzwi',color:'#111827',placement:'anyWall'},{id:'opening',name:'Przejście otwarte',color:'#16a34a',placement:'anyWall'},{id:'window',name:'Okno',color:'#2563eb',placement:'exterior'},{id:'hst',name:'HST / drzwi tarasowe',color:'#0891b2',placement:'exterior'}];
+  const DEFAULT_OPENING_TYPES=[{id:'door',name:'Drzwi',color:'#111827',placement:'anyWall'},{id:'opening',name:'Przejście otwarte',color:'#16a34a',placement:'anyWall'},{id:'window',name:'Okno',color:'#2563eb',placement:'anyWall'},{id:'hst',name:'HST / drzwi tarasowe',color:'#0891b2',placement:'exterior'}];
   const DEFAULT_LEVELS={hard:{name:'Twardy',description:'Warunek funkcjonalny/geometryczny.'},medium:{name:'Ważny',description:'Istotne założenie.'},soft:{name:'Miękki',description:'Cel/optymalizacja.'}};
 
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));

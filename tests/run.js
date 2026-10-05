@@ -14,6 +14,7 @@ const snap={};
 for(const f of examples){const p=JSON.parse(fs.readFileSync(path.join(ROOT,'examples',f),'utf8'));console.log('• '+f);
   const q=W.HouserQuantities.compute(p);ok(q.usableTotal>20&&q.usableTotal<600,f+': powierzchnia użytkowa '+q.usableTotal);
   ok(Math.abs(q.rooms.reduce((a,r)=>a+r.usable,0)-q.usableTotal)<.5,f+': suma pokoi = powierzchnia użytkowa');
+  ok(q.runs.filter(r=>r.ext&&(r.base==='window'||r.base==='hst')).every(r=>r.price&&fin(r.price.win)),f+': każde okno zewnętrzne ma cenę');
   const E=W.HouserEnergy.compute(p);ok(fin(E.Qh)&&E.Qh>0,f+': Qh '+E.Qh);ok(E.EU>10&&E.EU<300,f+': EU '+E.EU);ok(E.load>1&&E.load<30,f+': moc '+E.load);
   ok(E.rows.every(r=>fin(r.H)),f+': straty przegród');ok(fin(E.Qsol)&&E.Qsol>=0,f+': zyski od słońca '+E.Qsol);ok(fin(E.Qw)&&E.Qw>0,f+': ciepła woda');
   const C=W.HouserCost.compute(p);ok(fin(C.total)&&C.total>0,f+': koszt '+C.total);ok(C.rows.every(r=>fin(r.value)&&r.value>=0),f+': pozycje wyceny '+C.rows.filter(r=>!fin(r.value)).map(r=>r.id));

@@ -50,7 +50,7 @@
         for(const it of gr.items){const sg=HouserOpenings.sig(HouserOpenings.resolve(project,f,it.key,gr.base));if(run&&it.along===run.to+1&&(gr.base==='door'?run.keys.length<4:run.sg===sg)) /* sąsiednie kratki drzwi to jedne drzwi, nawet z różnym ustawieniem (np. po poszerzeniu); okna o różnych typach – osobno */{run.to=it.along;run.keys.push(it.key)}else{run={...gr,items:undefined,from:it.along,to:it.along,keys:[it.key],sg};runs.push(run)}}}}
     for(const r of runs){const info=HouserOpenings.resolve(project,r.f,r.keys[0],r.base);r.info=info;r.w=r.keys.length*c;r.h=+info.height||1.2;r.area=r.w*r.h;
       const rooms_=[r.ra,r.rb].filter(Boolean).map(v=>R[r.f+'|'+v]).filter(Boolean);r.rooms=rooms_;
-      const pr=(r.ext||info.shape==='roof')?HouserOpenings.price(project,info,r.area,r.base):null;r.price=pr; // cena okna / HST i osłony (moduł Okna i drzwi, Wycena)
+      const pr=(r.ext||info.shape==='roof'||r.base==='window')?HouserOpenings.price(project,info,r.area,r.base):null; /* okno wewnętrzne też kosztuje (bez strat ciepła i słońca) */r.price=pr; // cena okna / HST i osłony (moduł Okna i drzwi, Wycena)
       if(pr){if(r.base==='hst')ops.hstCost+=pr.win;else if(info.shape==='roof')ops.roofWinCost+=pr.win;else ops.winCost+=pr.win;if(pr.blind){ops.blinds++;ops.blindCost+=pr.blind}}
       if(r.base==='window'){if(info.shape==='roof'){ops.roofWin++;ops.roofWinA+=r.area;for(const m of rooms_){m.roofWinA+=r.area;m.roofWins++}}else if(r.ext){ops.win++;ops.winA+=r.area;for(const m of rooms_){m.winA+=r.area;m.wins++}}}
       else if(r.base==='hst'){ops.hst++;ops.hstA+=r.area;for(const m of rooms_)m.hstA+=r.area}
