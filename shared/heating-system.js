@@ -16,6 +16,7 @@
   };
   const EXTRAS={
     none:{name:'brak'},
+    stove:{name:'Koza / piec wolnostojący na drewno',dev:'Koza',short:'Koza',share:15,flue:true,room:true,invest:7000,service:200,eff:.72,how:'grzeje pomieszczenie, w którym stoi (bez rozprowadzenia powietrza)'},
     fireplace:{name:'Kominek z wkładem (powietrzny)',dev:'Kominek',short:'Kominek',share:25,flue:true,room:true,invest:18000,service:250,eff:.78,how:'grzeje salon i przez rozprowadzenie powietrza (DGP) sąsiednie pokoje'},
     fireplace_water:{name:'Kominek z płaszczem wodnym',dev:'Kominek z płaszczem wodnym',short:'Kominek',share:40,flue:true,room:true,hydro:true,invest:24000,service:300,eff:.75,how:'oddaje ciepło do bufora i dalej do całej instalacji'},
     hp_air:{name:'Pompa ciepła powietrze–woda',dev:'Pompa ciepła – moduł wewnętrzny',short:'Pompa 2',share:60,hydro:true,out:true,foot:.5},
@@ -190,6 +191,8 @@
     if(flues.length===2){addC('Drugi przewód w kominie',PRICE.flue2,'dwa urządzenia – komin dwuprzewodowy');good.push('Dwa urządzenia korzystają z komina – potrzebny komin z dwoma przewodami.')}
     // kominek: czy nie przegrzeje pokoju
     if(EX.room&&devs.extra?.room){const r=rooms.find(x=>x.key===devs.extra.room.f+'|'+devs.extra.room.id);if(r&&s.extra==='fireplace'&&r.load<2000)add(.5,'Kominek (ok. 6–8 kW) w pomieszczeniu „'+r.name+'”, które potrzebuje tylko ok. '+fmt(r.load/1000)+' kW – będzie za gorąco.','Wybierz mały wkład albo rozprowadzenie gorącego powietrza (DGP) do innych pokoi.');
+      if(r&&s.extra==='stove'&&r.load<2500)add(.5,'Koza (ok. 5–8 kW) w pomieszczeniu „'+r.name+'”, które potrzebuje tylko ok. '+fmt(r.load/1000)+' kW – przy paleniu będzie za gorąco.','Wybierz małą kozę (ok. 4–5 kW) i otwarty salon połączony z innymi pomieszczeniami albo kominek z DGP.');
+      if(r&&s.extra==='stove'&&s.share>25)add(.5,'Koza grzeje tylko swoje pomieszczenie – udział '+s.share+'% w ogrzewaniu całego domu to dużo.','Ustaw udział ok. 10–20% albo wybierz kominek z rozprowadzeniem powietrza (DGP).');
       if(r&&!re.living.test(r.name))add(.3,'Kominek stoi w pomieszczeniu „'+r.name+'”, a zwykle stawia się go w salonie.','')}
     if(s.main==='coal'||s.extra==='coal')add(.5,'Kocioł na ekogroszek – w wielu województwach uchwały antysmogowe ograniczają palenie węglem, a w przyszłości możliwy jest zakaz.','Sprawdź uchwałę antysmogową swojego województwa i gminy; bezpieczniej: pompa ciepła lub pellet.');
 
@@ -198,7 +201,7 @@
     if(!['hp_air','hp_ground','gas'].includes(s.main)&&!['hp_dhw','el','solar'].includes(dhwSrc))addC('Zasobnik ciepłej wody '+s.dhw+' l',PRICE.dhwTank);
     // połączenia źródeł
     if(s.extra!=='none'){const pair=s.main+'+'+s.extra;
-      if(/^hp_.*\+fireplace/.test(pair))good.push('Pompa ciepła z kominkiem: kominek dogrzewa w mrozy, gdy pompa ma najniższą sprawność.');
+      if(/^hp_.*\+(fireplace|stove)/.test(pair))good.push((s.extra==='stove'?'Pompa ciepła z kozą: koza':'Pompa ciepła z kominkiem: kominek')+' dogrzewa w mrozy, gdy pompa ma najniższą sprawność.');
       if(pair==='gas+hp_air'||pair==='hp_air+gas')good.push('Układ hybrydowy: pompa grzeje większość roku, gaz w największe mrozy.');
       if(SRC.solid&&EX.solid)add(1,'Dwa kotły na paliwo stałe – dużo obsługi i dwa przewody kominowe.','Połącz raczej kocioł z pompą ciepła albo z grzałką.');
       if(s.extra==='electric'&&SRC.out)good.push('Grzałka jako zapas – większość pomp ciepła już ją ma.');

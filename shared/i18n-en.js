@@ -3603,4 +3603,12 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "Kanały ciepłego powietrza (DGP)":"Warm-air ducts",
 "{n} nawiewów · ok. {n} m":"{n} outlets · approx. {n} m",
 "{n} szt. (łazienki) · ok. {n}% ciepła":"{n} pcs (bathrooms) · approx. {n}% of heat",
-"Od kominka":"From fireplace"};
+"Od kominka":"From fireplace",
+"Koza / piec wolnostojący na drewno":"Wood-burning stove (free-standing)",
+"Koza":"Stove",
+"grzeje pomieszczenie, w którym stoi (bez rozprowadzenia powietrza)":"heats the room it stands in (no air distribution)",
+"Koza (ok. 5–8 kW) w pomieszczeniu „{q}”, które potrzebuje tylko ok. {n} kW – przy paleniu będzie za gorąco.":"Stove (approx. 5–8 kW) in „{q}”, which needs only approx. {n} kW – it will be too hot when burning.",
+"Wybierz małą kozę (ok. 4–5 kW) i otwarty salon połączony z innymi pomieszczeniami albo kominek z DGP.":"Choose a small stove (approx. 4–5 kW) and an open living area connected to other rooms, or a ducted fireplace.",
+"Koza grzeje tylko swoje pomieszczenie – udział {n}% w ogrzewaniu całego domu to dużo.":"A stove heats only its own room – a {n}% share of heating the whole house is a lot.",
+"Ustaw udział ok. {n}–{n}% albo wybierz kominek z rozprowadzeniem powietrza (DGP).":"Set the share to approx. {n}–{n}% or choose a fireplace with warm-air ducts.",
+"Pompa ciepła z kozą: koza dogrzewa w mrozy, gdy pompa ma najniższą sprawność.":"Heat pump with a stove: the stove tops up in frost, when the pump is least efficient."};
