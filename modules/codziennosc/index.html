@@ -88,6 +88,10 @@ svg.plan{width:100%;height:auto;display:block;background:#fff;border:1px solid v
   .tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.tile.big{grid-column:1/-1}.tile{padding:10px 12px}.tile .v{font-size:24px}.tile.big .v{font-size:38px}}
 @media(max-width:420px){.sc{padding:10px 11px}.sc .hd{gap:8px}.sc .num{font-size:22px;min-width:38px}.srow{grid-template-columns:auto minmax(0,1fr) 104px}}
 .btab{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0}.btab th{text-align:left;font-weight:600;color:#64748b;font-size:11.5px;padding:3px 4px;border-bottom:1px solid #e2e8f0}.btab td{padding:3px 4px;border-bottom:1px solid #f1f5f9;vertical-align:middle}.btab td.n{text-align:right;white-space:nowrap}.btab .sw{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}.btab small{color:#94a3b8}.c-warn{color:#b45309}
+.part{margin:14px 0 2px;font-size:15px}.part:first-child{margin-top:0}
+.hit{list-style:none;margin:8px 0 4px;padding:0;display:flex;flex-direction:column;gap:4px;font-size:13px}.hit li{padding:5px 8px 5px 26px;border-radius:8px;position:relative;background:#f8fafc}.hit li:before{position:absolute;left:8px;top:5px;font-weight:800}
+.hit li.ok{background:#f0fdf4}.hit li.ok:before{content:'✓';color:#15803d}.hit li.warn{background:#fffbeb}.hit li.warn:before{content:'!';color:#b45309}.hit li.bad{background:#fef2f2}.hit li.bad:before{content:'✗';color:#b91c1c}.hit li.info:before{content:'·';color:#64748b}
+.hit li small{display:block;color:#64748b;font-size:11.5px;margin-top:2px}
 </style>
 </head>
 <body>
@@ -96,7 +100,7 @@ svg.plan{width:100%;height:auto;display:block;background:#fff;border:1px solid v
   <h1 class="hs-title">Codzienność</h1>
   <p class="hs-sub">Jak wygodnie będzie się mieszkać na co dzień: zakupy, pranie, palenie w kotle, goście, noc, łazienki i poranek. Każdy scenariusz to trasa po domu – liczy odległość, schody i pomieszczenia, przez które trzeba przejść. Kliknij scenariusz, żeby zobaczyć jego trasę na rzucie.</p>
   <details class="section" id="setBox" open>
-    <summary>Scenariusze i ich waga</summary>
+    <summary>Co liczyć i z jaką wagą</summary>
     <div id="settings"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px">
       <span class="hint">Ustawienia zapisują się w projekcie.</span>
@@ -116,7 +120,10 @@ svg.plan{width:100%;height:auto;display:block;background:#fff;border:1px solid v
 <script src="../../shared/openings.js"></script>
 <script src="../../shared/stairs.js"></script>
 <script src="../../shared/project-store.js"></script>
+<script src="../../shared/balconies.js"></script>
+<script src="../../shared/quantities.js"></script>
 <script src="engine.js"></script>
+<script src="house.js"></script>
 <script src="view.js"></script>
 <script src="../../shared/nav.js"></script>
 </body>

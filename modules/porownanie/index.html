@@ -90,6 +90,7 @@ tr.tot td{background:#f8fafc;font-weight:800;font-size:14px}
 <script src="../../shared/energy.js"></script>
 <script src="../../shared/cost.js"></script>
 <script src="../codziennosc/engine.js"></script>
+<script src="../codziennosc/house.js"></script>
 <script src="../naslonecznienie/sun.js"></script>
 <script src="../naslonecznienie/calc.js"></script>
 <script src="../akustyka/engine.js"></script>
@@ -147,7 +148,7 @@ function metrics(p){const m={p};const tryc=(k,fn)=>{try{m[k]=fn()}catch(e){conso
   m.floors=q.net[q.up]>0?(q.attic?'parter + poddasze':'parter + piętro'):'parterowy';
   m.glaz=q.ops.winA+q.ops.hstA+q.ops.roofWinA;
   if(m.S){const L=m.S.list.filter(r=>r.wins?.length||r.peak>=.5);m.hot=L.filter(r=>r.risk>=2).length;m.hotOf=L.length;m.worstSun=[...L].sort((a,b)=>b.peak-a.peak)[0]}
-  if(m.D){const ap=m.D.scenarios.filter(s=>s.applicable&&s.enabled!==false);m.worstDaily=[...ap].sort((a,b)=>a.score-b.score)[0]}
+  if(m.D){const ap=[...m.D.scenarios.filter(s=>s.applicable&&s.enabled!==false),...(m.D.house&&!(p.dailySettings?.off?.house)?m.D.house.groups:[])];m.worstDaily=[...ap].sort((a,b)=>a.score-b.score)[0]}
   if(m.A){m.loud=m.A.quiet.filter(r=>r.score<6).length;m.loudOf=m.A.quiet.length;m.worstA=[...m.A.quiet].sort((a,b)=>a.score-b.score)[0]}
   return m}
 
@@ -183,7 +184,7 @@ const ROWS=[
   ['Moc grzewcza','jak mocnego źródła ciepła potrzeba w największy mróz',m=>m.E?.load,v=>nf(v,1)+' kW','low'],
   ['Koszt ogrzewania pompą ciepła','ten sam sposób ogrzewania dla każdego domu – porównuje same budynki (ocieplenie, bryła, okna, wentylacja); rachunki za wybrane ogrzewanie są niżej, w grupie Ogrzewanie',m=>m.E?.src?.[0]?.cost,v=>zl(v)+' na rok','low'],
   ['Codzienność'],
-  ['Ocena codzienności','średnia ze scenariuszy (zakupy, pranie, goście, noc…); niżej – najsłabszy scenariusz',m=>m.D?.overall,v=>nf(v,1)+' / 10','high',m=>m.worstDaily?'najsłabiej: '+m.worstDaily.name+' ('+nf(m.worstDaily.score,1)+')':''],
+  ['Ocena codzienności','dom dla domowników (łazienki, sypialnie, wielkości i układ pokoi) + trasy (zakupy, pranie, goście, noc…); niżej – najsłabsza część',m=>m.D?.overall,v=>nf(v,1)+' / 10','high',m=>m.worstDaily?'najsłabiej: '+m.worstDaily.name+' ('+nf(m.worstDaily.score,1)+')':''],
   ['Nasłonecznienie'],
   ['Pokoje z ryzykiem przegrzania','ile pokoi ma latem wysokie lub bardzo wysokie ryzyko przegrzania; niżej – ze wszystkich pokoi z oknami',m=>m.hot,v=>v==null?'–':nf(v)+' '+plF(v,'pokój','pokoje','pokoi'),'low',m=>m.hotOf!=null?'z '+m.hotOf+(m.worstSun?' · najgoręcej: '+m.worstSun.name:''):''],
   ['Słońce latem – jeden dzień','ciepło przez okna w słoneczny dzień lipca, cały dom (mniej = mniej przegrzewania); niżej – na 1 m²',m=>m.S?.house?.sumDay,v=>nf(v,1)+' kWh na dzień','low',m=>m.q?.usableTotal?nf(m.S.house.sumDay/m.q.usableTotal,2)+' kWh/m² dziennie':''],

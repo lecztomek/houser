@@ -53,12 +53,14 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
 {const r=W.HouserDaily.rolesOf('Łazienka/Pralnia');ok(r.has('bath')&&r.has('laundry'),'„Łazienka/Pralnia” to łazienka i pralnia '+[...r]);}
 {const sj=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','stodola-jasna.json'),'utf8')),D=W.HouserDaily.evaluate(sj),noc=(D.scenarios||[]).find(x=>x.id==='noc');
  ok(noc&&noc.legs.length>=3&&noc.legs.every(l=>l.r&&l.r.floors===0),'Codzienność noc: z każdej sypialni do łazienki na tej samej kondygnacji '+JSON.stringify(noc?.legs.map(l=>[l.from,l.to,l.r?.floors])));}
-// Codzienność – łazienki: bez łazienki na piętrze z sypialniami ocena łazienek i nocy mocno spada
+// Codzienność – dom dla domowników: bez łazienki na piętrze z sypialniami ocena łazienek i nocy mocno spada
 {const z=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','zefir-2.json'),'utf8')),z1=JSON.parse(JSON.stringify(z).replace(/"Łazienka piętro"/g,'"Schowek piętro"'));
- const g=(p,id)=>W.HouserDaily.evaluate(p).scenarios.find(x=>x.id===id),a=g(z,'lazienki'),b=g(z1,'lazienki'),na=g(z,'noc'),nb=g(z1,'noc');
+ const D=p=>W.HouserDaily.evaluate(p),da=D(z),db=D(z1),g=(d,id)=>d.house.groups.find(x=>x.id===id),a=g(da,'lazienki'),b=g(db,'lazienki'),na=da.scenarios.find(x=>x.id==='noc'),nb=db.scenarios.find(x=>x.id==='noc');
  ok(a&&b&&fin(a.score)&&a.score>=8&&b.score<=a.score-4,'Codzienność łazienki: brak łazienki przy sypialniach = duży minus '+[a?.score,b?.score]);
  ok(nb.score<=na.score-4,'Codzienność noc: łazienka tylko na parterze = duży minus '+[na.score,nb.score]);
- ok(a.table&&a.table.length>=5&&a.table.every(t=>t.to&&fin(t.dist)),'Codzienność łazienki: najbliższa łazienka z każdego pokoju');}
+ ok(a.table&&a.table.length>=5&&a.table.every(t=>t.to&&fin(t.dist)),'Codzienność łazienki: najbliższa łazienka z każdego pokoju');
+ ok(da.house.groups.length===5&&da.house.groups.every(x=>fin(x.score)&&x.score>=0&&x.score<=10)&&fin(da.overall),'Codzienność: dom dla domowników – 5 grup z oceną');
+ const z2=JSON.parse(JSON.stringify(z));z2.energySettings={...(z2.energySettings||{}),persons:8};ok(g(D(z2),'sypialnie').score<g(da,'sypialnie').score,'Codzienność: więcej domowników niż pokoi = minus w sypialniach');}
 // Codzienność – balkon bez drzwi liczy się jako miejsce do suszenia (z podpowiedzią o drzwiach)
 {const sj=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','stodola-jasna.json'),'utf8'));const pr=W.HouserDaily.evaluate(sj).scenarios.find(x=>x.id==='pranie');
  ok(pr&&fin(pr.score),'Codzienność pranie liczy się');}

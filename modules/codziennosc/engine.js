@@ -168,7 +168,6 @@ const SCEN=[
   {id:'kominek',name:'Palenie w kominku',desc:'Drewno z zewnątrz do kominka.',w:0.5},
   {id:'goscie',name:'Goście',desc:'Od drzwi do WC i do salonu – bez wchodzenia do strefy prywatnej.',w:1},
   {id:'noc',name:'Noc',desc:'Z każdej sypialni do najbliższej łazienki lub WC.',w:1.5},
-  {id:'lazienki',name:'Łazienki i WC',desc:'Ile łazienek i WC na liczbę domowników i sypialni, czy każda kondygnacja z sypialniami ma swoją łazienkę, najbliższa łazienka z każdego pokoju.',w:1.5},
   {id:'poranek',name:'Poranek',desc:'Sypialnia → łazienka → kuchnia → wyjście z domu.',w:1},
   {id:'gotowanie',name:'Gotowanie i podawanie',desc:'Kuchnia ↔ jadalnia ↔ salon – noszenie talerzy.',w:1},
   {id:'ogrod',name:'Ogród i grill',desc:'Z kuchni na taras / do ogrodu.',w:0.5},
@@ -393,44 +392,6 @@ function evaluate(project,settings){
         if(worst.r.dist>10&&!worst.r.floors)s.hints.push('Zbliż łazienkę do sypialni.')}
       if(master&&!ens.includes(master)&&bedrooms.length>1)s.hints.push('Rozważ łazienkę przy sypialni głównej.');
     }
-    else if(def.id==='lazienki'){
-      if(!bedrooms.length){na(s,'Brak sypialni na rzucie.');continue}
-      const full=baths.filter(b=>has(b,'bath')),wcOnly=baths.filter(b=>!has(b,'bath'));
-      const es=M.project.energySettings||{},persons=Number.isFinite(+es.persons)&&+es.persons>0?+es.persons:Math.max(2,bedrooms.length+1);
-      const fl=[...new Set(list.map(r=>r.fi))].sort();
-      const perFl=fl.map(fi=>({fi,beds:bedrooms.filter(b=>b.fi===fi),full:full.filter(b=>b.fi===fi),wc:wcOnly.filter(b=>b.fi===fi),day:list.some(r=>r.fi===fi&&(has(r,'living')||has(r,'kitchen')))}));
-      s.why.push('{n} os., {n} sypialni: łazienek {n}, osobnych WC {n}.'.replace('{n}',persons).replace('{n}',bedrooms.length).replace('{n}',full.length).replace('{n}',wcOnly.length));
-      for(const F_ of perFl)if(F_.full.length||F_.wc.length||F_.beds.length)s.why.push(M.floorName(F_.fi)+': '+[F_.beds.length?F_.beds.length+' syp.':'',F_.full.length?F_.full.length+' łaz.':'',F_.wc.length?F_.wc.length+' WC':''].filter(Boolean).join(', ')+(F_.full.length+F_.wc.length?'':' – bez łazienki i WC'));
-      let score=10;
-      if(!baths.length){na(s,'Brak łazienki i WC na rzucie.','Dodaj łazienkę przy sypialniach.');continue}
-      if(!full.length){score-=4;s.why.push('W domu nie ma pełnej łazienki (tylko WC).');s.hints.push('Dodaj łazienkę z prysznicem lub wanną.')}
-      // kondygnacje z sypialniami bez łazienki – w nocy trzeba schodzić po schodach
-      for(const F_ of perFl){if(!F_.beds.length)continue;
-        if(!F_.full.length&&!F_.wc.length){score-=4.5;s.why.push('Na kondygnacji „{q}” są sypialnie ({n}), ale nie ma łazienki ani WC – w nocy trzeba schodzić po schodach.'.replace('{q}',M.floorName(F_.fi)).replace('{n}',F_.beds.length));s.hints.push('Dodaj łazienkę (choćby WC z umywalką) na kondygnacji sypialni.')}
-        else if(!F_.full.length){score-=1.5;s.why.push('Na kondygnacji „{q}” przy sypialniach jest tylko WC – kąpiel na innym piętrze.'.replace('{q}',M.floorName(F_.fi)));s.hints.push('Zamień WC przy sypialniach na łazienkę z prysznicem.')}}
-      // dzień: kondygnacja z salonem / kuchnią bez WC
-      for(const F_ of perFl)if(F_.day&&!F_.full.length&&!F_.wc.length){score-=1.5;s.why.push('Przy salonie i kuchni ({q}) nie ma WC – w ciągu dnia i dla gości trzeba iść na inne piętro.'.replace('{q}',M.floorName(F_.fi)));s.hints.push('Dodaj WC na kondygnacji dziennej, najlepiej przy wejściu.')}
-      // poranna kolejka: osoby na łazienkę (łazienka przy sypialni służy tylko jej mieszkańcom)
-      const shared=full.filter(b=>!b.ensuite).length,ens=full.filter(b=>b.ensuite);
-      const ensP=ens.reduce((a,b)=>a+[...b.owners].reduce((n,k)=>n+(bedrooms.find(x=>x.key===k&&has(x,'master'))?2:1),0),0);
-      const rest=Math.max(0,persons-ensP),pp=shared?rest/shared:(rest?99:0);
-      if(full.length){if(pp>4){score-=2.5;s.why.push('Na jedną wspólną łazienkę przypada ok. {n} osób – rano kolejka.'.replace('{n}',fmt(pp)));s.hints.push('Dodaj drugą łazienkę albo łazienkę przy sypialni głównej.')}
-        else if(pp>3){score-=1.2;s.why.push('Na jedną wspólną łazienkę przypada ok. {n} osób – rano bywa ciasno.'.replace('{n}',fmt(pp)))}
-        else if(shared||ens.length)s.why.push('Ok. {n} os. na wspólną łazienkę – bez porannej kolejki.'.replace('{n}',fmt(pp)))}
-      const toilets=baths.length;
-      if(toilets===1&&persons>=3){score-=1.5;s.why.push('Jedna toaleta na cały dom – gdy ktoś się kąpie, reszta czeka.');s.hints.push('Osobne WC (choćby 1,2 m²) odciąży łazienkę.')}
-      else if(bedrooms.length>=4&&toilets<3){score-=.7;s.hints.push('Przy {n} sypialniach przyda się trzecia toaleta (łazienka przy sypialni głównej albo WC).'.replace('{n}',bedrooms.length))}
-      // najbliższa łazienka z każdego pokoju
-      const rooms_=list.filter(r=>has(r,'bedroom')||has(r,'living')||has(r,'kitchen')||has(r,'study'));const pub=baths.filter(b=>!b.ensuite);
-      s.table=[];let far=null;
-      for(const r of rooms_){const isBed=has(r,'bedroom');const rr=isBed?bathRoute(r,anchor(r,'bed'),{priv:8,living:3}):pub.length?route(M,src(r.center),pub.map(b=>b.center),{avoid:AV({priv:8,except:new Set(pub.map(b=>b.key))})}):null;
-        s.table.push({room:r.name,floor:M.floorName(r.fi),to:rr?.end?.room?.name||null,dist:rr?rr.dist:null,floors:rr?rr.floors:null,bed:isBed,li:rr?s.legs.length:null});
-        if(rr)s.legs.push(leg(r.name,rr.end.room.name,rr));
-        if(rr&&isBed&&(!far||rr.dist+8*rr.floors>far.dist+8*far.floors))far={...rr,name:r.name}}
-      if(far&&far.dist>10&&!far.floors){score-=Math.min(1.5,(far.dist-10)/4);s.why.push('Z pokoju „{q}” do łazienki aż {n} m.'.replace('{q}',far.name).replace('{n}',fmt(far.dist)))}
-      s.score=score;s.dist=far?far.dist:null;
-      s.lead=s.why.find(w=>/nie ma|tylko WC|kolejka|ciasno|Jedna toaleta|aż /.test(w))||null;
-    }
     else if(def.id==='poranek'){
       if(!bedrooms.length||!kitchen||!baths.length){na(s,'Potrzebne: sypialnia, łazienka i kuchnia.');continue}
       const b=master,r1_=bathRoute(b,anchor(b,'bed'));
@@ -530,8 +491,12 @@ function evaluate(project,settings){
     s.private=names(rs.flatMap(l=>l.r.crossed.filter(r=>M.isPrivate(r))));}
   const act=out.filter(s=>s.enabled&&s.applicable&&s.weight>0);
   const wsum=act.reduce((a,s)=>a+s.weight,0);
-  const overall=wsum?r1(act.reduce((a,s)=>a+s.score*s.weight,0)/wsum):null;
-  return {model:M,scenarios:out,overall,verdict:overall==null?null:verdict(overall),count:act.length};
+  const routes=wsum?r1(act.reduce((a,s)=>a+s.score*s.weight,0)/wsum):null;
+  // dom dla domowników (bez tras): łazienki, sypialnie, wielkości i proporcje pokoi, układ, strony świata – modules/codziennosc/house.js
+  let house=null;if(global.HouserDailyHouse)try{house=HouserDailyHouse.check(project,{M,has,list,byRole,bedrooms,baths,master,kitchen,living,front,exits,bathRoute,anchor,route,src,AV,leg,fmt,cat})}catch(err){console.error(err)}
+  const hs=house&&house.score!=null&&!off.house?house.score:null;
+  const overall=routes!=null&&hs!=null?r1(.6*routes+.4*hs):routes??hs;
+  return {model:M,scenarios:out,routes,house,overall,verdict:overall==null?null:verdict(overall),count:act.length};
 }
 global.HouserDaily={evaluate,build,route,rolesOf,SCEN};
 })(window);

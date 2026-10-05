@@ -18,7 +18,7 @@ function saveSettings(){const s=JSON.parse(JSON.stringify(settings));project.dai
 
 function renderSettings(){
   const box=$('settings');
-  box.innerHTML=HouserDaily.SCEN.map(d=>{const on=!settings.off[d.id],w=settings.w[d.id]!=null?+settings.w[d.id]:d.w;
+  box.innerHTML='<div class="srow'+(settings.off.house?' off':'')+'"><input type="checkbox" id="en_house" data-en="house"'+(settings.off.house?'':' checked')+'><label for="en_house" title="Łazienki, sypialnie, wielkości i układ pokoi, strony świata">Dom dla domowników</label><span class="hint">40% oceny</span></div>'+HouserDaily.SCEN.map(d=>{const on=!settings.off[d.id],w=settings.w[d.id]!=null?+settings.w[d.id]:d.w;
     return '<div class="srow'+(on?'':' off')+'"><input type="checkbox" id="en_'+d.id+'" data-en="'+d.id+'"'+(on?' checked':'')+'><label for="en_'+d.id+'" title="'+esc(d.desc)+'">'+esc(d.name)+'</label>'+
       '<select data-w="'+d.id+'" title="Waga scenariusza w ocenie ogólnej">'+WEIGHTS.map(([v,l])=>'<option value="'+v+'"'+(Math.abs(v-w)<1e-6?' selected':'')+'>'+l+'</option>').join('')+'</select></div>'}).join('');
   box.querySelectorAll('[data-en]').forEach(el=>el.onchange=()=>{const id=el.dataset.en;if(el.checked)delete settings.off[id];else settings.off[id]=true;saveSettings()});
@@ -45,13 +45,21 @@ function card(s,i){
   h+='<div class="facts">'+(s.dist!=null?'<span><small>Trasa</small><b>'+fmt(s.dist)+' m</b></span>':'')+
     '<span><small>Zmiany piętra</small><b>'+s.floors+'</b></span>'+
     '<span><small>Strefa prywatna</small><b class="'+(s.private.length?'c-bad':'')+'">'+(s.private.length?'':'nie')+'</b>'+s.private.map(n=>'<span class="chip priv">'+esc(n)+'</span>').join(' ')+'</span></div>';
-  if(s.table)h+='<table class="btab"><tr><th>Pokój</th><th>Najbliższa łazienka / WC</th><th style="text-align:right">Odległość</th></tr>'+s.table.map((t,k)=>'<tr><td>'+(t.li!=null?'<span class="sw" style="background:'+LEGC[t.li%LEGC.length]+'"></span>':'')+esc(t.room)+' <small>'+esc(t.floor)+'</small></td><td>'+(t.to?esc(t.to):'<span class="c-bad">brak dojścia</span>')+(t.floors?' <span class="chip priv">po schodach</span>':'')+'</td><td class="n'+(t.floors||t.dist>10?' c-bad':t.dist>7?' c-warn':'')+'">'+(t.dist!=null?fmt(t.dist)+' m':'–')+'</td></tr>').join('')+'</table>';
+  if(s.table)h+=tableHtml(s.table);
   else h+='<div class="legs">'+s.legs.map((l,k)=>'<div class="leg"><span class="sw" style="background:'+LEGC[k%LEGC.length]+'"></span><div class="chips">'+chipsFor(l.r)+(l.note?'<span class="note">'+esc(NOTE[l.note]||l.note)+'</span>':'')+'</div><span class="dist">'+(l.r?fmt(l.r.dist)+' m':'–')+'</span></div>').join('')+'</div>';
   if(s.why.length)h+='<ul class="why">'+s.why.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
   if(s.hints.length&&s.verdict!=='ok'||s.hints.length&&s.score<9)h+='<div class="fixbox'+(s.verdict==='bad'?' b':'')+'"><h4>Co poprawić</h4><ul class="fix">'+s.hints.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';
   return h+'</div>';
 }
 
+function tableHtml(T){return '<table class="btab"><tr><th>Pokój</th><th>Najbliższa łazienka / WC</th><th style="text-align:right">Odległość</th></tr>'+T.map(t=>'<tr><td>'+(t.li!=null?'<span class="sw" style="background:'+LEGC[t.li%LEGC.length]+'"></span>':'')+esc(t.room)+' <small>'+esc(t.floor)+'</small></td><td>'+(t.to?esc(t.to):'<span class="c-bad">brak dojścia</span>')+(t.floors?' <span class="chip priv">po schodach</span>':'')+'</td><td class="n'+(t.floors||t.dist>10?' c-bad':t.dist>7?' c-warn':'')+'">'+(t.dist!=null?fmt(t.dist)+' m':'–')+'</td></tr>').join('')+'</table>'}
+// karta grupy „Dom dla domowników” (bez tras – oprócz najbliższych łazienek)
+function gcard(g){const v=g.verdict,id='h:'+g.id;
+  let h='<div class="sc '+v+(sel===id?' sel':'')+'" data-sc="'+id+'"><div class="hd"><div class="num c-'+v+'">'+fmt(g.score)+'</div><div style="min-width:0"><div class="t">'+esc(g.name)+'</div><div class="d">'+esc(g.desc)+'</div></div><div class="tags"><span class="pill '+v+'">'+VERD[v]+'</span></div></div>';
+  h+='<ul class="hit">'+g.items.map(i=>'<li class="'+i.st+'">'+esc(i.text)+(i.tip?'<small>'+esc(i.tip)+'</small>':'')+'</li>').join('')+'</ul>';
+  if(g.table)h+=tableHtml(g.table)+'<div class="hint">Kliknij kartę, żeby zobaczyć trasy do łazienek na rzucie.</div>';
+  return h+'</div>'}
+const pick=id=>id&&id.startsWith('h:')?res.house?.groups.find(g=>'h:'+g.id===id):res.scenarios.find(x=>x.id===id);
 function render(){
   const M_=$('main');
   if(!project||!(project.grid||project.definitionSnapshot?.grid)){M_.innerHTML='<div class="empty">Brak projektu. Narysuj rzut w <b>Układzie pomieszczeń</b> albo kliknij „Przykład” na pasku u góry.</div>';$('settings').innerHTML='';return}
@@ -59,19 +67,23 @@ function render(){
   if(!res||!res.model.list.length){M_.innerHTML='<div class="empty">Na rzucie nie ma jeszcze pomieszczeń. Narysuj je w <b>Układzie pomieszczeń</b>.</div>';renderSettings();return}
   renderSettings();
   const S=res.scenarios,app=S.filter(s=>s.applicable);
-  if(!sel||!S.find(s=>s.id===sel&&s.applicable)){const cand=app.filter(s=>s.enabled).sort((a,b)=>a.score-b.score);sel=(cand[0]||app[0]||{}).id||null}
+  if(!sel||!(pick(sel)&&pick(sel).applicable!==false)){const cand=app.filter(s=>s.enabled).sort((a,b)=>a.score-b.score);sel=(cand[0]||app[0]||{}).id||null}
   const cnt={ok:0,warn:0,bad:0};for(const s of app)if(s.enabled&&s.weight>0)cnt[s.verdict]++;
   const ov=res.overall,ovv=ov==null?'na':res.verdict;
-  let h='<div class="tiles"><div class="tile big"><div class="l">Ocena codzienności</div><div class="v c-'+ovv+'">'+(ov==null?'–':fmt(ov))+' <small>/ 10</small></div><div class="s"><span class="pill '+ovv+'">'+VERD[ovv]+'</span> <span>średnia ważona</span> · <span>scenariusze: '+res.count+'</span></div></div>'+
-    [['ok','dobrze'],['warn','do poprawy'],['bad','słabo']].map(([k,l])=>'<div class="tile"><div class="l">'+l+'</div><div class="v c-'+k+'">'+cnt[k]+'</div></div>').join('')+'</div>';
+  const H_=res.house,hv=H_?H_.verdict:'na',rv=res.routes==null?'na':res.routes>=7.5?'ok':res.routes>=5?'warn':'bad';
+  let h='<div class="tiles"><div class="tile big"><div class="l">Ocena codzienności</div><div class="v c-'+ovv+'">'+(ov==null?'–':fmt(ov))+' <small>/ 10</small></div><div class="s"><span class="pill '+ovv+'">'+VERD[ovv]+'</span> <span>'+(H_&&res.routes!=null&&!settings.off.house?'40% dom dla domowników + 60% trasy':'średnia ważona')+'</span></div></div>'+
+    (H_?'<div class="tile"><div class="l">Dom dla domowników</div><div class="v c-'+hv+'">'+fmt(H_.score)+'</div><div class="s">łazienki, sypialnie, wielkości, układ · '+H_.persons+' os.</div></div>':'')+
+    '<div class="tile"><div class="l">Trasy po domu</div><div class="v c-'+rv+'">'+(res.routes==null?'–':fmt(res.routes))+'</div><div class="s">scenariusze: '+res.count+' · dobrze '+cnt.ok+', do poprawy '+cnt.warn+', słabo '+cnt.bad+'</div></div></div>';
   const notes=[];
   if(res.model.notes.includes('nostairs'))notes.push('Na piętrze są pomieszczenia, ale nie znaleziono schodów – trasy na piętro nie da się policzyć. Dodaj schody w module Schody.');
   if(!res.model.exits.length)notes.push('Na rzucie parteru nie ma drzwi zewnętrznych ani HST.');
   if(notes.length)h+=notes.map(n=>'<div class="warnbox">'+esc(n)+'</div>').join('');
   const order=S.slice().sort((a,b)=>(b.applicable-a.applicable)||((b.enabled&&b.weight>0)-(a.enabled&&a.weight>0))||(a.score??0)-(b.score??0));
-  h+='<div class="cols"><div class="cards"><div class="hint">Od najsłabszego scenariusza. Kliknij kartę, żeby zobaczyć trasę na rzucie.</div>'+order.map(card).join('')+'</div><div class="planCard" id="planCard"></div></div>';
+  const hg=H_&&!settings.off.house?[...H_.groups].sort((a,b)=>a.score-b.score):[];
+  h+='<div class="cols"><div class="cards">'+(hg.length?'<h3 class="part">Dom dla domowników</h3><div class="hint">Co nie wynika z tras: ile łazienek i sypialni na domowników, wielkości i kształt pokoi, układ stref, strony świata. Od najsłabszej grupy.</div>'+hg.map(gcard).join(''):'')+
+    '<h3 class="part">Trasy po domu</h3><div class="hint">Scenariusze dnia codziennego od najsłabszego. Kliknij kartę, żeby zobaczyć trasę na rzucie.</div>'+order.map(card).join('')+'</div><div class="planCard" id="planCard"></div></div>';
   M_.innerHTML=h;
-  M_.querySelectorAll('[data-sc]').forEach(el=>el.onclick=()=>{const s=S.find(x=>x.id===el.dataset.sc);if(!s||!s.applicable)return;sel=s.id;
+  M_.querySelectorAll('[data-sc]').forEach(el=>el.onclick=()=>{const s=pick(el.dataset.sc);if(!s||s.applicable===false)return;sel=el.dataset.sc;
     M_.querySelectorAll('[data-sc]').forEach(e=>e.classList.toggle('sel',e.dataset.sc===sel));renderPlan();
     if(narrow()){const p=$('planCard');if(p)p.scrollIntoView({behavior:'smooth',block:'start'})}});
   renderPlan();
@@ -79,7 +91,7 @@ function render(){
 
 // ---------- rzut z trasą
 function renderPlan(){
-  const box=$('planCard');if(!box)return;const M=res.model,{W,H,N,c}=M,s=res.scenarios.find(x=>x.id===sel);
+  const box=$('planCard');if(!box)return;const M=res.model,{W,H,N,c}=M,s=pick(sel);
   const CS=20;
   // zasięg: siatka + tarasy + wyjścia
   let x0=0,y0=0,x1=W,y1=H;for(const k of M.terr){const [x,y]=k.split(',').map(Number);x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x+1);y1=Math.max(y1,y+1)}

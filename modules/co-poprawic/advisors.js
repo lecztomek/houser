@@ -10,7 +10,7 @@
     {id:'przepisy',name:'Przepisy',w:1.5,need:'HouserRules',run:p=>{const {out}=HouserRules.check(p);const bad=out.filter(o=>o.st==='bad'),warn=out.filter(o=>o.st==='warn');
       return {score:clamp(10-2*bad.length-.5*warn.length),items:[...bad.map(o=>({p:2.5,head:o.room+' · '+o.name,text:o.val,tip:[o.fix,'Wymagane: '+o.req+'.'].filter(Boolean)})),...warn.map(o=>({p:.8,head:o.room+' · '+o.name,text:o.val,tip:[o.fix,(/^zalec/i.test(o.req)?o.req[0].toUpperCase()+o.req.slice(1):'Zalecane: '+o.req)+'.'].filter(Boolean)}))],
         good:bad.length?[]:['Zgodny z uproszczonymi warunkami technicznymi (okna, wysokości, drzwi, schody).']}}},
-    {id:'codziennosc',name:'Codzienność',w:1.2,need:'HouserDaily',run:p=>{const D=HouserDaily.evaluate(p,p.dailySettings);const sc=D.scenarios.filter(s=>s.enabled!==false&&s.score!=null);
+    {id:'codziennosc',name:'Codzienność',w:1.2,need:'HouserDaily',run:p=>{const D=HouserDaily.evaluate(p,p.dailySettings);const sc=[...D.scenarios.filter(s=>s.enabled!==false&&s.score!=null),...(D.house&&!(p.dailySettings?.off?.house)?D.house.groups:[])];
       return {score:D.overall,items:sc.filter(s=>s.score<7.5).map(s=>({p:Math.min(3,(7.5-s.score)/2*(s.weight||1)+.3),head:s.name+' · '+fmt(s.score)+' / 10',text:s.lead||s.why[0]||s.desc,tip:s.hints[0]||''})),
         good:sc.filter(s=>s.score>=9).map(s=>'Wygodnie na co dzień: '+s.name.toLowerCase()+' ('+fmt(s.score)+' / 10).')}}},
     {id:'schowki',name:'Schowki i szafy',w:1,need:'HouserStorage',run:p=>{const R=HouserStorage.evaluate(p,p.storageSettings);return {score:R.overall,items:R.issues.filter(i=>i.p>0).map(i=>({p:Math.min(3,i.p*1.3),text:i.text,tip:i.tip})),good:R.good}}},

@@ -1,13 +1,13 @@
 {
  "dom-energooszczedny.json": {
-  "overall": 8.6,
+  "overall": 8.7,
   "cost": 713336,
   "Qh": 6038,
   "bills": 3450,
   "area": 108,
   "mods": {
    "Przepisy": 10,
-   "Codzienność": 8.4,
+   "Codzienność": 8.9,
    "Schowki i szafy": 9,
    "Akustyka": 5.6,
    "Nasłonecznienie": 10,
@@ -29,7 +29,7 @@
   "area": 117,
   "mods": {
    "Przepisy": 10,
-   "Codzienność": 8.1,
+   "Codzienność": 8.6,
    "Schowki i szafy": 9.9,
    "Akustyka": 6,
    "Nasłonecznienie": 10,
@@ -44,14 +44,14 @@
   }
  },
  "dom-z-poddaszem.json": {
-  "overall": 8.4,
+  "overall": 8.5,
   "cost": 1005466,
   "Qh": 8070,
   "bills": 4699,
   "area": 186.5,
   "mods": {
    "Przepisy": 10,
-   "Codzienność": 6.7,
+   "Codzienność": 7.5,
    "Schowki i szafy": 7.8,
    "Akustyka": 8,
    "Nasłonecznienie": 8,
@@ -66,14 +66,14 @@
   }
  },
  "nowoczesna-stodola.json": {
-  "overall": 8.1,
+  "overall": 8.2,
   "cost": 1035872,
   "Qh": 9386,
   "bills": 4473,
   "area": 159.25,
   "mods": {
    "Przepisy": 10,
-   "Codzienność": 7.9,
+   "Codzienność": 8.4,
    "Schowki i szafy": 8.9,
    "Akustyka": 6.2,
    "Nasłonecznienie": 7,
@@ -95,7 +95,7 @@
   "area": 125.25,
   "mods": {
    "Przepisy": 10,
-   "Codzienność": 8.9,
+   "Codzienność": 9.2,
    "Schowki i szafy": 9.3,
    "Akustyka": 5.7,
    "Nasłonecznienie": 6.7,
@@ -117,7 +117,7 @@
   "area": 148.75,
   "mods": {
    "Przepisy": 9.5,
-   "Codzienność": 8.6,
+   "Codzienność": 8.9,
    "Schowki i szafy": 10,
    "Akustyka": 5.7,
    "Nasłonecznienie": 8.5,
@@ -139,7 +139,7 @@
   "area": 165.5,
   "mods": {
    "Przepisy": 10,
-   "Codzienność": 7.1,
+   "Codzienność": 7.8,
    "Schowki i szafy": 8.8,
    "Akustyka": 6.2,
    "Nasłonecznienie": 4,
