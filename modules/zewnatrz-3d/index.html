@@ -120,7 +120,7 @@ function buildOpenings(){ if(!opts.openings) return; const c=C(), e=elev(); for(
   for(const raw of openingGroups(f)){ const q={...raw,f},info=HouserOpenings.resolve(project,f,q.key,q.type),explicit=!!project.openingVariants?.[f]?.[q.key];
     // okno dachowe: jawnie wybrane w module Okna i drzwi albo (bez wyboru) okno piętra na ścianie okapowej
     const onEaveWall=isRoofWindow({...q,type:'window'}),roof=q.type==='window'&&opts.roof&&onEaveWall&&(explicit?info.shape==='roof':true);
-    const line=q.o==='v'?q.a:q.b,along=q.o==='v'?q.b:q.a,k=[q.o,line,q.type,q.screenSide,HouserOpenings.sig(info),roof?'R':'W'].join('|');
+    const line=q.o==='v'?q.a:q.b,along=q.o==='v'?q.b:q.a,k=[q.o,line,q.type,q.screenSide,q.type==='door'?'':HouserOpenings.sig(info),roof?'R':'W'].join('|');
     (runs[k]=runs[k]||{q,info,roof,bs:[]}).bs.push(along); } // każde okno ma własne ustawienia (kąt, strona skosu) – nie mieszamy ich w jednej grupie
   // sąsiednie odcinki tego samego okna / drzwi łączymy w jeden otwór z ramą
   for(const {q,info,roof,bs} of Object.values(runs)){ bs.sort((a,b)=>a-b); let s0=bs[0],prev=bs[0]; const flush=(b0,b1)=>roof?drawRoofWindow(q,info,b0*c,(b1+1)*c):drawWallOpening(q,base,b0*c,(b1+1)*c,info);

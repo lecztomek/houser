@@ -96,7 +96,7 @@ function runs(){
       let inA,inB,side;
       if(o==='h'){inA=inside(f,a,b-1);inB=inside(f,a,b);side=inA&&!inB?'bottom':(!inA&&inB?'top':'inside')}
       else{inA=inside(f,a-1,b);inB=inside(f,a,b);side=inA&&!inB?'right':(!inA&&inB?'left':'inside')}
-      const line=o==='h'?b:a,along=o==='h'?a:b,v=O.sig(O.resolve(project,f,key,base)),gk=[f,o,line,side,base,v].join('|');
+      const line=o==='h'?b:a,along=o==='h'?a:b,v=base==='door'?'':O.sig(O.resolve(project,f,key,base)),gk=[f,o,line,side,base,v].join('|');
       (groups[gk]=groups[gk]||{f,o,line,side,base,items:[]}).items.push({key,along,a,b});
     }
     for(const grp of Object.values(groups)){grp.items.sort((p,q)=>p.along-q.along);let cur=null;

@@ -61,6 +61,9 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  ok(a.table&&a.table.length>=5&&a.table.every(t=>t.to&&fin(t.dist)),'Codzienność łazienki: najbliższa łazienka z każdego pokoju');
  ok(da.house.groups.length===5&&da.house.groups.every(x=>fin(x.score)&&x.score>=0&&x.score<=10)&&fin(da.overall),'Codzienność: dom dla domowników – 5 grup z oceną');
  const z2=JSON.parse(JSON.stringify(z));z2.energySettings={...(z2.energySettings||{}),persons:8};ok(g(D(z2),'sypialnie').score<g(da,'sypialnie').score,'Codzienność: więcej domowników niż pokoi = minus w sypialniach');}
+// drzwi na dwóch kratkach, ustawienia tylko na jednej – obie kratki to te same drzwi (Zewnątrz 3D rysował dwoje po 0,5 m)
+{const pr={openings:{ground:{'h:7:22':'door','h:8:22':'door'}},openingVariants:{ground:{'h:7:22':{variant:'entrance',sill:0,height:2.3}}}};const O=W.HouserOpenings,a=O.resolve(pr,'ground','h:8:22','door'),e=O.runExtent(pr,'ground','h:8:22');
+ ok(a.variant==='entrance'&&e.from===7&&e.to===8,'drzwi na dwóch kratkach – wspólne ustawienia i jeden otwór');}
 // okno balkonowe (do podłogi) = drzwi balkonowe: przejście na balkon w Codzienności i w Balkonach
 {const z=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','zefir-2.json'),'utf8'));const up=Object.keys(z.state).find(f=>f!=='ground')||'upper';
  const pr={...z,openings:{...z.openings,[up]:{...(z.openings?.[up]||{}),'h:0:0':'window'}},openingVariants:{...(z.openingVariants||{}),[up]:{...(z.openingVariants?.[up]||{}),'h:0:0':{variant:'balcony',sill:0,height:2.2}}}};

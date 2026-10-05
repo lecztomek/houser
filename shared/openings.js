@@ -31,8 +31,11 @@
 
   function variantsFor(base){return VARIANTS[base]||{}}
   // pełny opis otworu: {base, variant, name, sill, height, shape, ...}
+  // drzwi rysowane na kilku kratkach to jedne drzwi: kratka bez własnych ustawień bierze je od najbliższej kratki tych samych drzwi
+  function doorData(project,floor,key){const V=project?.openingVariants?.[floor]||{};if(V[key])return V[key];const ops=project?.openings?.[floor]||{},[o,aS,bS]=key.split(':'),a=+aS,b=+bS,at=o==='h'?a:b,k=i=>o==='h'?'h:'+i+':'+b:'v:'+a+':'+i;
+    for(let d=1;d<=4;d++)for(const s of [-1,1]){let ok=true;for(let j=1;j<=d;j++)if(ops[k(at+s*j)]!=='door'){ok=false;break}if(ok&&V[k(at+s*d)])return V[k(at+s*d)]}return null}
   function resolve(project,floor,key,base){
-    const v=project?.openingVariants?.[floor]?.[key]||{},list=VARIANTS[base]||{},id=list[v.variant]?v.variant:DEFAULT[base],def=list[id]||{sill:0,height:2.1,name:base};
+    const v=(base==='door'?doorData(project,floor,key):project?.openingVariants?.[floor]?.[key])||{},list=VARIANTS[base]||{},id=list[v.variant]?v.variant:DEFAULT[base],def=list[id]||{sill:0,height:2.1,name:base};
     return {...def,base,variant:id,slope:v.slope==='manual'?'manual':'roof',angle:Number.isFinite(+v.angle)&&v.angle!==''&&v.angle!=null?+v.angle:45,rise:v.rise==='left'?'left':'right',blind:v.blind||'',sill:Number.isFinite(+v.sill)&&v.sill!==''&&v.sill!=null?+v.sill:def.sill,height:Number.isFinite(+v.height)&&v.height!==''&&v.height!=null?+v.height:def.height};
   }
   function setVariant(project,floor,keys,data){
@@ -63,10 +66,10 @@
   // podpis ustawień otworu – sąsiednie kratki z tym samym podpisem to jedno okno / drzwi
   const sig=i=>[i.variant,i.slope,i.angle,i.rise,i.sill,i.height,i.blind].join('|');
   function runExtent(project,floor,key){const ops=project?.openings?.[floor]||{},base=ops[key],[o,aS,bS]=key.split(':'),a=+aS,b=+bS,v=sig(resolve(project,floor,key,base));
-    const k=i=>o==='h'?'h:'+i+':'+b:'v:'+a+':'+i,same=i=>ops[k(i)]===base&&sig(resolve(project,floor,k(i),base))===v,at=o==='h'?a:b;
+    const k=i=>o==='h'?'h:'+i+':'+b:'v:'+a+':'+i,same=i=>ops[k(i)]===base&&(base==='door'||sig(resolve(project,floor,k(i),base))===v),at=o==='h'?a:b;
     let from=at,to=at;while(same(from-1))from--;while(same(to+1))to++;return {from,to,at}}
   // czy przez otwór da się przejść: drzwi, HST, przejście – i okno balkonowe (do podłogi), czyli drzwi balkonowe
   function walkable(project,floor,key){const t=project?.openings?.[floor]?.[key];if(t==='door'||t==='hst'||t==='opening')return true;if(t!=='window')return false;
     const i=resolve(project,floor,key,'window');return i.shape!=='roof'&&(i.variant==='balcony'||i.variant==='slopedFull')&&(+i.sill||0)<=.1}
-  global.HouserOpenings={walkable,VARIANTS,DEFAULT,BASE_NAMES,variantsFor,resolve,setVariant,slopedTop,runExtent,sig,BLIND,BLIND_NAMES,BLIND_LOOK,blindOf,PRICE,VPRICE,price};
+  global.HouserOpenings={doorData,walkable,VARIANTS,DEFAULT,BASE_NAMES,variantsFor,resolve,setVariant,slopedTop,runExtent,sig,BLIND,BLIND_NAMES,BLIND_LOOK,blindOf,PRICE,VPRICE,price};
 })(window);

@@ -88,7 +88,7 @@ function doors(f){
     const line=o==='h'?b:a,along=o==='h'?a:b,gk=[o,line,A,B].join('|');(groups[gk]=groups[gk]||{o,line,A,B,items:[]}).items.push({key,along})}
   for(const g of Object.values(groups)){g.items.sort((p,q)=>p.along-q.along);let cur=null;
     for(const it of g.items){if(cur&&it.along===cur.to+1&&cur.keys.length<4){cur.to=it.along;cur.keys.push(it.key)}else{if(cur)out.push(cur);cur={...g,from:it.along,to:it.along,keys:[it.key]}}}if(cur)out.push(cur)}
-  for(const d of out){d.id=f+'|'+d.keys[0];const v=project.openingVariants?.[f]?.[d.keys[0]]||{};d.info=O.resolve(project,f,d.keys[0],'door');d.swing=v.swing==='b'?'b':'a';d.hinge=v.hinge==='end'?'end':'start';d.len=(d.to-d.from+1)*grid().cellMeters}
+  for(const d of out){d.id=f+'|'+d.keys[0];const v=d.keys.map(k=>project.openingVariants?.[f]?.[k]).find(Boolean)||{};d.info=O.resolve(project,f,d.keys[0],'door');d.swing=v.swing==='b'?'b':'a';d.hinge=v.hinge==='end'?'end':'start';d.len=(d.to-d.from+1)*grid().cellMeters}
   return out;
 }
 function setProject(p,src){project=p&&(p.grid||p.definitionSnapshot?.grid)?p:null;source=src||'';if(project&&!floors().includes(floor))floor=floors()[0];renderAll()}

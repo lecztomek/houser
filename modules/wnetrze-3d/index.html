@@ -501,7 +501,7 @@ function doorGroups(f,bases=DOOR_BASES){const c=grid().cellMeters,groups={},out=
     const line=o==='h'?b:a,along=o==='h'?a:b,gk=[o,line,A,B,base].join('|');(groups[gk]=groups[gk]||{o,line,A,B,inA,inB,base,items:[]}).items.push({key,along})}
   for(const g of Object.values(groups)){g.items.sort((p,q)=>p.along-q.along);let cur=null;
     for(const it of g.items){if(cur&&it.along===cur.to+1&&cur.keys.length<4){cur.to=it.along;cur.keys.push(it.key)}else{if(cur)out.push(cur);cur={...g,from:it.along,to:it.along,keys:[it.key]}}}if(cur)out.push(cur)}
-  for(const d of out){const v=project.openingVariants?.[f]?.[d.keys[0]]||{};d.info=HouserOpenings.resolve(project,f,d.keys[0],'door');
+  for(const d of out){const v=d.keys.map(k=>project.openingVariants?.[f]?.[k]).find(Boolean)||{};d.info=HouserOpenings.resolve(project,f,d.keys[0],'door');
     d.exterior=!(d.inA&&d.inB);d.swing=d.exterior?(d.inA?'a':'b'):(v.swing==='b'?'b':'a');d.hinge=v.hinge==='end'?'end':'start';
     d.sliding=!!d.info.sliding||d.base==='slidingDoor';d.leaves=d.info.leaves===2?2:1;d.s0=d.from*c;d.s1=(d.to+1)*c;d.L=d.line*c;
     const [,kx,ky]=d.keys[0].split(':');d.h=Math.min(d.info.height??settings.doorH,(f==='upper'?upperEdgeHeight(d.o,+kx,+ky,c):floorHeight(f))-.05)}
