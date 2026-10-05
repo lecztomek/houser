@@ -112,10 +112,10 @@ function build(project){
     if(!stairLinks.length&&list.some(r=>r.fi>0))notes.push('nostairs');
   }
   // balkony: kratki pokoju przy drzwiach / HST na balkon (piętro) – cel np. do suszenia prania
-  const balc=[];{const bs=new Set();for(const b of project.balconies||[])for(const [x,y] of b.cells||[])bs.add(x+','+y);
+  const balc=[],balcBlind=[];{const bs=new Set();for(const b of project.balconies||[])for(const [x,y] of b.cells||[])bs.add(x+','+y);
     if(bs.size)floors.forEach((f,fi)=>{if(fi===0)return;const O=op(f);for(const k of bs){const [x,y]=k.split(',').map(Number);
-      for(const [dx,dy,key] of [[0,1,'h:'+x+':'+(y+1)],[0,-1,'h:'+x+':'+y],[1,0,'v:'+(x+1)+':'+y],[-1,0,'v:'+x+':'+y]]){const r=walk(fi,x+dx,y+dy);if(r&&PASS[O[key]])balc.push({node:fi*N+(y+dy)*W+x+dx,room:r})}}})}
-  const M={project,W,H,c,N,F,floors,lo,floorName,cellRoom,holes,rooms,list,exits,exitByNode,stairLinks,stairAdj,terr,isPrivate,notes,def,st,balc,openings:floors.map(f=>op(f))};
+      for(const [dx,dy,key] of [[0,1,'h:'+x+':'+(y+1)],[0,-1,'h:'+x+':'+y],[1,0,'v:'+(x+1)+':'+y],[-1,0,'v:'+x+':'+y]]){const r=walk(fi,x+dx,y+dy);if(r)(PASS[O[key]]?balc:balcBlind).push({node:fi*N+(y+dy)*W+x+dx,room:r,edge:key,f})}}})}
+  const M={project,W,H,c,N,F,floors,lo,floorName,cellRoom,holes,rooms,list,exits,exitByNode,stairLinks,stairAdj,terr,isPrivate,notes,def,st,balc,balcBlind,openings:floors.map(f=>op(f))};
   return M;
 }
 
@@ -168,6 +168,7 @@ const SCEN=[
   {id:'kominek',name:'Palenie w kominku',desc:'Drewno z zewnątrz do kominka.',w:0.5},
   {id:'goscie',name:'Goście',desc:'Od drzwi do WC i do salonu – bez wchodzenia do strefy prywatnej.',w:1},
   {id:'noc',name:'Noc',desc:'Z każdej sypialni do najbliższej łazienki lub WC.',w:1.5},
+  {id:'lazienki',name:'Łazienki i WC',desc:'Ile łazienek i WC na liczbę domowników i sypialni, czy każda kondygnacja z sypialniami ma swoją łazienkę, najbliższa łazienka z każdego pokoju.',w:1.5},
   {id:'poranek',name:'Poranek',desc:'Sypialnia → łazienka → kuchnia → wyjście z domu.',w:1},
   {id:'gotowanie',name:'Gotowanie i podawanie',desc:'Kuchnia ↔ jadalnia ↔ salon – noszenie talerzy.',w:1},
   {id:'ogrod',name:'Ogród i grill',desc:'Z kuchni na taras / do ogrodu.',w:0.5},
@@ -181,7 +182,7 @@ function evaluate(project,settings){
   const {list,exits,N}=M;
   const has=(r,role)=>r.roles.has(role);
   const byRole=role=>list.filter(r=>has(r,role));
-  const cat=r=>M.isPrivate(r)?'private':(has(r,'living')||has(r,'dining')||has(r,'mezz'))?'living':has(r,'kitchen')?'kitchen':'other';
+  const cat=r=>M.isPrivate(r)?'private':(has(r,'living')||has(r,'dining')||(has(r,'mezz')&&!has(r,'hall')))?'living':has(r,'kitchen')?'kitchen':'other';
   const anchor=(r,kind)=>{
     const pick=re=>{const f=r.furn.find(x=>re.test(x.item));return f?f.node:null};
     let n=null;
@@ -278,25 +279,36 @@ function evaluate(project,settings){
       const fam=mode==='bath'?[]:baths.filter(b=>has(b,'bath')&&b!==l&&b.fi===mLeg.b.fi);let dB=null;
       if(fam.length){const rb=route(M,src(anchor(mLeg.b,'bed')),fam.map(b=>b.center),{avoid:AV()});if(rb&&rb.end.room){const r2=route(M,src(rb.end.room.center),[la],{avoid:AV({except:new Set([l.key])})});if(r2){dB=r2.dist;s.legs.push(leg(rb.end.room.name,l.name,r2))}}}
       const dirty=dB!=null?(best.avg+dB)/2:best.avg;
-      // suszenie: na zewnątrz
-      // suszenie: bliżej z dwóch – ogród / taras albo balkon (wyjście z pokoju na piętrze)
-      let dD=null,rD=null,toB=false;const rOut=exits.length?route(M,src(la),exitNodes(garden),{avoid:AV({living:4})}):null;
-      const rBal=M.balc.length?route(M,src(la),M.balc.map(b=>b.node),{avoid:AV({living:4,except:new Set(M.balc.map(b=>b.room.key))})}):null;
-      if(rBal&&(!rOut||rBal.dist+(rBal.floors?2:0)<=rOut.dist+(rOut.floors?2:0))){rD=rBal;toB=true}else rD=rOut;
-      if(rD){dD=rD.dist;s.legs.push(leg(l.name,toB?'Balkon':rD.exitUsed.at(-1)?.terrace?'Taras':'Ogród',rD,{note:'suszenie'}));if(toB)s.why.push('Pranie wysuszysz na balkonie: {n} m od pralni.'.replace('{n}',fmt(dD)))}
+      // suszenie: suszarka w pralni, balkon (liczy się jak „na zewnątrz”) albo ogród / taras – bliższe z nich
+      const dryer=l.furn.some(f=>/suszar/.test(f.item));
+      let dD=null,rD=null,toB=false,blind=null;const rOut=exits.length?route(M,src(la),exitNodes(garden),{avoid:AV({living:4})}):null;
+      const balR=B=>B.length?route(M,src(la),B.map(b=>b.node),{avoid:AV({living:4,except:new Set(B.map(b=>b.room.key))})}):null;
+      let rBal=balR(M.balc);
+      // balkon bez drzwi (tylko okno) – liczony jako miejsce do suszenia, z podpowiedzią, żeby dodać drzwi
+      if(!rBal&&M.balcBlind.length){rBal=balR(M.balcBlind);if(rBal)blind=M.balcBlind.find(b=>b.node===rBal.end?.node)||M.balcBlind.find(b=>b.room===rBal.end?.room)||M.balcBlind[0]}
+      if(rBal&&(!rOut||rBal.dist+(rBal.floors?2:0)<=rOut.dist+(rOut.floors?2:0)+3)){rD=rBal;toB=true}else{rD=rOut;blind=null}
+      if(rD){dD=rD.dist;s.legs.push(leg(l.name,toB?'Balkon':rD.exitUsed.at(-1)?.terrace?'Taras':'Ogród',rD,{note:'suszenie'}));
+        if(toB)s.why.push('Pranie wysuszysz na balkonie: {n} m od pralni – nie trzeba wychodzić z domu.'.replace('{n}',fmt(dD)));
+        if(blind){s.why.push('Balkon przy pokoju „{q}” ma tylko okno.'.replace('{q}',blind.room.name));s.hints.push('Zamień okno przy balkonie na drzwi balkonowe (moduł Balkony) – wtedy wyjdziesz z praniem na balkon.')}}
+      if(dryer){s.why.push('W pralni jest suszarka – pranie wysuszysz na miejscu.')}
       // czyste: do garderoby / sypialni głównej
       const wards=byRole('wardrobe');let dC=best.avg,rC=null;
       if(wards.length){rC=route(M,src(la),wards.map(w=>w.center),{avoid:AV({except:new Set(wards.map(w=>w.key))})});if(rC){dC=rC.dist;s.legs.push(leg(l.name,rC.end.room.name,rC,{note:'czyste'}))}}
       let score=lin((dirty+dC)/2,5,24);
       s.why.push('Średnio {n} m z sypialni do pralni.'.replace('{n}',fmt(best.avg)));
       const upB=bedrooms.filter(b=>b.fi!==l.fi).length;
-      if(upB){score-=1.5*Math.min(1,upB/bedrooms.length*1.5);s.why.push('Pralnia jest na innej kondygnacji niż sypialnie – kosz z praniem po schodach.');s.hints.push('Przenieś pralnię na piętro obok sypialni (albo zaplanuj zrzutnię na pranie).')}
+      if(upB){score-=1.5*Math.min(1,upB/bedrooms.length*1.5);
+        if(upB*2>bedrooms.length){s.why.push('Pralnia jest na innej kondygnacji niż sypialnie – kosz z praniem po schodach.');s.hints.push('Przenieś pralnię na piętro obok sypialni (albo zaplanuj zrzutnię na pranie).')}
+        else s.why.push('Pralnia na kondygnacji większości sypialni; z {n} trzeba nieść pranie po schodach.'.replace('{n}',upB+' '+(upB===1?'sypialni':'sypialni')))}
       else s.why.push('Pralnia na tej samej kondygnacji co sypialnie.');
       if(mLeg.r.crossed.some(r=>cat(r)==='living')){score-=1;s.why.push('Pranie niesione przez salon lub jadalnię.');s.hints.push('Zaplanuj pralnię przy holu sypialni, a nie za salonem.')}
-      if(dD!=null){if(l.exits.length){score+=.5;s.why.push('Pralnia ma własne wyjście na zewnątrz – szybko rozwiesisz pranie.')}
+      if(dryer)score+=.3;
+      else if(dD!=null){if(l.exits.length&&!toB){score+=.5;s.why.push('Pralnia ma własne wyjście na zewnątrz – szybko rozwiesisz pranie.')}
         else if(dD<=5)score+=.3;
-        else if(dD>12){score-=1;s.why.push('Do suszenia na zewnątrz daleko: {n} m.'.replace('{n}',fmt(dD)));s.hints.push('Dodaj drzwi z pralni do ogrodu lub na taras – do suszenia prania.')}
-        if(rD.floors){score-=.5;s.why.push(toB?'Na balkon trzeba wejść po schodach.':'Suszenie na zewnątrz wymaga zejścia po schodach – przyda się suszarka lub balkon.')}}
+        else if(dD>12){score-=toB?.5:1;s.why.push((toB?'Do balkonu daleko: {n} m.':'Do suszenia na zewnątrz daleko: {n} m.').replace('{n}',fmt(dD)));s.hints.push(toB?'Pralnia bliżej balkonu skróci drogę z mokrym praniem.':'Dodaj drzwi z pralni do ogrodu lub na taras – do suszenia prania.')}
+        if(rD.floors){score-=.5;s.why.push(toB?'Na balkon trzeba wejść po schodach.':'Suszenie na zewnątrz wymaga zejścia po schodach – przyda się suszarka lub balkon.')}
+        if(blind)score-=.5}
+      else if(!M.balc.length&&!M.balcBlind.length)s.hints.push('Zaplanuj suszarkę w pralni albo balkon przy pralni.');
       if(mode==='bath'){score-=1;s.hints.push('Wydziel pralnię (choćby 2–3 m²) – pranie nie będzie blokować łazienki.')}
       if(!wards.length)s.hints.push('Garderoba obok sypialni skróci drogę z czystym praniem.');
       s.score=score;s.dist=best.avg;
@@ -368,10 +380,10 @@ function evaluate(project,settings){
       const sc=[];let worst=null;
       for(const b of bedrooms){const r=bathRoute(b,anchor(b,'bed'),{priv:8,living:3});
         if(!r){sc.push(0);s.legs.push(leg(b.name,'Łazienka',null));continue}
-        const x=crossCats(r);let v=lin(r.dist,5,16)-4*r.floors-(x.living.length?2:0)-(x.private.length?2:0);
+        const x=crossCats(r);let v=lin(r.dist,5,16)-6*r.floors-(x.living.length?2:0)-(x.private.length?2:0);
         s.legs.push(leg(b.name,r.end.room.name,r));sc.push(clamp(v));if(!worst||v<worst.v)worst={v,b,r,x}}
       const mean=sc.reduce((a,b)=>a+b,0)/sc.length,min=Math.min(...sc);
-      s.score=.7*mean+.3*min;s.dist=worst?worst.r.dist:null;
+      s.score=.5*mean+.5*min;s.dist=worst?worst.r.dist:null;
       const ens=bedrooms.filter(b=>baths.some(x=>x.ensuite&&x.owners.has(b.key)||x.nb.has(b.key)));
       if(ens.length)s.why.push('Łazienka bezpośrednio przy sypialni: {n}.'.replace('{n}',ens.length));
       if(worst){s.why.push('Najdalej: {n} m do łazienki.'.replace('{n}',fmt(worst.r.dist)));
@@ -380,6 +392,44 @@ function evaluate(project,settings){
         if(worst.x.private.length){s.why.push('Do łazienki przez inny pokój.');s.hints.push('Połącz sypialnie z łazienką wspólnym holem.')}
         if(worst.r.dist>10&&!worst.r.floors)s.hints.push('Zbliż łazienkę do sypialni.')}
       if(master&&!ens.includes(master)&&bedrooms.length>1)s.hints.push('Rozważ łazienkę przy sypialni głównej.');
+    }
+    else if(def.id==='lazienki'){
+      if(!bedrooms.length){na(s,'Brak sypialni na rzucie.');continue}
+      const full=baths.filter(b=>has(b,'bath')),wcOnly=baths.filter(b=>!has(b,'bath'));
+      const es=M.project.energySettings||{},persons=Number.isFinite(+es.persons)&&+es.persons>0?+es.persons:Math.max(2,bedrooms.length+1);
+      const fl=[...new Set(list.map(r=>r.fi))].sort();
+      const perFl=fl.map(fi=>({fi,beds:bedrooms.filter(b=>b.fi===fi),full:full.filter(b=>b.fi===fi),wc:wcOnly.filter(b=>b.fi===fi),day:list.some(r=>r.fi===fi&&(has(r,'living')||has(r,'kitchen')))}));
+      s.why.push('{n} os., {n} sypialni: łazienek {n}, osobnych WC {n}.'.replace('{n}',persons).replace('{n}',bedrooms.length).replace('{n}',full.length).replace('{n}',wcOnly.length));
+      for(const F_ of perFl)if(F_.full.length||F_.wc.length||F_.beds.length)s.why.push(M.floorName(F_.fi)+': '+[F_.beds.length?F_.beds.length+' syp.':'',F_.full.length?F_.full.length+' łaz.':'',F_.wc.length?F_.wc.length+' WC':''].filter(Boolean).join(', ')+(F_.full.length+F_.wc.length?'':' – bez łazienki i WC'));
+      let score=10;
+      if(!baths.length){na(s,'Brak łazienki i WC na rzucie.','Dodaj łazienkę przy sypialniach.');continue}
+      if(!full.length){score-=4;s.why.push('W domu nie ma pełnej łazienki (tylko WC).');s.hints.push('Dodaj łazienkę z prysznicem lub wanną.')}
+      // kondygnacje z sypialniami bez łazienki – w nocy trzeba schodzić po schodach
+      for(const F_ of perFl){if(!F_.beds.length)continue;
+        if(!F_.full.length&&!F_.wc.length){score-=4.5;s.why.push('Na kondygnacji „{q}” są sypialnie ({n}), ale nie ma łazienki ani WC – w nocy trzeba schodzić po schodach.'.replace('{q}',M.floorName(F_.fi)).replace('{n}',F_.beds.length));s.hints.push('Dodaj łazienkę (choćby WC z umywalką) na kondygnacji sypialni.')}
+        else if(!F_.full.length){score-=1.5;s.why.push('Na kondygnacji „{q}” przy sypialniach jest tylko WC – kąpiel na innym piętrze.'.replace('{q}',M.floorName(F_.fi)));s.hints.push('Zamień WC przy sypialniach na łazienkę z prysznicem.')}}
+      // dzień: kondygnacja z salonem / kuchnią bez WC
+      for(const F_ of perFl)if(F_.day&&!F_.full.length&&!F_.wc.length){score-=1.5;s.why.push('Przy salonie i kuchni ({q}) nie ma WC – w ciągu dnia i dla gości trzeba iść na inne piętro.'.replace('{q}',M.floorName(F_.fi)));s.hints.push('Dodaj WC na kondygnacji dziennej, najlepiej przy wejściu.')}
+      // poranna kolejka: osoby na łazienkę (łazienka przy sypialni służy tylko jej mieszkańcom)
+      const shared=full.filter(b=>!b.ensuite).length,ens=full.filter(b=>b.ensuite);
+      const ensP=ens.reduce((a,b)=>a+[...b.owners].reduce((n,k)=>n+(bedrooms.find(x=>x.key===k&&has(x,'master'))?2:1),0),0);
+      const rest=Math.max(0,persons-ensP),pp=shared?rest/shared:(rest?99:0);
+      if(full.length){if(pp>4){score-=2.5;s.why.push('Na jedną wspólną łazienkę przypada ok. {n} osób – rano kolejka.'.replace('{n}',fmt(pp)));s.hints.push('Dodaj drugą łazienkę albo łazienkę przy sypialni głównej.')}
+        else if(pp>3){score-=1.2;s.why.push('Na jedną wspólną łazienkę przypada ok. {n} osób – rano bywa ciasno.'.replace('{n}',fmt(pp)))}
+        else if(shared||ens.length)s.why.push('Ok. {n} os. na wspólną łazienkę – bez porannej kolejki.'.replace('{n}',fmt(pp)))}
+      const toilets=baths.length;
+      if(toilets===1&&persons>=3){score-=1.5;s.why.push('Jedna toaleta na cały dom – gdy ktoś się kąpie, reszta czeka.');s.hints.push('Osobne WC (choćby 1,2 m²) odciąży łazienkę.')}
+      else if(bedrooms.length>=4&&toilets<3){score-=.7;s.hints.push('Przy {n} sypialniach przyda się trzecia toaleta (łazienka przy sypialni głównej albo WC).'.replace('{n}',bedrooms.length))}
+      // najbliższa łazienka z każdego pokoju
+      const rooms_=list.filter(r=>has(r,'bedroom')||has(r,'living')||has(r,'kitchen')||has(r,'study'));const pub=baths.filter(b=>!b.ensuite);
+      s.table=[];let far=null;
+      for(const r of rooms_){const isBed=has(r,'bedroom');const rr=isBed?bathRoute(r,anchor(r,'bed'),{priv:8,living:3}):pub.length?route(M,src(r.center),pub.map(b=>b.center),{avoid:AV({priv:8,except:new Set(pub.map(b=>b.key))})}):null;
+        s.table.push({room:r.name,floor:M.floorName(r.fi),to:rr?.end?.room?.name||null,dist:rr?rr.dist:null,floors:rr?rr.floors:null,bed:isBed,li:rr?s.legs.length:null});
+        if(rr)s.legs.push(leg(r.name,rr.end.room.name,rr));
+        if(rr&&isBed&&(!far||rr.dist+8*rr.floors>far.dist+8*far.floors))far={...rr,name:r.name}}
+      if(far&&far.dist>10&&!far.floors){score-=Math.min(1.5,(far.dist-10)/4);s.why.push('Z pokoju „{q}” do łazienki aż {n} m.'.replace('{q}',far.name).replace('{n}',fmt(far.dist)))}
+      s.score=score;s.dist=far?far.dist:null;
+      s.lead=s.why.find(w=>/nie ma|tylko WC|kolejka|ciasno|Jedna toaleta|aż /.test(w))||null;
     }
     else if(def.id==='poranek'){
       if(!bedrooms.length||!kitchen||!baths.length){na(s,'Potrzebne: sypialnia, łazienka i kuchnia.');continue}
