@@ -3737,4 +3737,6 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "40% oceny":"40% of score",
 "Co liczyć i z jaką wagą":"What to count and how much",
 "Łazienki, sypialnie, wielkości i układ pokoi, strony świata":"Bathrooms, bedrooms, room sizes and layout, orientation",
-"dom dla domowników (łazienki, sypialnie, wielkości i układ pokoi) + trasy (zakupy, pranie, goście, noc…); niżej – najsłabsza część":"house for the household (bathrooms, bedrooms, room sizes and layout) + routes (shopping, laundry, guests, night…); below – the weakest part"};
+"dom dla domowników (łazienki, sypialnie, wielkości i układ pokoi) + trasy (zakupy, pranie, goście, noc…); niżej – najsłabsza część":"house for the household (bathrooms, bedrooms, room sizes and layout) + routes (shopping, laundry, guests, night…); below – the weakest part",
+"Balkonowe (do podłogi) – drzwi balkonowe":"Balcony (floor-length) – balcony door",
+"Rodzaj otworu (ten sam otwór na rzucie)":"Opening type (same opening on the plan)"};

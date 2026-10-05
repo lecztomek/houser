@@ -30,7 +30,7 @@
     for(const b of list(project)){const set=new Set((b.cells||[]).map(([x,y])=>key(x,y)));let a=0,ca=0,oa=0,con=0,rl=0,door=false,maxD=0;const rooms=new Set();
       for(const [x,y] of b.cells||[]){a+=c*c;if(C.occ(C.lo,x,y))oa+=c*c;else ca+=c*c;
         for(const [dx,dy,ek] of [[0,-1,'h:'+x+':'+y],[0,1,'h:'+x+':'+(y+1)],[-1,0,'v:'+x+':'+y],[1,0,'v:'+(x+1)+':'+y]]){const nx=x+dx,ny=y+dy;if(set.has(key(nx,ny)))continue;
-          if(C.occ(C.up,nx,ny)){if(!C.occ(C.lo,x,y))con+=c;rooms.add(C.id(C.up,nx,ny));if(['door','hst'].includes(ops[ek]))door=true}else rl+=c}}
+          if(C.occ(C.up,nx,ny)){if(!C.occ(C.lo,x,y))con+=c;rooms.add(C.id(C.up,nx,ny));if(['door','hst'].includes(ops[ek])||global.HouserOpenings?.walkable(project,C.up,ek))door=true}else rl+=c}}
       // głębokość wysięgu: najdalsza kratka od ściany piętra (dla wystających)
       for(const [x,y] of b.cells||[]){if(C.occ(C.lo,x,y))continue;let d=1e9;for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){let n=1;while(n<20&&!C.occ(C.up,x+dx*n,y+dy*n)&&set.has(key(x+dx*n,y+dy*n)))n++;if(C.occ(C.up,x+dx*n,y+dy*n))d=Math.min(d,n)}if(d<1e9)maxD=Math.max(maxD,d*c)}
       area+=a;cantA+=ca;overA+=oa;contact+=con;rail+=rl;if(!b.thermalBreak)contactBad+=con;

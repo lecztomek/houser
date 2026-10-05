@@ -159,6 +159,12 @@ function renderList(){
       if(r.base==='window'||r.base==='hst'){const bl=document.createElement('select');bl.title='Osłona (roleta, żaluzja, markiza) wpływa na nagrzewanie latem (moduł Nasłonecznienie)';bl.innerHTML='<option value="">osłona: jak w Nasłonecznieniu</option>'+Object.entries(O.BLIND_NAMES).map(([k,n])=>'<option value="'+k+'">'+n+'</option>').join('');bl.value=r.info.blind||'';bl.onchange=()=>upd({blind:bl.value});ctl.append(bl)}
       if(r.base==='door'){const vs=document.createElement('select');vs.title='Jak te drzwi wyglądają na podglądzie 3D i na wizualizacji';vs.innerHTML='<option value="">jak domyślnie we Wnętrzu 3D</option><option value="open">otwarte</option><option value="closed">zamknięte</option><option value="none">bez skrzydła (sam otwór)</option>';vs.value=project.openingVariants?.[r.f]?.[r.keys[0]]?.view||'';
         vs.onchange=()=>{O.setVariant(project,r.f,r.keys,{variant:r.info.variant,view:vs.value});selected=r.id;commit()};const lb=document.createElement('span');lb.textContent=' · w 3D:';ctl.append(lb,vs)}
+      // rodzaj otworu: okno / drzwi / HST – np. okno przy balkonie zamienione na drzwi balkonowe
+      if(r.info.shape!=='roof'){const bs=document.createElement('select');bs.title='Rodzaj otworu (ten sam otwór na rzucie)';bs.className='base';
+        bs.innerHTML=['window','door','hst'].map(b=>'<option value="'+b+'">'+O.BASE_NAMES[b]+'</option>').join('');bs.value=r.base;
+        bs.onchange=()=>{const nb=bs.value,dv=O.variantsFor(nb)[O.DEFAULT[nb]];for(const k of r.keys)project.openings[r.f][k]=nb;
+          const keep=r.info.blind&&nb!=='door'?{blind:r.info.blind}:{};for(const k of r.keys){project.openingVariants=project.openingVariants||{};project.openingVariants[r.f]=project.openingVariants[r.f]||{};project.openingVariants[r.f][k]={variant:O.DEFAULT[nb],sill:dv.sill,height:dv.height,...keep}}
+          selected=r.f+'|'+r.keys[0];commit()};ctl.prepend(bs)}
       if(!ctl.parentNode)d.appendChild(ctl);
       const pr=priceOf(r);if(pr){const e=document.createElement('div');e.className='price';e.innerHTML='<span>≈ '+zl(pr.win)+'</span>'+(pr.k>1.01?' <span class="up">(nietypowy kształt +'+Math.round((pr.k-1)*100)+'%)</span>':'')+(pr.blind?' <span>+ osłona '+zl(pr.blind)+'</span>':'');d.appendChild(e)}
       for(const w of warnings(r)){const e=document.createElement('div');e.className='warn';e.textContent='⚠ '+w;d.appendChild(e)}

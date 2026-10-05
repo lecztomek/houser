@@ -6,7 +6,7 @@
     window:{
       standard:{name:'Standardowe',sill:.9,height:1.4},
       low:{name:'Niskie (niski parapet)',sill:.5,height:1.8},
-      balcony:{name:'Balkonowe (do podłogi)',sill:0,height:2.2},
+      balcony:{name:'Balkonowe (do podłogi) – drzwi balkonowe',sill:0,height:2.2},
       transom:{name:'Naświetle (wysoko)',sill:1.6,height:.6},
       sloped:{name:'Ścięte pod skos dachu',sill:.9,height:2.4,shape:'sloped'},
       slopedLow:{name:'Ścięte niskie (pod skosem, nisko)',sill:.3,height:1.4,shape:'sloped'},
@@ -65,5 +65,8 @@
   function runExtent(project,floor,key){const ops=project?.openings?.[floor]||{},base=ops[key],[o,aS,bS]=key.split(':'),a=+aS,b=+bS,v=sig(resolve(project,floor,key,base));
     const k=i=>o==='h'?'h:'+i+':'+b:'v:'+a+':'+i,same=i=>ops[k(i)]===base&&sig(resolve(project,floor,k(i),base))===v,at=o==='h'?a:b;
     let from=at,to=at;while(same(from-1))from--;while(same(to+1))to++;return {from,to,at}}
-  global.HouserOpenings={VARIANTS,DEFAULT,BASE_NAMES,variantsFor,resolve,setVariant,slopedTop,runExtent,sig,BLIND,BLIND_NAMES,BLIND_LOOK,blindOf,PRICE,VPRICE,price};
+  // czy przez otwór da się przejść: drzwi, HST, przejście – i okno balkonowe (do podłogi), czyli drzwi balkonowe
+  function walkable(project,floor,key){const t=project?.openings?.[floor]?.[key];if(t==='door'||t==='hst'||t==='opening')return true;if(t!=='window')return false;
+    const i=resolve(project,floor,key,'window');return i.shape!=='roof'&&(i.variant==='balcony'||i.variant==='slopedFull')&&(+i.sill||0)<=.1}
+  global.HouserOpenings={walkable,VARIANTS,DEFAULT,BASE_NAMES,variantsFor,resolve,setVariant,slopedTop,runExtent,sig,BLIND,BLIND_NAMES,BLIND_LOOK,blindOf,PRICE,VPRICE,price};
 })(window);

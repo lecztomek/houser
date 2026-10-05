@@ -61,6 +61,10 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  ok(a.table&&a.table.length>=5&&a.table.every(t=>t.to&&fin(t.dist)),'Codzienność łazienki: najbliższa łazienka z każdego pokoju');
  ok(da.house.groups.length===5&&da.house.groups.every(x=>fin(x.score)&&x.score>=0&&x.score<=10)&&fin(da.overall),'Codzienność: dom dla domowników – 5 grup z oceną');
  const z2=JSON.parse(JSON.stringify(z));z2.energySettings={...(z2.energySettings||{}),persons:8};ok(g(D(z2),'sypialnie').score<g(da,'sypialnie').score,'Codzienność: więcej domowników niż pokoi = minus w sypialniach');}
+// okno balkonowe (do podłogi) = drzwi balkonowe: przejście na balkon w Codzienności i w Balkonach
+{const z=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','zefir-2.json'),'utf8'));const up=Object.keys(z.state).find(f=>f!=='ground')||'upper';
+ const pr={...z,openings:{...z.openings,[up]:{...(z.openings?.[up]||{}),'h:0:0':'window'}},openingVariants:{...(z.openingVariants||{}),[up]:{...(z.openingVariants?.[up]||{}),'h:0:0':{variant:'balcony',sill:0,height:2.2}}}};
+ ok(W.HouserOpenings.walkable(pr,up,'h:0:0')&&!W.HouserOpenings.walkable({...pr,openingVariants:{}},up,'h:0:0'),'okno balkonowe liczy się jak drzwi, zwykłe okno nie');}
 // Codzienność – balkon bez drzwi liczy się jako miejsce do suszenia (z podpowiedzią o drzwiach)
 {const sj=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','stodola-jasna.json'),'utf8'));const pr=W.HouserDaily.evaluate(sj).scenarios.find(x=>x.id==='pranie');
  ok(pr&&fin(pr.score),'Codzienność pranie liczy się');}

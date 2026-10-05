@@ -62,6 +62,8 @@ function build(project){
   const op=f=>project.openings?.[f]||{};
   const walk=(fi,x,y)=>x>=0&&y>=0&&x<W&&y<H?cellRoom[fi*N+y*W+x]:null;
   const exits=[],exitByNode=new Map();
+  // okno balkonowe (do podłogi) = drzwi balkonowe: wyjście na zewnątrz z parteru i na balkon z piętra
+  const floorWin=(f,key)=>op(f)[key]==='window'&&!!global.HouserOpenings?.walkable(project,f,key);
   // tarasy (x,y,w,h w metrach albo cells)
   const terr=new Set();
   for(const o of project.outdoorStructures||[]){let cells=[];try{cells=HouserModel.outdoorCells(o,c)}catch(_){cells=Array.isArray(o.cells)?o.cells:[]}for(const [x,y] of cells)terr.add(x+','+y)}
@@ -71,7 +73,7 @@ function build(project){
       for(const [dx,dy,key] of [[1,0,'v:'+(x+1)+':'+y],[0,1,'h:'+x+':'+(y+1)],[-1,0,'v:'+x+':'+y],[0,-1,'h:'+x+':'+y]]){
         const b=walk(fi,x+dx,y+dy),t=O[key];
         if(a&&b&&a!==b&&PASS[t]&&dx+dy>0){a.nb.set(b.key,t);b.nb.set(a.key,t)}
-        if(a&&!b&&fi===0&&PASS[t]&&!(holes[fi].has((y+dy)*W+x+dx))){
+        if(a&&!b&&fi===0&&(PASS[t]||floorWin(f,key))&&!(holes[fi].has((y+dy)*W+x+dx))){
           const ox=x+dx,oy=y+dy,e={id:exits.length,node:fi*N+y*W+x,room:a,type:t,key,ox,oy,x,y,terrace:nearTerr(ox,oy)};exits.push(e);a.exits.push(e);
           (exitByNode.get(e.node)||exitByNode.set(e.node,[]).get(e.node)).push(e)}}}});
   // łazienka „przy sypialni” (tylko z sypialni / garderoby) = prywatna
@@ -114,7 +116,7 @@ function build(project){
   // balkony: kratki pokoju przy drzwiach / HST na balkon (piętro) – cel np. do suszenia prania
   const balc=[],balcBlind=[];{const bs=new Set();for(const b of project.balconies||[])for(const [x,y] of b.cells||[])bs.add(x+','+y);
     if(bs.size)floors.forEach((f,fi)=>{if(fi===0)return;const O=op(f);for(const k of bs){const [x,y]=k.split(',').map(Number);
-      for(const [dx,dy,key] of [[0,1,'h:'+x+':'+(y+1)],[0,-1,'h:'+x+':'+y],[1,0,'v:'+(x+1)+':'+y],[-1,0,'v:'+x+':'+y]]){const r=walk(fi,x+dx,y+dy);if(r)(PASS[O[key]]?balc:balcBlind).push({node:fi*N+(y+dy)*W+x+dx,room:r,edge:key,f})}}})}
+      for(const [dx,dy,key] of [[0,1,'h:'+x+':'+(y+1)],[0,-1,'h:'+x+':'+y],[1,0,'v:'+(x+1)+':'+y],[-1,0,'v:'+x+':'+y]]){const r=walk(fi,x+dx,y+dy);if(r)(PASS[O[key]]||floorWin(f,key)?balc:balcBlind).push({node:fi*N+(y+dy)*W+x+dx,room:r,edge:key,f})}}})}
   const M={project,W,H,c,N,F,floors,lo,floorName,cellRoom,holes,rooms,list,exits,exitByNode,stairLinks,stairAdj,terr,isPrivate,notes,def,st,balc,balcBlind,openings:floors.map(f=>op(f))};
   return M;
 }
