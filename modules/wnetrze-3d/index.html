@@ -211,8 +211,10 @@ function roomAt(f,x,y){const g=grid();if(x<0||y<0||x>=g.width||y>=g.height)retur
 function kindOf(f,id){if(!id)return 'outside';return roomMap(f)[id]?.kind||'room'}
 function isExteriorVoid(f,id){return kindOf(f,id)==='exteriorVoid'}
 function isHole(f,id){return f==='upper' && (id==='pustka'||id==='schody')}
-function isGalleryRoom(f,id){return f==='upper' && (id==='hol_gora' || id==='antresola')}
-function holeNeedsRailing(f,roomId,opening){return isGalleryRoom(f,roomId) && (!opening || opening==='opening')}
+// galeria = antresola / hol / komunikacja przy pustce – po id albo po nazwie (pomieszczenie dodane ręcznie, np. „Antresola”)
+function isGalleryRoom(f,id){if(f!=='upper')return false;if(id==='hol_gora'||id==='antresola')return true;const nm=project?.definitionSnapshot?.floors?.[f]?.rooms?.find(r=>r.id===id)?.name||'';return /antresol|galeri|komunikac|\bhol\b|korytarz/i.test(nm)}
+// przy pustce: przejście otwarte = zawsze balustrada; galeria bez otworu – balustrada; inaczej ściana (z drzwiami / oknem, jeśli są)
+function holeNeedsRailing(f,roomId,opening){return opening==='opening'||(isGalleryRoom(f,roomId)&&!opening)}
 // Wyjście ze schodów na górze: krawędzie otworu w stropie, przez które schodzi się z ostatniego stopnia na piętro – bez balustrady i ściany.
 // Kierunek z dwóch ostatnich stopni, kilka równoległych linii na całą szerokość biegu.
 let stairExitEdges=new Set();
@@ -659,7 +661,7 @@ function build3D(){
         const roomId=roomA?a:b;
         if(f==='upper'&&stairExitEdges.has(opKey))continue; // wyjście ze schodów
         if(holeNeedsRailing(f,roomId,op)){addRailing2D('h',(x+.5)*c,y*c,c,base)}
-        else{addWall2D('h',(x+.5)*c,y*c,c,edgeH,base,null,false)}
+        else{addWall2D('h',(x+.5)*c,y*c,c,edgeH,base,op&&op!=='opening'?op:null,false)}
         continue
       }
       if((holeA&&!insideB)||(holeB&&!insideA)){addWall2D('h',(x+.5)*c,y*c,c,edgeH,base,op,true);continue}
@@ -675,7 +677,7 @@ function build3D(){
         const roomId=roomA?a:b;
         if(f==='upper'&&stairExitEdges.has(opKey))continue; // wyjście ze schodów
         if(holeNeedsRailing(f,roomId,op)){addRailing2D('v',x*c,(y+.5)*c,c,base)}
-        else{addWall2D('v',x*c,(y+.5)*c,c,edgeH,base,null,false)}
+        else{addWall2D('v',x*c,(y+.5)*c,c,edgeH,base,op&&op!=='opening'?op:null,false)}
         continue
       }
       if((holeA&&!insideB)||(holeB&&!insideA)){addWall2D('v',x*c,(y+.5)*c,c,edgeH,base,op,true);continue}
