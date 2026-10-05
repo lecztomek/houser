@@ -39,6 +39,9 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
 {const p=clone(base),s0=W.HouserSolar.compute(p).house.season;p.outdoorStructures=[];const s1=W.HouserSolar.compute(p).house.season;ok(s1>=s0,'zadaszony taras nie zwiększa zysków od słońca');
  const b=clone(base);for(const f of Object.keys(b.openings||{}))for(const [k,t] of Object.entries(b.openings[f]))if(t==='window'||t==='hst'){b.openingVariants=b.openingVariants||{};b.openingVariants[f]=b.openingVariants[f]||{};b.openingVariants[f][k]={...(b.openingVariants[f][k]||{}),blind:'external'}}
  const so=W.HouserSolar.compute(b).house.season;ok(Math.abs(so-W.HouserSolar.compute(base).house.season)<1,'rolety nie zmieniają zysków zimą (podniesione w sezonie grzewczym)');}
+{const p=clone(base),q0=W.HouserQuantities.compute(p),d=q0.runs.find(r=>r.base==='door'&&!r.ext&&r.keys.length>=2);
+ if(d){p.openingVariants=p.openingVariants||{};p.openingVariants[d.f]=p.openingVariants[d.f]||{};p.openingVariants[d.f][d.keys[0]]={variant:'sliding'};p.openingVariants[d.f][d.keys[1]]={variant:'single'};
+  const q1=W.HouserQuantities.compute(p);ok(q1.runs.some(r=>r.base==='door'&&r.keys.includes(d.keys[0])&&r.keys.includes(d.keys[1])),'drzwi z kratkami o różnym ustawieniu to nadal jedne drzwi')}}
 {const r=W.HouserDaily.rolesOf('Łazienka/Pralnia');ok(r.has('bath')&&r.has('laundry'),'„Łazienka/Pralnia” to łazienka i pralnia '+[...r]);}
 {const sj=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','stodola-jasna.json'),'utf8')),D=W.HouserDaily.evaluate(sj),noc=(D.scenarios||[]).find(x=>x.id==='noc');
  ok(noc&&noc.legs.length>=3&&noc.legs.every(l=>l.r&&l.r.floors===0),'Codzienność noc: z każdej sypialni do łazienki na tej samej kondygnacji '+JSON.stringify(noc?.legs.map(l=>[l.from,l.to,l.r?.floors])));}

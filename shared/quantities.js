@@ -47,7 +47,7 @@
         const ax=o==='h'?a:a-1,ay=o==='h'?b-1:b,A=occ(f,ax,ay),B=occ(f,a,b);if(!A&&!B)continue;const ext=A!==B,line=o==='h'?b:a,along=o==='h'?a:b;
         const ra=A?id(f,ax,ay):null,rb=B?id(f,a,b):null,gk=[o,line,base,ra,rb].join('|');(groups[gk]=groups[gk]||{f,o,line,base,ext,ra,rb,items:[]}).items.push({key,along})}
       for(const gr of Object.values(groups)){gr.items.sort((p,q)=>p.along-q.along);let run=null;
-        for(const it of gr.items){const sg=HouserOpenings.sig(HouserOpenings.resolve(project,f,it.key,gr.base));if(run&&it.along===run.to+1&&run.sg===sg&&(gr.base!=='door'||run.keys.length<4)){run.to=it.along;run.keys.push(it.key)}else{run={...gr,items:undefined,from:it.along,to:it.along,keys:[it.key],sg};runs.push(run)}}}}
+        for(const it of gr.items){const sg=HouserOpenings.sig(HouserOpenings.resolve(project,f,it.key,gr.base));if(run&&it.along===run.to+1&&(gr.base==='door'?run.keys.length<4:run.sg===sg)) /* sąsiednie kratki drzwi to jedne drzwi, nawet z różnym ustawieniem (np. po poszerzeniu); okna o różnych typach – osobno */{run.to=it.along;run.keys.push(it.key)}else{run={...gr,items:undefined,from:it.along,to:it.along,keys:[it.key],sg};runs.push(run)}}}}
     for(const r of runs){const info=HouserOpenings.resolve(project,r.f,r.keys[0],r.base);r.info=info;r.w=r.keys.length*c;r.h=+info.height||1.2;r.area=r.w*r.h;
       const rooms_=[r.ra,r.rb].filter(Boolean).map(v=>R[r.f+'|'+v]).filter(Boolean);r.rooms=rooms_;
       const pr=(r.ext||info.shape==='roof')?HouserOpenings.price(project,info,r.area,r.base):null;r.price=pr; // cena okna / HST i osłony (moduł Okna i drzwi, Wycena)
