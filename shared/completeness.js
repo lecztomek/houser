@@ -27,5 +27,6 @@
       if(!done&&d.label)try{name=d.label(p)||name}catch(_){}items.push({mod:d.mod,name,assumed:d.assumed,done,strict:!!d.strict})}
     const missing=items.filter(i=>!i.done).length,byMod={};for(const i of items)(byMod[i.mod]=byMod[i.mod]||[]).push(i);
     return {items,missing,total:items.length,complete:!missing,byMod}}
-  global.HouserComplete={DECISIONS,check};
+  // VERSION: zmień przy każdej zmianie reguł – zapamiętane liczby braków (lista Projekty) przeliczą się od nowa
+  global.HouserComplete={VERSION:2,DECISIONS,check};
 })(window);
