@@ -29,6 +29,9 @@ for(const f of examples){const p=JSON.parse(fs.readFileSync(path.join(ROOT,'exam
    if(V.kWp>0){const b=W.HouserPV.compute(p,{battery:10});ok(b.self>=V.self,f+': magazyn zwiększa autokonsumpcję')}
    const on={...p,pvSettings:{enabled:true}},h0=W.HouserHeatSys.evaluate({...p,heatingSystem:{main:'hp_air'}}),h1=W.HouserHeatSys.evaluate({...on,heatingSystem:{main:'hp_air'}});
    ok(V.kWp===0||h1.fuel<h0.fuel,f+': z fotowoltaiką pompa ciepła tańsza '+[Math.round(h0.fuel),Math.round(h1.fuel)])}
+  {const K=W.HouserStructure.evaluate(p);ok(fin(K.score)&&K.score>=0&&K.score<=10&&fin(K.cost.total)&&K.cost.total>=0&&fin(K.rafter),f+': konstrukcja '+[K.score,Math.round(K.cost.total)]);
+   ok(!K.hasUp||K.regions.every(r=>r.max>W.HouserStructure.LIM.slab)&&(K.regions.length?K.maxSpan>W.HouserStructure.LIM.slab:true),f+': konstrukcja – podciąg tylko przy rozpiętości > 6 m');
+   ok(K.cost.total===0||W.HouserCost.compute(p).rows.some(r=>r.id==='structExtra'&&r.value>0),f+': wzmocnienia konstrukcji w Wycenie')}
   const M=W.HouserHVAC.methods(p,p.hvacSettings);{const g=k=>M.list.find(m=>m.k===k);ok(M.list.length===5&&g('mvhr').yearly<=g('decentral').yearly&&g('decentral').yearly<g('exhaust').yearly&&g('exhaust').yearly<=g('grav').yearly&&g('hybrid').yearly===g('grav').yearly,f+': wentylacja – kolejność strat ciepła');
    ok(['decentral','hybrid'].every(v=>fin(W.HouserEnergy.compute({...p,energySettings:{...(p.energySettings||{}),vent:v}}).Qh)),f+': Energia z nowymi rodzajami wentylacji');
    ok(W.HouserHVAC.methods({...p,energySettings:{...(p.energySettings||{}),vent:'decentral'}},p.hvacSettings).chosen?.k==='decentral',f+': wybór rekuperatorów ściennych')}

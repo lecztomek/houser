@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Konstrukcja</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:330px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
+h1{font-size:19px;margin:0 0 4px}
+.lead,.hint{font-size:12.5px;color:var(--hs-muted);line-height:1.5;margin:0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.tile .l{font-size:12px;color:var(--hs-muted);font-weight:600}
+.tile .v{font-size:28px;font-weight:800;letter-spacing:-.02em;margin-top:4px}
+.tile .v small{font-size:14px;color:var(--hs-muted);font-weight:600}
+.tile .s{font-size:12.5px;color:var(--hs-muted);margin-top:4px;line-height:1.4}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.card h2{font-size:15px;margin:0 0 3px}
+.plans{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;margin-top:8px}
+.plan{flex:1 1 320px;min-width:0}
+.plan h4{margin:6px 0;font-size:12px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.06em}
+.plan svg{width:100%;height:auto;display:block;max-height:480px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#475569;margin-top:8px;align-items:center}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:5px}
+.iss{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:7px}
+.iss li{font-size:12.5px;line-height:1.45;border-top:1px solid #eef2f6;padding-top:7px}
+.iss .pen{float:right;font-weight:700;color:#b91c1c;font-size:12px;margin-left:8px}
+.iss .tip{display:block;color:#475569;margin-top:2px}
+.iss .tip:before{content:'→ ';color:#2563eb;font-weight:700}
+.good{font-size:12.5px;color:#15803d;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #eef2f6;vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+th{font-size:11.5px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.04em}
+tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
+.c-ok{color:#15803d}.c-mid{color:#b45309}.c-bad{color:#b91c1c}
+.pill{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.pill.ok{background:#dcfce7;color:#166534}.pill.mid{background:#fef3c7;color:#92400e}.pill.bad{background:#fee2e2;color:#991b1b}
+.empty{padding:40px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){html,body{overflow:auto;height:auto}.wrap{height:auto;grid-template-rows:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{overflow:visible}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1>Konstrukcja</h1>
+  <p class="lead">Czy ten układ da się zbudować prosto i tanio: jak duże są rozpiętości stropu, czy ściany piętra stoją na ścianach parteru, gdzie są szerokie otwory, wysunięcia i przeszklenia narożne, jaka będzie więźba dachu. To nie jest projekt konstrukcyjny – pokazuje miejsca, które konstruktor musi rozwiązać, i ile to mniej więcej kosztuje.</p>
+  <div class="section">
+    <h3>Jak liczymy</h3>
+    <p class="hint">Rozpiętość stropu w każdej kratce to odległość między ścianami parteru (zewnętrznymi i wewnętrznymi; drzwi w ścianie nie przeszkadzają, otwarte przejście – tak) w krótszym kierunku. Zwykła płyta żelbetowa lub strop gęstożebrowy – do ok. 6 m; do 7,5 m – grubsza płyta albo podciąg; dalej – podciąg i słup.</p>
+    <p class="hint" style="margin-top:8px">Ściana zewnętrzna piętra bez ściany pod spodem wymaga podciągu; ściany działowe na stropie muszą być lekkie. Otwór od 3 m – wzmocnione nadproże, od 4,5 m – belka. Krokwie do ok. 4,5 m bez podparcia, do ok. 6,5 m z jętkami, dłuższe – płatwie na słupach albo wiązary.</p>
+    <p class="hint" style="margin-top:8px">Koszty orientacyjne z robocizną – trafiają do Wyceny jako „Wzmocnienia konstrukcji”.</p>
+  </div>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/balconies.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="engine.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let project=null,K=null;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const zl=v=>(Math.round(v/100)*100).toLocaleString('pl-PL')+' zł';
+const VERD={ok:'prosto',mid:'do rozwiązania',bad:'trudno'};
+const SPANC=s=>s<=4.5?'#bbf7d0':s<=6?'#fef08a':s<=7.5?'#fdba74':'#fca5a5';
+
+function planSVG(fl){const {W,H,c,lo,up,occ,vWall,hWall,span}=K,S=22,isUp=fl===up;
+  let xs=W,ys=H,xe=0,ye=0;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(occ(fl,x,y)){xs=Math.min(xs,x);ys=Math.min(ys,y);xe=Math.max(xe,x+1);ye=Math.max(ye,y+1)}
+  if(xe<=xs)return '';
+  const uns=new Set(K.unsupported.map(u=>u.key)),wideK=new Set(K.wide.filter(o=>o.f===fl).flatMap(o=>o.keys));
+  let g='';
+  for(let y=ys;y<ye;y++)for(let x=xs;x<xe;x++){if(!occ(fl,x,y))continue;const r=K.room(fl,x,y);let fill='#f1f5f9';
+    if(!isUp&&span[y*W+x])fill=SPANC(span[y*W+x].s);if(isUp&&!r)fill='url(#hatch)';if(isUp&&!occ(lo,x,y))fill='#fecaca';
+    g+='<rect x="'+x*S+'" y="'+y*S+'" width="'+(S+.4)+'" height="'+(S+.4)+'" fill="'+fill+'"/>'}
+  const ln=(x1,y1,x2,y2,col,w,dash)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+w+'"'+(dash?' stroke-dasharray="'+dash+'"':'')+' stroke-linecap="square"/>';
+  let walls='',marks='';
+  const E=(t,key,x1,y1,x2,y2)=>{if(t==='ext')walls+=ln(x1,y1,x2,y2,'#1e293b',3.5);else if(t==='int')walls+=ln(x1,y1,x2,y2,'#64748b',2);
+    if(isUp&&uns.has(key))marks+=ln(x1,y1,x2,y2,'#ea580c',4,'5 3');if(wideK.has(key))marks+=ln(x1,y1,x2,y2,'#dc2626',6)};
+  for(let y=ys;y<=ye;y++)for(let x=xs;x<xe;x++){const t=hWall(fl,x,y);E(t,'h:'+x+':'+y,x*S,y*S,(x+1)*S,y*S)}
+  for(let x=xs;x<=xe;x++)for(let y=ys;y<ye;y++){const t=vWall(fl,x,y);E(t,'v:'+x+':'+y,x*S,y*S,x*S,(y+1)*S)}
+  // ściany piętra rzutowane na parter (gdzie staną na stropie)
+  if(!isUp&&K.hasUp)for(const u of K.unsupported){const [o,aS,bS]=u.key.split(':'),a=+aS,b=+bS;marks+=o==='h'?ln(a*S,b*S,(a+1)*S,b*S,'#ea580c',3,'5 3'):ln(a*S,b*S,a*S,(b+1)*S,'#ea580c',3,'5 3')}
+  for(const k of K.corners.filter(k=>k.f===fl))marks+='<circle cx="'+k.x*S+'" cy="'+k.y*S+'" r="7" fill="#fff" stroke="#dc2626" stroke-width="3"/>';
+  // etykiety rozpiętości w obszarach z podciągiem
+  if(!isUp)for(const R of K.regions){const i=R.cells.reduce((a,k)=>K.span[k].s>K.span[a].s?k:a,R.cells[0]),x=i%W,y=i/W|0;
+    marks+='<text x="'+(x+.5)*S+'" y="'+(y+.5)*S+'" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="800" fill="#7f1d1d" paint-order="stroke" stroke="#fff" stroke-width="3">'+fmt(R.max)+' m</text>'}
+  return '<div class="plan"><h4>'+(isUp?'Piętro / poddasze – ściany':'Parter – rozpiętość stropu nad nim')+'</h4><svg viewBox="'+[xs*S-8,ys*S-8,(xe-xs)*S+16,(ye-ys)*S+16].join(' ')+'"><defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#f8fafc"/><line x1="0" y1="0" x2="0" y2="6" stroke="#cbd5e1" stroke-width="2"/></pattern></defs>'+g+walls+marks+'</svg></div>'}
+
+function render(){const M=$('main');
+  if(!project||!(project.grid||project.definitionSnapshot?.grid)){M.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej albo narysuj rzut w <b>Układzie pomieszczeń</b>.</div>';return}
+  try{K=HouserStructure.evaluate(project)}catch(e){console.error(e);M.innerHTML='<div class="empty">Nie udało się przeanalizować rzutu.</div>';return}
+  const v=K.verdict;
+  let h='<div class="tiles"><div class="tile"><div class="l">Łatwość konstrukcji</div><div class="v c-'+v+'">'+fmt(K.score)+' <small>/ 10</small></div><div class="s"><span class="pill '+v+'">'+VERD[v]+'</span> '+(K.issues.length?K.issues.length+' miejsc do rozwiązania':'bez trudnych miejsc')+'</div></div>'+
+    '<div class="tile"><div class="l">Największa rozpiętość stropu</div><div class="v">'+(K.hasUp?fmt(K.maxSpan)+' <small>m</small>':'–')+'</div><div class="s">'+(K.hasUp?(K.regions.length?'<b class="c-bad">'+K.regions.length+' '+(K.regions.length===1?'miejsce':'miejsca')+' z podciągiem</b>':'<span class="c-ok">zwykła płyta wystarczy</span>'):'dom parterowy – dach oparty na ścianach zewnętrznych')+'</div></div>'+
+    '<div class="tile"><div class="l">Ściany piętra bez podparcia</div><div class="v">'+(K.hasUp?fmt(K.extUns+K.intUns)+' <small>m</small>':'–')+'</div><div class="s">'+(K.hasUp?(K.extUns?'<b class="c-bad">'+fmt(K.extUns)+' m zewnętrznych</b> · ':'')+fmt(K.intUns)+' m działowych':'')+'</div></div>'+
+    '<div class="tile"><div class="l">Koszt wzmocnień</div><div class="v">'+zl(K.cost.total)+'</div><div class="s">więźba: '+esc(K.roofType)+' · krokwie ok. '+fmt(K.rafter)+' m</div></div></div>';
+  h+='<div class="card"><h2>Rzuty</h2><p class="hint">Parter: kolor kratki to rozpiętość stropu nad nią (do 4,5 m – zielony, do 6 m – żółty, do 7,5 m – pomarańczowy, dalej – czerwony). Pomarańczowa przerywana linia – ściana piętra, pod którą na parterze nie ma ściany. Czerwone – szerokie otwory (od 3 m), kółka – przeszklenia narożne. Na piętrze czerwone kratki – wysunięcie poza parter, kreskowane – otwór w stropie.</p>'+
+    '<div class="plans">'+planSVG(K.lo)+(K.hasUp?planSVG(K.up):'')+'</div><div class="legend"><span><i style="background:#bbf7d0"></i>do 4,5 m</span><span><i style="background:#fef08a"></i>4,5–6 m</span><span><i style="background:#fdba74"></i>6–7,5 m</span><span><i style="background:#fca5a5"></i>ponad 7,5 m</span><span><i style="background:#f1f5f9;border:1px solid #cbd5e1"></i>bez stropu nad kratką (otwór schodów / pustka)</span><span><i style="background:#1e293b"></i>ściana zewnętrzna</span><span><i style="background:#64748b"></i>ściana wewnętrzna</span><span><i style="background:#ea580c"></i>ściana piętra bez ściany pod spodem</span><span><i style="background:#dc2626"></i>szeroki otwór</span></div></div>';
+  h+='<div class="card"><h2>Miejsca do rozwiązania</h2>'+(K.issues.length?'<ul class="iss">'+K.issues.map(i=>'<li><span class="pen">−'+fmt(i.p)+'</span>'+esc(i.text)+(i.tip?'<span class="tip">'+esc(i.tip)+'</span>':'')+'</li>').join('')+'</ul>':'<p class="hint">Bez trudnych miejsc.</p>')+K.good.map(g=>'<div class="good">✓ '+esc(g)+'</div>').join('')+'</div>';
+  if(K.cost.items.length)h+='<div class="card"><h2>Koszt wzmocnień</h2><p class="hint">Orientacyjnie, z robocizną – ponad zwykły strop i mury. Trafia do Wyceny.</p><table><thead><tr><th>Pozycja</th><th class="n">Koszt</th></tr></thead><tbody>'+K.cost.items.map(x=>'<tr><td>'+esc(x.name)+(x.note?'<br><span class="hint">'+esc(x.note)+'</span>':'')+'</td><td class="n">'+zl(x.v)+'</td></tr>').join('')+'<tr class="sum"><td>Razem</td><td class="n">'+zl(K.cost.total)+'</td></tr></tbody></table></div>';
+  M.innerHTML=h}
+const rec=HouserStore.load();project=rec?rec.project:null;render();
+HouserStore.subscribe(r=>{project=r.project;render()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

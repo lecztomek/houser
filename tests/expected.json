@@ -1,7 +1,7 @@
 {
  "dom-energooszczedny.json": {
-  "overall": 8.7,
-  "cost": 713336,
+  "overall": 8.8,
+  "cost": 715976,
   "Qh": 6038,
   "bills": 3450,
   "area": 108,
@@ -17,6 +17,7 @@
    "Balkony": null,
    "Hydraulika": 9.3,
    "Ogrzewanie": 9.5,
+   "Konstrukcja": 9.8,
    "Fotowoltaika": 10,
    "Wentylacja": 9.6,
    "Rekuperacja": 10
@@ -24,7 +25,7 @@
  },
  "dom-parterowy.json": {
   "overall": 8.6,
-  "cost": 873771,
+  "cost": 876411,
   "Qh": 8915,
   "bills": 4329,
   "area": 117,
@@ -40,14 +41,15 @@
    "Balkony": null,
    "Hydraulika": 8.8,
    "Ogrzewanie": 9.5,
+   "Konstrukcja": 9.8,
    "Fotowoltaika": 10,
    "Wentylacja": 9.7,
    "Rekuperacja": 10
   }
  },
  "dom-z-poddaszem.json": {
-  "overall": 8.5,
-  "cost": 1005466,
+  "overall": 8.3,
+  "cost": 1035364,
   "Qh": 8070,
   "bills": 4699,
   "area": 186.5,
@@ -63,14 +65,15 @@
    "Balkony": null,
    "Hydraulika": 9.8,
    "Ogrzewanie": 9.5,
+   "Konstrukcja": 5.8,
    "Fotowoltaika": 9.1,
    "Wentylacja": 10,
    "Rekuperacja": 7.5
   }
  },
  "nowoczesna-stodola.json": {
-  "overall": 8.2,
-  "cost": 1035872,
+  "overall": 8.1,
+  "cost": 1073118,
   "Qh": 9386,
   "bills": 4473,
   "area": 159.25,
@@ -86,14 +89,15 @@
    "Balkony": null,
    "Hydraulika": 8.5,
    "Ogrzewanie": 9.5,
+   "Konstrukcja": 6.8,
    "Fotowoltaika": 9.4,
    "Wentylacja": 9.9,
    "Rekuperacja": 7
   }
  },
  "stodola-jasna.json": {
-  "overall": 7.5,
-  "cost": 959721,
+  "overall": 7.4,
+  "cost": 989443,
   "Qh": 12216,
   "bills": 5359,
   "area": 125.25,
@@ -109,14 +113,15 @@
    "Balkony": 10,
    "Hydraulika": 7.1,
    "Ogrzewanie": 8.9,
+   "Konstrukcja": 6.7,
    "Fotowoltaika": 8.8,
    "Wentylacja": 4,
    "Rekuperacja": null
   }
  },
  "uklad-domu-v7.json": {
-  "overall": 8.4,
-  "cost": 895012,
+  "overall": 8.3,
+  "cost": 921682,
   "Qh": 7453,
   "bills": 3882,
   "area": 148.75,
@@ -132,6 +137,7 @@
    "Balkony": null,
    "Hydraulika": 7,
    "Ogrzewanie": 10,
+   "Konstrukcja": 6.7,
    "Fotowoltaika": 8.8,
    "Wentylacja": 9.8,
    "Rekuperacja": 7
@@ -139,7 +145,7 @@
  },
  "zefir-2.json": {
   "overall": 7.7,
-  "cost": 962732,
+  "cost": 983632,
   "Qh": 8182,
   "bills": 4426,
   "area": 165.5,
@@ -155,6 +161,7 @@
    "Balkony": null,
    "Hydraulika": 5.7,
    "Ogrzewanie": 9.5,
+   "Konstrukcja": 7.6,
    "Fotowoltaika": 9.4,
    "Wentylacja": 9.8,
    "Rekuperacja": 7

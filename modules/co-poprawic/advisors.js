@@ -39,6 +39,8 @@
       return {score:P.overall,items,good:P.overall>=8.5?['Zwarta instalacja wod-kan – mokre pomieszczenia blisko siebie i jedno nad drugim.']:[]}}},
     {id:'instalacja-grzewcza',name:'Ogrzewanie',w:.8,need:'HouserHeatSys',run:p=>{if(!p.heatingSystem)return {score:null,items:[],good:[]};const R=HouserHeatSys.evaluate(p);
       return {score:R.ease,items:R.issues.filter(i=>i.p>0).map(i=>({p:Math.min(3,i.p),text:i.text,tip:i.tip})),good:R.good.slice(0,2)}}},
+    {id:'konstrukcja',name:'Konstrukcja',w:.8,need:'HouserStructure',run:p=>{const K=HouserStructure.evaluate(p);
+      return {score:K.score,items:K.issues.map(i=>({p:Math.min(3,i.p),text:i.text,tip:i.tip})),good:K.good.slice(0,2)}}},
     {id:'fotowoltaika',name:'Fotowoltaika',w:.4,need:'HouserPV',run:p=>{const R=HouserPV.compute(p);
       return {score:R.score,items:R.issues.map(i=>({p:Math.min(3,i.p),text:i.text,tip:i.tip})),good:[...R.good.slice(0,1),...(R.enabled?['Fotowoltaika '+fmt(R.kWp)+' kWp – oszczędza ok. '+Math.round(R.savings/100)*100+' zł rocznie.']:[])]}}},
     {id:'wentylacja',name:'Wentylacja',w:.8,need:'HouserHVAC',run:p=>{const M=HouserHVAC.methods(p,p.hvacSettings),c=M.chosen,b=M.best;if(!c)return {score:null,items:[],good:[]};const items=[];
