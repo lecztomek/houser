@@ -80,7 +80,7 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  ok(K0.regions.length>0&&P.variants.length>=2&&P.variants.some(v=>v.left===0&&v.patch.beams),'konstrukcja – propozycje rozwiązania stropu '+P.variants.map(v=>v.name));
  const vb=P.variants.find(v=>v.patch.beams),K1=S.evaluate({...z,structure:{...(z.structure||{}),...vb.patch}});
  ok(K1.maxSpan<K0.maxSpan&&K1.regions.length===0&&K1.beamInfo.every(b=>b.ok),'konstrukcja – podciąg z propozycji zbija rozpiętość '+[K0.maxSpan,K1.maxSpan]);
- const K2=S.evaluate({...z,structure:{...(z.structure||{}),slab:'hollow'}});ok(K2.slabLim===10&&K2.regions.length<=K0.regions.length&&K2.cost.items.some(x=>/kanałowe/.test(x.name)),'konstrukcja – płyty kanałowe');
+ const K2=S.evaluate({...z,structure:{...(z.structure||{}),slab:'hollow'}});ok(K2.loads.limRef===10&&K2.slabLim>K0.slabLim&&K2.regions.length<=K0.regions.length&&K2.cost.items.some(x=>/kanałowe/.test(x.name)),'konstrukcja – płyty kanałowe');
  const b0=vb.patch.beams[vb.patch.beams.length-1],K3=S.evaluate({...z,structure:{...(z.structure||{}),beams:[{...b0,to:b0.to-3}],columns:[]}});ok(K3.beamInfo[0]&&!K3.beamInfo[0].ends&&K3.issues.some(i=>i.kind==='beam'),'konstrukcja – podciąg bez oparcia na końcu');}
 // konstrukcja – obciążenia: lekkie ścianki = dłuższa dopuszczalna rozpiętość; lekkie ściany parteru nie podpierają stropu; przekroje i fundamenty
 {const z=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','zefir-2.json'),'utf8')),S=W.HouserStructure,wS=st=>({...z,structure:{...(z.structure||{}),...st}});
