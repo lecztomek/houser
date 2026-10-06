@@ -23,6 +23,7 @@ h1{font-size:21px;margin:0 0 4px}
 .h:nth-child(1) .rk{background:#facc15}.h:nth-child(2) .rk{background:#cbd5e1}.h:nth-child(3) .rk{background:#f0b27a}
 .th{height:64px;display:flex;align-items:center}.th svg{width:100%;height:64px}
 .nm{font-weight:700;font-size:15px}.own{display:inline-block;font-size:11px;font-weight:800;border-radius:5px;padding:1px 7px;margin-right:7px;vertical-align:2px;background:#dcfce7;color:#166534}.own.no{background:#ffedd5;color:#9a3412}.nm small{font-weight:500;color:var(--hs-muted);margin-left:6px;font-size:12px}
+.nm .todo{display:inline-block;font-size:11px;font-weight:800;border-radius:5px;padding:1px 7px;margin-left:7px;vertical-align:2px;background:#fef3c7;color:#92400e}
 .nums{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:6px;font-size:13px}
 .nums span b{font-variant-numeric:tabular-nums}
 .nums .k{color:var(--hs-muted);font-size:11.5px;display:block}
@@ -56,6 +57,7 @@ h1{font-size:21px;margin:0 0 4px}
 <script src="../../shared/library.js"></script>
 <script src="../../shared/balconies.js"></script>
 <script src="../../shared/quantities.js"></script>
+<script src="../../shared/completeness.js"></script>
 <script src="../konstrukcja/engine.js"></script>
 <script src="../elektryka/engine.js"></script>
 <script src="../../shared/furniture.js"></script>
@@ -116,7 +118,7 @@ function measure(p){const r={};const T=(k,fn)=>{try{r[k]=fn()}catch(e){console.e
   const rm=r.q.rooms.filter(x=>x.area>=2&&/sypial|pokój|pokoj|gabinet/i.test(x.name||''));
   const scored=(r.A?.mods||[]).filter(m=>m.score!=null).sort((a,b)=>b.score-a.score);
   return {area:r.q.usableTotal,beds:rm.length,floors:r.q.net[r.q.up]>0?(r.q.attic?'z poddaszem':'z piętrem'):'parterowy',score:r.A?.overall??null,cost:r.C??null,bills:r.H??null,
-    best:scored[0],worst:scored.length>1?scored[scored.length-1]:null}}
+    best:scored[0],worst:scored.length>1?scored[scored.length-1]:null,todo:(()=>{try{return HouserComplete.check(p).missing}catch(_){return 0}})()}}
 function pastel(hex){const n=parseInt((hex||'#cbd5e1').slice(1),16),m=v=>Math.round(v+(255-v)*.45);return 'rgb('+m(n>>16&255)+','+m(n>>8&255)+','+m(n&255)+')'}
 function planSvg(p){const g=p.grid||p.definitionSnapshot?.grid;if(!g)return '';const W=g.width,H=g.height,fl=p.definitionSnapshot?.floorOrder||['ground','upper'];
   const flat=f=>{const st=p.state?.[f]||[];return Array.isArray(st[0])?st.flat():st},rooms=f=>Object.fromEntries((p.definitionSnapshot?.floors?.[f]?.rooms||[]).map(r=>[r.id,r]));
@@ -136,7 +138,7 @@ function render(){const L=$('list'),key=$('sort').value;
   const n=(k,v,sel)=>'<span'+(sel?' class="sel"':'')+'><span class="k">'+k+'</span><b>'+v+'</b></span>';
   L.onclick=e=>{const b=e.target.closest('[data-open],[data-go]');if(!b)return;if(b.dataset.go){if(top_)top_.location.hash=b.dataset.go;else location.href='../'+b.dataset.go+'/';return}openHouse(b.dataset.open)};
   L.innerHTML=S.map((r,i)=>{const m=r.m;return '<div class="h'+(r.o.cur?' cur':'')+(notMine(r.o)?' notmine':'')+'"><div class="rk">'+(i+1)+'</div><div class="th">'+r.plan+'</div><div>'+
-    '<div class="nm">'+(notMine(r.o)?'<span class="own no">'+(r.o.edit?'✏️ Wspólny':'Nie mój')+(r.o.owner?' · '+esc(r.o.owner):'')+'</span>':'<span class="own">Mój</span>')+esc(r.o.name)+'<small>'+(r.o.cur?'<span>otwarty teraz</span> · ':'')+'<span>'+m.floors+'</span></small></div>'+
+    '<div class="nm">'+(notMine(r.o)?'<span class="own no">'+(r.o.edit?'✏️ Wspólny':'Nie mój')+(r.o.owner?' · '+esc(r.o.owner):'')+'</span>':'<span class="own">Mój</span>')+esc(r.o.name)+(m.todo?' <span class="todo" title="Dom nieskończony – nie wszystkie decyzje są podjęte">⚠ '+m.todo+' do wybrania</span>':'')+'<small>'+(r.o.cur?'<span>otwarty teraz</span> · ':'')+'<span>'+m.floors+'</span></small></div>'+
     '<div class="nums">'+n('ocena',(m.score!=null?'<span class="'+cls(m.score)+'">'+nf(m.score,1)+'</span><span class="sb"><i style="width:'+(m.score*10)+'%;background:'+col(m.score)+'"></i></span>':'–'),key==='score')+
       n('cena do jakości',r.value!=null?nf(r.value,1)+' / 10':'–',key==='value')+n('budowa',zl(m.cost),key==='cost')+n('za m²',m.cost?nf(m.cost/m.area)+' zł':'–',key==='m2')+
       n('rachunki / rok',m.bills!=null?nf(Math.round(m.bills/100)*100)+' zł':'–',key==='bills')+n('metraż',nf(m.area)+' m²',key==='area')+n('pokoje',String(m.beds))+'</div>'+

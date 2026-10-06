@@ -102,6 +102,12 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  ok(pr&&fin(pr.score),'Codzienność pranie liczy się');}
 {const R=W.HouserAdvice.collect(base),n=R.mods.filter(m=>m.score!=null).length;ok(n>=8,'Co poprawić: ocenia co najmniej 8 modułów ('+n+')');}
 
+{const C=W.HouserComplete,p0=JSON.parse(JSON.stringify(base));for(const k of ['energySettings','heatingSystem','pvSettings','elecSettings','costSettings','hvacSettings','envelope','elevationSettings','confirmed'])delete p0[k];
+ const c0=C.check(p0);ok(c0.missing>=8&&!c0.complete,'Kompletność: dom bez ustawień ma braki ('+c0.missing+')');
+ const p1={...p0,confirmed:{energia:'x',wentylacja:'x'}},c1=C.check(p1);ok(c1.missing===c0.missing-2,'Kompletność: „Zatwierdź” zalicza decyzję');
+ const p2={...p0,pvSettings:{enabled:false}};ok(C.check(p2).missing===c0.missing-1,'Kompletność: wybór „bez PV” to też decyzja');
+ ok(c0.items.every(i=>i.assumed&&i.name),'Kompletność: każdy brak mówi, jakie założenie jest przyjęte');}
+
 // ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować
 console.log('• składnia skryptów');
 {const vm=require('vm'),walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?(['node_modules','.git'].includes(e.name)?[]:walk(path.join(d,e.name))):[path.join(d,e.name)]);

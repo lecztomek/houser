@@ -86,6 +86,7 @@ tr.tot td{background:#f8fafc;font-weight:800;font-size:14px}
 <script src="../../shared/project-store.js"></script>
 <script src="../../shared/balconies.js"></script>
 <script src="../../shared/quantities.js"></script>
+<script src="../../shared/completeness.js"></script>
 <script src="../konstrukcja/engine.js"></script>
 <script src="../elektryka/engine.js"></script>
 <script src="../../shared/library.js"></script>
@@ -163,6 +164,7 @@ const ROWS=[
   ['Powierzchnia zabudowy','ile działki zajmuje dom – obrys w rzucie',m=>m.q?.foot,v=>nf(v,1)+' m²',null],
   ['Kubatura ogrzewana','objętość ogrzewanych pomieszczeń',m=>m.q?.volume,v=>nf(v)+' m³',null],
   ['Kondygnacje','',m=>m.floors,v=>v||'–',null],
+  ['Kompletność','ile decyzji w modułach jest jeszcze niepodjętych – wtedy moduł liczy na założeniach; niżej – czego brakuje',m=>m.p?HouserComplete.check(m.p).missing:null,v=>v==null?'–':v?'⚠ '+nf(v)+' do wybrania':'✓ kompletny','low',m=>{if(!m.p)return '';const c=HouserComplete.check(m.p);return c.items.filter(i=>!i.done).map(i=>i.name).slice(0,3).join(', ')+(c.missing>3?'…':'')}],
   ['Pomieszczenia','liczba pomieszczeń większych niż 2 m²; niżej – ile z nich to sypialnie, a ile łazienki i WC',m=>m.nrooms,v=>v==null?'–':nf(v)+' '+plF(v,'pomieszczenie','pomieszczenia','pomieszczeń'),null,m=>m.beds+' syp. · '+m.wet+' łaz./WC'],
   ['Dach','kąt nachylenia połaci',m=>m.q?.G?.roofPitch,v=>nf(v)+'°',null],
   ['Przeszklenia','okna + drzwi tarasowe + okna dachowe razem; niżej – w stosunku do powierzchni użytkowej',m=>m.glaz,v=>nf(v,1)+' m²',null,m=>m.q?.usableTotal?nf(m.glaz/m.q.usableTotal*100)+'% pow. użytkowej':''],
