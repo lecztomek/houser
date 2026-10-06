@@ -4040,4 +4040,7 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "Uznaj obecne ustawienia za wybrane – moduł przestanie świecić":"Treat current settings as chosen – the module stops glowing",
 "Dom nieskończony – nie wszystkie decyzje są podjęte":"Unfinished house – not all decisions made",
 "✓ kompletny":"✓ complete",
-"ile decyzji w modułach jest jeszcze niepodjętych – wtedy moduł liczy na założeniach; niżej – czego brakuje":"how many module decisions are still open – the module then uses assumptions; below – what is missing"};
+"ile decyzji w modułach jest jeszcze niepodjętych – wtedy moduł liczy na założeniach; niżej – czego brakuje":"how many module decisions are still open – the module then uses assumptions; below – what is missing",
+"Nie można opublikować nieskończonego domu – brakuje jeszcze":"You can't publish an unfinished house – still missing",
+"decyzji:":"decisions:",
+"Otwórz ten dom: moduły z brakami mają pomarańczowy wykrzyknik w menu – wybierz w nich ustawienia albo kliknij „Zatwierdź obecne ustawienia”.":"Open this house: modules with gaps have an orange exclamation mark in the menu – choose their settings or click “Confirm current settings”."};
