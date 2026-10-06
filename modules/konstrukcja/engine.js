@@ -10,11 +10,17 @@
 // Wymaga shared/house-model.js, shared/openings.js, shared/quantities.js (opcjonalnie shared/balconies.js).
 (function(global){
   const LIM={slab:6.0,slabMax:7.5,rafter:4.5,rafterMax:6.5,lintel:3.0,lintelBig:4.5,cant:1.2,balcony:1.5,knee:1.2};
-  const PRICE={beamM:1400,post:3500,lintelM:600,lintelBigM:1300,corner:4500,cantM2:900,trimmer:1800,knee:220,purlinPost:2500,partitionM:0};
+  // rodzaje stropu nad parterem: do jakiej rozpiętości wystarczą i ile kosztują więcej za m² (ponad zwykły strop w Wycenie)
+  const SLABS={std:{name:'Gęstożebrowy (np. Teriva) albo płyta 20 cm',lim:6,addM2:0},thick:{name:'Płyta żelbetowa 25 cm',lim:7.5,addM2:60},hollow:{name:'Płyty kanałowe sprężone',lim:10,addM2:120,note:'montaż dźwigiem'}};
+  // podciąg: widoczny pod sufitem (taniej, do ok. 7,5 m między podporami) albo ukryty w stropie (sufit płaski, do ok. 6 m)
+  const BEAM={visible:{lim:7.5,m:1100,h:.3,w:.25},hidden:{lim:6,m:1600}};
+  const PRICE={column:3500,beamM:1400,post:3500,lintelM:600,lintelBigM:1300,corner:4500,cantM2:900,trimmer:1800,knee:220,purlinPost:2500,partitionM:0};
   const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
   const verdict=s=>s>=8?'ok':s>=6?'mid':'bad';
 
   function evaluate(project){
+    const ST=project.structure||{},slabK=SLABS[ST.slab]?ST.slab:'std',SL=SLABS[slabK],slabLim=SL.lim;
+    const beams=(Array.isArray(ST.beams)?ST.beams:[]).filter(b=>b&&(b.o==='h'||b.o==='v')&&Number.isFinite(+b.line)&&+b.to>=+b.from),columns=(Array.isArray(ST.columns)?ST.columns:[]).filter(p=>p&&Number.isFinite(+p.x)&&Number.isFinite(+p.y));
     const q=HouserQuantities.compute(project),{W,H,c,lo,up,G}=q,N=W*H;
     const def={};for(const f of [lo,up])def[f]=Object.fromEntries((project.definitionSnapshot?.floors?.[f]?.rooms||[]).map(r=>[r.id,r]));
     const flat=f=>{const st=project.state?.[f]||[];return Array.isArray(st[0])?st.flat():st};
@@ -31,13 +37,17 @@
     const wallAt=(f,ax,ay,bx,by,key)=>{const A=occ(f,ax,ay),B=occ(f,bx,by);if(A!==B)return f===up&&((A&&hole(ax,ay))||(B&&hole(bx,by)))?null:'ext';if(!A)return null;
       if(f===up&&(hole(ax,ay)||hole(bx,by)))return null;const va=id(f,ax,ay),vb=id(f,bx,by);if(va===vb)return null;return O(f)[key]==='opening'?null:'int'};
     const vWall=(f,x,y)=>wallAt(f,x-1,y,x,y,'v:'+x+':'+y),hWall=(f,x,y)=>wallAt(f,x,y-1,x,y,'h:'+x+':'+y);
+    // krawędzie siatki zajęte przez podciągi (h:x:linia / v:linia:y) – podpierają strop jak ściana
+    const beamKey=new Map();beams.forEach((b,i)=>{for(let a=+b.from;a<=+b.to;a++)beamKey.set(b.o==='h'?'h:'+a+':'+b.line:'v:'+b.line+':'+a,i)});
+    const colAt=new Set(columns.map(p=>(+p.x)+','+(+p.y)));
+    const supV=(x,y)=>vWall(lo,x,y)||beamKey.has('v:'+x+':'+y),supH=(x,y)=>hWall(lo,x,y)||beamKey.has('h:'+x+':'+y);
     const issues=[],good=[],cost=[];const add=(p,text,tip,kind)=>issues.push({p,text,tip:tip||'',kind:kind||''});const addC=(name,v,note)=>{if(v>0)cost.push({name,v,note:note||''})};
 
     // ---------- 1. strop nad parterem: rozpiętość w każdej kratce
     const span=new Array(N).fill(null);let maxSpan=0;const over=new Set();
     if(hasUp){for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(!occ(lo,x,y)||!room(up,x,y))continue;
-      let l=x;while(!vWall(lo,l,y))l--;let r=x+1;while(!vWall(lo,r,y))r++;let t=y;while(!hWall(lo,x,t))t--;let b=y+1;while(!hWall(lo,x,b))b++;
-      const sx=(r-l)*c,sy=(b-t)*c,s=Math.min(sx,sy);span[y*W+x]={s,sx,sy};if(s>maxSpan)maxSpan=s;if(s>LIM.slab)over.add(y*W+x)}}
+      let l=x;while(!supV(l,y))l--;let r=x+1;while(!supV(r,y))r++;let t=y;while(!supH(x,t))t--;let b=y+1;while(!supH(x,b))b++;
+      const sx=(r-l)*c,sy=(b-t)*c,s=Math.min(sx,sy);span[y*W+x]={s,sx,sy};if(s>maxSpan)maxSpan=s;if(s>slabLim)over.add(y*W+x)}}
     // pomieszczenia parteru z za dużą rozpiętością – podciąg (belka w stropie) w poprzek dłuższego kierunku
     // pomieszczenia połączone otwartym przejściem (bez ściany) to jedna przestrzeń – jeden podciąg
     const par={},find=v=>par[v]==null||par[v]===v?(par[v]=v):(par[v]=find(par[v]));
@@ -45,15 +55,30 @@
     const regions=[];{const by={};for(const i of over){const v=id(lo,i%W,i/W|0),g=find(v),sp=span[i];const R=by[g]||(by[g]={names:new Set(),cells:[],max:0});R.names.add(nm(lo,v));R.cells.push(i);if(sp.s>R.max){R.max=sp.s;R.at=sp}}
       for(const R of Object.values(by))R.room=[...R.names].join(', ');
       for(const R of Object.values(by)){R.beam=Math.max(R.at.sx,R.at.sy);R.posts=R.beam>7?1:0;regions.push(R)}regions.sort((a,b)=>b.max-a.max)}
-    let spanPen=0;for(const R of regions){const big=R.max>LIM.slabMax,p=Math.min(1.8,.5+(R.max-LIM.slab)*.4);spanPen+=p;
-      add(Math.min(p,Math.max(0,3-(spanPen-p))),'Strop nad „'+R.room+'” ma rozpiętość ok. '+fmt(R.max)+' m – '+(big?'za dużo nawet dla grubszej płyty':'więcej niż typowe 6 m')+'.',big?'Potrzebny podciąg (belka w stropie) i słup albo ściana nośna w środku pomieszczenia.':'Podciąg w stropie albo ściana nośna dzieląca pomieszczenie; ewentualnie grubsza płyta (droższa).','span');
-      addC('Podciąg w stropie – '+R.room,R.beam*PRICE.beamM+R.posts*PRICE.post,'ok. '+fmt(R.beam)+' m belki'+(R.posts?' + słup':''))}
-    if(hasUp&&!regions.length&&maxSpan>0)good.push('Strop nad parterem: największa rozpiętość ok. '+fmt(maxSpan)+' m – zwykła płyta wystarczy, bez podciągów.');
+    let spanPen=0;for(const R of regions){const p=Math.min(1.8,.5+(R.max-slabLim)*.4);spanPen+=p;
+      add(Math.min(p,Math.max(0,3-(spanPen-p))),'Strop nad „'+R.room+'” ma rozpiętość ok. '+fmt(R.max)+' m – więcej niż '+fmt(slabLim)+' m dla stropu „'+SL.name.toLowerCase()+'”.','Wstaw podciąg (i słup) na rzucie albo wybierz mocniejszy strop – przycisk „Zaproponuj rozwiązanie” podpowie warianty.','span');
+      addC('Podciąg do zaprojektowania – '+R.room,R.beam*PRICE.beamM+R.posts*PRICE.column,'szacunek: ok. '+fmt(R.beam)+' m belki'+(R.posts?' + słup':'')+' – wstaw go na rzucie, żeby policzyć dokładnie')}
+    if(hasUp&&!regions.length&&maxSpan>0)good.push('Strop nad parterem: największa rozpiętość ok. '+fmt(maxSpan)+' m – „'+SL.name.toLowerCase()+'” wystarczy.');
+    if(hasUp&&SL.addM2)addC('Strop: '+SL.name.toLowerCase(),q.slab*SL.addM2,fmt(q.slab,0)+' m² – dopłata do zwykłego stropu'+(SL.note?', '+SL.note:''));
+    // podciągi i słupy wstawione na rzucie: oparcie na końcach, odległość między podporami
+    const vtxWall=(x,y,o)=>o==='h'?(vWall(lo,x,y-1)||vWall(lo,x,y)):(hWall(lo,x-1,y)||hWall(lo,x,y));
+    const beamInfo=beams.map((b,i)=>{const t=b.hidden?BEAM.hidden:BEAM.visible,a0=+b.from,a1=+b.to+1,L=(a1-a0)*c;const sup=[];
+      for(let a=a0;a<=a1;a++){const [vx,vy]=b.o==='h'?[a,+b.line]:[+b.line,a];const lineWall=a===a0?(b.o==='h'?hWall(lo,a-1,+b.line):vWall(lo,+b.line,a-1)):a===a1?(b.o==='h'?hWall(lo,a,+b.line):vWall(lo,+b.line,a)):null;
+        if(colAt.has(vx+','+vy)||vtxWall(vx,vy,b.o)||lineWall)sup.push(a)}
+      let maxSeg=0;for(let k=1;k<sup.length;k++)maxSeg=Math.max(maxSeg,(sup[k]-sup[k-1])*c);const ends=sup.includes(a0)&&sup.includes(a1);
+      return {i,b,L,hidden:!!b.hidden,sup,maxSeg,ends,ok:ends&&maxSeg<=t.lim,lim:t.lim}});
+    for(const B of beamInfo){const nm_='Podciąg '+fmt(B.L)+' m'+(B.hidden?' (ukryty w stropie)':'');
+      if(!B.ends)add(1.5,nm_+' nie ma oparcia na '+(B.sup.length?'jednym końcu':'końcach')+'.','Dociągnij podciąg do ściany albo postaw słup na końcu.','beam');
+      else if(B.maxSeg>B.lim)add(Math.min(1.5,.6+(B.maxSeg-B.lim)*.4),nm_+' ma '+fmt(B.maxSeg)+' m między podporami – za dużo dla '+(B.hidden?'belki ukrytej w stropie (do ok. 6 m)':'belki (do ok. 7,5 m)')+'.','Postaw słup pośrodku albo zrób podciąg widoczny (wyższy).','beam');
+      addC(nm_,B.L*(B.hidden?BEAM.hidden.m:BEAM.visible.m),B.hidden?'sufit płaski, belka szeroka i zbrojona mocniej':'widoczny ok. 30 cm pod sufitem')}
+    if(beamInfo.length&&beamInfo.every(B=>B.ok))good.push('Podciągi wstawione na rzucie mają oparcie i właściwe rozpiętości.');
+    for(const p of columns){const x=+p.x,y=+p.y;if(![[x-1,y-1],[x,y-1],[x-1,y],[x,y]].some(([a,b])=>occ(lo,a,b)))add(.5,'Słup stoi poza domem.','Przesuń słup do wnętrza parteru.','beam')}
+    if(columns.length)addC('Słupy żelbetowe ('+columns.length+')',columns.length*PRICE.column,'z fundamentem pod słupem');
 
     // ---------- 2. ściany piętra bez ściany pod spodem
     let extUns=0,intUns=0;const unsupported=[];
     if(hasUp){const chk=(key,ax,ay,bx,by)=>{const u=wallAt(up,ax,ay,bx,by,key);if(!u)return;if(!occ(lo,ax,ay)&&!occ(lo,bx,by))return; // nad niczym – wspornik, liczony niżej
-        const l=wallAt(lo,ax,ay,bx,by,key);if(l)return;
+        const l=wallAt(lo,ax,ay,bx,by,key)||beamKey.has(key);if(l)return;
         // ściana zewnętrzna piętra stojąca nad wnętrzem parteru (piętro cofnięte – np. balkon nad parterem)
         unsupported.push({key,kind:u});if(u==='ext')extUns+=c;else intUns+=c};
       for(let y=0;y<=H;y++)for(let x=0;x<W;x++)chk('h:'+x+':'+y,x,y-1,x,y);for(let x=0;x<=W;x++)for(let y=0;y<H;y++)chk('v:'+x+':'+y,x-1,y,x,y)}
@@ -106,7 +131,34 @@
 
     const pen=issues.reduce((a,i)=>a+i.p,0),score=Math.max(0,Math.min(10,Math.round((10-pen)*10)/10));
     const total=cost.reduce((a,x)=>a+x.v,0);
-    return {q,W,H,c,lo,up,hasUp,span,maxSpan,regions,unsupported,extUns,intUns,cantA,cantD,holes,wide,corners,rafter,roofType,knee,
+    return {slab:slabK,SL,slabLim,beams,columns,beamInfo,beamKey,supV,supH,q,W,H,c,lo,up,hasUp,span,maxSpan,regions,unsupported,extUns,intUns,cantA,cantD,holes,wide,corners,rafter,roofType,knee,
       issues:issues.sort((a,b)=>b.p-a.p),good,cost:{items:cost,total},score,verdict:verdict(score),LIM,occ,room:room,vWall,hWall}}
-  global.HouserStructure={LIM,PRICE,evaluate};
+  // propozycje: mocniejszy strop albo podciąg (z słupem, gdy belka wychodzi za długa) – kilka wariantów z kosztem
+  function propose(project){
+    const K=evaluate(project);if(!K.hasUp||!K.regions.length)return {base:K,variants:[]};
+    const ST=project.structure||{},base={...ST},withS=patch=>({...project,structure:{...base,...patch}}),variants=[];
+    const tryV=(name,desc,patch)=>{try{const R=evaluate(withS(patch));variants.push({name,desc,patch,score:R.score,maxSpan:R.maxSpan,cost:R.cost.total,left:R.regions.length,addCost:R.cost.total-K.cost.total})}catch(e){console.error(e)}};
+    for(const k of ['thick','hollow'])if(SLABS[k].lim>K.slabLim&&K.maxSpan<=SLABS[k].lim)tryV(SLABS[k].name,'bez podciągów i słupów – strop przenosi '+fmt(K.maxSpan)+' m'+(SLABS[k].note?' ('+SLABS[k].note+')':''),{slab:k});
+    // podciągi: dla każdego obszaru – linia siatki w poprzek, od ściany do ściany; wybór najlepszej (rozpiętość, koszt, ściana piętra nad belką)
+    const {W,H,c,lo}=K,occL=(x,y)=>K.occ(lo,x,y);
+    const beamAlong=(o,line,start)=>{const wallE=a=>o==='h'?K.hWall(lo,a,line):K.vWall(lo,line,a),cellsOK=a=>o==='h'?occL(a,line-1)&&occL(a,line):occL(line-1,a)&&occL(line,a),
+      vSup=a=>o==='h'?(K.vWall(lo,a,line-1)||K.vWall(lo,a,line)):(K.hWall(lo,line-1,a)||K.hWall(lo,line,a));
+      if(!cellsOK(start)||wallE(start))return null;let a0=start,a1=start;while(!vSup(a0)&&cellsOK(a0-1)&&!wallE(a0-1))a0--;while(!vSup(a1+1)&&cellsOK(a1+1)&&!wallE(a1+1))a1++;return {o,line,from:a0,to:a1}};
+    const plan=(hidden)=>{let beams=[...(base.beams||[])],cols=[...(base.columns||[])],guard=0;
+      while(guard++<3){const R=evaluate(withS({beams,columns:cols}));if(!R.regions.length)break;const reg=R.regions[0];let best=null;
+        const xs=reg.cells.map(i=>i%W),ys=reg.cells.map(i=>i/W|0),bx=[Math.min(...xs),Math.max(...xs)+1],by=[Math.min(...ys),Math.max(...ys)+1];
+        for(const o of ['h','v']){const [l0,l1]=o==='h'?by:bx,mid=o==='h'?Math.round((bx[0]+bx[1])/2):Math.round((by[0]+by[1])/2);
+          for(let line=l0+1;line<l1;line++){const b=beamAlong(o,line,mid);if(!b)continue;b.hidden=hidden;const L=(b.to-b.from+1)*c,lim=hidden?BEAM.hidden.lim:BEAM.visible.lim,nc=Math.max(0,Math.ceil(L/lim)-1),cs=[];
+            for(let k=1;k<=nc;k++){const a=Math.round(b.from+(b.to+1-b.from)*k/(nc+1));cs.push(o==='h'?{x:a,y:line}:{x:line,y:a})}
+            const T=evaluate(withS({beams:[...beams,b],columns:[...cols,...cs]})),under=K.unsupported.filter(u=>beamKeyOf(b).has(u.key)).length;
+            const sc=(T.regions.find(r=>r.cells.some(i=>reg.cells.includes(i)))?.max||0)*1000+T.cost.total-under*400;if(!best||sc<best.sc)best={sc,b,cs}}}
+        if(!best)break;beams.push(best.b);cols.push(...best.cs)}
+      return {beams,columns:cols}};
+    const vis=plan(false),hid=plan(true);
+    tryV('Podciąg widoczny'+(vis.columns.length>(base.columns||[]).length?' + słup':''),'belka ok. 30 cm pod sufitem, najtańsza; '+(vis.beams.length-(base.beams||[]).length)+' podciąg(i)',vis);
+    tryV('Podciąg ukryty w stropie'+(hid.columns.length>(base.columns||[]).length?' + słup':''),'sufit płaski, droższa belka; '+(hid.beams.length-(base.beams||[]).length)+' podciąg(i)',hid);
+    variants.sort((a,b)=>(a.left-b.left)||(a.cost-b.cost));
+    return {base:K,variants}}
+  const beamKeyOf=b=>{const s=new Set();for(let a=+b.from;a<=+b.to;a++)s.add(b.o==='h'?'h:'+a+':'+b.line:'v:'+b.line+':'+a);return s};
+  global.HouserStructure={LIM,PRICE,SLABS,BEAM,evaluate,propose};
 })(window);

@@ -294,6 +294,10 @@ function drawPlan(){
   }
   drawStairsOnPlan(ox,oy,s);
   drawFurnitureOnPlan(f,ox,oy,s);
+  // podciągi i słupy (moduł Konstrukcja) – na parterze
+  if(f==='ground'){const S_=project.structure||{},cm=g.cellMeters;pctx.save();pctx.strokeStyle='#7c3aed';pctx.lineWidth=3;pctx.setLineDash([6,4]);
+    for(const b of Array.isArray(S_.beams)?S_.beams:[]){if(b.hidden)continue;pctx.beginPath();if(b.o==='h'){pctx.moveTo(ox+b.from*s,oy+b.line*s);pctx.lineTo(ox+(+b.to+1)*s,oy+b.line*s)}else{pctx.moveTo(ox+b.line*s,oy+b.from*s);pctx.lineTo(ox+b.line*s,oy+(+b.to+1)*s)}pctx.stroke()}
+    pctx.setLineDash([]);pctx.fillStyle='#0f172a';const cs=Math.max(4,.25/cm*s);for(const p of Array.isArray(S_.columns)?S_.columns:[])pctx.fillRect(ox+p.x*s-cs/2,oy+p.y*s-cs/2,cs,cs);pctx.restore()}
   // etykiety
   pctx.font='11px system-ui';pctx.textAlign='center';pctx.textBaseline='middle';pctx.fillStyle='#111827';
   const seen={};for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){const id=roomAt(f,x,y);if(!id)continue;(seen[id]||(seen[id]=[])).push([x,y])}
@@ -428,6 +432,11 @@ function addTvFor(it,fl,top){const c=grid().cellMeters,x0=+it.x,z0=+it.y,x1=x0+ 
   if(long){const mx=(x0+x1)/2,backMin=probe(mx,z0-.25),backMax=probe(mx,z1+.25),zb=backMax&&!backMin?z1:z0,s=zb===z1?-1:1;addBoxFaces(mx-tw/2,y0,Math.min(zb,zb+s*t),mx+tw/2,y1,Math.max(zb,zb+s*t),'#0b0b0f',{stroke:'#3f3f46',line:.6})}
   else{const mz=(z0+z1)/2,backMin=probe(x0-.25,mz),backMax=probe(x1+.25,mz),xb=backMax&&!backMin?x1:x0,s=xb===x1?-1:1;addBoxFaces(Math.min(xb,xb+s*t),y0,mz-tw/2,Math.max(xb,xb+s*t),y1,mz+tw/2,'#0b0b0f',{stroke:'#3f3f46',line:.6})}}
 function tvVisible(){const f=observer.floor;return furnitureList(f).some(it=>it.item==='s_rtv'&&validFurnitureItem(it)&&furnitureVisible(it))}
+// słupy i podciągi z modułu Konstrukcja (parter): słup 25 × 25 cm od podłogi do stropu, podciąg widoczny ok. 30 cm pod sufitem
+function addStructure3D(){const st=project.structure||{},c=grid().cellMeters,H=floorHeight('ground'),col='#d6d0c7',str={stroke:'#a8a196'};
+  for(const p of Array.isArray(st.columns)?st.columns:[]){const x=+p.x*c,z=+p.y*c;if(!Number.isFinite(x)||!Number.isFinite(z))continue;addBoxFaces(x-.125,0,z-.125,x+.125,H,z+.125,col,str)}
+  for(const b of Array.isArray(st.beams)?st.beams:[]){if(b.hidden)continue;const a0=+b.from*c,a1=(+b.to+1)*c,L=+b.line*c;if(!Number.isFinite(a0+a1+L))continue;
+    if(b.o==='h')addBoxFaces(a0,H-.3,L-.125,a1,H-.01,L+.125,col,str);else addBoxFaces(L-.125,H-.3,a0,L+.125,H-.01,a1,col,str)}}
 function addFurniture3D(){
   ensureFurniture();const cm=codedOn()?codeMap():null;
   for(const f of ['ground','upper']){const base=floorBase(f),fh=floorHeight(f);for(const it of furnitureList(f)){
@@ -691,6 +700,7 @@ function build3D(){
     for(const n of project.structure.chimney){const x=n%grid().width,y=Math.floor(n/grid().width);let H=floorHeight('ground')+floorHeight('upper')+.45;if(roofEnabled())H=Math.max(H,roofAbsYAt((x+.5)*c,(y+.5)*c)+.55);addBoxFaces(x*c+.03,0,y*c+.03,(x+1)*c-.03,H,(y+1)*c-.03,codedOn()?CHIMNEY_CODE[0]:'#77716c',{stroke:'#5e5955'})}
     addFireplaces();
   }
+  addStructure3D();
   addFurniture3D();
   if(three.gl){const L=window.HouserLandscape?HouserLandscape.build({minX:0,minZ:0,maxX:grid().width*grid().cellMeters,maxZ:grid().height*grid().cellMeters,y:-.03}):null;three.gl.upload(L?three.scenePolys.concat(L.polys):three.scenePolys,{ground:L?L.ground:{y:-.03,color:'#c8c3bb'}})}setStatus('Geometria 3D przebudowana — dodano skosy dachu, ściany do połaci, schody i meble z JSON-u.');render3D()
 }

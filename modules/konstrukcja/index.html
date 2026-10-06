@@ -10,6 +10,11 @@
 <style>
 *{box-sizing:border-box}
 [hidden]{display:none!important}
+.field select{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+.tools{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}.tools .hs-btn.on{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+.el{display:flex;gap:6px;align-items:center;font-size:12.5px;border-top:1px solid #eef2f6;padding:6px 0}.el b{flex:1}.el.bad b{color:#b91c1c}.el select{font-size:12px;padding:2px 4px}
+.vars{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:8px}.var{border:1px solid var(--hs-line);border-radius:10px;padding:10px 12px}.var h4{margin:0 0 4px;font-size:13.5px}.var .d{font-size:12px;color:var(--hs-muted);margin-bottom:6px}.var .k{font-size:12.5px;margin-bottom:8px}
+svg.edit{cursor:crosshair;touch-action:none}
 html,body{height:100%;margin:0;overflow:hidden}
 .wrap{height:100vh;display:grid;grid-template-columns:330px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
 .side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
@@ -57,6 +62,17 @@ tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
   <h1>Konstrukcja</h1>
   <p class="lead">Czy ten układ da się zbudować prosto i tanio: jak duże są rozpiętości stropu, czy ściany piętra stoją na ścianach parteru, gdzie są szerokie otwory, wysunięcia i przeszklenia narożne, jaka będzie więźba dachu. To nie jest projekt konstrukcyjny – pokazuje miejsca, które konstruktor musi rozwiązać, i ile to mniej więcej kosztuje.</p>
   <div class="section">
+    <h3>Strop nad parterem</h3>
+    <div class="field"><select id="slab"></select></div>
+    <p class="hint" id="slabHint"></p>
+  </div>
+  <div class="section">
+    <h3>Podciągi i słupy</h3>
+    <div class="tools"><button class="hs-btn" data-tool="beam">＋ Podciąg</button><button class="hs-btn" data-tool="column">＋ Słup</button><button class="hs-btn" data-tool="erase">Usuń</button></div>
+    <p class="hint" id="toolHint">Wybierz narzędzie i kliknij na rzucie parteru.</p>
+    <div id="elems"></div>
+  </div>
+  <div class="section">
     <h3>Jak liczymy</h3>
     <p class="hint">Rozpiętość stropu w każdej kratce to odległość między ścianami parteru (zewnętrznymi i wewnętrznymi; drzwi w ścianie nie przeszkadzają, otwarte przejście – tak) w krótszym kierunku. Zwykła płyta żelbetowa lub strop gęstożebrowy – do ok. 6 m; do 7,5 m – grubsza płyta albo podciąg; dalej – podciąg i słup.</p>
     <p class="hint" style="margin-top:8px">Ściana zewnętrzna piętra bez ściany pod spodem wymaga podciągu; ściany działowe na stropie muszą być lekkie. Otwór od 3 m – wzmocnione nadproże, od 4,5 m – belka. Krokwie do ok. 4,5 m bez podparcia, do ok. 6,5 m z jętkami, dłuższe – płatwie na słupach albo wiązary.</p>
@@ -73,7 +89,33 @@ tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
 <script src="engine.js"></script>
 <script>
 const $=id=>document.getElementById(id);
-let project=null,K=null;
+let project=null,K=null,tool=null,drag=null,P=null;
+const ST=()=>project.structure||{};
+function saveST(patch){const s={...ST(),...patch};project.structure=s;HouserStore.update(p=>{p.structure={...(p.structure||{}),...patch}},'konstrukcja');P=null;render()}
+$('slab').onchange=()=>saveST({slab:$('slab').value});
+document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{tool=tool===b.dataset.tool?null:b.dataset.tool;render()});
+const TOOLHINT={beam:'Przeciągnij po linii siatki na rzucie parteru – od ściany do ściany (albo do słupa).',column:'Kliknij węzeł siatki na rzucie parteru, żeby postawić słup.',erase:'Kliknij podciąg albo słup, żeby go usunąć.'};
+function vtx(svg,e){const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(svg.getScreenCTM().inverse());return [Math.round(q.x/22),Math.round(q.y/22),q.x/22,q.y/22]}
+function bindPlan(){const svg=$('gplan');if(!svg)return;
+  svg.onpointerdown=e=>{if(!tool)return;e.preventDefault();const v=vtx(svg,e);
+    if(tool==='column'){const cols=[...(ST().columns||[])],i=cols.findIndex(p=>p.x===v[0]&&p.y===v[1]);if(i>=0)cols.splice(i,1);else cols.push({x:v[0],y:v[1]});saveST({columns:cols});return}
+    if(tool==='erase'){const t=e.target;if(t.dataset.beam!=null){const b=[...(ST().beams||[])];b.splice(+t.dataset.beam,1);saveST({beams:b})}else if(t.dataset.col!=null){const c=[...(ST().columns||[])];c.splice(+t.dataset.col,1);saveST({columns:c})}return}
+    if(tool==='beam'){drag={a:v.slice(0,2),b:v.slice(0,2)};svg.setPointerCapture(e.pointerId)}};
+  svg.onpointermove=e=>{if(!drag)return;const v=vtx(svg,e),dx=Math.abs(v[0]-drag.a[0]),dy=Math.abs(v[1]-drag.a[1]);drag.b=dx>=dy?[v[0],drag.a[1]]:[drag.a[0],v[1]];
+    const L=svg.querySelector('#dragLine');if(L){L.setAttribute('x2',drag.b[0]*22);L.setAttribute('y2',drag.b[1]*22)}else{const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.id='dragLine';l.setAttribute('x1',drag.a[0]*22);l.setAttribute('y1',drag.a[1]*22);l.setAttribute('x2',drag.b[0]*22);l.setAttribute('y2',drag.b[1]*22);l.setAttribute('stroke','#7c3aed');l.setAttribute('stroke-width','6');l.setAttribute('opacity','.6');svg.appendChild(l)}};
+  const end=()=>{if(!drag)return;const {a,b}=drag;drag=null;if(a[0]===b[0]&&a[1]===b[1]){render();return}
+    const beam=a[1]===b[1]?{o:'h',line:a[1],from:Math.min(a[0],b[0]),to:Math.max(a[0],b[0])-1,hidden:false}:{o:'v',line:a[0],from:Math.min(a[1],b[1]),to:Math.max(a[1],b[1])-1,hidden:false};
+    saveST({beams:[...(ST().beams||[]),beam]})};
+  svg.onpointerup=end;svg.onpointercancel=end;
+  svg.querySelectorAll('[data-beam],[data-col]').forEach(el=>el.style.cursor=tool==='erase'?'pointer':'')}
+function renderSide(){const S_=HouserStructure.SLABS,st=ST();$('slab').innerHTML=Object.entries(S_).map(([k,v])=>'<option value="'+k+'">'+esc(v.name)+' – do '+fmt(v.lim)+' m</option>').join('');$('slab').value=K.slab;
+  $('slabHint').textContent=K.SL.addM2?'Dopłata ok. '+K.SL.addM2+' zł/m² stropu'+(K.SL.note?' ('+K.SL.note+')':'')+'.':'Najtańszy – wystarcza do ok. 6 m między ścianami.';
+  document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('on',b.dataset.tool===tool));$('toolHint').textContent=tool?TOOLHINT[tool]:'Wybierz narzędzie i kliknij na rzucie parteru.';
+  $('elems').innerHTML=K.beamInfo.map(B=>'<div class="el'+(B.ok?'':' bad')+'"><b>Podciąg '+fmt(B.L)+' m'+(B.ok?'':' ⚠')+'</b><select data-hid="'+B.i+'"><option value="0">widoczny</option><option value="1"'+(B.hidden?' selected':'')+'>ukryty w stropie</option></select><button class="hs-btn" data-delb="'+B.i+'" title="usuń">×</button></div>').join('')+
+    K.columns.map((p,i)=>'<div class="el"><b>Słup '+(i+1)+'</b><button class="hs-btn" data-delc="'+i+'" title="usuń">×</button></div>').join('');
+  $('elems').querySelectorAll('[data-hid]').forEach(el=>el.onchange=()=>{const b=[...(ST().beams||[])];b[+el.dataset.hid]={...b[+el.dataset.hid],hidden:el.value==='1'};saveST({beams:b})});
+  $('elems').querySelectorAll('[data-delb]').forEach(el=>el.onclick=()=>{const b=[...(ST().beams||[])];b.splice(+el.dataset.delb,1);saveST({beams:b})});
+  $('elems').querySelectorAll('[data-delc]').forEach(el=>el.onclick=()=>{const c=[...(ST().columns||[])];c.splice(+el.dataset.delc,1);saveST({columns:c})})}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
 const zl=v=>(Math.round(v/100)*100).toLocaleString('pl-PL')+' zł';
@@ -96,11 +138,15 @@ function planSVG(fl){const {W,H,c,lo,up,occ,vWall,hWall,span}=K,S=22,isUp=fl===u
   for(let x=xs;x<=xe;x++)for(let y=ys;y<ye;y++){const t=vWall(fl,x,y);E(t,'v:'+x+':'+y,x*S,y*S,x*S,(y+1)*S)}
   // ściany piętra rzutowane na parter (gdzie staną na stropie)
   if(!isUp&&K.hasUp)for(const u of K.unsupported){const [o,aS,bS]=u.key.split(':'),a=+aS,b=+bS;marks+=o==='h'?ln(a*S,b*S,(a+1)*S,b*S,'#ea580c',3,'5 3'):ln(a*S,b*S,a*S,(b+1)*S,'#ea580c',3,'5 3')}
+  if(!isUp){for(const B of K.beamInfo){const b=B.b,col=B.ok?'#7c3aed':'#dc2626';const [x1,y1,x2,y2]=b.o==='h'?[b.from*S,b.line*S,(b.to+1)*S,b.line*S]:[b.line*S,b.from*S,b.line*S,(b.to+1)*S];
+      marks+='<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#fff" stroke-width="9" stroke-linecap="round"/><line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="6" stroke-linecap="round"'+(B.hidden?' stroke-dasharray="9 5"':'')+' data-beam="'+B.i+'"/>'}
+    K.columns.forEach((p,i)=>{marks+='<rect x="'+(p.x*S-6)+'" y="'+(p.y*S-6)+'" width="12" height="12" fill="#0f172a" stroke="#fff" stroke-width="2" data-col="'+i+'"/>'});
+    if(drag)marks+='<line x1="'+drag.a[0]*S+'" y1="'+drag.a[1]*S+'" x2="'+drag.b[0]*S+'" y2="'+drag.b[1]*S+'" stroke="#7c3aed" stroke-width="5" opacity=".5"/>'}
   for(const k of K.corners.filter(k=>k.f===fl))marks+='<circle cx="'+k.x*S+'" cy="'+k.y*S+'" r="7" fill="#fff" stroke="#dc2626" stroke-width="3"/>';
   // etykiety rozpiętości w obszarach z podciągiem
   if(!isUp)for(const R of K.regions){const i=R.cells.reduce((a,k)=>K.span[k].s>K.span[a].s?k:a,R.cells[0]),x=i%W,y=i/W|0;
     marks+='<text x="'+(x+.5)*S+'" y="'+(y+.5)*S+'" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="800" fill="#7f1d1d" paint-order="stroke" stroke="#fff" stroke-width="3">'+fmt(R.max)+' m</text>'}
-  return '<div class="plan"><h4>'+(isUp?'Piętro / poddasze – ściany':'Parter – rozpiętość stropu nad nim')+'</h4><svg viewBox="'+[xs*S-8,ys*S-8,(xe-xs)*S+16,(ye-ys)*S+16].join(' ')+'"><defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#f8fafc"/><line x1="0" y1="0" x2="0" y2="6" stroke="#cbd5e1" stroke-width="2"/></pattern></defs>'+g+walls+marks+'</svg></div>'}
+  return '<div class="plan"><h4>'+(isUp?'Piętro / poddasze – ściany':'Parter – rozpiętość stropu nad nim')+'</h4><svg '+(isUp?'':'id="gplan" class="'+(tool?'edit':'')+'" ')+'viewBox="'+[xs*S-8,ys*S-8,(xe-xs)*S+16,(ye-ys)*S+16].join(' ')+'"><defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#f8fafc"/><line x1="0" y1="0" x2="0" y2="6" stroke="#cbd5e1" stroke-width="2"/></pattern></defs>'+g+walls+marks+'</svg></div>'}
 
 function render(){const M=$('main');
   if(!project||!(project.grid||project.definitionSnapshot?.grid)){M.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej albo narysuj rzut w <b>Układzie pomieszczeń</b>.</div>';return}
@@ -110,11 +156,15 @@ function render(){const M=$('main');
     '<div class="tile"><div class="l">Największa rozpiętość stropu</div><div class="v">'+(K.hasUp?fmt(K.maxSpan)+' <small>m</small>':'–')+'</div><div class="s">'+(K.hasUp?(K.regions.length?'<b class="c-bad">'+K.regions.length+' '+(K.regions.length===1?'miejsce':'miejsca')+' z podciągiem</b>':'<span class="c-ok">zwykła płyta wystarczy</span>'):'dom parterowy – dach oparty na ścianach zewnętrznych')+'</div></div>'+
     '<div class="tile"><div class="l">Ściany piętra bez podparcia</div><div class="v">'+(K.hasUp?fmt(K.extUns+K.intUns)+' <small>m</small>':'–')+'</div><div class="s">'+(K.hasUp?(K.extUns?'<b class="c-bad">'+fmt(K.extUns)+' m zewnętrznych</b> · ':'')+fmt(K.intUns)+' m działowych':'')+'</div></div>'+
     '<div class="tile"><div class="l">Koszt wzmocnień</div><div class="v">'+zl(K.cost.total)+'</div><div class="s">więźba: '+esc(K.roofType)+' · krokwie ok. '+fmt(K.rafter)+' m</div></div></div>';
+  if(K.regions.length||P){h+='<div class="card"><h2>Jak rozwiązać strop</h2><p class="hint">Strop o rozpiętości ponad '+fmt(K.slabLim)+' m: mocniejszy strop, podciąg (widoczny albo ukryty w stropie) i ewentualnie słup. Możesz też wstawić podciąg i słup ręcznie – narzędzia po lewej.</p>'+
+    (P?(P.variants.length?'<div class="vars">'+P.variants.map((v,i)=>'<div class="var"><h4>'+esc(v.name)+'</h4><div class="d">'+esc(v.desc)+'</div><div class="k">ocena '+fmt(v.score)+' / 10 · wzmocnienia razem '+zl(v.cost)+(v.left?' · <b class="c-bad">nie wystarcza</b>':'')+'</div><button class="hs-btn" data-var="'+i+'">Zastosuj</button></div>').join('')+'</div>':'<p class="hint">Nie znaleziono prostego rozwiązania – wstaw podciąg ręcznie.</p>'):'<button class="hs-btn primary" id="propose">Zaproponuj rozwiązanie</button>')+'</div>'}
   h+='<div class="card"><h2>Rzuty</h2><p class="hint">Parter: kolor kratki to rozpiętość stropu nad nią (do 4,5 m – zielony, do 6 m – żółty, do 7,5 m – pomarańczowy, dalej – czerwony). Pomarańczowa przerywana linia – ściana piętra, pod którą na parterze nie ma ściany. Czerwone – szerokie otwory (od 3 m), kółka – przeszklenia narożne. Na piętrze czerwone kratki – wysunięcie poza parter, kreskowane – otwór w stropie.</p>'+
-    '<div class="plans">'+planSVG(K.lo)+(K.hasUp?planSVG(K.up):'')+'</div><div class="legend"><span><i style="background:#bbf7d0"></i>do 4,5 m</span><span><i style="background:#fef08a"></i>4,5–6 m</span><span><i style="background:#fdba74"></i>6–7,5 m</span><span><i style="background:#fca5a5"></i>ponad 7,5 m</span><span><i style="background:#f1f5f9;border:1px solid #cbd5e1"></i>bez stropu nad kratką (otwór schodów / pustka)</span><span><i style="background:#1e293b"></i>ściana zewnętrzna</span><span><i style="background:#64748b"></i>ściana wewnętrzna</span><span><i style="background:#ea580c"></i>ściana piętra bez ściany pod spodem</span><span><i style="background:#dc2626"></i>szeroki otwór</span></div></div>';
+    '<div class="plans">'+planSVG(K.lo)+(K.hasUp?planSVG(K.up):'')+'</div><div class="legend"><span><i style="background:#bbf7d0"></i>do 4,5 m</span><span><i style="background:#fef08a"></i>4,5–6 m</span><span><i style="background:#fdba74"></i>6–7,5 m</span><span><i style="background:#fca5a5"></i>ponad 7,5 m</span><span><i style="background:#f1f5f9;border:1px solid #cbd5e1"></i>bez stropu nad kratką (otwór schodów / pustka)</span><span><i style="background:#1e293b"></i>ściana zewnętrzna</span><span><i style="background:#64748b"></i>ściana wewnętrzna</span><span><i style="background:#ea580c"></i>ściana piętra bez ściany pod spodem</span><span><i style="background:#dc2626"></i>szeroki otwór</span><span><i style="background:#7c3aed"></i>podciąg (przerywany – ukryty w stropie)</span><span><i style="background:#0f172a"></i>słup</span></div></div>';
   h+='<div class="card"><h2>Miejsca do rozwiązania</h2>'+(K.issues.length?'<ul class="iss">'+K.issues.map(i=>'<li><span class="pen">−'+fmt(i.p)+'</span>'+esc(i.text)+(i.tip?'<span class="tip">'+esc(i.tip)+'</span>':'')+'</li>').join('')+'</ul>':'<p class="hint">Bez trudnych miejsc.</p>')+K.good.map(g=>'<div class="good">✓ '+esc(g)+'</div>').join('')+'</div>';
   if(K.cost.items.length)h+='<div class="card"><h2>Koszt wzmocnień</h2><p class="hint">Orientacyjnie, z robocizną – ponad zwykły strop i mury. Trafia do Wyceny.</p><table><thead><tr><th>Pozycja</th><th class="n">Koszt</th></tr></thead><tbody>'+K.cost.items.map(x=>'<tr><td>'+esc(x.name)+(x.note?'<br><span class="hint">'+esc(x.note)+'</span>':'')+'</td><td class="n">'+zl(x.v)+'</td></tr>').join('')+'<tr class="sum"><td>Razem</td><td class="n">'+zl(K.cost.total)+'</td></tr></tbody></table></div>';
-  M.innerHTML=h}
+  M.innerHTML=h;renderSide();bindPlan();
+  M.querySelectorAll('[data-var]').forEach(b=>b.onclick=()=>{const v=P.variants[+b.dataset.var];saveST(v.patch)});
+  const pb=$('propose');if(pb)pb.onclick=()=>{P=HouserStructure.propose(project);render()}}
 const rec=HouserStore.load();project=rec?rec.project:null;render();
 HouserStore.subscribe(r=>{project=r.project;render()});
 </script>

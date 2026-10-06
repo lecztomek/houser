@@ -196,6 +196,9 @@ function renderPlan(){
   for(let x=0;x<=g.width;x++)el('line',{x1:X(x*c),y1:0,x2:X(x*c),y2:X(Hm),stroke:'rgba(15,23,42,.06)','stroke-width':1},svg);
   for(let y=0;y<=g.height;y++)el('line',{x1:0,y1:X(y*c),x2:X(Wm),y2:X(y*c),stroke:'rgba(15,23,42,.06)','stroke-width':1},svg);
   for(const n of project.structure?.chimney||[]){const x=n%g.width,y=Math.floor(n/g.width);el('rect',{x:X(x*c),y:X(y*c),width:X(c),height:X(c),fill:'#374151'},svg)}
+  // podciągi (pod sufitem) i słupy z modułu Konstrukcja – słup to przeszkoda dla mebli
+  if(floor===floors()[0]){const S_=project.structure||{};for(const b of Array.isArray(S_.beams)?S_.beams:[]){if(b.hidden)continue;const [x1,y1,x2,y2]=b.o==='h'?[b.from*c,b.line*c,(+b.to+1)*c,b.line*c]:[b.line*c,b.from*c,b.line*c,(+b.to+1)*c];el('line',{x1:X(x1),y1:X(y1),x2:X(x2),y2:X(y2),stroke:'#7c3aed','stroke-width':3,'stroke-dasharray':'6 4',opacity:.6,'pointer-events':'none'},svg)}
+    for(const p of Array.isArray(S_.columns)?S_.columns:[])el('rect',{x:X(p.x*c-.125),y:X(p.y*c-.125),width:X(.25),height:X(.25),fill:'#0f172a','pointer-events':'none'},svg)}
   const ops=project.openings?.[floor]||{},OPC={door:'#ffffff',opening:'#ffffff',window:'#60a5fa',hst:'#22d3ee'};
   const edge=(key,a,b,x1,y1,x2,y2)=>{if(a===b)return;const ext=!a||!b,op=ops[key];
     el('line',{x1:X(x1),y1:X(y1),x2:X(x2),y2:X(y2),stroke:'#0f172a','stroke-width':ext?6:3,'stroke-linecap':'square'},svg);
