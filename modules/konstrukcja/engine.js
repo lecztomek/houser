@@ -153,10 +153,15 @@
     const bigHole=holes.filter(h=>h.area>12);if(bigHole.length)add(.4,'Duży otwór w stropie (antresola, pustka nad salonem): '+bigHole.map(h=>fmt(h.area)+' m²').join(', ')+' – krawędzie trzeba oprzeć na belkach.','Krawędź antresoli najlepiej nad ścianą parteru albo na podciągu.','hole');
 
     // ---------- 5. szerokie otwory w ścianach zewnętrznych, przeszklenia narożne
-    const wide=[];for(const r of q.runs||[]){if(!r.ext||!['window','hst','door'].includes(r.base)||r.info?.shape==='roof')continue;const w=r.keys.length*c;if(w<LIM.lintel)continue;
-      const keyF=r.keys[0];const upAbove=r.f===lo&&hasUp;wide.push({r,w,f:r.f,keys:r.keys,big:w>=LIM.lintelBig,upAbove,room:(r.rooms||[])[0]?.name||''});}
-    const groups={};for(const o of wide){const k=[o.r.base,o.w,o.room,o.upAbove].join('|');(groups[k]=groups[k]||{...o,n:0}).n++}
-    for(const o of Object.values(groups)){const t=o.r.base==='hst'?'Przeszklenie HST':o.r.base==='door'?'Drzwi':'Okno';
+    // nadproże przekrywa cały otwór w ścianie: sąsiadujące otwory w tej samej ścianie (HST obok przeszklenia stałego, okno przy drzwiach,
+    // brama garażowa podzielona na skrzydła) to jeden otwór – łączymy je bez względu na rodzaj i ustawienie
+    const wide=[];{const segs={};for(const r of q.runs||[]){if(!r.ext||!['window','hst','door'].includes(r.base)||r.info?.shape==='roof')continue;
+        for(const k of r.keys){const [o,aS,bS]=k.split(':'),a=+aS,b=+bS,line=o==='h'?b:a,at=o==='h'?a:b;(segs[r.f+'|'+o+'|'+line]=segs[r.f+'|'+o+'|'+line]||[]).push({at,k,r})}}
+      for(const L of Object.values(segs)){L.sort((x,y)=>x.at-y.at);let cur=null;const flush=()=>{if(!cur)return;const w=cur.keys.length*c;if(w>=LIM.lintel){const r=cur.runs[0],bases=[...new Set(cur.runs.map(x=>x.base))];
+            wide.push({r,w,f:r.f,keys:cur.keys,bases,big:w>=LIM.lintelBig,upAbove:r.f===lo&&hasUp,room:(r.rooms||[])[0]?.name||''})}cur=null};
+        for(const it of L){if(cur&&it.at===cur.to+1){cur.keys.push(it.k);cur.to=it.at;if(!cur.runs.includes(it.r))cur.runs.push(it.r)}else{flush();cur={keys:[it.k],to:it.at,runs:[it.r]}}}flush()}}
+    const groups={};for(const o of wide){const k=[o.bases.join('+'),o.w,o.room,o.upAbove].join('|');(groups[k]=groups[k]||{...o,n:0}).n++}
+    for(const o of Object.values(groups)){const B=o.bases,t=B.length>1?'Otwór ('+B.map(b=>b==='hst'?'HST':b==='door'?'drzwi':'okno').join(' + ')+')':B[0]==='hst'?'Przeszklenie HST':B[0]==='door'?(o.w>=2.5&&/gara/i.test(o.room)?'Brama garażowa':'Drzwi'):'Okno';
       add((o.big?(o.upAbove?1:.7):(o.upAbove?.4:.2))*Math.min(2,o.n),t+' '+fmt(o.w)+' m'+(o.n>1?' ('+o.n+' szt.)':'')+(o.room?' w pomieszczeniu „'+o.room+'”':'')+(o.upAbove?' pod piętrem':'')+' – '+(o.big?'potrzebna belka żelbetowa lub stalowa nad otworem':'wzmocnione nadproże')+'.',o.big?'Belka nad otworem (żelbet lub stal) i wieniec – uwzględnij w projekcie; albo podziel otwór słupkiem.':'','open');
       addC(t+' '+fmt(o.w)+' m'+(o.n>1?' × '+o.n:'')+' – '+(o.big?'belka nad otworem':'wzmocnione nadproże'),o.n*o.w*(o.big?PRICE.lintelBigM:PRICE.lintelM)*(o.upAbove?1.2:1))}
     // narożnik: przeszklenie na dwóch ścianach w tym samym wierzchołku

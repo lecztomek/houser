@@ -4078,4 +4078,5 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "· moment ok.":"· moment approx.",
 "· najwięcej:":"· maximum:",
 "ile nośności stropu zużywa moment zginający: najwięcej w środku przęsła, zero przy ścianach i podciągach; ścianki piętra na stropie dokładają swoje":"how much of the slab capacity the bending moment uses: most at mid-span, zero at walls and beams; upper walls standing on the slab add their share",
-"Parter: kolor kratki to wytężenie stropu nad nią – jaką część nośności wybranego stropu zużywa moment zginający (zielony – z zapasem, żółty – blisko granicy, czerwony – nie wyrabia).":"Ground floor: cell colour is the utilisation of the slab above – the share of the chosen slab's capacity used by the bending moment (green – spare, yellow – near the limit, red – not enough)."};
+"Parter: kolor kratki to wytężenie stropu nad nią – jaką część nośności wybranego stropu zużywa moment zginający (zielony – z zapasem, żółty – blisko granicy, czerwony – nie wyrabia).":"Ground floor: cell colour is the utilisation of the slab above – the share of the chosen slab's capacity used by the bending moment (green – spare, yellow – near the limit, red – not enough).",
+"Otwór (":"Opening ("};

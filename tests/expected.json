@@ -150,8 +150,8 @@
   }
  },
  "stodola-mini-2a-g2.json": {
-  "overall": 7.2,
-  "cost": 1396691,
+  "overall": 7.1,
+  "cost": 1406129,
   "Qh": 13847,
   "bills": 5836,
   "area": 240.5,
@@ -167,7 +167,7 @@
    "Balkony": null,
    "Hydraulika": 5.9,
    "Ogrzewanie": null,
-   "Konstrukcja": 5.2,
+   "Konstrukcja": 4.2,
    "Elektryka": 9.5,
    "Fotowoltaika": 7.6,
    "Wentylacja": 10,

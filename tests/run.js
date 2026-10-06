@@ -121,6 +121,13 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  ok(b.maxUtil<a.maxUtil&&b.maxUtil<=1,'wytężenie: płyty kanałowe mniej wytężone ('+Math.round(b.maxUtil*100)+'%)');
  const mid=U.reduce((m,x)=>x.u>m.u?x:m),sp=a.span.filter(Boolean),edge=sp.some(x=>Math.min(x.tx,x.ty)<.1);ok(edge&&mid.u>U.reduce((m,x)=>Math.min(m,x.u),9),'wytężenie: największe w przęśle, mniejsze przy ścianach');}
 
+{const S=W.HouserStructure,p=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','stodola-mini-2a-g2.json'),'utf8')),K=S.evaluate(p);
+ ok(K.wide.some(o=>o.w>=5&&o.bases.includes('door')),'szerokie otwory: brama garażowa podzielona na skrzydła liczy się jako jeden otwór');
+ // HST 2 m + przeszklenie stałe 1 m + okno 1 m w jednej ścianie = jeden otwór 4 m (każdy z osobna < 3 m)
+ const q=JSON.parse(JSON.stringify(p));for(const k of Object.keys(q.openings.ground))if(k.startsWith('v:0:'))delete q.openings.ground[k];
+ for(let y=14;y<=21;y++){const k='v:0:'+y;q.openings.ground[k]=y<18?'hst':'window';q.openingVariants.ground[k]=y<18?{variant:'hst',sill:0,height:2.35}:y<20?{variant:'balcony',sill:0,height:2.2}:{variant:'standard',sill:.9,height:1.4}}
+ const K2=S.evaluate(q),o=K2.wide.find(x=>x.keys.includes('v:0:14'));ok(o&&o.w===4&&o.bases.length===2,'szerokie otwory: HST + drzwi balkonowe + okno obok siebie = jeden otwór 4 m');}
+
 // ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować
 console.log('• składnia skryptów');
 {const vm=require('vm'),walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?(['node_modules','.git'].includes(e.name)?[]:walk(path.join(d,e.name))):[path.join(d,e.name)]);
