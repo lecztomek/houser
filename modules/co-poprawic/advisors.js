@@ -39,6 +39,8 @@
       return {score:P.overall,items,good:P.overall>=8.5?['Zwarta instalacja wod-kan – mokre pomieszczenia blisko siebie i jedno nad drugim.']:[]}}},
     {id:'instalacja-grzewcza',name:'Ogrzewanie',w:.8,need:'HouserHeatSys',run:p=>{if(!p.heatingSystem)return {score:null,items:[],good:[]};const R=HouserHeatSys.evaluate(p);
       return {score:R.ease,items:R.issues.filter(i=>i.p>0).map(i=>({p:Math.min(3,i.p),text:i.text,tip:i.tip})),good:R.good.slice(0,2)}}},
+    {id:'fotowoltaika',name:'Fotowoltaika',w:.4,need:'HouserPV',run:p=>{const R=HouserPV.compute(p);
+      return {score:R.score,items:R.issues.map(i=>({p:Math.min(3,i.p),text:i.text,tip:i.tip})),good:[...R.good.slice(0,1),...(R.enabled?['Fotowoltaika '+fmt(R.kWp)+' kWp – oszczędza ok. '+Math.round(R.savings/100)*100+' zł rocznie.']:[])]}}},
     {id:'wentylacja',name:'Wentylacja',w:.8,need:'HouserHVAC',run:p=>{const M=HouserHVAC.methods(p,p.hvacSettings),c=M.chosen,b=M.best;if(!c)return {score:null,items:[],good:[]};const items=[];
       if(c!==b&&b.score-c.score>=1)items.push({p:Math.min(3,(b.score-c.score)/2+.5),head:c.name,text:'Do tego domu lepiej pasuje: '+b.name+' ('+fmt(b.score)+' / 10 wobec '+fmt(c.score)+').',tip:(b.why[0]?b.why[0]+' – ':'')+'zmień wybór w module Wentylacja.'});
       return {score:c.score,items,good:c===b?['Dobrze dobrana wentylacja: '+c.name.toLowerCase()+'.']:[]}}},

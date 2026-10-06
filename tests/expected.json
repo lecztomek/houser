@@ -17,12 +17,13 @@
    "Balkony": null,
    "Hydraulika": 9.3,
    "Ogrzewanie": 9.5,
+   "Fotowoltaika": 10,
    "Wentylacja": 9.6,
    "Rekuperacja": 10
   }
  },
  "dom-parterowy.json": {
-  "overall": 8.5,
+  "overall": 8.6,
   "cost": 873771,
   "Qh": 8915,
   "bills": 4329,
@@ -39,6 +40,7 @@
    "Balkony": null,
    "Hydraulika": 8.8,
    "Ogrzewanie": 9.5,
+   "Fotowoltaika": 10,
    "Wentylacja": 9.7,
    "Rekuperacja": 10
   }
@@ -61,6 +63,7 @@
    "Balkony": null,
    "Hydraulika": 9.8,
    "Ogrzewanie": 9.5,
+   "Fotowoltaika": 9.1,
    "Wentylacja": 10,
    "Rekuperacja": 7.5
   }
@@ -83,12 +86,13 @@
    "Balkony": null,
    "Hydraulika": 8.5,
    "Ogrzewanie": 9.5,
+   "Fotowoltaika": 9.4,
    "Wentylacja": 9.9,
    "Rekuperacja": 7
   }
  },
  "stodola-jasna.json": {
-  "overall": 7.4,
+  "overall": 7.5,
   "cost": 959721,
   "Qh": 12216,
   "bills": 5359,
@@ -105,12 +109,13 @@
    "Balkony": 10,
    "Hydraulika": 7.1,
    "Ogrzewanie": 8.9,
+   "Fotowoltaika": 8.8,
    "Wentylacja": 4,
    "Rekuperacja": null
   }
  },
  "uklad-domu-v7.json": {
-  "overall": 8.3,
+  "overall": 8.4,
   "cost": 895012,
   "Qh": 7453,
   "bills": 3882,
@@ -127,12 +132,13 @@
    "Balkony": null,
    "Hydraulika": 7,
    "Ogrzewanie": 10,
+   "Fotowoltaika": 8.8,
    "Wentylacja": 9.8,
    "Rekuperacja": 7
   }
  },
  "zefir-2.json": {
-  "overall": 7.6,
+  "overall": 7.7,
   "cost": 962732,
   "Qh": 8182,
   "bills": 4426,
@@ -149,6 +155,7 @@
    "Balkony": null,
    "Hydraulika": 5.7,
    "Ogrzewanie": 9.5,
+   "Fotowoltaika": 9.4,
    "Wentylacja": 9.8,
    "Rekuperacja": 7
   }

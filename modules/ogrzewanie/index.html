@@ -88,7 +88,7 @@ h2.sec{font-size:16px;margin:8px 0 0}
     <h3>Dom i działka</h3>
     <div class="field"><label>Gaz w ulicy</label><select id="gas"><option value="unknown">nie wiem</option><option value="yes">jest</option><option value="no">nie ma</option></select></div>
     <div class="field"><label>Ogrzewanie w pokojach</label><select id="emitters"><option value="floor">podłogowe</option><option value="radiators">grzejniki</option></select><span class="hint" id="emHint" hidden>ustawiasz w module Instalacja grzewcza</span></div>
-    <div class="field"><label>Fotowoltaika</label><select id="pv"><option value="no">nie</option><option value="yes">tak (tańszy prąd do pompy / grzejników)</option></select></div>
+    <div class="field"><label>Fotowoltaika</label><select id="pv"><option value="no">nie</option><option value="yes">tak (tańszy prąd do pompy / grzejników)</option></select><span class="hint" id="pvHint" hidden></span></div>
     <div class="field"><label>Porównanie kosztów w okresie</label><select id="years"><option value="15">15 lat</option><option value="20">20 lat</option><option value="25">25 lat</option></select></div>
     <p class="hint">Ustawienia zapisują się w projekcie. Zapotrzebowanie na ciepło, moc i ceny paliw (prąd, gaz, pellet, drewno) pochodzą z modułu Energia – tam je zmienisz.</p>
   </div>
@@ -106,6 +106,7 @@ h2.sec{font-size:16px;margin:8px 0 0}
 <script src="../naslonecznienie/sun.js"></script>
 <script src="../naslonecznienie/calc.js"></script>
 <script src="../../shared/energy.js"></script>
+<script src="../../shared/pv.js"></script>
 <script src="../../shared/heating.js"></script>
 <script src="../../shared/heating-system.js"></script>
 <script>
@@ -150,6 +151,7 @@ function sysHTML(){
 function render(){
   const s=settings(),M_=$('main');for(const id of ['gas','emitters','pv','years'])$(id).value=String(s[id]);
   const des=!!project?.heatingSystem;$('emitters').disabled=des;$('emHint').hidden=!des;
+  {const pvOn=!!project?.pvSettings?.enabled;$('pv').disabled=pvOn;$('pvHint').hidden=!pvOn;if(pvOn){let k=null;try{k=HouserPV.priceFactor(project)}catch(_){}$('pv').value='yes';$('pvHint').textContent='z modułu Fotowoltaika: prąd ok. '+(k!=null?Math.round(k*100):'?')+'% ceny'}}
   if(!project||!(project.grid||project.definitionSnapshot?.grid)){M_.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej albo narysuj rzut w <b>Układzie pomieszczeń</b>.</div>';return}
   let C;try{if(project.heatingSystem)s.emitters=HouserHeatSys.evaluate(project).emitters;C=HouserHeating.compare(project,s)}catch(e){console.error(e);M_.innerHTML='<div class="empty">Nie udało się policzyć.</div>';return}
   if(!(C.Q>0)){M_.innerHTML='<div class="empty">Na rzucie nie ma jeszcze pomieszczeń.</div>';return}

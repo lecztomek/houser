@@ -24,6 +24,11 @@ for(const f of examples){const p=JSON.parse(fs.readFileSync(path.join(ROOT,'exam
    const fa=W.HouserHeatSys.evaluate({...p,heatingSystem:{main:'fireplace_air',extra:'hp_air'}});ok(fin(fa.year)&&fa.year>0&&fa.loops===0&&fa.sys.extra==='none'&&fa.dhwSrc==='el',f+': kominek powietrzny bez instalacji wodnej');
    const hs=W.HouserHeatSys.evaluate({...p,heatingSystem:{main:'hp_air',extra:'stove'}});ok(fin(hs.year)&&hs.sys.extra==='stove'&&hs.share>0&&hs.cost.some(x=>/Koza/.test(x.name)),f+': pompa ciepła + koza');
    ok(fa.elShare>=.1&&fa.elShare<1&&fa.cost.some(x=>/DGP/.test(x.name)),f+': kominek powietrzny – DGP i udział prądu '+fa.elShare)}
+  {const V=W.HouserPV.compute(p);ok(fin(V.kWp)&&fin(V.prod)&&fin(V.savings)&&fin(V.priceFactor)&&V.priceFactor>0&&V.priceFactor<=1&&V.cons.total>1500&&V.cons.total<20000,f+': fotowoltaika '+[V.kWp,V.prod,V.cons.total].map(Math.round));
+   ok(V.monthly.length===12&&V.monthly.every(m=>fin(m.prod)&&fin(m.self)&&m.self<=m.prod+1e-6&&m.self<=m.cons+1e-6),f+': fotowoltaika – miesiące');
+   if(V.kWp>0){const b=W.HouserPV.compute(p,{battery:10});ok(b.self>=V.self,f+': magazyn zwiększa autokonsumpcję')}
+   const on={...p,pvSettings:{enabled:true}},h0=W.HouserHeatSys.evaluate({...p,heatingSystem:{main:'hp_air'}}),h1=W.HouserHeatSys.evaluate({...on,heatingSystem:{main:'hp_air'}});
+   ok(V.kWp===0||h1.fuel<h0.fuel,f+': z fotowoltaiką pompa ciepła tańsza '+[Math.round(h0.fuel),Math.round(h1.fuel)])}
   const M=W.HouserHVAC.methods(p,p.hvacSettings);{const g=k=>M.list.find(m=>m.k===k);ok(M.list.length===5&&g('mvhr').yearly<=g('decentral').yearly&&g('decentral').yearly<g('exhaust').yearly&&g('exhaust').yearly<=g('grav').yearly&&g('hybrid').yearly===g('grav').yearly,f+': wentylacja – kolejność strat ciepła');
    ok(['decentral','hybrid'].every(v=>fin(W.HouserEnergy.compute({...p,energySettings:{...(p.energySettings||{}),vent:v}}).Qh)),f+': Energia z nowymi rodzajami wentylacji');
    ok(W.HouserHVAC.methods({...p,energySettings:{...(p.energySettings||{}),vent:'decentral'}},p.hvacSettings).chosen?.k==='decentral',f+': wybór rekuperatorów ściennych')}
@@ -64,6 +69,8 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
 // drzwi na dwóch kratkach, ustawienia tylko na jednej – obie kratki to te same drzwi (Zewnątrz 3D rysował dwoje po 0,5 m)
 {const pr={openings:{ground:{'h:7:22':'door','h:8:22':'door'}},openingVariants:{ground:{'h:7:22':{variant:'entrance',sill:0,height:2.3}}}};const O=W.HouserOpenings,a=O.resolve(pr,'ground','h:8:22','door'),e=O.runExtent(pr,'ground','h:8:22');
  ok(a.variant==='entrance'&&e.from===7&&e.to===8,'drzwi na dwóch kratkach – wspólne ustawienia i jeden otwór');}
+// fotowoltaika: połać na południe daje więcej niż na północ
+{const o=W.HouserPV.orientK;ok(o(35,0)>o(35,90)&&o(35,90)>o(35,180)&&Math.abs(o(35,0)-1)<.01,'fotowoltaika – kierunki połaci');}
 // okno balkonowe (do podłogi) = drzwi balkonowe: przejście na balkon w Codzienności i w Balkonach
 {const z=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','zefir-2.json'),'utf8'));const up=Object.keys(z.state).find(f=>f!=='ground')||'upper';
  const pr={...z,openings:{...z.openings,[up]:{...(z.openings?.[up]||{}),'h:0:0':'window'}},openingVariants:{...(z.openingVariants||{}),[up]:{...(z.openingVariants?.[up]||{}),'h:0:0':{variant:'balcony',sill:0,height:2.2}}}};

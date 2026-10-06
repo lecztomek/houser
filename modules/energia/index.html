@@ -38,6 +38,7 @@ th,td{padding:7px 10px;border-bottom:1px solid var(--hs-line);text-align:left}
 th{font-size:11.5px;color:var(--hs-muted);font-weight:700;text-transform:uppercase;letter-spacing:.03em}
 td.num,th.num{text-align:right;white-space:nowrap}
 tr.best td{background:#f0fdf4;font-weight:700}
+.c-ok{color:#15803d}
 /* wykres: jedna seria, poziome słupki */
 .viz{--surface-1:#fcfcfb;--text-primary:#0b0b0b;--text-secondary:#52514e;--grid:#e7e5e1;--series-1:#2a78d6;position:relative}
 .bars{display:grid;grid-template-columns:minmax(150px,210px) 1fr;gap:6px 12px;align-items:center}
@@ -100,6 +101,8 @@ tr.best td{background:#f0fdf4;font-weight:700}
 <script src="../naslonecznienie/sun.js"></script>
 <script src="../naslonecznienie/calc.js"></script>
 <script src="../../shared/energy.js"></script>
+<script src="../../shared/heating-system.js"></script>
+<script src="../../shared/pv.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 let project=null;
@@ -120,11 +123,14 @@ for(const id of ['zone','persons','dhwL','ti','bridge','vent','eta','inf','pEl',
 
 function render(){
   const M=$('main');if(!project||!(project.grid||project.definitionSnapshot?.grid)){M.innerHTML='<div class="empty">Brak projektu. Narysuj rzut w <b>Układzie pomieszczeń</b> albo kliknij „Przykład” na pasku u góry.</div>';return}
-  renderSide();const R=compute(),[kn,kc,kbg,kbd]=klass(R.EU),best=R.src.reduce((a,b)=>b.cost<a.cost?b:a);
+  renderSide();const R=compute(),[kn,kc,kbg,kbd]=klass(R.EU);
+  // fotowoltaika włączona w projekcie – prąd tańszy (pompa ciepła, grzejniki elektryczne)
+  let PV=null;try{PV=HouserPV.compute(project)}catch(e){console.error(e)}
+  if(PV?.enabled){const k=PV.priceFactor,kk=x=>x.name==='Pompa ciepła + kominek'?(.6+.4*k):k;R.src=R.src.map(x=>/Pompa ciepła|Grzejniki elektryczne/.test(x.name)?{...x,zlkWh:x.zlkWh*kk(x),cost:x.cost*kk(x),how:x.how+' · z fotowoltaiką (prąd ok. '+Math.round(k*100)+'% ceny)'}:x)}
   let h='<div class="tiles">'+
     '<div class="tile"><div class="l">Ciepło do ogrzewania</div><div class="v">'+fmt(R.Qh)+' kWh/rok</div><div class="s">'+fmt(R.EU)+' kWh/m² rocznie</div><span class="cls" style="color:'+kc+';background:'+kbg+';border-color:'+kbd+'">'+kn+'</span></div>'+
     '<div class="tile"><div class="l">Moc grzewcza (przy '+R.Z.te+'°C)</div><div class="v">'+fmt(R.load,1)+' kW</div><div class="s">pompa ciepła ok. <b>'+R.hp+' kW</b> (z ciepłą wodą)</div></div>'+
-    '<div class="tile"><div class="l">Koszt ogrzewania + ciepła woda</div><div class="v">'+fmt(R.src[0].cost)+' zł/rok</div><div class="s">pompą ciepła · ok. '+fmt(R.src[0].cost/12)+' zł/mies.</div></div>'+
+    '<div class="tile"><div class="l">Koszt ogrzewania + ciepła woda</div><div class="v">'+fmt(R.src[0].cost)+' zł/rok</div><div class="s">pompą ciepła'+(PV?.enabled?' z fotowoltaiką':'')+' · ok. '+fmt(R.src[0].cost/12)+' zł/mies.</div></div>'+
     '<div class="tile"><div class="l">Straty ciepła budynku</div><div class="v">'+fmt(R.Htot)+' W/K</div><div class="s">'+fmt(R.Htot/Math.max(1,R.q.usableTotal),2)+' W/K na m² · ΔT '+fmt(R.dT)+' K</div></div></div>';
   // wykres strat (poziome słupki, jedna seria)
   const rows=[...R.rows].sort((a,b)=>b.W-a.W),mx=Math.max(...rows.map(r=>r.W));
@@ -138,6 +144,16 @@ function render(){
   // bilans roczny i źródła ciepła
   h+='<div class="card"><h2>Bilans roczny</h2><table><tbody>'+
     [['Straty ciepła w sezonie ('+fmt(R.Z.hdd)+' stopniodni)',R.Qloss],['− zyski wewnętrzne (ludzie, urządzenia)',-.9*R.Qint],[R.solarFrom==='solar'?'− zyski od słońca przez okna (kierunki, daszki i tarasy – jak w Nasłonecznieniu)':'− zyski od słońca przez okna (uproszczone)',-R.Qsol],['= ciepło do ogrzewania',R.Qh],['Ciepła woda ('+R.s.persons+' os.)',R.Qw],['Razem ciepło',R.Qh+R.Qw]].map(([a,b],i)=>'<tr'+(i===3||i===5?' style="font-weight:700"':'')+'><td>'+a+'</td><td class="num">'+fmt(b)+' kWh</td></tr>').join('')+'</tbody></table></div>';
+  // prąd w domu i fotowoltaika (moduł Fotowoltaika)
+  if(PV){const C=PV.cons,on=PV.enabled,net=PV.prod-C.total;
+    h+='<div class="card"><h2>Prąd w domu i fotowoltaika</h2><p class="sub">'+(on?'Fotowoltaika '+fmt(PV.kWp,1)+' kWp jest w projekcie (moduł Fotowoltaika) – koszty pompy ciepła i prądu niżej są z nią policzone.':'Bez fotowoltaiki. Dach mieści ok. '+fmt(PV.maxKWp,1)+' kWp – włącz ją w module <a href="../fotowoltaika/" id="lnkPv">Fotowoltaika</a>, żeby policzyć rachunki z tańszym prądem.')+'</p><table><tbody>'+
+      [['Prąd domowy ('+R.s.persons+' os.)',C.base],['Ogrzewanie (wg Instalacji grzewczej)',C.heat],['Ciepła woda',C.water],['Wentylacja',C.vent],['Auto elektryczne',C.ev]].filter(r=>r[1]>=1).map(r=>'<tr><td>'+esc(r[0])+'</td><td class="num">'+fmt(r[1])+' kWh</td></tr>').join('')+
+      '<tr><td><b>Zużycie prądu w roku</b></td><td class="num"><b>'+fmt(C.total)+' kWh</b></td></tr>'+
+      (on?'<tr><td>Produkcja z paneli</td><td class="num">'+fmt(PV.prod)+' kWh</td></tr><tr><td>Zużyte od razu w domu / sprzedane do sieci</td><td class="num">'+fmt(PV.self)+' / '+fmt(PV.export)+' kWh</td></tr><tr><td>Kupione z sieci</td><td class="num">'+fmt(PV.import)+' kWh</td></tr>'+
+        '<tr><td><b>Bilans roczny prądu</b></td><td class="num"><b class="'+(net>=0?'c-ok':'')+'">'+(net>=0?'+':'')+fmt(net)+' kWh</b></td></tr><tr><td>Rachunek za prąd (bez opłat stałych)</td><td class="num">'+fmt(C.total*PV.pEl)+' → '+fmt(Math.max(0,C.total*PV.pEl-PV.savings))+' zł</td></tr>':'')+
+      '</tbody></table>'+(on&&net>=0?'<p class="hint" style="margin:8px 0 0">W skali roku dom produkuje więcej prądu, niż zużywa – zimą dokupuje z sieci, latem sprzedaje nadwyżkę.</p>':'')+'</div>';
+    }
+  const best=R.src.reduce((a,b)=>b.cost<a.cost?b:a);
   h+='<div class="card"><h2>Koszt ogrzewania i ciepłej wody</h2><table><thead><tr><th>Źródło ciepła</th><th>Założenia</th><th class="num">zł / kWh ciepła</th><th class="num">Rocznie</th><th class="num">Miesięcznie</th></tr></thead><tbody>'+
     R.src.map(x=>'<tr'+(x===best?' class="best"':'')+'><td>'+esc(x.name)+(x===best?' · najtaniej':'')+'</td><td class="hint">'+esc(x.how)+'</td><td class="num">'+fmt(x.zlkWh,2)+'</td><td class="num">'+fmt(x.cost)+' zł</td><td class="num">'+fmt(x.cost/12)+' zł</td></tr>').join('')+'</tbody></table>'+
     '<p class="hint" style="margin:8px 0 0">Koszty bez opłat stałych (abonament, dystrybucja w części stałej) i bez pracy przy paleniu drewnem. '+(R.q.chimneys?'W projekcie jest komin – kocioł na drewno i kominek mają gdzie podłączyć przewód spalinowy.':'<b>Kocioł na drewno i kominek wymagają komina</b> – dodaj go w Układzie pomieszczeń.')+'</p></div>';
@@ -150,6 +166,7 @@ function render(){
 }
 const rec=HouserStore.load();project=rec?rec.project:null;render();
 HouserStore.subscribe(r=>{project=r.project;render()});
+document.addEventListener('click',e=>{if(e.target.id==='lnkPv'){try{if(window.top!==window&&window.top.HouserStore){e.preventDefault();window.top.location.hash='fotowoltaika'}}catch(_){}}});
 try{if(window.top!==window&&window.top.HouserStore)$('lnkEnv').onclick=e=>{e.preventDefault();window.top.location.hash='ocieplenie'}}catch(_){}
 </script>
 <script src="../../shared/nav.js"></script>

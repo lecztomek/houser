@@ -7,7 +7,8 @@
     const set={...DEF,...(settings||{})},years=+set.years||20;
     const E=HouserEnergy.compute(project),S=E.s,q=E.q;
     const Q=E.Qh+E.Qw,load=E.load,EU=E.EU;
-    const floor=set.emitters==='floor',pvK=set.pv==='yes'?.6:1,pEl=S.pEl*pvK;
+    const pvF=global.HouserPV?HouserPV.priceFactor(project):null,pvOn=pvF!=null||set.pv==='yes'; // fotowoltaika: z modułu Fotowoltaika (gdy włączona), inaczej przełącznik „PV tak” = 60% ceny
+    const floor=set.emitters==='floor',pvK=pvF??(set.pv==='yes'?.6:1),pEl=S.pEl*pvK;
     const utility=q.rooms.find(r=>/techn|kotłown|kotlown|kotł|kotl/i.test(r.name||'')),utilA=utility?.area||0;
     const chimney=q.chimneys>0;
     const hpInvest=load<=6?32000:load<=9?38000:load<=12?45000:55000;
@@ -53,7 +54,7 @@
       let fit=6;const why=[];const add=(d,t)=>{fit+=d;why.push({d,t})};
       if(m.k==='hp_air'){if(EU<=70)add(2,'dom energooszczędny ('+Math.round(EU)+' kWh/m²) – pompa pracuje wydajnie');else add(-1,'duże zapotrzebowanie ('+Math.round(EU)+' kWh/m²) – pompa będzie pracować ciężko w mrozy');
         if(floor)add(1,'ogrzewanie podłogowe – niska temperatura wody, wysoka sprawność');else add(-1,'grzejniki wymagają cieplejszej wody – niższa sprawność');
-        if(set.pv==='yes')add(1,'fotowoltaika obniża koszt prądu')}
+        if(pvOn)add(1,'fotowoltaika obniża koszt prądu')}
       if(m.k==='hp_ground'){if(load<5)add(-2,'mała moc domu ('+load.toFixed(1)+' kW) – odwierty się nie opłacą');else if(load>9)add(1.5,'duża moc – wysoka sprawność gruntu się opłaca');if(floor)add(1,'podłogówka – idealna do pompy gruntowej');add(-1,'potrzebne miejsce na działce na odwierty lub kolektor')}
       if(m.k==='gas'){if(set.gas==='no')add(-6,'brak gazu w ulicy');else if(set.gas==='unknown')add(-1,'nie wiadomo, czy jest gaz w ulicy');else add(1,'gaz jest w ulicy');if(EU<=40)add(-1,'przy małym zapotrzebowaniu opłaty stałe za gaz są dużą częścią rachunku')}
       if(m.k==='pellet'||m.k==='wood'||m.k==='coal'){if(!utility)add(-3,'brak kotłowni (pomieszczenia technicznego)');else if(utilA<6)add(-1.5,'kotłownia '+utilA.toFixed(1)+' m² – mało miejsca na kocioł'+(m.k==='wood'?', bufor':'')+' i opał');else add(.5,'jest kotłownia '+utilA.toFixed(1)+' m²');
@@ -78,7 +79,7 @@
     const ok=list.filter(m=>m.fit>=3),minT=Math.min(...ok.map(m=>m.total));
     for(const m of list)m.score=Math.round((.5*m.fit+.3*10*Math.min(1,minT/m.total)+.2*m.comfort)*10)/10;
     const best=[...list].sort((a,b)=>b.score-a.score)[0],cheapest=[...ok].sort((a,b)=>a.total-b.total)[0];
-    return {set,E,list,best,cheapest,years,load,EU,Q,utility,chimney,pEl};
+    return {set,E,list,best,cheapest,years,load,EU,Q,utility,chimney,pEl,pvK,pvFromModule:pvF!=null};
   }
   global.HouserHeating={DEF,compare};
 })(window);

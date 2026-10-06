@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fotowoltaika</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:330px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
+h1{font-size:19px;margin:0 0 4px}
+.lead,.hint{font-size:12.5px;color:var(--hs-muted);line-height:1.5;margin:0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.field{display:grid;gap:4px;margin-bottom:9px}
+.field label{font-size:12px;color:var(--hs-muted)}
+.field select,.field input{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+.onoff{display:flex;gap:8px;align-items:flex-start;font-size:13px;font-weight:700;cursor:pointer}
+.onoff input{margin-top:3px}
+.onoff small{display:block;font-weight:400;color:var(--hs-muted);font-size:12px;line-height:1.4}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.tile .l{font-size:12px;color:var(--hs-muted);font-weight:600}
+.tile .v{font-size:28px;font-weight:800;letter-spacing:-.02em;margin-top:4px}
+.tile .v small{font-size:14px;color:var(--hs-muted);font-weight:600}
+.tile .s{font-size:12.5px;color:var(--hs-muted);margin-top:4px;line-height:1.4}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.card h2{font-size:15px;margin:0 0 3px}
+.note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:9px 12px;font-size:12.5px;color:#1e3a8a}
+.note.off{background:#fffbeb;border-color:#fde68a;color:#92400e}
+.roofs{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px}
+.roof{flex:1 1 260px;min-width:0}
+.roof h4{margin:0 0 4px;font-size:13px}
+.roof .d{font-size:12px;color:var(--hs-muted);margin-bottom:6px}
+.roof svg{width:100%;height:auto;display:block;max-height:260px}
+.chart svg{width:100%;height:auto;display:block}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#475569;margin:8px 0 4px;align-items:center}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:middle;margin-right:5px}
+.tip{position:fixed;pointer-events:none;background:#0f172a;color:#fff;font-size:12px;padding:6px 9px;border-radius:7px;line-height:1.45;display:none;z-index:9;white-space:nowrap}
+.iss{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:7px}
+.iss li{font-size:12.5px;line-height:1.45;border-top:1px solid #eef2f6;padding-top:7px}
+.iss .pen{float:right;font-weight:700;color:#b91c1c;font-size:12px;margin-left:8px}
+.iss .t2{display:block;color:#475569;margin-top:2px}
+.iss .t2:before{content:'→ ';color:#2563eb;font-weight:700}
+.good{font-size:12.5px;color:#15803d;margin-top:8px}
+details.tbl summary{cursor:pointer;font-size:12.5px;color:#2563eb;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:5px 8px;border-bottom:1px solid #eef2f6}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+th{font-size:11.5px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.04em}
+tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
+.c-ok{color:#15803d}.c-mid{color:#b45309}.c-bad{color:#b91c1c}
+.empty{padding:40px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){html,body{overflow:auto;height:auto}.wrap{height:auto;grid-template-rows:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{overflow:visible}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1>Fotowoltaika</h1>
+  <p class="lead">Ile paneli zmieści się na dachu tego domu, ile prądu wyprodukują w każdym miesiącu, ile zużyje dom (z ogrzewaniem i ciepłą wodą) i ile to oszczędza. Po włączeniu – rachunki w modułach Ogrzewanie, Instalacja grzewcza i Energia liczą się z tańszym prądem.</p>
+  <div class="section">
+    <label class="onoff"><input type="checkbox" id="enabled"><span>Montuję fotowoltaikę w tym domu<small>uwzględnij ją w rachunkach za ogrzewanie i w porównaniach</small></span></label>
+  </div>
+  <div class="section">
+    <h3>Instalacja</h3>
+    <div class="field"><label>Moc</label><select id="size"><option value="auto">dobrana do zużycia (ok. 110%)</option><option value="max">cały dach</option><option value="manual">moja moc</option></select></div>
+    <div class="field" id="kWpF"><label>Moc [kWp]</label><input id="kWp" type="number" min="0" max="50" step="0.5"></div>
+    <div class="field"><label>Połacie</label><select id="slopes"><option value="auto">tylko opłacalne (bez północnych)</option><option value="all">wszystkie</option></select></div>
+    <div class="field"><label>Magazyn energii</label><select id="battery"><option value="0">bez magazynu</option><option value="5">5 kWh</option><option value="10">10 kWh</option><option value="15">15 kWh</option></select></div>
+    <div class="field"><label>Auto elektryczne – km rocznie (ładowane w domu)</label><input id="evKm" type="number" min="0" step="1000"></div>
+  </div>
+  <div class="section">
+    <h3>Ceny</h3>
+    <div class="field"><label>Sprzedaż nadwyżki do sieci (net-billing) [zł/kWh]</label><input id="pExp" type="number" min="0" step="0.05"></div>
+    <div class="field"><label>Koszt instalacji [zł za kWp, z montażem]</label><input id="priceKWp" type="number" min="0" step="100"></div>
+    <p class="hint">Cena zakupu prądu, liczba domowników i ogrzewanie pochodzą z modułów Energia i Instalacja grzewcza. Ustawienia zapisują się w projekcie.</p>
+  </div>
+  <div class="section">
+    <h3>Jak liczymy</h3>
+    <p class="hint">Panele ok. 1,13 × 1,72 m (440 Wp) w rzędach na połaci, z pasem 0,5 m przy okapie, kalenicy i szczycie; okna dachowe i komin zabierają miejsce. 1 kWp na południe pod kątem ok. 35° daje w Polsce ok. 1050 kWh rocznie – inne kierunki i kąty mniej. Autokonsumpcja: część prądu zużywana w ciągu dnia (domowy ok. 35%, ciepła woda ok. 60%, ogrzewanie ok. 30%) plus magazyn; reszta idzie do sieci po cenie net-billingu.</p>
+  </div>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<div class="tip" id="tip"></div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/balconies.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="../naslonecznienie/sun.js"></script>
+<script src="../naslonecznienie/calc.js"></script>
+<script src="../../shared/energy.js"></script>
+<script src="../../shared/heating.js"></script>
+<script src="../../shared/heating-system.js"></script>
+<script src="../../shared/pv.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let project=null,R=null;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const kwh=v=>Math.round(v).toLocaleString('pl-PL')+' kWh';
+const zl=v=>(Math.round(v/100)*100).toLocaleString('pl-PL')+' zł';
+const MON=['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'];
+const COL={prod:'#d97706',cons:'#2563eb'};
+function settings(){return HouserPV.settings(project)}
+function save(patch){const s={...settings(),...patch};project.pvSettings=s;HouserStore.update(p=>{p.pvSettings=s},'fotowoltaika');render()}
+$('enabled').onchange=()=>save({enabled:$('enabled').checked});
+for(const id of ['size','slopes'])$(id).onchange=()=>save({[id]:$(id).value});
+$('battery').onchange=()=>save({battery:+$('battery').value});
+for(const id of ['kWp','evKm','pExp','priceKWp'])$(id).onchange=()=>{const v=+$(id).value;if(Number.isFinite(v)&&v>=0)save({[id]:v})};
+
+// połać z panelami (widok „rozłożony”: szerokość = długość połaci wzdłuż kalenicy)
+function roofSVG(s){const P=R.PANEL,S=34,isFlat=s.side==='flat';
+  const Lm=isFlat?Math.sqrt(s.area)*1.4:R.roofLen,Hm=isFlat?Math.sqrt(s.area)/1.4:R.slopeLen;
+  const w=Lm*S,h=Hm*S,cols=Math.max(1,Math.floor((Lm-1)/P.w)),pw=P.w*S,ph=P.h*S,x0=(w-cols*pw)/2;
+  let g='<rect x="0" y="0" width="'+w+'" height="'+h+'" rx="4" fill="#475569"/>';
+  g+='<line x1="0" y1="2" x2="'+w+'" y2="2" stroke="#1e293b" stroke-width="4"/>';
+  let n=0;for(let r=0;n<s.panels&&(r+1)*ph<=h-.3*S;r++)for(let k=0;k<cols&&n<s.panels;k++,n++)g+='<rect x="'+(x0+k*pw+1)+'" y="'+(.5*S+r*ph+1)+'" width="'+(pw-2)+'" height="'+(ph-2)+'" fill="#1e3a8a" stroke="#93c5fd" stroke-width="1"/>';
+  const left=Math.max(0,s.maxPanels-s.panels);
+  return '<svg viewBox="-2 -2 '+(w+4)+' '+(h+4)+'" role="img" aria-label="'+esc(s.dirPL)+': '+s.panels+' paneli">'+g+'</svg>'+(left?'<div class="d">jeszcze ok. '+left+' miejsc na panele</div>':'')}
+
+function chartSVG(){const M=R.monthly,Wd=720,Hd=230,pl=44,pb=26,pt=10,max=Math.max(...M.map(m=>Math.max(m.prod,m.cons)))*1.08||1;
+  const step=(Wd-pl-6)/12,bw=Math.min(22,(step-8)/2),y=v=>pt+(Hd-pt-pb)*(1-v/max);
+  let g='';const ticks=4,stepV=Math.ceil(max/ticks/100)*100;
+  for(let v=0;v<=max;v+=stepV)g+='<line x1="'+pl+'" x2="'+Wd+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="#e5e7eb"/><text x="'+(pl-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="11" fill="#64748b">'+Math.round(v).toLocaleString('pl-PL')+'</text>';
+  const bar=(x,v,col)=>{const yy=y(v),hh=Hd-pb-yy;if(hh<1)return '';const r=Math.min(4,hh);return '<path d="M'+x+' '+(Hd-pb)+'V'+(yy+r)+'Q'+x+' '+yy+' '+(x+r)+' '+yy+'H'+(x+bw-r)+'Q'+(x+bw)+' '+yy+' '+(x+bw)+' '+(yy+r)+'V'+(Hd-pb)+'Z" fill="'+col+'"/>'};
+  M.forEach((m,i)=>{const cx=pl+step*i+step/2;g+=bar(cx-bw-1,m.prod,COL.prod)+bar(cx+1,m.cons,COL.cons);
+    g+='<text x="'+cx+'" y="'+(Hd-8)+'" text-anchor="middle" font-size="11" fill="#64748b">'+MON[i]+'</text>';
+    g+='<rect x="'+(pl+step*i)+'" y="'+pt+'" width="'+step+'" height="'+(Hd-pt-pb)+'" fill="transparent" data-m="'+i+'"/>'});
+  g+='<line x1="'+pl+'" x2="'+Wd+'" y1="'+(Hd-pb)+'" y2="'+(Hd-pb)+'" stroke="#94a3b8"/>';
+  return '<svg viewBox="0 0 '+Wd+' '+Hd+'" role="img" aria-label="Produkcja i zużycie prądu w miesiącach">'+g+'</svg>'}
+
+function render(){const M_=$('main');
+  if(!project||!(project.grid||project.definitionSnapshot?.grid)){M_.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej albo narysuj rzut w <b>Układzie pomieszczeń</b>.</div>';return}
+  const s=settings();
+  try{R=HouserPV.compute(project)}catch(e){console.error(e);M_.innerHTML='<div class="empty">Nie udało się policzyć.</div>';return}
+  $('enabled').checked=!!s.enabled;$('size').value=s.size;$('kWpF').hidden=s.size!=='manual';$('kWp').value=s.kWp;$('slopes').value=s.slopes;$('battery').value=String(s.battery);$('evKm').value=s.evKm;$('pExp').value=s.pExp;$('priceKWp').value=s.priceKWp;
+  const C=R.cons,cover=R.cons.total?R.prod/R.cons.total:0;
+  let h=s.enabled?'<div class="note">Fotowoltaika jest włączona – Ogrzewanie, Instalacja grzewcza i Energia liczą prąd po ok. <b>'+Math.round(R.priceFactor*100)+'%</b> ceny ('+fmt(R.pEl*R.priceFactor,2)+' zł zamiast '+fmt(R.pEl,2)+' zł za kWh).</div>':
+    '<div class="note off">To propozycja – zaznacz po lewej „Montuję fotowoltaikę”, żeby rachunki w innych modułach liczyły się z tańszym prądem.</div>';
+  h+='<div class="tiles"><div class="tile"><div class="l">Instalacja</div><div class="v">'+fmt(R.kWp)+' <small>kWp</small></div><div class="s">'+R.panels+' paneli · dach mieści do '+fmt(R.maxKWp)+' kWp</div></div>'+
+    '<div class="tile"><div class="l">Produkcja w roku</div><div class="v">'+Math.round(R.prod).toLocaleString('pl-PL')+' <small>kWh</small></div><div class="s">'+Math.round(cover*100)+'% zużycia domu ('+kwh(C.total)+')</div></div>'+
+    '<div class="tile"><div class="l">Oszczędność</div><div class="v">'+zl(R.savings)+' <small>/ rok</small></div><div class="s">zużyte w domu '+Math.round(R.selfShare*100)+'% produkcji, reszta sprzedana</div></div>'+
+    '<div class="tile"><div class="l">Koszt i zwrot</div><div class="v">'+zl(R.invest)+'</div><div class="s">'+(R.payback?'zwrot po ok. '+fmt(R.payback,0)+' latach':'brak zwrotu')+(s.battery?' · z magazynem '+s.battery+' kWh':'')+'</div></div></div>';
+  // dach
+  h+='<div class="card"><h2>Panele na dachu</h2><p class="hint">Połacie widziane z góry, rozłożone płasko (szerokość = długość wzdłuż kalenicy). Kąt dachu '+fmt(R.slopes[0]?.tilt||0,0)+'°.</p><div class="roofs">'+
+    R.slopes.map(sl=>'<div class="roof"><h4>'+esc(sl.side==='flat'?'Dach płaski':'Połać – '+sl.dirPL)+' <span class="hint">· '+sl.panels+' pan. · '+fmt(sl.kWp)+' kWp · '+kwh(sl.prod)+'</span></h4><div class="d">uzysk '+Math.round(sl.k*100)+'% połaci na południe'+(sl.roofWins?' · okna dachowe: '+sl.roofWins:'')+(sl.panels===0&&sl.maxPanels?' · nieużyta':'')+'</div>'+roofSVG(sl)+'</div>').join('')+'</div></div>';
+  // wykres miesięczny
+  h+='<div class="card chart"><h2>Produkcja i zużycie prądu w miesiącach</h2><p class="hint">Latem panele dają więcej, niż dom zużywa (nadwyżka idzie do sieci), zimą – mniej, bo pompa ciepła zużywa najwięcej, gdy słońca jest najmniej.</p>'+
+    '<div class="legend"><span><i style="background:'+COL.prod+'"></i>produkcja z paneli</span><span><i style="background:'+COL.cons+'"></i>zużycie domu</span></div>'+chartSVG()+
+    '<details class="tbl"><summary>Tabela miesięcy</summary><table><thead><tr><th>Miesiąc</th><th class="n">Produkcja</th><th class="n">Zużycie</th><th class="n">Zużyte od razu</th><th class="n">Do sieci</th><th class="n">Z sieci</th></tr></thead><tbody>'+
+    R.monthly.map((m,i)=>'<tr><td>'+MON[i]+'</td><td class="n">'+kwh(m.prod)+'</td><td class="n">'+kwh(m.cons)+'</td><td class="n">'+kwh(m.self)+'</td><td class="n">'+kwh(m.export)+'</td><td class="n">'+kwh(m.import)+'</td></tr>').join('')+
+    '<tr class="sum"><td>Rok</td><td class="n">'+kwh(R.prod)+'</td><td class="n">'+kwh(C.total)+'</td><td class="n">'+kwh(R.self)+'</td><td class="n">'+kwh(R.export)+'</td><td class="n">'+kwh(R.import)+'</td></tr></tbody></table></details></div>';
+  // magazyn energii
+  if(R.batteries){const B=R.batteries,cur=+s.battery||0;
+    h+='<div class="card"><h2>Magazyn energii – czy się opłaca</h2><p class="hint">Magazyn przechowuje nadwyżkę z dnia na wieczór i noc – dom zużywa więcej własnego prądu, a mniej sprzedaje tanio do sieci. Dopłata: ok. '+zl(+s.priceBatt||2600)+' za kWh pojemności + falownik hybrydowy.</p><table><thead><tr><th>Magazyn</th><th class="n">Zużyte w domu</th><th class="n">Oszczędność / rok</th><th class="n">Dopłata za magazyn</th><th class="n">Zwrot dopłaty</th><th></th></tr></thead><tbody>'+
+      B.map(b=>'<tr'+(b.kWh===cur?' style="background:#eff6ff"':'')+'><td>'+(b.kWh?b.kWh+' kWh':'bez magazynu')+'</td><td class="n">'+Math.round(R.prod?b.self/R.prod*100:0)+'%</td><td class="n">'+zl(b.savings)+(b.kWh?' <small class="c-ok">+'+zl(b.addSave)+'</small>':'')+'</td><td class="n">'+(b.kWh?zl(b.addInvest):'–')+'</td><td class="n'+(b.addPayback&&b.addPayback>15?' c-bad':b.addPayback&&b.addPayback<=10?' c-ok':'')+'">'+(b.kWh?(b.addPayback?'ok. '+fmt(b.addPayback,0)+' lat':'nie zwraca się'):'–')+'</td><td>'+(b.kWh===cur?'<b>wybrany</b>':'<button class="hs-btn" data-batt="'+b.kWh+'" style="font-size:12px;padding:3px 8px">wybierz</button>')+'</td></tr>').join('')+'</tbody></table>'+
+      '<p class="hint" style="margin-top:8px">Magazyn żyje ok. 10–15 lat – jeśli dopłata zwraca się dłużej, opłaca się głównie jako zasilanie awaryjne albo przy dotacji.</p></div>'}
+  // zużycie i ocena
+  const rows=[['Prąd domowy (oświetlenie, AGD, gotowanie)',C.base],['Ogrzewanie',C.heat],['Ciepła woda',C.water],['Wentylacja',C.vent],['Auto elektryczne',C.ev]].filter(r=>r[1]>=1);
+  h+='<div class="card"><h2>Zużycie prądu w roku</h2><table><tbody>'+rows.map(r=>'<tr><td>'+esc(r[0])+'</td><td class="n">'+kwh(r[1])+'</td></tr>').join('')+'<tr class="sum"><td>Razem</td><td class="n">'+kwh(C.total)+'</td></tr></tbody></table>'+
+    '<p class="hint" style="margin-top:8px">Rachunek za prąd bez paneli ok. '+zl(C.total*R.pEl)+' / rok, z panelami ok. '+zl(Math.max(0,C.total*R.pEl-R.savings))+' / rok.</p></div>';
+  h+='<div class="card"><h2>Dach pod fotowoltaikę · '+fmt(R.score)+' / 10</h2>'+(R.issues.length?'<ul class="iss">'+R.issues.map(i=>'<li><span class="pen">−'+fmt(i.p)+'</span>'+esc(i.text)+(i.tip?'<span class="t2">'+esc(i.tip)+'</span>':'')+'</li>').join('')+'</ul>':'')+R.good.map(g=>'<div class="good">✓ '+esc(g)+'</div>').join('')+'</div>';
+  M_.innerHTML=h;
+  M_.querySelectorAll('[data-batt]').forEach(b=>b.onclick=()=>save({battery:+b.dataset.batt}));
+  const tip=$('tip');M_.querySelectorAll('[data-m]').forEach(el=>{el.onmousemove=e=>{const m=R.monthly[+el.dataset.m];tip.innerHTML='<b>'+MON[m.m]+'</b><br>produkcja '+kwh(m.prod)+'<br>zużycie '+kwh(m.cons)+'<br>do sieci '+kwh(m.export)+' · z sieci '+kwh(m.import);tip.style.display='block';tip.style.left=Math.min(innerWidth-200,e.clientX+12)+'px';tip.style.top=(e.clientY+12)+'px'};el.onmouseleave=()=>{tip.style.display='none'}});
+}
+const rec=HouserStore.load();project=rec?rec.project:null;render();
+HouserStore.subscribe(r=>{project=r.project;render()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

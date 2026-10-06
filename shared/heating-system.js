@@ -93,13 +93,13 @@
     let exInv=0,exPer=0,exService=0;
     if(s.extra!=='none'){const m=C.list.find(x=>x.k===s.extra);
       if(EX.invest!=null){exInv=EX.invest;exService=EX.service}else{exInv=s.extra==='hp_air'?m.invest*.85:s.extra==='gas'?m.invest:m.invest-(C.chimney?0:7000)-(s.extra==='wood'?7000:0);exService=m.service}
-      exPer=EX.eff?S.pWood/S.woodKWh/EX.eff:s.extra==='electric'?S.pEl*(HS.pv==='yes'?.6:1):(m.rate??m.perKWh);addC(EX.name,exInv,EX.how||'drugie urządzenie z montażem')}
+      exPer=EX.eff?S.pWood/S.woodKWh/EX.eff:s.extra==='electric'?S.pEl*C.pvK:(m.rate??m.perKWh);addC(EX.name,exInv,EX.how||'drugie urządzenie z montażem')}
     // ciepła woda: skąd i za ile (zł za kWh ciepłej wody)
-    const pElP=S.pEl*(HS.pv==='yes'?.6:1),manual=['wood','fireplace_water'].includes(s.main);
+    const pElP=S.pEl*C.pvK,manual=['wood','fireplace_water'].includes(s.main);
     let dhwSrc=s.dhwSrc;if(!DHW[dhwSrc]||dhwSrc==='auto'||(air&&(dhwSrc==='main'||dhwSrc==='main_el')))dhwSrc=manual?'main_el':s.main==='electric'||air?'el':'main';
     if(air&&(s.dhwSrc==='main'||s.dhwSrc==='main_el'))issues.push({p:.3,text:'Kominek powietrzny nie grzeje wody – ciepła woda liczona z grzałki elektrycznej.',tip:'Możesz wybrać osobną pompę ciepła do ciepłej wody albo kolektory słoneczne.',cost:0});
     if(dhwSrc==='extra'&&!EX.hydro)dhwSrc=manual?'main_el':'main';
-    const dMain=HS.pv==='yes'&&s.main.startsWith('hp_')?pElP/(s.main==='hp_ground'?4.6*.8:S.scop*.8):M.dhwMain; // woda z tego źródła przez cały rok (latem kocioł ma niższą sprawność)
+    const dMain=C.pvK<1&&s.main.startsWith('hp_')?pElP/(s.main==='hp_ground'?4.6*.8:S.scop*.8):M.dhwMain; // woda z tego źródła przez cały rok (latem kocioł ma niższą sprawność)
     const dhwRate=dhwSrc==='main'?dMain:dhwSrc==='main_el'?.5*dMain+.5*pElP:dhwSrc==='el'?pElP:dhwSrc==='hp_dhw'?pElP/2.8:dhwSrc==='solar'?.4*dMain:exPer;
     const DW=DHW[dhwSrc];if(DW.invest)addC(DW.name[0].toUpperCase()+DW.name.slice(1),DW.invest,dhwSrc==='solar'?'ok. 60% ciepłej wody ze słońca, zasobnik dwuwężownicowy':dhwSrc==='hp_dhw'?'z własnym zasobnikiem':'');
     if(dhwSrc==='main_el')addC('Grzałka w zasobniku (latem)',500);
