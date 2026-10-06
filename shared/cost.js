@@ -61,6 +61,8 @@ function fromModules(){const D={};const T=f=>{try{return f()}catch(e){console.wa
   if(global.HouserHeatSys){const R=T(()=>HouserHeatSys.evaluate(project));if(R){const src=R.designed?'z modułu Instalacja grzewcza':'domyślna instalacja (nie zaprojektowano w module Instalacja grzewcza)';D.heatsrc={name:'Źródło ciepła: '+R.name.toLowerCase(),total:R.investSrc,how:src+' – źródła, bufor, komin'};D.floorheat={name:'Instalacja grzewcza w pokojach',total:R.invest-R.investSrc,how:src+' – podłogówka, grzejniki, rozdzielacze, rury'}}}
   // wod-kan: stawka za m² + dopłata za układ z Hydrauliki (dalekie łazienki, przesunięte piony, cyrkulacja)
   if(global.HouserPlumbing){const P=T(()=>HouserPlumbing.evaluate(project,project.plumbingSettings));if(P&&P.extra>0)D.plumbExtra={name:'Dopłata za układ instalacji wod-kan',total:P.extra,how:'z modułu Hydraulika – dłuższe rury i piony niż w układzie zwartym'}}
+  // instalacja elektryczna: punkty, obwody, rozdzielnica (moduł Elektryka i oświetlenie)
+  if(global.HouserElectric){const L=T(()=>HouserElectric.evaluate(project));if(L&&L.cost.total>0)D.elec={name:'Instalacja elektryczna ('+L.points+' gniazd i łączników, '+L.lights+' punktów światła, '+L.circuits+' obwodów)',total:L.cost.total,how:'z modułu Elektryka i oświetlenie – bez opraw oświetleniowych'}}
   // konstrukcja: podciągi, belki nad szerokimi otworami, wsporniki, słupy (moduł Konstrukcja)
   if(global.HouserStructure){const K=T(()=>HouserStructure.evaluate(project));if(K&&K.cost.total>0)D.structExtra={name:'Wzmocnienia konstrukcji ('+K.cost.items.length+')',total:K.cost.total,how:'z modułu Konstrukcja – '+K.cost.items.slice(0,3).map(x=>x.name.toLowerCase()).join(', ')+(K.cost.items.length>3?'…':'')}}
   return D}

@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Elektryka i oświetlenie</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:330px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
+h1{font-size:19px;margin:0 0 4px}
+.lead,.hint{font-size:12.5px;color:var(--hs-muted);line-height:1.5;margin:0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.tile .l{font-size:12px;color:var(--hs-muted);font-weight:600}
+.tile .v{font-size:28px;font-weight:800;letter-spacing:-.02em;margin-top:4px}
+.tile .v small{font-size:14px;color:var(--hs-muted);font-weight:600}
+.tile .s{font-size:12.5px;color:var(--hs-muted);margin-top:4px;line-height:1.4}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.card h2{font-size:15px;margin:0 0 3px}
+.plans{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;margin-top:8px}
+.plan{flex:1 1 320px;min-width:0}
+.plan h4{margin:6px 0;font-size:12px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.06em}
+.plan svg{width:100%;height:auto;display:block;max-height:480px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#475569;margin-top:8px;align-items:center}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:5px}
+.iss{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:7px}
+.iss li{font-size:12.5px;line-height:1.45;border-top:1px solid #eef2f6;padding-top:7px}
+.iss .pen{float:right;font-weight:700;color:#b91c1c;font-size:12px;margin-left:8px}
+.iss .tip{display:block;color:#475569;margin-top:2px}
+.iss .tip:before{content:'→ ';color:#2563eb;font-weight:700}
+.good{font-size:12.5px;color:#15803d;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #eef2f6;vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+th{font-size:11.5px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.04em}
+tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
+.c-ok{color:#15803d}.c-mid{color:#b45309}.c-bad{color:#b91c1c}
+.pill{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.pill.ok{background:#dcfce7;color:#166534}.pill.mid{background:#fef3c7;color:#92400e}.pill.bad{background:#fee2e2;color:#991b1b}
+.empty{padding:40px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){html,body{overflow:auto;height:auto}.wrap{height:auto;grid-template-rows:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{overflow:visible}}
+.field{display:grid;gap:4px;margin-bottom:9px}
+.field label{font-size:12px;color:var(--hs-muted)}
+.field select{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;margin-bottom:7px;cursor:pointer}
+.chk input{margin-top:2px}
+.badge{font-size:10.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1>Elektryka i oświetlenie</h1>
+  <p class="lead">Ile gniazd, łączników i punktów światła potrzeba w każdym pomieszczeniu, ile obwodów i jaka rozdzielnica, jakie urządzenia potrzebują osobnych obwodów, jaka moc przyłączeniowa – i ile kosztuje instalacja (trafia do Wyceny).</p>
+  <div class="section">
+    <h3>Standard</h3>
+    <div class="field"><label>Liczba gniazd</label><select id="level"><option value="eco">oszczędnie (minimum)</option><option value="std">typowo</option><option value="komfort">komfortowo (+30%)</option></select></div>
+    <label class="chk"><input type="checkbox" id="induction"><span>Płyta indukcyjna (obwód 400 V)</span></label>
+    <label class="chk"><input type="checkbox" id="ev"><span>Ładowarka auta elektrycznego (11 kW)</span></label>
+    <label class="chk"><input type="checkbox" id="outdoor"><span>Gniazda i oświetlenie na zewnątrz</span></label>
+    <label class="chk"><input type="checkbox" id="smart"><span>Inteligentny dom (sterowanie światłem, roletami, czujniki)</span></label>
+    <p class="hint">Ustawienia zapisują się w projekcie.</p>
+  </div>
+  <div class="section">
+    <h3>Jak liczymy</h3>
+    <p class="hint">Gniazda wg rodzaju i wielkości pomieszczenia (np. sypialnia 5 + 1 na 8 m², salon 6 + 1 na 4 m², kuchnia 6 nad blatem), światło – 1 punkt na 5–10 m². Kuchnia i łazienki mają osobne obwody gniazd, reszta – po ok. 8 gniazd na obwód; oświetlenie – do 10 punktów na obwód. Różnicówka na ok. 8 obwodów, ogranicznik przepięć, rezerwa w rozdzielnicy.</p>
+    <p class="hint" style="margin-top:8px">Moc szczytowa: domowe zużycie i urządzenia (płyta, piekarnik, pompa ciepła z grzałką, ładowarka, klimatyzacja z Wyceny) ze współczynnikiem jednoczesności 0,5. Typowe przyłącze domu to 14 kW (3 × 20 A). Instalacja fotowoltaiczna nie może mieć większej mocy niż przyłącze.</p>
+    <p class="hint" style="margin-top:8px">Ceny z robocizną, bez opraw oświetleniowych.</p>
+  </div>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/balconies.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="../naslonecznienie/sun.js"></script>
+<script src="../naslonecznienie/calc.js"></script>
+<script src="../../shared/energy.js"></script>
+<script src="../../shared/hvac.js"></script>
+<script src="../../shared/pv.js"></script>
+<script src="../../shared/heating.js"></script>
+<script src="../../shared/heating-system.js"></script>
+<script src="engine.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let project=null,L=null;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const zl=v=>(Math.round(v/100)*100).toLocaleString('pl-PL')+' zł';
+function settings(){return {...HouserElectric.DEF,...(project?.elecSettings||{})}}
+function save(patch){const s={...settings(),...patch};project.elecSettings=s;HouserStore.update(p=>{p.elecSettings=s},'elektryka');render()}
+$('level').onchange=()=>save({level:$('level').value});
+for(const id of ['induction','ev','outdoor','smart'])$(id).onchange=()=>save({[id]:$(id).checked});
+
+function planSVG(fl){const {W,H,c}=L,S=22,R=L.rooms.filter(r=>r.f===fl);if(!R.length)return '';
+  const cell={};for(const r of R)for(const [x,y] of r.cells)cell[x+','+y]=r;
+  let xs=W,ys=H,xe=0,ye=0;for(const k in cell){const [x,y]=k.split(',').map(Number);xs=Math.min(xs,x);ys=Math.min(ys,y);xe=Math.max(xe,x+1);ye=Math.max(ye,y+1)}
+  let g='';for(const k in cell){const [x,y]=k.split(',').map(Number);g+='<rect x="'+x*S+'" y="'+y*S+'" width="'+(S+.4)+'" height="'+(S+.4)+'" fill="'+(L.board&&cell[k]===L.board?'#dbeafe':'#f8fafc')+'"/>'}
+  const ln=(x1,y1,x2,y2,col,w)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+w+'"/>';
+  const E=(a,b,x1,y1,x2,y2)=>{const A=cell[a],B=cell[b];if(!!A!==!!B)g+=ln(x1,y1,x2,y2,'#334155',3);else if(A&&B&&A!==B)g+=ln(x1,y1,x2,y2,'#94a3b8',1)};
+  for(let y=ys;y<=ye;y++)for(let x=xs;x<xe;x++)E(x+','+(y-1),x+','+y,x*S,y*S,(x+1)*S,y*S);
+  for(let x=xs;x<=xe;x++)for(let y=ys;y<ye;y++)E((x-1)+','+y,x+','+y,x*S,y*S,x*S,(y+1)*S);
+  const b=L.board;if(b)for(const r of R){if(r===b)continue;const bx=b.f===fl?b.cx:r.cx,by=b.f===fl?b.cy:r.cy;g+='<path d="M'+((bx+.5)*S)+' '+((by+.5)*S)+' L'+((bx+.5)*S)+' '+((r.cy+.5)*S)+' L'+((r.cx+.5)*S)+' '+((r.cy+.5)*S)+'" fill="none" stroke="#f59e0b" stroke-width="1.6" stroke-dasharray="4 4" opacity=".7"/>'}
+  for(const r of R){const X=(r.cx+.5)*S,Y=(r.cy+.5)*S;if(r.cells.length<4)continue;
+    g+='<text x="'+X+'" y="'+(Y-5)+'" text-anchor="middle" font-size="10.5" font-weight="700" fill="#0f172a" paint-order="stroke" stroke="#fff" stroke-width="3">'+esc(r.name.length>16?r.name.slice(0,15)+'…':r.name)+'</text>'+
+      '<text x="'+X+'" y="'+(Y+9)+'" text-anchor="middle" font-size="10" fill="#334155" paint-order="stroke" stroke="#fff" stroke-width="3">'+r.sockets+' gn. · '+r.lights+' św.</text>'}
+  if(b&&b.f===fl)g+='<rect x="'+((b.cx+.5)*S-9)+'" y="'+((b.cy+.5)*S+14)+'" width="18" height="12" rx="2" fill="#1d4ed8"/><text x="'+(b.cx+.5)*S+'" y="'+((b.cy+.5)*S+23)+'" text-anchor="middle" font-size="8.5" font-weight="800" fill="#fff">RG</text>';
+  return '<div class="plan"><h4>'+(fl===L.lo?'Parter':'Piętro / poddasze')+'</h4><svg viewBox="'+[xs*S-6,ys*S-6,(xe-xs)*S+12,(ye-ys)*S+12].join(' ')+'">'+g+'</svg></div>'}
+
+function render(){const M=$('main');
+  if(!project||!(project.grid||project.definitionSnapshot?.grid)){M.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej albo narysuj rzut w <b>Układzie pomieszczeń</b>.</div>';return}
+  const s=settings();$('level').value=s.level;for(const id of ['induction','ev','outdoor','smart'])$(id).checked=!!s[id];
+  try{L=HouserElectric.evaluate(project)}catch(e){console.error(e);M.innerHTML='<div class="empty">Nie udało się policzyć.</div>';return}
+  const pc=L.peak>13.8?'c-mid':'c-ok';
+  let h='<div class="tiles"><div class="tile"><div class="l">Punkty</div><div class="v">'+(L.points+L.lights)+'</div><div class="s">'+L.points+' gniazd i łączników · '+L.lights+' punktów światła</div></div>'+
+    '<div class="tile"><div class="l">Obwody i rozdzielnica</div><div class="v">'+L.circuits+' <small>obwodów</small></div><div class="s">rozdzielnica '+L.boardSize+' mod. · '+L.rcd+' różnicówek'+(L.sub?' · podrozdzielnica na piętrze':'')+'</div></div>'+
+    '<div class="tile"><div class="l">Moc przyłączeniowa</div><div class="v '+pc+'">'+fmt(L.peak)+' <small>kW</small></div><div class="s">zabezpieczenie '+L.conn[1]+' ('+fmt(L.conn[0])+' kW)</div></div>'+
+    '<div class="tile"><div class="l">Koszt instalacji</div><div class="v">'+zl(L.cost.total)+'</div><div class="s">ok. '+fmt(L.cable,0)+' m przewodów · bez opraw</div></div></div>';
+  h+='<div class="card"><h2>Rzut</h2><p class="hint">W każdym pomieszczeniu liczba gniazd i punktów światła. RG – rozdzielnica główna, przerywane linie – kierunek przewodów od rozdzielnicy (nie ich trasa).</p><div class="plans">'+planSVG(L.lo)+(L.hasUp?planSVG(L.up):'')+'</div></div>';
+  h+='<div class="card"><h2>Pomieszczenia</h2><table><thead><tr><th>Pomieszczenie</th><th class="n">m²</th><th class="n">Gniazda</th><th class="n">Łączniki</th><th class="n">Światło</th><th class="n">Do rozdzielnicy</th></tr></thead><tbody>'+
+    L.rooms.map(r=>'<tr><td>'+esc(r.name)+' <span class="hint">'+(r.f===L.lo?'parter':'piętro')+(r.K.ip?' · gniazda IP44':'')+'</span></td><td class="n">'+fmt(r.area)+'</td><td class="n">'+r.sockets+'</td><td class="n">'+r.switches+'</td><td class="n">'+r.lights+'</td><td class="n">'+fmt(r.dist,0)+' m</td></tr>').join('')+
+    '<tr class="sum"><td>Razem</td><td></td><td class="n">'+L.rooms.reduce((a,r)=>a+r.sockets,0)+'</td><td class="n">'+L.rooms.reduce((a,r)=>a+r.switches,0)+'</td><td class="n">'+L.rooms.reduce((a,r)=>a+r.lights,0)+'</td><td></td></tr></tbody></table></div>';
+  h+='<div class="card"><h2>Obwody</h2><table><thead><tr><th>Obwód</th><th>Gdzie</th><th class="n">Moc</th></tr></thead><tbody>'+
+    L.lightC.map(x=>'<tr><td>Oświetlenie – '+(x.F===L.lo?'parter':'piętro')+(x.circ>1?' ('+x.circ+' obwody)':'')+'</td><td class="hint">'+x.n+' punktów</td><td></td></tr>').join('')+
+    L.sockC.map(x=>'<tr><td>'+esc(x.name)+'</td><td class="hint">ok. '+x.n+' gniazd</td><td></td></tr>').join('')+
+    L.ded.map(d=>'<tr><td>'+esc(d.name)+(d.ph==='3f'?' <span class="pill mid">400 V</span>':'')+'</td><td class="hint">'+esc(d.room)+'</td><td class="n">'+fmt(d.kw,1)+' kW</td></tr>').join('')+'</tbody></table></div>';
+  h+='<div class="card"><h2>Uwagi · '+fmt(L.score)+' / 10</h2>'+(L.issues.length?'<ul class="iss">'+L.issues.map(i=>'<li><span class="pen">−'+fmt(i.p)+'</span>'+esc(i.text)+(i.tip?'<span class="tip">'+esc(i.tip)+'</span>':'')+'</li>').join('')+'</ul>':'')+L.good.map(g=>'<div class="good">✓ '+esc(g)+'</div>').join('')+'</div>';
+  h+='<div class="card"><h2>Koszt</h2><table><tbody>'+L.cost.items.map(x=>'<tr><td>'+esc(x.name)+(x.note?'<br><span class="hint">'+esc(x.note)+'</span>':'')+'</td><td class="n">'+zl(x.v)+'</td></tr>').join('')+'<tr class="sum"><td>Razem (trafia do Wyceny)</td><td class="n">'+zl(L.cost.total)+'</td></tr></tbody></table></div>';
+  M.innerHTML=h}
+const rec=HouserStore.load();project=rec?rec.project:null;render();
+HouserStore.subscribe(r=>{project=r.project;render()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>
