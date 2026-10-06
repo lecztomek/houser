@@ -112,6 +112,7 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const nf=(v,d=0)=>v==null||!Number.isFinite(v)?'–':(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
 const plF=(n,a,b,c)=>{n=Math.round(n);const d=n%10,t=n%100;return n===1?a:d>=2&&d<=4&&(t<12||t>14)?b:c};
 const zl=v=>v==null?'–':Math.round(v).toLocaleString('pl-PL')+' zł';
+const fmtKWp=v=>nf(v,1)+' kWp';
 const KEY='houser:compare',MAXC=4;
 const top_=(()=>{try{return window.top!==window&&window.top.HouserStore?window.top:null}catch(_){return null}})();
 const cloud=()=>{try{return top_?.HouserCloud?.user?.()?top_.HouserCloud:null}catch(_){return null}};
@@ -145,7 +146,7 @@ function planSvg(p){const g=p.grid||p.definitionSnapshot?.grid;if(!g)return '';c
 // ---------- wskaźniki jednego domu
 function metrics(p){const m={p};const tryc=(k,fn)=>{try{m[k]=fn()}catch(e){console.error(k,e);m[k]=null}};
   tryc('q',()=>HouserQuantities.compute(p));const q=m.q;if(!q)return m;
-  tryc('E',()=>HouserEnergy.compute(p));tryc('C',()=>HouserCost.compute(p));tryc('D',()=>HouserDaily.evaluate(p,p.dailySettings));tryc('S',()=>HouserSolar.compute(p));tryc('A',()=>HouserAcoustics.evaluate(p,p.acousticSettings));tryc('P',()=>HouserPlumbing.evaluate(p,p.plumbingSettings));tryc('V',()=>HouserHVAC.evaluate(p,p.hvacSettings));tryc('VM',()=>HouserHVAC.methods(p,p.hvacSettings,m.V));tryc('HS',()=>HouserHeatSys.evaluate(p)); // bez projektu: domyślna instalacja (pompa powietrzna + podłogówka), żeby domy były porównywalnetryc('Ht',()=>HouserHeating.compare(p,{...(p.heatingSettings||{}),...(m.HS?.designed?{emitters:m.HS.emitters}:{})}));tryc('ST',()=>HouserStorage.evaluate(p,p.storageSettings));tryc('ADV',()=>HouserAdvice.collect(p));
+  tryc('E',()=>HouserEnergy.compute(p));tryc('K',()=>HouserStructure.evaluate(p));tryc('L',()=>HouserElectric.evaluate(p));tryc('PV',()=>HouserPV.compute(p));tryc('C',()=>HouserCost.compute(p));tryc('D',()=>HouserDaily.evaluate(p,p.dailySettings));tryc('S',()=>HouserSolar.compute(p));tryc('A',()=>HouserAcoustics.evaluate(p,p.acousticSettings));tryc('P',()=>HouserPlumbing.evaluate(p,p.plumbingSettings));tryc('V',()=>HouserHVAC.evaluate(p,p.hvacSettings));tryc('VM',()=>HouserHVAC.methods(p,p.hvacSettings,m.V));tryc('HS',()=>HouserHeatSys.evaluate(p)); // bez projektu: domyślna instalacja (pompa powietrzna + podłogówka), żeby domy były porównywalnetryc('Ht',()=>HouserHeating.compare(p,{...(p.heatingSettings||{}),...(m.HS?.designed?{emitters:m.HS.emitters}:{})}));tryc('ST',()=>HouserStorage.evaluate(p,p.storageSettings));tryc('ADV',()=>HouserAdvice.collect(p));
   const rooms=q.rooms.filter(r=>r.area>=2),name=r=>(r.name||'').toLowerCase();
   m.beds=rooms.filter(r=>/sypial|pokój|pokoj|gabinet/.test(name(r))).length;m.wet=q.baths+q.wcs;m.nrooms=rooms.length;
   m.floors=q.net[q.up]>0?(q.attic?'parter + poddasze':'parter + piętro'):'parterowy';
@@ -212,6 +213,17 @@ const ROWS=[
   ['Ogrzewanie – najlepsze dla domu','źródło ciepła z najwyższą oceną (dopasowanie, koszt, wygoda) – wg modułu Ogrzewanie',m=>m.Ht?.best.name,v=>v||'–',null,m=>m.Ht?'ocena '+nf(m.Ht.best.score,1)+' / 10':''],
   ['Ogrzewanie – rachunki roczne','instalacji w projekcie (lub domyślnej): ogrzewanie + ciepła woda + opłaty stałe i serwis',m=>m.HS?.year,v=>zl(v)+' na rok','low',m=>m.HS?(m.HS.designed?'zaprojektowana':'domyślna'):''],
   ['Ogrzewanie – koszt w okresie','źródła ciepła + rachunki przez okres z modułu Ogrzewanie (domyślnie 20 lat), bez instalacji w pokojach – żeby domy dało się porównać',m=>m.HS?.totalSrc,zl,'low',m=>m.HS?(m.HS.designed?'zaprojektowana':'domyślna')+' · '+m.HS.years+' lat':''],
+  ['Fotowoltaika'],
+  ['Fotowoltaika – w projekcie','czy dom ma fotowoltaikę (moduł Fotowoltaika) – wtedy rachunki za prąd w Ogrzewaniu są niższe; niżej – moc i oszczędność',m=>m.PV?(m.PV.enabled?fmtKWp(m.PV.kWp):'nie'):null,v=>v||'–',null,m=>m.PV?.enabled?'ok. '+zl(m.PV.savings)+' oszczędności na rok':''],
+  ['Dach pod panele','ile kWp zmieści się na dobrych połaciach; niżej – jaką część zużycia prądu domu to pokrywa',m=>m.PV?.maxKWp,v=>v==null?'–':fmtKWp(v),'high',m=>m.PV?Math.round(m.PV.cover*100)+'% zużycia ('+nf(m.PV.cons.total)+' kWh)':''],
+  ['Fotowoltaika – ocena dachu','0–10: kierunki połaci, miejsce na panele, okna dachowe na połaci południowej',m=>m.PV?.score,v=>nf(v,1)+' / 10','high'],
+  ['Konstrukcja'],
+  ['Łatwość konstrukcji','0–10: rozpiętość stropu, ściany piętra nad ścianami parteru, szerokie otwory, wysunięcia, więźba (moduł Konstrukcja); niżej – najtrudniejsze miejsce',m=>m.K?.score,v=>nf(v,1)+' / 10','high',m=>m.K?.issues[0]?(m.K.issues[0].text.length>70?m.K.issues[0].text.slice(0,68)+'…':m.K.issues[0].text):''],
+  ['Największa rozpiętość stropu','powyżej ok. 6 m potrzebny podciąg',m=>m.K?.hasUp?m.K.maxSpan:null,v=>v==null?'dom parterowy':nf(v,1)+' m','low'],
+  ['Koszt wzmocnień konstrukcji','podciągi, belki nad szerokimi otworami, wsporniki, słupy – w Wycenie',m=>m.K?.cost.total,zl,'low'],
+  ['Elektryka'],
+  ['Instalacja elektryczna – koszt','gniazda, łączniki, punkty światła, obwody, rozdzielnica (moduł Elektryka i oświetlenie) – w Wycenie; niżej – punkty i obwody',m=>m.L?.cost.total,zl,'low',m=>m.L?(m.L.points+m.L.lights)+' punktów · '+m.L.circuits+' obwodów':''],
+  ['Moc przyłączeniowa','moc szczytowa domu (pompa ciepła, płyta, ładowarka…); typowe przyłącze to 14 kW',m=>m.L?.peak,v=>nf(v,1)+' kW','low',m=>m.L?'zabezpieczenie '+m.L.conn[1]:''],
   ['Wentylacja'],
   ['Wentylacja – wybrana','sposób wentylacji wybrany w projekcie (moduł Wentylacja) – liczy się w bilansie energii; niżej – jego ocena dla tego domu',m=>m.VM?.chosen?.name,v=>v||'–',null,m=>m.VM?.chosen?'ocena '+nf(m.VM.chosen.score,1)+' / 10':''],
   ['Wentylacja – najlepsza dla domu','sposób wentylacji z najwyższą oceną – wg modułu Wentylacja',m=>m.VM?.best.name,v=>v||'–',null,m=>m.VM?'koszt zrobienia '+zl(m.VM.best.invest):''],
@@ -226,14 +238,14 @@ const ROWS=[
 ];
 
 const stageSum=(m,st)=>m.C?m.C.rows.filter(r=>r.stage===st).reduce((a,r)=>a+r.value,0)*(m.C.s.factor?1:1):null;
-const CRIT=[['cost','Koszt budowy za m²',2],['energy','Energia (ogrzewanie)',2],['daily','Codzienność',2],['sun','Przegrzewanie latem',1],['quiet','Akustyka',1],['plumb','Hydraulika',1],['heat','Ogrzewanie (koszt w okresie)',1],['vent','Wentylacja (wybrana metoda)',1],['ac','Klimatyzacja (koszt)',1],['store','Schowki i szafy',1],['area','Metraż (większy = lepiej)',0]];
+const CRIT=[['cost','Koszt budowy za m²',2],['struct','Konstrukcja (łatwość budowy)',1],['pv','Fotowoltaika (dach pod panele)',1],['energy','Energia (ogrzewanie)',2],['daily','Codzienność',2],['sun','Przegrzewanie latem',1],['quiet','Akustyka',1],['plumb','Hydraulika',1],['heat','Ogrzewanie (koszt w okresie)',1],['vent','Wentylacja (wybrana metoda)',1],['ac','Klimatyzacja (koszt)',1],['store','Schowki i szafy',1],['area','Metraż (większy = lepiej)',0]];
 const WKEY='houser:compare-weights',WOPT=[[0,'nieważne'],[1,'ważne'],[2,'bardzo ważne']];
 let W=(()=>{try{return {...Object.fromEntries(CRIT.map(c=>[c[0],c[2]])),...JSON.parse(localStorage.getItem(WKEY)||'{}')}}catch(_){return Object.fromEntries(CRIT.map(c=>[c[0],c[2]]))}})();
 const clamp=v=>Math.max(0,Math.min(10,v));
 function overallScores(cols){const cpm=cols.map(c=>c.m.C&&c.m.q?.usableTotal?c.m.C.total/c.m.q.usableTotal:null),minC=Math.min(...cpm.filter(v=>v!=null)),maxA=Math.max(...cols.map(c=>c.m.q?.usableTotal||0));
   const hT=cols.map(c=>c.m.HS?c.m.HS.totalSrc:c.m.Ht?.best.total).filter(v=>v!=null),minH=hT.length?Math.min(...hT):null;
   return cols.map((c,i)=>{const m=c.m,part={cost:cpm[i]!=null?clamp(10*minC/cpm[i]):null,energy:m.E?clamp(10*(120-m.E.EU)/105):null,daily:m.D?.overall??null,
-      sun:m.hotOf?clamp(10*(1-m.hot/m.hotOf)):null,quiet:m.A?.overall??null,plumb:m.P?.overall??null,store:m.ST?.overall??null,vent:m.VM?.chosen?.score??null,ac:m.V?clamp(10-(m.V.ac.best||0)/4000):null,heat:m.HS?m.HS.totalSrc:m.Ht?m.Ht.best.total:null,area:maxA?clamp(10*(m.q?.usableTotal||0)/maxA):null};
+      struct:m.K?.score??null,pv:m.PV?.score??null,sun:m.hotOf?clamp(10*(1-m.hot/m.hotOf)):null,quiet:m.A?.overall??null,plumb:m.P?.overall??null,store:m.ST?.overall??null,vent:m.VM?.chosen?.score??null,ac:m.V?clamp(10-(m.V.ac.best||0)/4000):null,heat:m.HS?m.HS.totalSrc:m.Ht?m.Ht.best.total:null,area:maxA?clamp(10*(m.q?.usableTotal||0)/maxA):null};
     if(part.heat!=null)part.heat=clamp(10*minH/part.heat);
     let sw=0,sv=0;for(const [k] of CRIT){const w=+W[k]||0;if(w&&part[k]!=null){sw+=w;sv+=w*part[k]}}
     return {part,score:sw?sv/sw:null}})}
