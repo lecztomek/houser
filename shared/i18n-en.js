@@ -3962,4 +3962,8 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "Podciąg (moduł Konstrukcja)":"Beam (Structure module)",
 "Słup (moduł Konstrukcja)":"Column (Structure module)",
 "Prąd – rachunek roczny":"Electricity – annual bill",
-"cały dom: prąd domowy, ogrzewanie i ciepła woda wg instalacji, wentylacja (moduł Fotowoltaika); z panelami – po odjęciu oszczędności; niżej – bez paneli":"whole house: household electricity, heating and hot water per installation, ventilation (Photovoltaics module); with panels – after savings; below – without panels"};
+"cały dom: prąd domowy, ogrzewanie i ciepła woda wg instalacji, wentylacja (moduł Fotowoltaika); z panelami – po odjęciu oszczędności; niżej – bez paneli":"whole house: household electricity, heating and hot water per installation, ventilation (Photovoltaics module); with panels – after savings; below – without panels",
+"wróć do zwykłego":"back to the standard one",
+"wróć do zwykłego stropu":"back to the standard floor",
+"strop wystarczy":"the floor is enough",
+"Parter: kolor kratki to rozpiętość stropu nad nią wobec wybranego stropu (zielony – z zapasem, żółty – blisko granicy, pomarańczowy i czerwony – za dużo). Pomarańczowa przerywana linia – ściana piętra, pod którą na parterze nie ma ściany. Czerwone – szerokie otwory (od 3 m), kółka – przeszklenia narożne. Na piętrze czerwone kratki – wysunięcie poza parter, kreskowane – otwór w stropie.":"Ground floor: the cell colour is the slab span above it relative to the chosen floor (green – with margin, yellow – close to the limit, orange and red – too much). Orange dashed line – an upper wall with no ground-floor wall below. Red – wide openings (from 3 m), circles – corner glazing. Upper floor: red cells – overhang beyond the ground floor, hatched – opening in the slab."};
