@@ -3960,4 +3960,6 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "podciąg (przerywany – ukryty w stropie)":"beam (dashed – hidden in the slab)",
 "słup":"column",
 "Podciąg (moduł Konstrukcja)":"Beam (Structure module)",
-"Słup (moduł Konstrukcja)":"Column (Structure module)"};
+"Słup (moduł Konstrukcja)":"Column (Structure module)",
+"Prąd – rachunek roczny":"Electricity – annual bill",
+"cały dom: prąd domowy, ogrzewanie i ciepła woda wg instalacji, wentylacja (moduł Fotowoltaika); z panelami – po odjęciu oszczędności; niżej – bez paneli":"whole house: household electricity, heating and hot water per installation, ventilation (Photovoltaics module); with panels – after savings; below – without panels"};
