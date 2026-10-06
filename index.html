@@ -643,13 +643,16 @@ const cmpBtn=(src,id,big,icon)=>{const on=inCmp(src,id);return '<button class="b
 // ---------- moduł Projekty
 // wiersz / kafel mojego domu: Otwórz + uprawnienia, reszta jako małe ikony z podpowiedzią (żeby nie rozpychały układu)
 // liczba niepodjętych decyzji przy domu na liście: bieżący – na żywo; pozostałe – z opisu zapisanego przy domu, a gdy go brak (dom zapisany przed dodaniem kompletności) – liczona z samego domu w tle
-const TODO_C={},todoKey=m=>m.id+'@'+(m.updatedAt||'');
+// policzone raz zapisujemy: w opisie domu w przeglądarce (stats.todo) i w pamięci podręcznej (id@data zmiany – dom z chmury ma opis bez tej liczby)
+const TODO_LS='houser:todo-cache',todoKey=m=>m.id+'@'+(m.updatedAt||'');let TODO_C={};try{TODO_C=JSON.parse(localStorage.getItem(TODO_LS)||'{}')}catch(_){}
 const todoBadge=n=>n?'<span class="todoBadge" title="Niepodjęte decyzje – moduły świecą na pomarańczowo">⚠ '+n+' do wybrania</span>':'';
 function curTodo(){try{return HouserComplete.check(HouserStore.load().project).missing}catch(_){return 0}}
 function todoOf(m){const c=TODO_C[todoKey(m)];return c!=null?c:m.stats?.todo}
-async function fillTodo(all,curId){for(const m of all){if(m.id===curId||todoOf(m)!=null)continue;let p=null;
-    try{if(m.local)p=(await HouserLibrary.get(m.id))?.project;if(!p&&m.cloud)p=(await HouserCloud.fetchProject(m.id))?.project}catch(_){}
-    if(!p)continue;let n=0;try{n=HouserComplete.check(p).missing}catch(_){}TODO_C[todoKey(m)]=n;
+async function fillTodo(all,curId){for(const m of all){if(m.id===curId||todoOf(m)!=null)continue;let p=null,rec=null;
+    try{if(m.local){rec=await HouserLibrary.get(m.id);p=rec?.project}if(!p&&m.cloud)p=(await HouserCloud.fetchProject(m.id))?.project}catch(_){}
+    if(!p)continue;let n=0;try{n=HouserComplete.check(p).missing}catch(_){}
+    if(rec)try{await HouserLibrary.put({...rec,stats:{...(rec.stats||{}),todo:n}});const l=localList.find(x=>x.id===m.id);if(l)l.stats={...(l.stats||{}),todo:n}}catch(_){}
+    TODO_C[todoKey(m)]=n;try{localStorage.setItem(TODO_LS,JSON.stringify(TODO_C))}catch(_){}
     const e=document.querySelector('.todoSlot[data-tid="'+CSS.escape(m.id)+'"]');if(e)e.innerHTML=todoBadge(n)}}
 function pmRow(m,cur){const pub=isPub(m.visibility),own=m.cloud&&(!m.owner||m.owner===HouserCloud.user()?.uid),ib=(k,t,ti)=>'<button class="btn2 sm ib" data-a="'+k+'" title="'+ti+'">'+t+'</button>';
   const where=m.cloud?(own?'':'<span class="vis'+(pub?' pub':'')+'">☁ '+(VIS_LABEL[m.visibility]||VIS_LABEL.private)+'</span>'):'<span class="vis">☁ zapisze się na koncie przy zmianie</span>';
