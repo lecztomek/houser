@@ -92,7 +92,10 @@
     // magazyn energii: ile więcej prądu zużyje dom sam i czy dopłata się zwraca (porównanie wariantów 0 / 5 / 10 / 15 kWh)
     let batteries=null;if(!over?.noCompare&&kWp>0)batteries=[0,5,10,15].map(b=>{const r=b===B?null:compute(project,{...set,battery:b,noCompare:true}),sv=r?r.savings:savings,iv=r?r.invest:invest,sf=r?r.self:self;
       return {kWh:b,self:sf,savings:sv,invest:iv,extra:iv-(b?0:iv),payback:sv>50?iv/sv:null}}).map((x,i,a)=>({...x,addSave:x.savings-a[0].savings,addInvest:x.invest-a[0].invest,addPayback:x.kWh&&x.savings-a[0].savings>20?(x.invest-a[0].invest)/(x.savings-a[0].savings):null}));
-    return {set,slopes,PANEL,roofLen,slopeLen,batteries,kWp,maxKWp,panels:slopes.reduce((a,s)=>a+s.panels,0),prod,cons,monthly,self,export:exp,import:imp,selfShare:prod>0?self/prod:0,cover,
+    // kąt dachu: ile dałyby te same połacie przy innym nachyleniu (kWh z 1 kWp na najlepszej użytej połaci)
+    const ref=ranked[0]||all[0],pitches=ref?[15,25,30,35,40,45,50].map(t=>({t,yield:BASE_YIELD*orientK(t,ref.dAz),cur:Math.abs(t-pitch)<2.5})):[];
+    if(ref&&!pitches.some(x=>x.cur))pitches.push({t:Math.round(pitch),yield:BASE_YIELD*orientK(pitch,ref.dAz),cur:true}),pitches.sort((a,b)=>a.t-b.t);
+    return {set,slopes,PANEL,roofLen,slopeLen,batteries,pitches,pitchDir:ref?.dirPL||'',kWp,maxKWp,panels:slopes.reduce((a,s)=>a+s.panels,0),prod,cons,monthly,self,export:exp,import:imp,selfShare:prod>0?self/prod:0,cover,
       savings,invest,payback,priceFactor:factor,pEl,pExp,score,issues,good,enabled:!!set.enabled}}
 
   // mnożnik ceny prądu dla innych modułów: tylko gdy fotowoltaika jest włączona w projekcie

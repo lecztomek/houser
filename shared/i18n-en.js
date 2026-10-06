@@ -3806,4 +3806,12 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "Ogrzewanie (wg Instalacji grzewczej)":"Heating (per Heating installation)",
 "Panele na dachu: ile się zmieści na połaciach, produkcja w miesiącach wobec zużycia domu (z pompą ciepła), magazyn energii, oszczędność i zwrot – po włączeniu tańszy prąd w Ogrzewaniu i Energii.":"Panels on the roof: how many fit on the slopes, monthly production vs house consumption (with heat pump), battery, savings and payback – when on, cheaper electricity in Heating and Energy.",
 "Połacie widziane z góry, rozłożone płasko (szerokość = długość wzdłuż kalenicy). Kąt dachu {n}°.":"Slopes seen from above, laid flat (width = length along the ridge). Roof pitch {n}°.",
-"Magazyn przechowuje nadwyżkę z dnia na wieczór i noc – dom zużywa więcej własnego prądu, a mniej sprzedaje tanio do sieci. Dopłata: ok. {n} zł za kWh pojemności + falownik hybrydowy.":"A battery stores the daytime surplus for the evening and night – the house uses more of its own electricity and sells less cheaply to the grid. Extra cost: about {n} PLN per kWh of capacity + a hybrid inverter."};
+"Magazyn przechowuje nadwyżkę z dnia na wieczór i noc – dom zużywa więcej własnego prądu, a mniej sprzedaje tanio do sieci. Dopłata: ok. {n} zł za kWh pojemności + falownik hybrydowy.":"A battery stores the daytime surplus for the evening and night – the house uses more of its own electricity and sells less cheaply to the grid. Extra cost: about {n} PLN per kWh of capacity + a hybrid inverter.",
+"Kąt dachu a uzysk":"Roof pitch and yield",
+"Kąt dachu":"Roof pitch",
+"kWh z 1 kWp":"kWh per 1 kWp",
+"wobec obecnego":"vs current",
+"(ten dom)":"(this house)",
+"· najlepiej":"· best",
+"Kąt tego dachu jest bliski najlepszego dla paneli – różnica poniżej 3%.":"This roof's pitch is close to the best for panels – less than 3% difference.",
+"Przy połaci na wschód lub zachód lepszy jest płaski dach (mniej panele „odwracają się” od słońca), przy południowej – ok. 30–40°.":"With an east or west slope a flatter roof is better (panels turn away from the sun less); with a south slope about 30–40°."};

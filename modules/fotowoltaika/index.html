@@ -154,6 +154,11 @@ function render(){const M_=$('main');
   // dach
   h+='<div class="card"><h2>Panele na dachu</h2><p class="hint">Połacie widziane z góry, rozłożone płasko (szerokość = długość wzdłuż kalenicy). Kąt dachu '+fmt(R.slopes[0]?.tilt||0,0)+'°.</p><div class="roofs">'+
     R.slopes.map(sl=>'<div class="roof"><h4>'+esc(sl.side==='flat'?'Dach płaski':'Połać – '+sl.dirPL)+' <span class="hint">· '+sl.panels+' pan. · '+fmt(sl.kWp)+' kWp · '+kwh(sl.prod)+'</span></h4><div class="d">uzysk '+Math.round(sl.k*100)+'% połaci na południe'+(sl.roofWins?' · okna dachowe: '+sl.roofWins:'')+(sl.panels===0&&sl.maxPanels?' · nieużyta':'')+'</div>'+roofSVG(sl)+'</div>').join('')+'</div></div>';
+  // kąt dachu
+  if(R.pitches.length){const best=R.pitches.reduce((a,b)=>b.yield>a.yield?b:a),cur=R.pitches.find(x=>x.cur);
+    h+='<div class="card"><h2>Kąt dachu a uzysk</h2><p class="hint">Ile kWh rocznie daje 1 kWp na połaci '+esc(R.pitchDir)+' przy różnym nachyleniu dachu. Kąt zmieniasz w module Kondygnacje i dach (wpływa też na poddasze i wygląd).</p><table><thead><tr><th>Kąt dachu</th><th class="n">kWh z 1 kWp</th><th class="n">wobec obecnego</th></tr></thead><tbody>'+
+      R.pitches.map(x=>'<tr'+(x.cur?' style="background:#eff6ff;font-weight:700"':'')+'><td>'+x.t+'°'+(x.cur?' (ten dom)':'')+(x===best?' · najlepiej':'')+'</td><td class="n">'+Math.round(x.yield)+'</td><td class="n">'+(cur?(x.yield>=cur.yield?'+':'')+Math.round((x.yield/cur.yield-1)*100)+'%':'')+'</td></tr>').join('')+'</tbody></table>'+
+      '<p class="hint" style="margin-top:8px">'+(cur&&best.yield-cur.yield<cur.yield*.03?'Kąt tego dachu jest bliski najlepszego dla paneli – różnica poniżej 3%.':'Przy połaci na wschód lub zachód lepszy jest płaski dach (mniej panele „odwracają się” od słońca), przy południowej – ok. 30–40°.')+'</p></div>'}
   // wykres miesięczny
   h+='<div class="card chart"><h2>Produkcja i zużycie prądu w miesiącach</h2><p class="hint">Latem panele dają więcej, niż dom zużywa (nadwyżka idzie do sieci), zimą – mniej, bo pompa ciepła zużywa najwięcej, gdy słońca jest najmniej.</p>'+
     '<div class="legend"><span><i style="background:'+COL.prod+'"></i>produkcja z paneli</span><span><i style="background:'+COL.cons+'"></i>zużycie domu</span></div>'+chartSVG()+
