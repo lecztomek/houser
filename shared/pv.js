@@ -44,20 +44,27 @@
     const ti=Math.max(0,DIRS.indexOf(top)),side=s=>DIRS[(ti+({top:0,right:1,bottom:2,left:3}[s]))%4];
     const pitch=G.roofPitch||35,cos=Math.cos(pitch*Math.PI/180),span=across?W*c:H*c,eo=G.eaveOverhang||0,go=G.gableOverhang||0;
     const slopeLen=(span/2+eo)/cos,roofLen=(q.roofL||0)+2*go;
-    // okna dachowe i komin – po której połaci
-    const sides=across?['left','right']:['top','bottom'],obst={left:0,right:0,top:0,bottom:0},rwin={left:0,right:0,top:0,bottom:0};
+    // okna dachowe i komin – na której połaci i gdzie (x – wzdłuż kalenicy od szczytu, y – w dół połaci od kalenicy, w metrach)
+    const sides=across?['left','right']:['top','bottom'],obs={left:[],right:[],top:[],bottom:[]},rwin={left:0,right:0,top:0,bottom:0};
+    const rr=HouserModel.roofRange(project),x0=(rr.l0||0)-go,eaveY=slopeLen-eo/cos;
     for(const r of q.runs||[]){if(r.base!=='window'||r.info?.shape!=='roof')continue;let s;
-      if(r.o==='v')s=r.ra?'right':'left';else s=r.ra?'bottom':'top';rwin[s]++;obst[s]+=r.area+1.2}
-    for(const n of project.structure?.chimney||[]){const x=n%W,y=Math.floor(n/W),s=across?(x+.5<W/2?'left':'right'):(y+.5<H/2?'top':'bottom');obst[s]+=.6}
+      if(r.o==='v')s=r.ra?'right':'left';else s=r.ra?'bottom':'top';if(!obs[s])continue;rwin[s]++;
+      const a0=r.from*c-x0,a1=(r.to+1)*c-x0,sill=Math.max(0,+r.info.sill||0),hh=Math.max(.4,+r.info.height||1.2),yb=Math.max(.2,eaveY-sill);
+      obs[s].push({kind:'win',x0:a0,x1:a1,y0:Math.max(0,yb-hh),y1:yb})}
+    for(const n of project.structure?.chimney||[]){const x=n%W,y=Math.floor(n/W),s=across?(x+.5<W/2?'left':'right'):(y+.5<H/2?'top':'bottom');
+      const along=(across?y:x)*c-x0,acr=(across?x:y)*c,d=Math.max(0,Math.abs(acr+c/2-span/2)-c/2);obs[s].push({kind:'chimney',x0:along,x1:along+c,y0:d/cos,y1:(d+c)/cos})}
+    // panele w rzędach od kalenicy, z pominięciem okien dachowych i komina (z odstępem)
+    const layout=(L,Hs,ob)=>{const gap=.2,xa=MARGIN,xb=L-MARGIN,ya=.3,yb=Math.max(ya,Hs-.3),cols=Math.floor((xb-xa)/PANEL.w),rows=Math.floor((yb-ya)/PANEL.h),xs=xa+((xb-xa)-cols*PANEL.w)/2,out=[];
+      for(let r=0;r<rows;r++)for(let k=0;k<cols;k++){const p={x0:xs+k*PANEL.w,y0:ya+r*PANEL.h};p.x1=p.x0+PANEL.w;p.y1=p.y0+PANEL.h;
+        if(ob.some(o=>p.x0<o.x1+gap&&p.x1>o.x0-gap&&p.y0<o.y1+gap&&p.y1>o.y0-gap))continue;out.push(p)}return out};
     // połacie
     const slopes=[];
     if(q.roofA>0)for(const s of sides){const dir=side(s),dAz=Math.abs(((AZ[dir]-180)+540)%360-180),k=orientK(pitch,dAz);
-      const gross=slopeLen*roofLen,usableL=Math.max(0,roofLen-2*MARGIN),usableS=Math.max(0,slopeLen-eo/cos-2*MARGIN*.6);
-      const cols=Math.floor(usableL/PANEL.w),rows=Math.floor(usableS/PANEL.h),fit=Math.max(0,cols*rows-Math.ceil(obst[s]/(PANEL.w*PANEL.h)));
-      slopes.push({side:s,dir,dirPL:DIR_PL[dir],dAz,tilt:pitch,k,yield:BASE_YIELD*k,area:gross,maxPanels:fit,roofWins:rwin[s],obst:obst[s],panels:0,kWp:0,prod:0})}
+      const gross=slopeLen*roofLen,rects=layout(roofLen,eaveY,obs[s]);
+      slopes.push({side:s,dir,dirPL:DIR_PL[dir],dAz,tilt:pitch,k,yield:BASE_YIELD*k,area:gross,maxPanels:rects.length,rects,obstacles:obs[s],L:roofLen,Hs:slopeLen,eaveY,roofWins:rwin[s],panels:0,kWp:0,prod:0})}
     // dach płaski nad parterem: panele na stelażu ok. 15° na południe, w rzędach (ok. 45% powierzchni)
     const flatPanels=Math.floor((q.flatA||0)*.45/(PANEL.w*PANEL.h));
-    if(flatPanels>0)slopes.push({side:'flat',dir:'south',dirPL:'płaski dach (stelaż na południe)',dAz:0,tilt:15,k:orientK(15,0)*.97,yield:BASE_YIELD*orientK(15,0)*.97,area:q.flatA,maxPanels:flatPanels,roofWins:0,obst:0,panels:0,kWp:0,prod:0});
+    if(flatPanels>0)slopes.push({side:'flat',dir:'south',dirPL:'płaski dach (stelaż na południe)',dAz:0,tilt:15,k:orientK(15,0)*.97,yield:BASE_YIELD*orientK(15,0)*.97,area:q.flatA,maxPanels:flatPanels,roofWins:0,obstacles:[],rects:null,panels:0,kWp:0,prod:0});
     const cons=consumption(project,E,set);
     // które połacie: auto – bez północnych (odchylenie > 110°) i o uzysku poniżej 70%
     const okS=slopes.filter(s=>set.slopes==='all'||(s.dAz<=110&&s.k>=.7));

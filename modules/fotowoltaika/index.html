@@ -120,14 +120,17 @@ for(const id of ['kWp','evKm','pExp','priceKWp'])$(id).onchange=()=>{const v=+$(
 
 // połać z panelami (widok „rozłożony”: szerokość = długość połaci wzdłuż kalenicy)
 function roofSVG(s){const P=R.PANEL,S=34,isFlat=s.side==='flat';
-  const Lm=isFlat?Math.sqrt(s.area)*1.4:R.roofLen,Hm=isFlat?Math.sqrt(s.area)/1.4:R.slopeLen;
-  const w=Lm*S,h=Hm*S,cols=Math.max(1,Math.floor((Lm-1)/P.w)),pw=P.w*S,ph=P.h*S,x0=(w-cols*pw)/2;
-  let g='<rect x="0" y="0" width="'+w+'" height="'+h+'" rx="4" fill="#475569"/>';
-  g+='<line x1="0" y1="2" x2="'+w+'" y2="2" stroke="#1e293b" stroke-width="4"/>';
-  let n=0;for(let r=0;n<s.panels&&(r+1)*ph<=h-.3*S;r++)for(let k=0;k<cols&&n<s.panels;k++,n++)g+='<rect x="'+(x0+k*pw+1)+'" y="'+(.5*S+r*ph+1)+'" width="'+(pw-2)+'" height="'+(ph-2)+'" fill="#1e3a8a" stroke="#93c5fd" stroke-width="1"/>';
+  if(isFlat){const Lm=Math.sqrt(s.area)*1.4,Hm=Math.sqrt(s.area)/1.4,w=Lm*S,h=Hm*S,cols=Math.max(1,Math.floor((Lm-1)/P.w)),pw=P.w*S,ph=P.h*S*.55;let g='<rect x="0" y="0" width="'+w+'" height="'+h+'" rx="4" fill="#94a3b8"/>';
+    let n=0;for(let r=0;n<s.panels&&(r+1)*ph*1.6<=h;r++)for(let k=0;k<cols&&n<s.panels;k++,n++)g+='<rect x="'+((w-cols*pw)/2+k*pw+1)+'" y="'+(8+r*ph*1.6)+'" width="'+(pw-2)+'" height="'+ph+'" fill="#1e3a8a" stroke="#93c5fd"/>';
+    return '<svg viewBox="-2 -2 '+(w+4)+' '+(h+4)+'">'+g+'</svg>'}
+  const w=s.L*S,h=s.Hs*S;let g='<rect x="0" y="0" width="'+w+'" height="'+h+'" rx="3" fill="#475569"/>';
+  g+='<line x1="0" y1="1.5" x2="'+w+'" y2="1.5" stroke="#1e293b" stroke-width="3"/><text x="4" y="13" font-size="10" fill="#cbd5e1">kalenica</text>';
+  g+='<line x1="0" y1="'+s.eaveY*S+'" x2="'+w+'" y2="'+s.eaveY*S+'" stroke="#94a3b8" stroke-dasharray="4 3"/><text x="4" y="'+(h-4)+'" font-size="10" fill="#cbd5e1">okap</text>';
+  (s.rects||[]).forEach((p,i)=>{const on=i<s.panels;g+='<rect x="'+(p.x0*S+1)+'" y="'+(p.y0*S+1)+'" width="'+(P.w*S-2)+'" height="'+(P.h*S-2)+'" fill="'+(on?'#1e3a8a':'none')+'" stroke="'+(on?'#93c5fd':'#64748b')+'" stroke-width="1"'+(on?'':' stroke-dasharray="3 3"')+'/>'});
+  for(const o of s.obstacles||[]){if(o.kind==='win')g+='<rect x="'+o.x0*S+'" y="'+o.y0*S+'" width="'+(o.x1-o.x0)*S+'" height="'+(o.y1-o.y0)*S+'" fill="#bae6fd" stroke="#f8fafc" stroke-width="2.5"><title>okno dachowe</title></rect><line x1="'+((o.x0+o.x1)/2*S)+'" y1="'+o.y0*S+'" x2="'+((o.x0+o.x1)/2*S)+'" y2="'+o.y1*S+'" stroke="#f8fafc" stroke-width="1.5"/>';
+    else g+='<rect x="'+o.x0*S+'" y="'+o.y0*S+'" width="'+(o.x1-o.x0)*S+'" height="'+(o.y1-o.y0)*S+'" fill="#7c2d12" stroke="#f8fafc" stroke-width="1.5"><title>komin</title></rect>'}
   const left=Math.max(0,s.maxPanels-s.panels);
-  return '<svg viewBox="-2 -2 '+(w+4)+' '+(h+4)+'" role="img" aria-label="'+esc(s.dirPL)+': '+s.panels+' paneli">'+g+'</svg>'+(left?'<div class="d">jeszcze ok. '+left+' miejsc na panele</div>':'')}
-
+  return '<svg viewBox="-2 -2 '+(w+4)+' '+(h+4)+'" role="img" aria-label="'+esc(s.dirPL)+': '+s.panels+' paneli">'+g+'</svg>'+(left?'<div class="d">przerywane – jeszcze '+left+' miejsc na panele</div>':'')}
 function chartSVG(){const M=R.monthly,Wd=720,Hd=230,pl=44,pb=26,pt=10,max=Math.max(...M.map(m=>Math.max(m.prod,m.cons)))*1.08||1;
   const step=(Wd-pl-6)/12,bw=Math.min(22,(step-8)/2),y=v=>pt+(Hd-pt-pb)*(1-v/max);
   let g='';const ticks=4,stepV=Math.ceil(max/ticks/100)*100;
@@ -152,7 +155,7 @@ function render(){const M_=$('main');
     '<div class="tile"><div class="l">Oszczędność</div><div class="v">'+zl(R.savings)+' <small>/ rok</small></div><div class="s">zużyte w domu '+Math.round(R.selfShare*100)+'% produkcji, reszta sprzedana</div></div>'+
     '<div class="tile"><div class="l">Koszt i zwrot</div><div class="v">'+zl(R.invest)+'</div><div class="s">'+(R.payback?'zwrot po ok. '+fmt(R.payback,0)+' latach':'brak zwrotu')+(s.battery?' · z magazynem '+s.battery+' kWh':'')+'</div></div></div>';
   // dach
-  h+='<div class="card"><h2>Panele na dachu</h2><p class="hint">Połacie widziane z góry, rozłożone płasko (szerokość = długość wzdłuż kalenicy). Kąt dachu '+fmt(R.slopes[0]?.tilt||0,0)+'°.</p><div class="roofs">'+
+  h+='<div class="card"><h2>Panele na dachu</h2><p class="hint">Każda połać rozłożona płasko: u góry kalenica, na dole okap, szerokość = długość wzdłuż kalenicy. Kąt dachu '+fmt(R.slopes[0]?.tilt||0,0)+'°. Jasnoniebieskie – okna dachowe, brązowe – komin; panele je omijają.</p><div class="roofs">'+
     R.slopes.map(sl=>'<div class="roof"><h4>'+esc(sl.side==='flat'?'Dach płaski':'Połać – '+sl.dirPL)+' <span class="hint">· '+sl.panels+' pan. · '+fmt(sl.kWp)+' kWp · '+kwh(sl.prod)+'</span></h4><div class="d">uzysk '+Math.round(sl.k*100)+'% połaci na południe'+(sl.roofWins?' · okna dachowe: '+sl.roofWins:'')+(sl.panels===0&&sl.maxPanels?' · nieużyta':'')+'</div>'+roofSVG(sl)+'</div>').join('')+'</div></div>';
   // kąt dachu
   if(R.pitches.length){const best=R.pitches.reduce((a,b)=>b.yield>a.yield?b:a),cur=R.pitches.find(x=>x.cur);

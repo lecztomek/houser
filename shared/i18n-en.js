@@ -3924,4 +3924,9 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "moc szczytowa domu (pompa ciepła, płyta, ładowarka…); typowe przyłącze to 14 kW":"the house's peak power (heat pump, hob, charger…); a typical connection is 14 kW",
 "Konstrukcja (łatwość budowy)":"Structure (ease of building)",
 "Fotowoltaika (dach pod panele)":"PV (roof for panels)",
-"Elektryka":"Electrical"};
+"Elektryka":"Electrical",
+"kalenica":"ridge",
+"okap":"eaves",
+"okno dachowe":"roof window",
+"przerywane – jeszcze {n} miejsc na panele":"dashed – {n} more panel places",
+"Każda połać rozłożona płasko: u góry kalenica, na dole okap, szerokość = długość wzdłuż kalenicy. Kąt dachu {n}°. Jasnoniebieskie – okna dachowe, brązowe – komin; panele je omijają.":"Each slope laid flat: ridge at the top, eaves at the bottom, width = length along the ridge. Roof pitch {n}°. Light blue – roof windows, brown – chimney; panels avoid them."};
