@@ -432,9 +432,10 @@ async function openProject(obj,label){
   let project={...obj};delete project.visualizations;delete project.houserFile; // obrazy nie są częścią pliku (starsze pliki mogły je mieć – pomijamy)
   if(!project.state&&!project.definitionSnapshot&&HouserDefinition.isDefinition(project))project=HouserDefinition.projectFromDefinition(project);
   if(!project.definitionSnapshot&&!project.state)throw new Error('Nie rozpoznaję pliku – brak definicji pomieszczeń i rzutu.');
-  // gotowy dom i nowy projekt to zawsze nowy projekt (własna galeria); plik zachowuje swój identyfikator
+  // gotowy dom, nowy projekt i import z pliku to zawsze nowy projekt (własny identyfikator i galeria) – import nigdy nie nadpisuje domu, z którego plik wyeksportowano
   if(label==='preview'&&project.readOnly?.src==='base'&&project.projectId){} // dom autora „Houser” ma stałe id (z pliku) – ten sam dom za każdym razem
-  else if(label==='sample'||label==='preview'||label==='new'||!project.projectId)project.projectId=HouserStore.newId();
+  else if(label==='sample'||label==='preview'||label==='new'||label==='file'||!project.projectId)project.projectId=HouserStore.newId();
+  if(label==='file'){delete project.readOnly;delete project.sharedEdit}
   const before=curJSON;
   if(!HouserStore.save(project,'plik'))throw new Error('Nie udało się zapisać projektu w przeglądarce (za mało miejsca?).');
   lsSet(LAST_SAVE,label==='file'?new Date().toISOString():'');
@@ -577,7 +578,10 @@ function downloadProject(project){const out={...project,houserFile:{app:'houser'
   const blob=new Blob([JSON.stringify(out)],{type:'application/json'}),a=document.createElement('a');
   a.href=URL.createObjectURL(blob);a.download=slug(projName(project))+'-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
   toast('Zapisano plik '+a.download)}
-async function importFile(f){if(!f||!(await confirmReplace()))return;try{await openProject(JSON.parse(await f.text()),'file');libSave();refreshViews()}catch(err){alert('Nie udało się wczytać pliku: '+err.message)}}
+async function importFile(f){if(!f||!(await confirmReplace()))return;try{const p=JSON.parse(await f.text());
+    // ta sama nazwa co jeden z moich domów – dopisek, żeby na liście było widać, który jest zaimportowany
+    try{const names=new Set((await HouserLibrary.list()).map(m=>m.name));if(p&&typeof p==='object'&&names.has(projName(p)))setName(p,projName(p)+' (import)')}catch(_){}
+    await openProject(p,'file');await libSave();toast('Zaimportowano jako nowy projekt „'+projName(HouserStore.load().project)+'” – poprzedni dom jest na liście projektów');refreshViews()}catch(err){alert('Nie udało się wczytać pliku: '+err.message)}}
 async function newEmpty(){if(isGuest()){if(confirm('Żeby projektować własny dom, zaloguj się (Google). Zalogować teraz?'))doLogin();return}if(!(await confirmReplace()))return;try{await openProject(HouserDefinition.projectFromDefinition(HouserDefinition.emptyDefinition()),'new');libSave();location.hash='obrys'}catch(err){alert(err.message)}}
 // ---------- nazwa i duplikaty
 function setName(p,n){if(p.definitionSnapshot)p.definitionSnapshot.name=n;p.definitionName=n;return p}
