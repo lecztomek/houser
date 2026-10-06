@@ -74,6 +74,31 @@
    "Rekuperacja": 7.5
   }
  },
+ "newhouse-755.json": {
+  "overall": 7.3,
+  "cost": 1290967,
+  "Qh": 9757,
+  "bills": 4587,
+  "area": 191.25,
+  "mods": {
+   "Przepisy": 2,
+   "Codzienność": 8.5,
+   "Schowki i szafy": 9.7,
+   "Akustyka": 7.6,
+   "Nasłonecznienie": 6.7,
+   "Energia": 6.6,
+   "Ocieplenie i elewacja": 7.6,
+   "Wygląd": 8,
+   "Balkony": 10,
+   "Hydraulika": 7.2,
+   "Ogrzewanie": null,
+   "Konstrukcja": 5.9,
+   "Elektryka": 9.6,
+   "Fotowoltaika": 8.5,
+   "Wentylacja": 10,
+   "Rekuperacja": 7
+  }
+ },
  "nowoczesna-stodola.json": {
   "overall": 8.1,
   "cost": 1067297,
@@ -122,6 +147,31 @@
    "Fotowoltaika": 8.8,
    "Wentylacja": 4,
    "Rekuperacja": null
+  }
+ },
+ "stodola-mini-2a-g2.json": {
+  "overall": 7.2,
+  "cost": 1396691,
+  "Qh": 13847,
+  "bills": 5836,
+  "area": 240.5,
+  "mods": {
+   "Przepisy": 10,
+   "Codzienność": 6.7,
+   "Schowki i szafy": 8.3,
+   "Akustyka": 5.5,
+   "Nasłonecznienie": 4,
+   "Energia": 5.9,
+   "Ocieplenie i elewacja": 7.6,
+   "Wygląd": 8.4,
+   "Balkony": null,
+   "Hydraulika": 5.9,
+   "Ogrzewanie": null,
+   "Konstrukcja": 5.2,
+   "Elektryka": 9.5,
+   "Fotowoltaika": 7.6,
+   "Wentylacja": 10,
+   "Rekuperacja": 6.8
   }
  },
  "uklad-domu-v7.json": {

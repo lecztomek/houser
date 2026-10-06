@@ -40,5 +40,17 @@
   "name": "Stodoła Jasna",
   "desc": "Wzorowana na projekcie Stodoła z antresolą: 7,5 × 10 m, poddasze użytkowe 40°, salon z antresolą i przeszkleniami od podłogi do sufitu, 2 sypialnie (jedna z łazienką i garderobą), 2 balkony, taras z pergolą, kominek z płaszczem + pompa ciepła",
   "cover": "covers/stodola-jasna.jpg"
+ },
+ {
+  "id": "pmw1nh755a8r2kd",
+  "file": "newhouse-755.json",
+  "name": "NewHouse 755",
+  "desc": "Wzorowany na projekcie NewHouse 755: 8,7 × 13 m, parter + poddasze użytkowe, dach 35°, gabinet na parterze, salon z kuchnią otwarty na zadaszony taras, schody dwubiegowe, 3 sypialnie, łazienka i pralnia na poddaszu, dwa balkony nad tarasami."
+ },
+ {
+  "id": "pmw1sm2ag2p7x4q",
+  "file": "stodola-mini-2a-g2.json",
+  "name": "Stodoła Mini 2A G2 Plus",
+  "desc": "Wzorowana na projekcie Stodoła Mini 2A G2 Plus: 9 × 19,3 m, dach 40°, dwa pokoje i łazienka na parterze, salon z antresolą i przeszkleniem na taras od zachodu, garaż dwustanowiskowy w bryle, na poddaszu 2 pokoje, łazienka i pralnia, okna dachowe nad antresolą."
  }
 ]
