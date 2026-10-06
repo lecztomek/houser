@@ -114,6 +114,13 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  ok(!c.complete&&c.items.some(i=>i.strict&&!i.done),'nierozwiązany strop = dom nieskończony');
  z.confirmed=Object.fromEntries(C.DECISIONS.map(d=>[d.mod,'x']));ok(!C.check(z).complete,'„Zatwierdź” nie odhacza nierozwiązanego stropu');}
 
+{const S=W.HouserStructure,p=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','stodola-jasna.json'),'utf8')),ev=sl=>S.evaluate({...p,structure:{...(p.structure||{}),slab:sl}});
+ const a=ev('std'),b=ev('hollow'),U=a.util.filter(Boolean);
+ ok(U.length>0&&U.every(x=>fin(x.u)&&x.u>=0&&fin(x.M)),'wytężenie stropu: liczby skończone dla każdej kratki');
+ ok(a.maxUtil>1&&a.regions.length>0,'wytężenie: strop, który nie wyrabia, ma ponad 100% ('+Math.round(a.maxUtil*100)+'%)');
+ ok(b.maxUtil<a.maxUtil&&b.maxUtil<=1,'wytężenie: płyty kanałowe mniej wytężone ('+Math.round(b.maxUtil*100)+'%)');
+ const mid=U.reduce((m,x)=>x.u>m.u?x:m),sp=a.span.filter(Boolean),edge=sp.some(x=>Math.min(x.tx,x.ty)<.1);ok(edge&&mid.u>U.reduce((m,x)=>Math.min(m,x.u),9),'wytężenie: największe w przęśle, mniejsze przy ścianach');}
+
 // ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować
 console.log('• składnia skryptów');
 {const vm=require('vm'),walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?(['node_modules','.git'].includes(e.name)?[]:walk(path.join(d,e.name))):[path.join(d,e.name)]);

@@ -69,7 +69,7 @@
     const span=new Array(N).fill(null);let maxSpan=0;const over=new Set();
     if(hasUp){for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(!occ(lo,x,y)||!room(up,x,y))continue;
       let l=x;while(!supV(l,y))l--;let r=x+1;while(!supV(r,y))r++;let t=y;while(!supH(x,t))t--;let b=y+1;while(!supH(x,b))b++;
-      const sx=(r-l)*c,sy=(b-t)*c,s=Math.min(sx,sy);span[y*W+x]={s,sx,sy};if(s>maxSpan)maxSpan=s;if(s>slabLim)over.add(y*W+x)}}
+      const sx=(r-l)*c,sy=(b-t)*c,s=Math.min(sx,sy);span[y*W+x]={s,sx,sy,tx:(x+.5-l)/(r-l),ty:(y+.5-t)/(b-t)};if(s>maxSpan)maxSpan=s;if(s>slabLim)over.add(y*W+x)}}
     // pomieszczenia parteru z za dużą rozpiętością – podciąg (belka w stropie) w poprzek dłuższego kierunku
     // pomieszczenia połączone otwartym przejściem (bez ściany) to jedna przestrzeń – jeden podciąg
     const par={},find=v=>par[v]==null||par[v]===v?(par[v]=v):(par[v]=find(par[v]));
@@ -121,6 +121,13 @@
         // ściana zewnętrzna piętra stojąca nad wnętrzem parteru (piętro cofnięte – np. balkon nad parterem)
         unsupported.push({key,kind:u});if(u==='ext')extUns+=c;else intUns+=c};
       for(let y=0;y<=H;y++)for(let x=0;x<W;x++)chk('h:'+x+':'+y,x,y-1,x,y);for(let x=0;x<=W;x++)for(let y=0;y<H;y++)chk('v:'+x+':'+y,x-1,y,x,y)}
+    // ---------- wytężenie stropu: moment zginający w danym miejscu ÷ nośność wybranego stropu (mapa na rzucie)
+    // pasmo stropu niesie się w krótszym kierunku: moment od obciążenia równomiernego qd·s²/8, w przęśle rozkład 4t(1−t) (zero przy ścianie, max w środku);
+    // ściana piętra stojąca na stropie dokłada siłę liniową P (kN/m) w swoim miejscu: 1,35·P·s·t(1−t); nośność = qd·slabLim²/8 (z definicji zasięgu stropu)
+    const util=[];let maxUtil=0;if(hasUp){const cap=qd*slabLim*slabLim/8,wl={};
+      for(const u of unsupported){const [o,aS,bS]=u.key.split(':'),a=+aS,b=+bS,P=upWallLine(u.key);for(const [cx,cy] of o==='h'?[[a,b-1],[a,b]]:[[a-1,b],[a,b]])if(cx>=0&&cy>=0&&cx<W&&cy<H)wl[cy*W+cx]=Math.max(wl[cy*W+cx]||0,P)}
+      for(let i=0;i<W*H;i++){const sp=span[i];if(!sp)continue;const t=sp.sx<=sp.sy?sp.tx:sp.ty,shape=4*t*(1-t),M=qd*sp.s*sp.s/8*shape+(wl[i]?1.35*wl[i]*sp.s*t*(1-t):0);
+        util[i]={u:M/cap,M,wall:wl[i]||0};if(util[i].u>maxUtil)maxUtil=util[i].u}}
     if(extUns>=c){add(Math.min(2.5,.6+extUns*.15),'Ściana zewnętrzna piętra stoi na stropie, bez ściany pod spodem – ok. '+fmt(extUns)+' m (piętro cofnięte nad parterem).','Pod ciężką ścianą zewnętrzną potrzebny podciąg albo ściana nośna na parterze dokładnie pod nią.','wall');
       addC('Podciągi pod ścianami zewnętrznymi piętra',extUns*PRICE.beamM,'ok. '+fmt(extUns)+' m')}
     if(intUns>=4*c){const heavy=partLine>3;
@@ -192,7 +199,7 @@
     const weight=wallG*(extL*hLo+extU*hUpWall+(q.gable||0))+3.3*hLo*bearInt+(hasUp?qk*q.slab+partLine*(q.partLen?.[up]||0):0)+roofQ*q.foot+12*(extL+bearInt);
     const pen=issues.reduce((a,i)=>a+i.p,0),score=Math.max(0,Math.min(10,Math.round((10-pen)*10)/10));
     const total=cost.reduce((a,x)=>a+x.v,0);
-    return {set,loads,colInfo,wallsRows,roofQ,snowL,roofG,weight,soil,bearV,bearH,lightLo,slab:slabK,SL,slabLim,beams,columns,beamInfo,beamKey,supV,supH,q,W,H,c,lo,up,hasUp,span,maxSpan,regions,unsupported,extUns,intUns,cantA,cantD,holes,wide,corners,rafter,roofType,knee,
+    return {set,loads,colInfo,wallsRows,roofQ,snowL,roofG,weight,soil,bearV,bearH,lightLo,slab:slabK,SL,slabLim,beams,columns,beamInfo,beamKey,supV,supH,q,W,H,c,lo,up,hasUp,span,maxSpan,regions,unsupported,util,maxUtil,extUns,intUns,cantA,cantD,holes,wide,corners,rafter,roofType,knee,
       issues:issues.sort((a,b)=>b.p-a.p),good,cost:{items:cost,total},score,verdict:verdict(score),LIM,occ,room:room,vWall,hWall}}
   // propozycje: mocniejszy strop albo podciąg (z słupem, gdy belka wychodzi za długa) – kilka wariantów z kosztem
   function propose(project){
