@@ -10,6 +10,7 @@
 <style>
 *{box-sizing:border-box}
 [hidden]{display:none!important}
+.field{display:grid;gap:4px;margin-bottom:9px}.field label{font-size:12px;color:var(--hs-muted)}
 .field select{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
 .tools{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}.tools .hs-btn.on{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
 .el{display:flex;gap:6px;align-items:center;font-size:12.5px;border-top:1px solid #eef2f6;padding:6px 0}.el b{flex:1}.el.bad b{color:#b91c1c}.el select{font-size:12px;padding:2px 4px}
@@ -62,13 +63,22 @@ tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
   <h1>Konstrukcja</h1>
   <p class="lead">Czy ten układ da się zbudować prosto i tanio: jak duże są rozpiętości stropu, czy ściany piętra stoją na ścianach parteru, gdzie są szerokie otwory, wysunięcia i przeszklenia narożne, jaka będzie więźba dachu. To nie jest projekt konstrukcyjny – pokazuje miejsca, które konstruktor musi rozwiązać, i ile to mniej więcej kosztuje.</p>
   <div class="section">
+    <h3>Ściany, dach i grunt</h3>
+    <div class="field"><label>Ściany działowe na piętrze</label><select id="partUp"></select></div>
+    <div class="field"><label>Ściany wewnętrzne parteru</label><select id="partLo"><option value="masonry">murowane – mogą nieść strop</option><option value="light">lekkie (g-k) – nie podpierają stropu</option></select></div>
+    <div class="field"><label>Pokrycie dachu</label><select id="roofCov"></select></div>
+    <div class="field"><label>Strefa śniegowa</label><select id="snow"><option value="1">1 – zachód, centrum-zachód (0,7 kN/m²)</option><option value="2">2 – większość kraju (0,9 kN/m²)</option><option value="3">3 – wschód, Pomorze (1,2 kN/m²)</option><option value="4">4 – północny wschód (1,6 kN/m²)</option><option value="5">5 – góry (2,0 kN/m²)</option></select></div>
+    <div class="field"><label>Grunt pod fundamentami</label><select id="soil"></select></div>
+    <p class="hint">Mur ścian zewnętrznych – z modułu Ocieplenie i elewacja.</p>
+  </div>
+  <div class="section">
     <h3>Strop nad parterem</h3>
     <div class="field"><select id="slab"></select></div>
     <p class="hint" id="slabHint"></p>
   </div>
   <div class="section">
     <h3>Podciągi i słupy</h3>
-    <div class="tools"><button class="hs-btn" data-tool="beam">＋ Podciąg</button><button class="hs-btn" data-tool="column">＋ Słup</button><button class="hs-btn" data-tool="erase">Usuń</button></div>
+    <div class="tools"><button class="hs-btn" data-tool="beam">＋ Podciąg</button><button class="hs-btn" data-tool="column">＋ Słup</button><button class="hs-btn" data-tool="wall">Ściana lekka / nośna</button><button class="hs-btn" data-tool="erase">Usuń</button></div>
     <p class="hint" id="toolHint">Wybierz narzędzie i kliknij na rzucie parteru.</p>
     <div id="elems"></div>
   </div>
@@ -76,6 +86,7 @@ tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
     <h3>Jak liczymy</h3>
     <p class="hint">Rozpiętość stropu w każdej kratce to odległość między ścianami parteru (zewnętrznymi i wewnętrznymi; drzwi w ścianie nie przeszkadzają, otwarte przejście – tak) w krótszym kierunku. Zwykła płyta żelbetowa lub strop gęstożebrowy – do ok. 6 m; do 7,5 m – grubsza płyta albo podciąg; dalej – podciąg i słup.</p>
     <p class="hint" style="margin-top:8px">Ściana zewnętrzna piętra bez ściany pod spodem wymaga podciągu; ściany działowe na stropie muszą być lekkie. Otwór od 3 m – wzmocnione nadproże, od 4,5 m – belka. Krokwie do ok. 4,5 m bez podparcia, do ok. 6,5 m z jętkami, dłuższe – płatwie na słupach albo wiązary.</p>
+    <p class="hint" style="margin-top:8px">Obciążenia (PN-EN 1991, uproszczone): ciężar stropu, warstw podłogi i ścianek działowych piętra (lekkie g-k ok. 0,5 kN/m², murowane – wg ciężaru ścianki), użytkowe 1,5 kN/m²; obliczeniowe: stałe × 1,35, zmienne × 1,5. Cięższe ścianki = krótsza dopuszczalna rozpiętość stropu. Podciąg: moment M = w·L²/8, przekrój żelbetowy (C25/30) albo stalowy HEB (S235, ugięcie L/250). Słup: siła z podciągów, stopa wg nośności gruntu. Ściany parteru: dach ze śniegiem, ściany, strop – szerokość ławy fundamentowej.</p>
     <p class="hint" style="margin-top:8px">Koszty orientacyjne z robocizną – trafiają do Wyceny jako „Wzmocnienia konstrukcji”.</p>
   </div>
 </aside>
@@ -93,12 +104,18 @@ let project=null,K=null,tool=null,drag=null,P=null;
 const ST=()=>project.structure||{};
 function saveST(patch){const s={...ST(),...patch};project.structure=s;HouserStore.update(p=>{p.structure={...(p.structure||{}),...patch}},'konstrukcja');P=null;render()}
 $('slab').onchange=()=>saveST({slab:$('slab').value});
+for(const [id,key] of [['partUp','partUp'],['partLo','partLo'],['roofCov','roof'],['snow','snow'],['soil','soil']])$(id).onchange=()=>saveST({[key]:id==='snow'?+$(id).value:$(id).value});
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{tool=tool===b.dataset.tool?null:b.dataset.tool;render()});
-const TOOLHINT={beam:'Przeciągnij po linii siatki na rzucie parteru – od ściany do ściany (albo do słupa).',column:'Kliknij węzeł siatki na rzucie parteru, żeby postawić słup.',erase:'Kliknij podciąg albo słup, żeby go usunąć.'};
+const TOOLHINT={wall:'Kliknij ścianę wewnętrzną na rzucie parteru – przełącza: nośna (niesie strop) / lekka (g-k, nie podpiera). Lekkie są przerywane.',beam:'Przeciągnij po linii siatki na rzucie parteru – od ściany do ściany (albo do słupa).',column:'Kliknij węzeł siatki na rzucie parteru, żeby postawić słup.',erase:'Kliknij podciąg albo słup, żeby go usunąć.'};
 function vtx(svg,e){const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(svg.getScreenCTM().inverse());return [Math.round(q.x/22),Math.round(q.y/22),q.x/22,q.y/22]}
 function bindPlan(){const svg=$('gplan');if(!svg)return;
   svg.onpointerdown=e=>{if(!tool)return;e.preventDefault();const v=vtx(svg,e);
     if(tool==='column'){const cols=[...(ST().columns||[])],i=cols.findIndex(p=>p.x===v[0]&&p.y===v[1]);if(i>=0)cols.splice(i,1);else cols.push({x:v[0],y:v[1]});saveST({columns:cols});return}
+    if(tool==='wall'){const fx=v[2],fy=v[3],dv=Math.abs(fx-Math.round(fx)),dh=Math.abs(fy-Math.round(fy));let o,line,a;
+      if(dv<dh){o='v';line=Math.round(fx);a=Math.floor(fy)}else{o='h';line=Math.round(fy);a=Math.floor(fx)}
+      const isInt=k=>{const [oo,xs,ys]=k.split(':');return (oo==='v'?K.vWall(K.lo,+xs,+ys):K.hWall(K.lo,+xs,+ys))==='int'},key=(i)=>o==='v'?'v:'+line+':'+i:'h:'+i+':'+line;
+      if(!isInt(key(a)))return;let a0=a,a1=a;while(isInt(key(a0-1)))a0--;while(isInt(key(a1+1)))a1++;
+      const nowLight=K.lightLo(key(a)),wk={...(ST().wallKind||{})};for(let i=a0;i<=a1;i++)wk[key(i)]=nowLight?'bearing':'light';saveST({wallKind:wk});return}
     if(tool==='erase'){const t=e.target;if(t.dataset.beam!=null){const b=[...(ST().beams||[])];b.splice(+t.dataset.beam,1);saveST({beams:b})}else if(t.dataset.col!=null){const c=[...(ST().columns||[])];c.splice(+t.dataset.col,1);saveST({columns:c})}return}
     if(tool==='beam'){drag={a:v.slice(0,2),b:v.slice(0,2)};svg.setPointerCapture(e.pointerId)}};
   svg.onpointermove=e=>{if(!drag)return;const v=vtx(svg,e),dx=Math.abs(v[0]-drag.a[0]),dy=Math.abs(v[1]-drag.a[1]);drag.b=dx>=dy?[v[0],drag.a[1]]:[drag.a[0],v[1]];
@@ -108,7 +125,9 @@ function bindPlan(){const svg=$('gplan');if(!svg)return;
     saveST({beams:[...(ST().beams||[]),beam]})};
   svg.onpointerup=end;svg.onpointercancel=end;
   svg.querySelectorAll('[data-beam],[data-col]').forEach(el=>el.style.cursor=tool==='erase'?'pointer':'')}
-function renderSide(){const S_=HouserStructure.SLABS,st=ST();$('slab').innerHTML=Object.entries(S_).map(([k,v])=>'<option value="'+k+'">'+esc(v.name)+' – do '+fmt(v.lim)+' m</option>').join('');$('slab').value=K.slab;
+function renderSide(){const S_=HouserStructure.SLABS,st=ST(),HS=HouserStructure;
+  const opts=(id,obj,val)=>{$(id).innerHTML=Object.entries(obj).map(([k,v])=>'<option value="'+k+'">'+esc(v.name)+'</option>').join('');$(id).value=val};
+  opts('partUp',HS.PART,K.set.partUp);$('partLo').value=K.set.partLo;opts('roofCov',HS.ROOF_G,K.set.roof);$('snow').value=String(K.set.snow);opts('soil',HS.SOIL,K.set.soil);$('slab').innerHTML=Object.entries(S_).map(([k,v])=>'<option value="'+k+'">'+esc(v.name)+' – do '+fmt(v.lim)+' m</option>').join('');$('slab').value=K.slab;
   $('slabHint').textContent=K.SL.addM2?'Dopłata ok. '+K.SL.addM2+' zł/m² stropu'+(K.SL.note?' ('+K.SL.note+')':'')+'.':'Najtańszy – wystarcza do ok. 6 m między ścianami.';
   document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('on',b.dataset.tool===tool));$('toolHint').textContent=tool?TOOLHINT[tool]:'Wybierz narzędzie i kliknij na rzucie parteru.';
   $('elems').innerHTML=(K.slab!=='std'?'<div class="el"><b>Strop: '+esc(K.SL.name.toLowerCase())+'</b><button class="hs-btn" data-delslab="1" title="wróć do zwykłego stropu">×</button></div>':'')+K.beamInfo.map(B=>'<div class="el'+(B.ok?'':' bad')+'"><b>Podciąg '+fmt(B.L)+' m'+(B.ok?'':' ⚠')+'</b><select data-hid="'+B.i+'"><option value="0">widoczny</option><option value="1"'+(B.hidden?' selected':'')+'>ukryty w stropie</option></select><button class="hs-btn" data-delb="'+B.i+'" title="usuń">×</button></div>').join('')+
@@ -134,7 +153,7 @@ function planSVG(fl){const {W,H,c,lo,up,occ,vWall,hWall,span}=K,S=22,isUp=fl===u
     g+='<rect x="'+x*S+'" y="'+y*S+'" width="'+(S+.4)+'" height="'+(S+.4)+'" fill="'+fill+'"/>'}
   const ln=(x1,y1,x2,y2,col,w,dash)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+w+'"'+(dash?' stroke-dasharray="'+dash+'"':'')+' stroke-linecap="square"/>';
   let walls='',marks='';
-  const E=(t,key,x1,y1,x2,y2)=>{if(t==='ext')walls+=ln(x1,y1,x2,y2,'#1e293b',3.5);else if(t==='int')walls+=ln(x1,y1,x2,y2,'#64748b',2);
+  const E=(t,key,x1,y1,x2,y2)=>{if(t==='ext')walls+=ln(x1,y1,x2,y2,'#1e293b',3.5);else if(t==='int'){if(!isUp&&K.lightLo(key))walls+=ln(x1,y1,x2,y2,'#94a3b8',1.5,'4 3');else walls+=ln(x1,y1,x2,y2,isUp?'#64748b':'#334155',isUp?2:2.8)}
     if(isUp&&uns.has(key))marks+=ln(x1,y1,x2,y2,'#ea580c',4,'5 3');if(wideK.has(key))marks+=ln(x1,y1,x2,y2,'#dc2626',6)};
   for(let y=ys;y<=ye;y++)for(let x=xs;x<xe;x++){const t=hWall(fl,x,y);E(t,'h:'+x+':'+y,x*S,y*S,(x+1)*S,y*S)}
   for(let x=xs;x<=xe;x++)for(let y=ys;y<ye;y++){const t=vWall(fl,x,y);E(t,'v:'+x+':'+y,x*S,y*S,x*S,(y+1)*S)}
@@ -166,7 +185,19 @@ function render(){const M=$('main');
   if(K.regions.length||P){h+='<div class="card"><h2>Jak rozwiązać strop</h2><p class="hint">Strop o rozpiętości ponad '+fmt(K.slabLim)+' m: mocniejszy strop, podciąg (widoczny albo ukryty w stropie) i ewentualnie słup. Możesz też wstawić podciąg i słup ręcznie – narzędzia po lewej.</p>'+
     (P?(P.variants.length?'<div class="vars">'+P.variants.map((v,i)=>'<div class="var"><h4>'+esc(v.name)+'</h4><div class="d">'+esc(v.desc)+'</div><div class="k">ocena '+fmt(v.score)+' / 10 · wzmocnienia razem '+zl(v.cost)+(v.left?' · <b class="c-bad">nie wystarcza</b>':'')+'</div><button class="hs-btn" data-var="'+i+'">Zastosuj</button></div>').join('')+'</div>':'<p class="hint">Nie znaleziono prostego rozwiązania – wstaw podciąg ręcznie.</p>'):'<button class="hs-btn primary" id="propose">Zaproponuj rozwiązanie</button>')+'</div>'}
   h+='<div class="card"><h2>Rzuty</h2><p class="hint">Parter: kolor kratki to rozpiętość stropu nad nią wobec wybranego stropu (zielony – z zapasem, żółty – blisko granicy, pomarańczowy i czerwony – za dużo). Pomarańczowa przerywana linia – ściana piętra, pod którą na parterze nie ma ściany. Czerwone – szerokie otwory (od 3 m), kółka – przeszklenia narożne. Na piętrze czerwone kratki – wysunięcie poza parter, kreskowane – otwór w stropie.</p>'+
-    '<div class="plans">'+planSVG(K.lo)+(K.hasUp?planSVG(K.up):'')+'</div><div class="legend"><span><i style="background:#bbf7d0"></i>do '+fmt(K.slabLim*.75)+' m</span><span><i style="background:#fef08a"></i>'+fmt(K.slabLim*.75)+'–'+fmt(K.slabLim)+' m</span><span><i style="background:#fdba74"></i>'+fmt(K.slabLim)+'–'+fmt(K.slabLim*1.25)+' m</span><span><i style="background:#fca5a5"></i>ponad '+fmt(K.slabLim*1.25)+' m</span><span><i style="background:#f1f5f9;border:1px solid #cbd5e1"></i>bez stropu nad kratką (otwór schodów / pustka)</span><span><i style="background:#1e293b"></i>ściana zewnętrzna</span><span><i style="background:#64748b"></i>ściana wewnętrzna</span><span><i style="background:#ea580c"></i>ściana piętra bez ściany pod spodem</span><span><i style="background:#dc2626"></i>szeroki otwór</span><span><i style="background:#7c3aed"></i>podciąg (przerywany – ukryty w stropie)</span><span><i style="background:#0f172a"></i>słup</span></div></div>';
+    '<div class="plans">'+planSVG(K.lo)+(K.hasUp?planSVG(K.up):'')+'</div><div class="legend"><span><i style="background:#bbf7d0"></i>do '+fmt(K.slabLim*.75)+' m</span><span><i style="background:#fef08a"></i>'+fmt(K.slabLim*.75)+'–'+fmt(K.slabLim)+' m</span><span><i style="background:#fdba74"></i>'+fmt(K.slabLim)+'–'+fmt(K.slabLim*1.25)+' m</span><span><i style="background:#fca5a5"></i>ponad '+fmt(K.slabLim*1.25)+' m</span><span><i style="background:#f1f5f9;border:1px solid #cbd5e1"></i>bez stropu nad kratką (otwór schodów / pustka)</span><span><i style="background:#1e293b"></i>ściana zewnętrzna</span><span><i style="background:#334155"></i>ściana nośna</span><span><i style="background:#94a3b8"></i>ściana lekka (przerywana)</span><span><i style="background:#ea580c"></i>ściana piętra bez ściany pod spodem</span><span><i style="background:#dc2626"></i>szeroki otwór</span><span><i style="background:#7c3aed"></i>podciąg (przerywany – ukryty w stropie)</span><span><i style="background:#0f172a"></i>słup</span></div></div>';
+  // obciążenia i elementy
+  const L=K.loads,kn=v=>fmt(v,2);
+  if(K.hasUp)h+='<div class="card"><h2>Obciążenie stropu nad parterem</h2><p class="hint">Wartości charakterystyczne (rzeczywiste ciężary), w kN na m² stropu; obliczeniowe – stałe × 1,35, użytkowe × 1,5.</p><table><tbody>'+
+    '<tr><td>Ciężar własny stropu – '+esc(K.SL.name.toLowerCase())+'</td><td class="n">'+kn(L.gSlab)+'</td></tr><tr><td>Warstwy podłogi (izolacja, wylewka, posadzka, tynk sufitu)</td><td class="n">'+kn(L.gFinish)+'</td></tr>'+
+    '<tr><td>Ścianki działowe piętra – '+esc(HouserStructure.PART[K.set.partUp].name)+' ('+kn(L.partLine)+' kN/m przy '+fmt(L.hUp,2)+' m wysokości)</td><td class="n">'+kn(L.gPart)+'</td></tr><tr><td>Użytkowe (ludzie, meble – mieszkanie)</td><td class="n">'+kn(L.live)+'</td></tr>'+
+    '<tr class="sum"><td>Razem charakterystyczne / obliczeniowe</td><td class="n">'+kn(L.qk)+' / '+kn(L.qd)+'</td></tr></tbody></table><p class="hint" style="margin-top:8px">Przy tym obciążeniu „'+esc(K.SL.name.toLowerCase())+'” wystarcza do ok. <b>'+fmt(K.slabLim)+' m</b> rozpiętości (przy typowych ściankach '+fmt(L.limRef)+' m).'+(K.set.partUp!=='light'?' Lekkie ścianki działowe na piętrze (g-k) pozwoliłyby na dłuższe rozpiętości.':'')+'</p></div>';
+  if(K.beamInfo.length||K.colInfo.length)h+='<div class="card"><h2>Podciągi i słupy – obciążenia i przekroje</h2><p class="hint">Orientacyjne wymiary do rozmowy z konstruktorem (beton C25/30, stal S235, ugięcie L/250).</p><table><thead><tr><th>Element</th><th class="n">Obciążenie</th><th class="n">Moment / siła</th><th>Przekrój</th><th>Alternatywa</th></tr></thead><tbody>'+
+    K.beamInfo.map(B=>'<tr><td>Podciąg '+fmt(B.L)+' m'+(B.maxSeg&&B.maxSeg<B.L-.01?' (przęsło '+fmt(B.maxSeg)+' m)':'')+'<br><span class="hint">strop z obu stron ok. '+fmt(B.trib)+' m'+(B.wUp?' + ściana piętra '+fmt(B.wUp)+' kN/m':'')+'</span></td><td class="n">'+fmt(B.wd)+' kN/m</td><td class="n">M = '+fmt(B.M,0)+' kNm</td><td>'+esc(B.section)+'</td><td>stal HEB '+B.heb+'</td></tr>').join('')+
+    K.colInfo.map(C=>'<tr><td>Słup '+(C.i+1)+'</td><td></td><td class="n">N = '+fmt(C.Nd,0)+' kN</td><td>żelbet '+C.section+'</td><td>stopa '+fmt(C.foot)+' × '+fmt(C.foot)+' m</td></tr>').join('')+'</tbody></table></div>';
+  h+='<div class="card"><h2>Ściany i fundamenty</h2><p class="hint">Obciążenie na metr ściany parteru (dach z śniegiem – '+kn(K.roofQ)+' kN/m², ściany, strop) i szerokość ławy fundamentowej dla gruntu „'+esc(HouserStructure.SOIL[K.set.soil].name)+'” ('+K.soil+' kPa). Mur z modułu Ocieplenie.</p><table><thead><tr><th>Ściana</th><th class="n">Obciążenie (char. / obl.)</th><th class="n">Wykorzystanie muru</th><th class="n">Ława</th></tr></thead><tbody>'+
+    K.wallsRows.map(w=>'<tr><td>'+esc(w.name)+'</td><td class="n">'+fmt(w.nk,0)+' / '+fmt(w.nd,0)+' kN/m</td><td class="n '+(w.use>.8?'c-bad':w.use>.5?'c-mid':'c-ok')+'">'+fmt(w.use*100,0)+'%</td><td class="n">'+fmt(w.foot*100,0)+' cm</td></tr>').join('')+
+    '</tbody></table><p class="hint" style="margin-top:8px">Ciężar domu ok. <b>'+fmt(K.weight/9.81,0)+' t</b> (bez wyposażenia).</p></div>';
   h+='<div class="card"><h2>Miejsca do rozwiązania</h2>'+(K.issues.length?'<ul class="iss">'+K.issues.map(i=>'<li><span class="pen">−'+fmt(i.p)+'</span>'+esc(i.text)+(i.tip?'<span class="tip">'+esc(i.tip)+'</span>':'')+'</li>').join('')+'</ul>':'<p class="hint">Bez trudnych miejsc.</p>')+K.good.map(g=>'<div class="good">✓ '+esc(g)+'</div>').join('')+'</div>';
   if(K.cost.items.length)h+='<div class="card"><h2>Koszt wzmocnień</h2><p class="hint">Orientacyjnie, z robocizną – ponad zwykły strop i mury. Trafia do Wyceny.</p><table><thead><tr><th>Pozycja</th><th class="n">Koszt</th></tr></thead><tbody>'+K.cost.items.map(x=>'<tr><td>'+esc(x.name)+(x.note?'<br><span class="hint">'+esc(x.note)+'</span>':'')+'</td><td class="n">'+zl(x.v)+'</td></tr>').join('')+'<tr class="sum"><td>Razem</td><td class="n">'+zl(K.cost.total)+'</td></tr></tbody></table></div>';
   M.innerHTML=h;renderSide();bindPlan();

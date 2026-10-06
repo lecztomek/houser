@@ -14,12 +14,24 @@
   const SLABS={std:{name:'Gęstożebrowy (np. Teriva) albo płyta 20 cm',lim:6,addM2:0},thick:{name:'Płyta żelbetowa 25 cm',lim:7.5,addM2:60},hollow:{name:'Płyty kanałowe sprężone',lim:10,addM2:120,note:'montaż dźwigiem'}};
   // podciąg: widoczny pod sufitem (taniej, do ok. 7,5 m między podporami) albo ukryty w stropie (sufit płaski, do ok. 6 m)
   const BEAM={visible:{lim:7.5,m:1100,h:.3,w:.25},hidden:{lim:6,m:1600}};
+  // ---------- obciążenia (uproszczone wg PN-EN 1990/1991; wartości charakterystyczne w kN/m², kN/m; obliczeniowe ×1,35 stałe, ×1,5 zmienne)
+  const SLAB_G={std:3.8,thick:6.3,hollow:4.3},SLAB_H={std:.24,thick:.25,hollow:.265},FINISH_G=1.6,LIVE=1.5;
+  const PART={light:{name:'lekkie – płyty g-k na stelażu',wall:.5},masonry12:{name:'murowane 12 cm (bloczki, silikat)',wall:2.2},masonry18:{name:'murowane 18 cm',wall:3.3}};
+  const ROOF_G={sheet:{name:'blacha / blachodachówka',g:.35},concrete:{name:'dachówka betonowa',g:.75},ceramic:{name:'dachówka ceramiczna',g:.95}};
+  const SNOW={1:.7,2:.9,3:1.2,4:1.6,5:2.0};
+  const SOIL={weak:{name:'słaby (glina plastyczna, nasyp)',kPa:100},avg:{name:'przeciętny (piasek średni, glina zwarta)',kPa:150},good:{name:'dobry (żwir, piasek zagęszczony)',kPa:250}};
+  // ściany zewnętrzne (moduł Ocieplenie): ciężar muru kN/m³ i orientacyjna nośność ściany parteru kN/m (obliczeniowo)
+  const WALL_MAT={aac:{g:6,cap:300},aac36:{g:6,cap:430},ceramic:{g:9,cap:520},ceramic44:{g:8,cap:600},silicate:{g:19,cap:900},concrete:{g:14,cap:600},timber:{g:1.2,cap:80}};
+  const HEB=[[100,89.9,450],[120,144,864],[140,216,1510],[160,311,2490],[180,426,3830],[200,570,5700],[220,736,8090],[240,938,11260],[260,1150,14920],[280,1380,19270],[300,1680,25170],[340,2160,36660],[400,2880,57680]];
+  const FCD=14300,FYD=235000,ES=210e6;
   const PRICE={column:3500,beamM:1400,post:3500,lintelM:600,lintelBigM:1300,corner:4500,cantM2:900,trimmer:1800,knee:220,purlinPost:2500,partitionM:0};
   const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
   const verdict=s=>s>=8?'ok':s>=6?'mid':'bad';
 
   function evaluate(project){
-    const ST=project.structure||{},slabK=SLABS[ST.slab]?ST.slab:'std',SL=SLABS[slabK],slabLim=SL.lim;
+    const ST=project.structure||{},slabK=SLABS[ST.slab]?ST.slab:'std',SL=SLABS[slabK];
+    const envWall=()=>{const w=project.envelope?.wall;return WALL_MAT[w]?w:'aac'};
+    const set={partUp:PART[ST.partUp]?ST.partUp:'masonry12',partLo:ST.partLo==='light'?'light':'masonry',roof:ROOF_G[ST.roof]?ST.roof:'ceramic',snow:SNOW[ST.snow]?+ST.snow:2,soil:SOIL[ST.soil]?ST.soil:'avg',wallKind:ST.wallKind&&typeof ST.wallKind==='object'?ST.wallKind:{}};
     const beams=(Array.isArray(ST.beams)?ST.beams:[]).filter(b=>b&&(b.o==='h'||b.o==='v')&&Number.isFinite(+b.line)&&+b.to>=+b.from),columns=(Array.isArray(ST.columns)?ST.columns:[]).filter(p=>p&&Number.isFinite(+p.x)&&Number.isFinite(+p.y));
     const q=HouserQuantities.compute(project),{W,H,c,lo,up,G}=q,N=W*H;
     const def={};for(const f of [lo,up])def[f]=Object.fromEntries((project.definitionSnapshot?.floors?.[f]?.rooms||[]).map(r=>[r.id,r]));
@@ -40,9 +52,19 @@
     // krawędzie siatki zajęte przez podciągi (h:x:linia / v:linia:y) – podpierają strop jak ściana
     const beamKey=new Map();beams.forEach((b,i)=>{for(let a=+b.from;a<=+b.to;a++)beamKey.set(b.o==='h'?'h:'+a+':'+b.line:'v:'+b.line+':'+a,i)});
     const colAt=new Set(columns.map(p=>(+p.x)+','+(+p.y)));
-    const supV=(x,y)=>vWall(lo,x,y)||beamKey.has('v:'+x+':'+y),supH=(x,y)=>hWall(lo,x,y)||beamKey.has('h:'+x+':'+y);
+    // ściana parteru nośna: zewnętrzna zawsze; wewnętrzna – murowana (domyślnie) albo oznaczona jako nośna; lekka nie podpiera stropu
+    const lightLo=key=>{const k=set.wallKind[key];return k?k==='light':set.partLo==='light'};
+    const bearV=(x,y)=>{const t=vWall(lo,x,y);return t==='ext'||(t==='int'&&!lightLo('v:'+x+':'+y))},bearH=(x,y)=>{const t=hWall(lo,x,y);return t==='ext'||(t==='int'&&!lightLo('h:'+x+':'+y))};
+    const supV=(x,y)=>bearV(x,y)||beamKey.has('v:'+x+':'+y),supH=(x,y)=>bearH(x,y)||beamKey.has('h:'+x+':'+y);
+    // ---------- obciążenia stropu i dopuszczalna rozpiętość (zależy od ciężaru ścianek działowych na stropie)
+    const hUp=q.attic?((G.kneeWall||1)+(G.upperHeight||2.6))/2:(G.upperHeight||2.6),partLine=PART[set.partUp].wall*hUp;
     const issues=[],good=[],cost=[];const add=(p,text,tip,kind)=>issues.push({p,text,tip:tip||'',kind:kind||''});const addC=(name,v,note)=>{if(v>0)cost.push({name,v,note:note||''})};
 
+    // ścianki działowe piętra jako obciążenie równomierne (PN-EN 1991-1-1 6.3.1.2: do 3 kN/m – zastępcze 0,5–1,2 kN/m²; cięższe – ok. 1/2,5 ciężaru na m ściany)
+    const gPart=partLine<=1?.5:partLine<=2?.8:partLine<=3?1.2:Math.round(partLine/2.5*10)/10,gSlab=SLAB_G[slabK];
+    const gk=gSlab+FINISH_G+gPart,qk=gk+LIVE,qd=1.35*gk+1.5*LIVE,qdRef=1.35*(gSlab+FINISH_G+1.2)+1.5*LIVE;
+    const slabLim=Math.round(SL.lim*Math.sqrt(qdRef/qd)*10)/10;
+    const loads={gSlab,gFinish:FINISH_G,gPart,partLine,hUp,live:LIVE,gk,qk,qd,slabLim,limRef:SL.lim};
     // ---------- 1. strop nad parterem: rozpiętość w każdej kratce
     const span=new Array(N).fill(null);let maxSpan=0;const over=new Set();
     if(hasUp){for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(!occ(lo,x,y)||!room(up,x,y))continue;
@@ -61,31 +83,50 @@
     if(hasUp&&!regions.length&&maxSpan>0)good.push('Strop nad parterem: największa rozpiętość ok. '+fmt(maxSpan)+' m – „'+SL.name.toLowerCase()+'” wystarczy.');
     if(hasUp&&SL.addM2)addC('Strop: '+SL.name.toLowerCase(),q.slab*SL.addM2,fmt(q.slab,0)+' m² – dopłata do zwykłego stropu'+(SL.note?', '+SL.note:''));
     // podciągi i słupy wstawione na rzucie: oparcie na końcach, odległość między podporami
-    const vtxWall=(x,y,o)=>o==='h'?(vWall(lo,x,y-1)||vWall(lo,x,y)):(hWall(lo,x-1,y)||hWall(lo,x,y));
+    const vtxWall=(x,y,o)=>o==='h'?(bearV(x,y-1)||bearV(x,y)):(bearH(x-1,y)||bearH(x,y));
     const beamInfo=beams.map((b,i)=>{const t=b.hidden?BEAM.hidden:BEAM.visible,a0=+b.from,a1=+b.to+1,L=(a1-a0)*c;const sup=[];
-      for(let a=a0;a<=a1;a++){const [vx,vy]=b.o==='h'?[a,+b.line]:[+b.line,a];const lineWall=a===a0?(b.o==='h'?hWall(lo,a-1,+b.line):vWall(lo,+b.line,a-1)):a===a1?(b.o==='h'?hWall(lo,a,+b.line):vWall(lo,+b.line,a)):null;
+      for(let a=a0;a<=a1;a++){const [vx,vy]=b.o==='h'?[a,+b.line]:[+b.line,a];const lineWall=a===a0?(b.o==='h'?bearH(a-1,+b.line):bearV(+b.line,a-1)):a===a1?(b.o==='h'?bearH(a,+b.line):bearV(+b.line,a)):null;
         if(colAt.has(vx+','+vy)||vtxWall(vx,vy,b.o)||lineWall)sup.push(a)}
       let maxSeg=0;for(let k=1;k<sup.length;k++)maxSeg=Math.max(maxSeg,(sup[k]-sup[k-1])*c);const ends=sup.includes(a0)&&sup.includes(a1);
       return {i,b,L,hidden:!!b.hidden,sup,maxSeg,ends,ok:ends&&maxSeg<=t.lim,lim:t.lim}});
+    // obciążenie podciągu: strop z obu stron (połowa rozpiętości) + ściany piętra stojące na nim + ciężar własny
+    const upWallLine=key=>{const [o,aS,bS]=key.split(':'),a=+aS,b=+bS,t=o==='h'?wallAt(up,a,b-1,a,b,key):wallAt(up,a-1,b,a,b,key);return t==='ext'?WALL_MAT[envWall()]?.g*.3*hUp+.5*hUp:t==='int'?partLine:0};
+    for(const B of beamInfo){const b=B.b;let tw=0,n=0,wUp=0;for(let a=+b.from;a<=+b.to;a++){const i1=b.o==='h'?(+b.line-1)*W+a:a*W+(+b.line-1),i2=b.o==='h'?(+b.line)*W+a:a*W+(+b.line);
+        const sp=[span[i1],span[i2]].filter(Boolean),w=sp.reduce((s_,x)=>s_+(b.o==='h'?x.sy:x.sx)/2,0);tw+=w;n++;wUp=Math.max(wUp,upWallLine(b.o==='h'?'h:'+a+':'+b.line:'v:'+b.line+':'+a))}
+      B.trib=n?tw/n:0;B.wUp=wUp;const self=b.hidden?.6*SLAB_H[slabK]*25:.25*.45*25;B.wd=qd*B.trib+1.35*(wUp+self);B.wk=B.wd/1.4;
+      const Ls=B.maxSeg||B.L;B.M=B.wd*Ls*Ls/8;B.V=B.wd*Ls/2;
+      const dV=Math.sqrt(B.M/(.17*.25*FCD));B.hVis=Math.max(.3,Math.ceil(Math.max(Ls/12,dV+.05)*20)/20);
+      const dH=SLAB_H[slabK]-.04;B.bHid=Math.max(.4,Math.ceil(B.M/(.17*dH*dH*FCD)*20)/20);
+      const Wr=B.M/FYD*1e6*1.1,Ir=5*B.wk*Ls**3*250/(384*ES)*1e8;B.heb=(HEB.find(([h,w,i])=>w>=Wr&&i>=Ir)||HEB[HEB.length-1])[0];
+      B.section=b.hidden?'ukryty '+Math.round(B.bHid*100)+' × '+Math.round(SLAB_H[slabK]*100)+' cm':'żelbet 25 × '+Math.round(B.hVis*100)+' cm';
+      // reakcje na podporach (słupy, ściany)
+      B.reactions=[];for(let k=1;k<B.sup.length;k++){const seg=(B.sup[k]-B.sup[k-1])*c;B.reactions.push([B.sup[k-1],B.wd*seg/2],[B.sup[k],B.wd*seg/2])}
+      if(b.hidden&&B.bHid>1.2)add(.6,'Podciąg ukryty w stropie ('+fmt(B.L)+' m) musiałby mieć ok. '+fmt(B.bHid*100,0)+' cm szerokości – za dużo.','Zrób podciąg widoczny (wyższy) albo postaw słup w środku.','beam')}
     for(const B of beamInfo){const nm_='Podciąg '+fmt(B.L)+' m'+(B.hidden?' (ukryty w stropie)':'');
       if(!B.ends)add(1.5,nm_+' nie ma oparcia na '+(B.sup.length?'jednym końcu':'końcach')+'.','Dociągnij podciąg do ściany albo postaw słup na końcu.','beam');
       else if(B.maxSeg>B.lim)add(Math.min(1.5,.6+(B.maxSeg-B.lim)*.4),nm_+' ma '+fmt(B.maxSeg)+' m między podporami – za dużo dla '+(B.hidden?'belki ukrytej w stropie (do ok. 6 m)':'belki (do ok. 7,5 m)')+'.','Postaw słup pośrodku albo zrób podciąg widoczny (wyższy).','beam');
       addC(nm_,B.L*(B.hidden?BEAM.hidden.m:BEAM.visible.m),B.hidden?'sufit płaski, belka szeroka i zbrojona mocniej':'widoczny ok. 30 cm pod sufitem')}
     if(beamInfo.length&&beamInfo.every(B=>B.ok))good.push('Podciągi wstawione na rzucie mają oparcie i właściwe rozpiętości.');
     for(const p of columns){const x=+p.x,y=+p.y;if(![[x-1,y-1],[x,y-1],[x-1,y],[x,y]].some(([a,b])=>occ(lo,a,b)))add(.5,'Słup stoi poza domem.','Przesuń słup do wnętrza parteru.','beam')}
+    const soil=SOIL[set.soil].kPa;
+    const colInfo=columns.map((p,i)=>{let Nd=0;for(const B of beamInfo){const b=B.b,on=b.o==='h'?+p.y===+b.line:+p.x===+b.line,a=b.o==='h'?+p.x:+p.y;if(!on)continue;for(const [va,r] of B.reactions)if(va===a)Nd+=r}
+      Nd+=1.35*.0625*25*(G.groundHeight||2.8);const side=Nd<=700?25:Nd<=1000?30:35,Nk=Nd/1.4,B_=Math.max(.6,Math.ceil(Math.sqrt((Nk+10)/soil)*10)/10);return {i,p,Nd,section:side+' × '+side+' cm',foot:B_}});
     if(columns.length)addC('Słupy żelbetowe ('+columns.length+')',columns.length*PRICE.column,'z fundamentem pod słupem');
 
     // ---------- 2. ściany piętra bez ściany pod spodem
     let extUns=0,intUns=0;const unsupported=[];
     if(hasUp){const chk=(key,ax,ay,bx,by)=>{const u=wallAt(up,ax,ay,bx,by,key);if(!u)return;if(!occ(lo,ax,ay)&&!occ(lo,bx,by))return; // nad niczym – wspornik, liczony niżej
-        const l=wallAt(lo,ax,ay,bx,by,key)||beamKey.has(key);if(l)return;
+        const lw=wallAt(lo,ax,ay,bx,by,key),l=(lw==='ext'||(lw==='int'&&!lightLo(key)))||beamKey.has(key);if(l)return;
         // ściana zewnętrzna piętra stojąca nad wnętrzem parteru (piętro cofnięte – np. balkon nad parterem)
         unsupported.push({key,kind:u});if(u==='ext')extUns+=c;else intUns+=c};
       for(let y=0;y<=H;y++)for(let x=0;x<W;x++)chk('h:'+x+':'+y,x,y-1,x,y);for(let x=0;x<=W;x++)for(let y=0;y<H;y++)chk('v:'+x+':'+y,x-1,y,x,y)}
     if(extUns>=c){add(Math.min(2.5,.6+extUns*.15),'Ściana zewnętrzna piętra stoi na stropie, bez ściany pod spodem – ok. '+fmt(extUns)+' m (piętro cofnięte nad parterem).','Pod ciężką ścianą zewnętrzną potrzebny podciąg albo ściana nośna na parterze dokładnie pod nią.','wall');
       addC('Podciągi pod ścianami zewnętrznymi piętra',extUns*PRICE.beamM,'ok. '+fmt(extUns)+' m')}
-    if(intUns>=4*c){if(intUns>8)add(Math.min(1,.2+(intUns-8)*.05),'Ściany działowe na piętrze bez ściany pod spodem: ok. '+fmt(intUns)+' m – muszą być lekkie (płyty g-k albo cienkie bloczki), a strop policzony na ich ciężar.','Ustaw ściany pokoi na piętrze nad ścianami parteru tam, gdzie się da.','wall');
-      else good.push('Większość ścian piętra stoi nad ścianami parteru; ok. '+fmt(intUns)+' m lekkich ścianek na stropie.')}
+    if(intUns>=4*c){const heavy=partLine>3;
+      if(heavy&&intUns>4)add(Math.min(1.5,.4+(intUns-4)*.05),'Ściany działowe piętra ('+PART[set.partUp].name+', ok. '+fmt(partLine)+' kN/m) stoją na stropie bez ściany pod spodem: ok. '+fmt(intUns)+' m.','Pod murowanymi ściankami strop potrzebuje żeber albo zbrojenia – albo zrób te ścianki lekkie (g-k), albo ustaw je nad ścianami parteru.','wall');
+      else if(!heavy)good.push('Ścianki działowe piętra są lekkie ('+fmt(partLine)+' kN/m) – mogą stać na stropie w dowolnym miejscu ('+fmt(intUns)+' m bez ściany pod spodem).');
+      else good.push('Większość ścian piętra stoi nad ścianami parteru; ok. '+fmt(intUns)+' m ścianek na stropie.');
+      if(heavy)addC('Wzmocnienie stropu pod murowanymi ściankami',intUns*300,'ok. '+fmt(intUns)+' m żeber / dodatkowego zbrojenia')}
     else if(hasUp)good.push('Ściany piętra stoją nad ścianami parteru – prosty układ obciążeń.');
 
     // ---------- 3. piętro wysunięte poza parter (wspornik)
@@ -129,20 +170,39 @@
     let deepBal=null;try{if(global.HouserBalcony){const S=HouserBalcony.stats(project);deepBal=S.items.filter(i=>i.kind==='cantilever'&&i.depth>LIM.balcony)}}catch(_){}
     if(deepBal&&deepBal.length)add(.5*deepBal.length,'Balkon wysunięty '+deepBal.map(i=>fmt(i.depth)+' m').join(', ')+' – płyta wspornikowa powyżej ok. 1,5 m jest ciężka i droga.','Słupy pod narożnikami balkonu albo płytsze wysunięcie (do 1,5 m).','balc');
 
+    // ---------- 7. ściany i fundamenty: obciążenie na metr ściany parteru i szerokość ławy
+    const wm=WALL_MAT[envWall()]||WALL_MAT.aac,wd_=(global.HouserEnvelope?.WALLS?.[envWall()]?.d)||.24,wallG=wm.g*wd_+.6; // + tynk i ocieplenie
+    const pitch=(G.roofPitch||35),al=pitch*Math.PI/180,mu=pitch<=30?.8:pitch>=60?0:.8*(60-pitch)/30,snowL=mu*SNOW[set.snow];
+    const roofG=(ROOF_G[set.roof].g+.3+(q.attic?.35:0))/Math.cos(al),roofQ=roofG+snowL,roofHalf=q.span/2+(G.eaveOverhang||0);
+    // średnia rozpiętość stropu przy ścianach zewnętrznych
+    let es=0,en=0;if(hasUp)for(let y=0;y<H;y++)for(let x=0;x<W;x++){const sp=span[y*W+x];if(!sp)continue;if(vWall(lo,x,y)==='ext'||vWall(lo,x+1,y)==='ext'){es+=sp.sx;en++}if(hWall(lo,x,y)==='ext'||hWall(lo,x,y+1)==='ext'){es+=sp.sy;en++}}
+    const slabEdge=hasUp&&en?es/en/2:0,hLo=q.hWall?.[lo]||G.groundHeight||2.8,hUpWall=hasUp?(q.attic?(G.kneeWall||1):(G.upperHeight||2.6)):0,ceilUp=hasUp?.6*q.span/4:.8*q.span/4;
+    const eaveNk=roofQ*roofHalf+wallG*(hLo+hUpWall+.3)+qk*slabEdge+ceilUp,gableNk=wallG*(hLo+hUpWall+.3+(q.G.rise||0)/2)+qk*slabEdge+ceilUp;
+    let intNk=0;if(hasUp)for(let y=0;y<H;y++)for(let x=0;x<W;x++){for(const [o,kx,ky] of [['v',x,y],['h',x,y]]){const t=o==='v'?vWall(lo,kx,ky):hWall(lo,kx,ky);if(t!=='int')continue;const key=o+':'+kx+':'+ky;if(lightLo(key))continue;
+      const a=o==='v'?span[ky*W+kx-1]:span[(ky-1)*W+kx],b2=span[ky*W+kx];const tr=((a?(o==='v'?a.sx:a.sy):0)+(b2?(o==='v'?b2.sx:b2.sy):0))/2;const upW=upWallLine(key);intNk=Math.max(intNk,qk*tr+upW+3.3*hLo)}}
+    const ft=nk=>Math.max(.5,Math.ceil((nk+12)/soil*20)/20);
+    const wallsRows=[{name:'Ściana zewnętrzna pod okapem (niesie dach)',nk:eaveNk},{name:'Ściana szczytowa',nk:gableNk}];if(intNk>0)wallsRows.push({name:'Najbardziej obciążona ściana nośna wewnątrz',nk:intNk});
+    for(const w of wallsRows){w.nd=w.nk*1.4;w.foot=ft(w.nk);w.cap=w.name.startsWith('Najb')?450:wm.cap;w.use=w.nd/w.cap}
+    for(const w of wallsRows){if(w.use>.8)add(Math.min(1.5,.5+(w.use-.8)*3),w.name+': ok. '+fmt(w.nd,0)+' kN/m – blisko nośności muru ('+fmt(w.cap,0)+' kN/m).','Mocniejszy materiał ścian parteru (silikat, ceramika) albo dodatkowa ściana nośna.','wall');
+      if(w.foot>.8)add(.4,w.name+': ława fundamentowa ok. '+fmt(w.foot*100,0)+' cm szerokości – grunt „'+SOIL[set.soil].name+'”.','Przy słabym gruncie rozważ płytę fundamentową albo badania geotechniczne.','found')}
+    if(wallsRows.every(w=>w.foot<=.6))good.push('Ławy fundamentowe ok. '+fmt(Math.max(...wallsRows.map(w=>w.foot))*100,0)+' cm – typowe dla tego gruntu.');
+    // ciężar domu (charakterystyczny) – orientacyjnie
+    const extL=(q.extLen?.[lo]||0),extU=(q.extLen?.[up]||0),bearInt=(q.partLen?.[lo]||0)*(set.partLo==='light'?.3:.6);
+    const weight=wallG*(extL*hLo+extU*hUpWall+(q.gable||0))+3.3*hLo*bearInt+(hasUp?qk*q.slab+partLine*(q.partLen?.[up]||0):0)+roofQ*q.foot+12*(extL+bearInt);
     const pen=issues.reduce((a,i)=>a+i.p,0),score=Math.max(0,Math.min(10,Math.round((10-pen)*10)/10));
     const total=cost.reduce((a,x)=>a+x.v,0);
-    return {slab:slabK,SL,slabLim,beams,columns,beamInfo,beamKey,supV,supH,q,W,H,c,lo,up,hasUp,span,maxSpan,regions,unsupported,extUns,intUns,cantA,cantD,holes,wide,corners,rafter,roofType,knee,
+    return {set,loads,colInfo,wallsRows,roofQ,snowL,roofG,weight,soil,bearV,bearH,lightLo,slab:slabK,SL,slabLim,beams,columns,beamInfo,beamKey,supV,supH,q,W,H,c,lo,up,hasUp,span,maxSpan,regions,unsupported,extUns,intUns,cantA,cantD,holes,wide,corners,rafter,roofType,knee,
       issues:issues.sort((a,b)=>b.p-a.p),good,cost:{items:cost,total},score,verdict:verdict(score),LIM,occ,room:room,vWall,hWall}}
   // propozycje: mocniejszy strop albo podciąg (z słupem, gdy belka wychodzi za długa) – kilka wariantów z kosztem
   function propose(project){
     const K=evaluate(project);if(!K.hasUp||!K.regions.length)return {base:K,variants:[]};
     const ST=project.structure||{},base={...ST},withS=patch=>({...project,structure:{...base,...patch}}),variants=[];
     const tryV=(name,desc,patch)=>{try{const R=evaluate(withS(patch));variants.push({name,desc,patch,score:R.score,maxSpan:R.maxSpan,cost:R.cost.total,left:R.regions.length,addCost:R.cost.total-K.cost.total})}catch(e){console.error(e)}};
-    for(const k of ['thick','hollow'])if(SLABS[k].lim>K.slabLim&&K.maxSpan<=SLABS[k].lim)tryV(SLABS[k].name,'bez podciągów i słupów – strop przenosi '+fmt(K.maxSpan)+' m'+(SLABS[k].note?' ('+SLABS[k].note+')':''),{slab:k});
+    for(const k of ['thick','hollow'])if(SLABS[k].lim>K.loads.limRef&&K.maxSpan<=SLABS[k].lim*K.slabLim/K.loads.limRef)tryV(SLABS[k].name,'bez podciągów i słupów – strop przenosi '+fmt(K.maxSpan)+' m'+(SLABS[k].note?' ('+SLABS[k].note+')':''),{slab:k});
     // podciągi: dla każdego obszaru – linia siatki w poprzek, od ściany do ściany; wybór najlepszej (rozpiętość, koszt, ściana piętra nad belką)
     const {W,H,c,lo}=K,occL=(x,y)=>K.occ(lo,x,y);
-    const beamAlong=(o,line,start)=>{const wallE=a=>o==='h'?K.hWall(lo,a,line):K.vWall(lo,line,a),cellsOK=a=>o==='h'?occL(a,line-1)&&occL(a,line):occL(line-1,a)&&occL(line,a),
-      vSup=a=>o==='h'?(K.vWall(lo,a,line-1)||K.vWall(lo,a,line)):(K.hWall(lo,line-1,a)||K.hWall(lo,line,a));
+    const beamAlong=(o,line,start)=>{const wallE=a=>o==='h'?K.bearH(a,line):K.bearV(line,a),cellsOK=a=>o==='h'?occL(a,line-1)&&occL(a,line):occL(line-1,a)&&occL(line,a),
+      vSup=a=>o==='h'?(K.bearV(a,line-1)||K.bearV(a,line)):(K.bearH(line-1,a)||K.bearH(line,a));
       if(!cellsOK(start)||wallE(start))return null;let a0=start,a1=start;while(!vSup(a0)&&cellsOK(a0-1)&&!wallE(a0-1))a0--;while(!vSup(a1+1)&&cellsOK(a1+1)&&!wallE(a1+1))a1++;return {o,line,from:a0,to:a1}};
     const plan=(hidden)=>{let beams=[...(base.beams||[])],cols=[...(base.columns||[])],guard=0;
       while(guard++<3){const R=evaluate(withS({beams,columns:cols}));if(!R.regions.length)break;const reg=R.regions[0];let best=null;
@@ -160,5 +220,5 @@
     variants.sort((a,b)=>(a.left-b.left)||(a.cost-b.cost));
     return {base:K,variants}}
   const beamKeyOf=b=>{const s=new Set();for(let a=+b.from;a<=+b.to;a++)s.add(b.o==='h'?'h:'+a+':'+b.line:'v:'+b.line+':'+a);return s};
-  global.HouserStructure={LIM,PRICE,SLABS,BEAM,evaluate,propose};
+  global.HouserStructure={LIM,PRICE,SLABS,BEAM,PART,ROOF_G,SNOW,SOIL,evaluate,propose};
 })(window);

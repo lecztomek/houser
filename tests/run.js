@@ -82,6 +82,15 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  ok(K1.maxSpan<K0.maxSpan&&K1.regions.length===0&&K1.beamInfo.every(b=>b.ok),'konstrukcja – podciąg z propozycji zbija rozpiętość '+[K0.maxSpan,K1.maxSpan]);
  const K2=S.evaluate({...z,structure:{...(z.structure||{}),slab:'hollow'}});ok(K2.slabLim===10&&K2.regions.length<=K0.regions.length&&K2.cost.items.some(x=>/kanałowe/.test(x.name)),'konstrukcja – płyty kanałowe');
  const b0=vb.patch.beams[vb.patch.beams.length-1],K3=S.evaluate({...z,structure:{...(z.structure||{}),beams:[{...b0,to:b0.to-3}],columns:[]}});ok(K3.beamInfo[0]&&!K3.beamInfo[0].ends&&K3.issues.some(i=>i.kind==='beam'),'konstrukcja – podciąg bez oparcia na końcu');}
+// konstrukcja – obciążenia: lekkie ścianki = dłuższa dopuszczalna rozpiętość; lekkie ściany parteru nie podpierają stropu; przekroje i fundamenty
+{const z=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','zefir-2.json'),'utf8')),S=W.HouserStructure,wS=st=>({...z,structure:{...(z.structure||{}),...st}});
+ const a=S.evaluate(wS({partUp:'light'})),b=S.evaluate(wS({partUp:'masonry18'})),c=S.evaluate(wS({partLo:'light'})),d=S.evaluate(z);
+ ok(a.slabLim>b.slabLim&&a.loads.qd<b.loads.qd,'konstrukcja – cięższe ścianki = krótsza rozpiętość '+[a.slabLim,b.slabLim]);
+ ok(c.maxSpan>=d.maxSpan&&c.maxSpan>d.maxSpan-.01,'konstrukcja – lekkie ściany parteru nie podpierają stropu '+[d.maxSpan,c.maxSpan]);
+ ok(d.wallsRows.length>=2&&d.wallsRows.every(w=>fin(w.nk)&&w.nk>5&&w.nk<300&&w.foot>=.5&&w.foot<2),'konstrukcja – ściany i ławy '+d.wallsRows.map(w=>Math.round(w.nk)));
+ const s1=S.evaluate(wS({soil:'weak'})),s2=S.evaluate(wS({soil:'good'}));ok(Math.max(...s1.wallsRows.map(w=>w.foot))>=Math.max(...s2.wallsRows.map(w=>w.foot)),'konstrukcja – słaby grunt = szersza ława');
+ const v=S.propose(z).variants.find(v=>v.patch.beams);if(v){const e=S.evaluate(wS(v.patch));ok(e.beamInfo.every(B=>fin(B.M)&&B.M>0&&B.heb>=100&&/cm/.test(B.section)),'konstrukcja – przekroje podciągów');ok(e.colInfo.every(C=>fin(C.Nd)&&C.foot>=.6),'konstrukcja – słupy i stopy')}
+ ok(fin(d.weight)&&d.weight/9.81>50&&d.weight/9.81<800,'konstrukcja – ciężar domu '+Math.round(d.weight/9.81)+' t');}
 // fotowoltaika: połać na południe daje więcej niż na północ
 {const o=W.HouserPV.orientK;ok(o(35,0)>o(35,90)&&o(35,90)>o(35,180)&&Math.abs(o(35,0)-1)<.01,'fotowoltaika – kierunki połaci');}
 // okno balkonowe (do podłogi) = drzwi balkonowe: przejście na balkon w Codzienności i w Balkonach
