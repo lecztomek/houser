@@ -76,7 +76,7 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
 {const pr={openings:{ground:{'h:7:22':'door','h:8:22':'door'}},openingVariants:{ground:{'h:7:22':{variant:'entrance',sill:0,height:2.3}}}};const O=W.HouserOpenings,a=O.resolve(pr,'ground','h:8:22','door'),e=O.runExtent(pr,'ground','h:8:22');
  ok(a.variant==='entrance'&&e.from===7&&e.to===8,'drzwi na dwóch kratkach – wspólne ustawienia i jeden otwór');}
 // konstrukcja: podciąg i słup skracają rozpiętość, płyty kanałowe przenoszą większą, belka bez oparcia = uwaga
-{const z=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','dom-z-poddaszem.json'),'utf8')),S=W.HouserStructure,K0=S.evaluate(z),P=S.propose(z);
+{const z=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','dom-z-poddaszem.json'),'utf8'));z.structure={...(z.structure||{}),beams:[],columns:[],slab:'std'};const S=W.HouserStructure,K0=S.evaluate(z),P=S.propose(z);
  ok(K0.regions.length>0&&P.variants.length>=2&&P.variants.some(v=>v.left===0&&v.patch.beams),'konstrukcja – propozycje rozwiązania stropu '+P.variants.map(v=>v.name));
  const vb=P.variants.find(v=>v.patch.beams),K1=S.evaluate({...z,structure:{...(z.structure||{}),...vb.patch}});
  ok(K1.maxSpan<K0.maxSpan&&K1.regions.length===0&&K1.beamInfo.every(b=>b.ok),'konstrukcja – podciąg z propozycji zbija rozpiętość '+[K0.maxSpan,K1.maxSpan]);
@@ -107,6 +107,12 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  const p1={...p0,confirmed:{energia:'x',wentylacja:'x'}},c1=C.check(p1);ok(c1.missing===c0.missing-2,'Kompletność: „Zatwierdź” zalicza decyzję');
  const p2={...p0,pvSettings:{enabled:false}};ok(C.check(p2).missing===c0.missing-1,'Kompletność: wybór „bez PV” to też decyzja');
  ok(c0.items.every(i=>i.assumed&&i.name),'Kompletność: każdy brak mówi, jakie założenie jest przyjęte');}
+
+{const S=W.HouserStructure,C=W.HouserComplete,z=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','dom-z-poddaszem.json'),'utf8'));
+ z.structure={...z.structure,beams:[],columns:[],slab:'std'};const K=S.evaluate(z),c=C.check(z);
+ ok(K.regions.length&&!K.cost.items.some(x=>/Podciąg do zaprojektowania/.test(x.name)),'nierozwiązany strop nie ma zgadywanego kosztu');
+ ok(!c.complete&&c.items.some(i=>i.strict&&!i.done),'nierozwiązany strop = dom nieskończony');
+ z.confirmed=Object.fromEntries(C.DECISIONS.map(d=>[d.mod,'x']));ok(!C.check(z).complete,'„Zatwierdź” nie odhacza nierozwiązanego stropu');}
 
 // ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować
 console.log('• składnia skryptów');

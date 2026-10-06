@@ -14,12 +14,17 @@
     {mod:'wentylacja',name:'Wentylacja',done:p=>has(p.energySettings,'vent'),assumed:'rekuperacja'},
     {mod:'fotowoltaika',name:'Fotowoltaika – montuję czy nie',done:p=>has(p.pvSettings,'enabled'),assumed:'bez fotowoltaiki'},
     {mod:'konstrukcja',name:'Strop, ściany działowe, dach, grunt',done:p=>has(p.structure,'partUp','roof','soil'),assumed:'strop gęstożebrowy, murowane ścianki 12 cm, dachówka ceramiczna, grunt przeciętny'},
+    // nie decyzja, tylko problem: strop nie wyrabia – tego nie da się „zatwierdzić”, trzeba wybrać strop albo wstawić podciąg / słup
+    {mod:'konstrukcja',name:'Strop nie wyrabia – mocniejszy strop albo podciąg / słup',strict:true,assumed:'brak kosztu podciągu w Wycenie, dopóki nie rozwiążesz',
+      done:p=>{if(!global.HouserStructure)return true;const K=HouserStructure.evaluate(p);return !K.hasUp||!K.regions.length},
+      label:p=>{try{const R=HouserStructure.evaluate(p).regions;return R.length?'Strop nie wyrabia nad: '+R.map(r=>r.room).join('; '):null}catch(_){return null}}},
     {mod:'elektryka',name:'Standard instalacji elektrycznej',done:p=>!!p.elecSettings,assumed:'typowa liczba gniazd, płyta indukcyjna'},
     {mod:'wycena',name:'Standard wykończenia i ceny',done:p=>has(p.costSettings,'std'),assumed:'standard, ceny średnie'},
     {mod:'klimatyzacja',name:'Klimatyzacja – czy będzie',done:p=>has(p.hvacSettings,'ac'),assumed:'tylko pokoje z dużym ryzykiem przegrzania'},
   ];
   function check(project){const p=project||{},conf=p.confirmed||{},items=[];
-    for(const d of DECISIONS){if(d.when&&!d.when(p))continue;let done=false;try{done=!!conf[d.mod]||d.done(p)}catch(_){}items.push({mod:d.mod,name:d.name,assumed:d.assumed,done})}
+    for(const d of DECISIONS){if(d.when&&!d.when(p))continue;let done=false,name=d.name;try{done=(!d.strict&&!!conf[d.mod])||d.done(p)}catch(_){}
+      if(!done&&d.label)try{name=d.label(p)||name}catch(_){}items.push({mod:d.mod,name,assumed:d.assumed,done,strict:!!d.strict})}
     const missing=items.filter(i=>!i.done).length,byMod={};for(const i of items)(byMod[i.mod]=byMod[i.mod]||[]).push(i);
     return {items,missing,total:items.length,complete:!missing,byMod}}
   global.HouserComplete={DECISIONS,check};

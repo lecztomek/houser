@@ -79,7 +79,8 @@
       for(const R of Object.values(by)){R.beam=Math.max(R.at.sx,R.at.sy);R.posts=R.beam>7?1:0;regions.push(R)}regions.sort((a,b)=>b.max-a.max)}
     let spanPen=0;for(const R of regions){const p=Math.min(1.8,.5+(R.max-slabLim)*.4);spanPen+=p;
       add(Math.min(p,Math.max(0,3-(spanPen-p))),'Strop nad „'+R.room+'” ma rozpiętość ok. '+fmt(R.max)+' m – więcej niż '+fmt(slabLim)+' m dla stropu „'+SL.name.toLowerCase()+'”.','Wstaw podciąg (i słup) na rzucie albo wybierz mocniejszy strop – przycisk „Zaproponuj rozwiązanie” podpowie warianty.','span');
-      addC('Podciąg do zaprojektowania – '+R.room,R.beam*PRICE.beamM+R.posts*PRICE.column,'szacunek: ok. '+fmt(R.beam)+' m belki'+(R.posts?' + słup':'')+' – wstaw go na rzucie, żeby policzyć dokładnie')}
+      // nierozwiązany strop nie ma kosztu (nie zgadujemy podciągu) – to brak do rozwiązania, dom jest nieskończony (shared/completeness.js)
+      R.est=R.beam*PRICE.beamM+R.posts*PRICE.column}
     if(hasUp&&!regions.length&&maxSpan>0)good.push('Strop nad parterem: największa rozpiętość ok. '+fmt(maxSpan)+' m – „'+SL.name.toLowerCase()+'” wystarczy.');
     if(hasUp&&SL.addM2)addC('Strop: '+SL.name.toLowerCase(),q.slab*SL.addM2,fmt(q.slab,0)+' m² – dopłata do zwykłego stropu'+(SL.note?', '+SL.note:''));
     // podciągi i słupy wstawione na rzucie: oparcie na końcach, odległość między podporami

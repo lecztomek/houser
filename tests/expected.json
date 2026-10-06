@@ -51,7 +51,7 @@
  },
  "dom-z-poddaszem.json": {
   "overall": 8.4,
-  "cost": 1045192,
+  "cost": 1025942,
   "Qh": 8070,
   "bills": 4699,
   "area": 186.5,
@@ -76,7 +76,7 @@
  },
  "nowoczesna-stodola.json": {
   "overall": 8.1,
-  "cost": 1085007,
+  "cost": 1067297,
   "Qh": 9386,
   "bills": 4473,
   "area": 159.25,
@@ -101,7 +101,7 @@
  },
  "stodola-jasna.json": {
   "overall": 7.5,
-  "cost": 1000902,
+  "cost": 984732,
   "Qh": 12216,
   "bills": 5359,
   "area": 125.25,
@@ -126,7 +126,7 @@
  },
  "uklad-domu-v7.json": {
   "overall": 8.3,
-  "cost": 937030,
+  "cost": 919320,
   "Qh": 7453,
   "bills": 3882,
   "area": 148.75,
@@ -151,7 +151,7 @@
  },
  "zefir-2.json": {
   "overall": 7.7,
-  "cost": 993164,
+  "cost": 976224,
   "Qh": 8182,
   "bills": 4426,
   "area": 165.5,

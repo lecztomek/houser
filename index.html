@@ -263,6 +263,7 @@ a{color:var(--accent)}
 <script src="shared/house-model.js"></script>
 <script src="shared/openings.js"></script>
 <script src="shared/quantities.js"></script>
+<script src="modules/konstrukcja/engine.js"></script>
 <script src="shared/completeness.js"></script>
 <script src="shared/gallery.js"></script>
 <script src="shared/library.js"></script>
@@ -758,8 +759,9 @@ HouserStore.subscribe(onStoreChange);
 function renderTodo(){let C=null;try{const rec=HouserStore.load();if(rec?.project&&window.HouserComplete)C=HouserComplete.check(rec.project)}catch(e){console.error(e)}
   document.querySelectorAll('.tab').forEach(t=>{const todo=!!C&&(C.byMod[t.dataset.id]||[]).some(i=>!i.done);t.classList.toggle('todo',todo);if(todo)t.dataset.todo='1';else delete t.dataset.todo});
   for(const [id,sec] of Object.entries(frames)){const bar=sec.querySelector('.todoBar');if(!bar)continue;const open=C?(C.byMod[id]||[]).filter(i=>!i.done):[];bar.hidden=!open.length;if(!open.length)continue;
-    bar.innerHTML='<span>⚠ Nie wybrano jeszcze: <b>'+open.map(i=>esc(i.name)).join(', ')+'</b>. <span class="as">Liczę na założeniach: '+open.map(i=>esc(i.assumed)).join('; ')+'.</span></span><button type="button" title="Uznaj obecne ustawienia za wybrane – moduł przestanie świecić">Zatwierdź obecne ustawienia</button>';
-    const btn=bar.querySelector('button');let ro=false;try{ro=!!HouserStore.lockReason()}catch(_){}if(ro){btn.remove();continue}btn.onclick=()=>{HouserStore.update(p=>{p.confirmed={...(p.confirmed||{}),[id]:new Date().toISOString()}},'shell');renderTodo()}}}
+    const soft=open.filter(i=>!i.strict),hard=open.filter(i=>i.strict);
+    bar.innerHTML='<span>'+(hard.length?'⛔ <b>'+hard.map(i=>esc(i.name)).join('; ')+'</b> – do rozwiązania w tym module. ':'')+(soft.length?'⚠ Nie wybrano jeszcze: <b>'+soft.map(i=>esc(i.name)).join(', ')+'</b>. <span class="as">Liczę na założeniach: '+soft.map(i=>esc(i.assumed)).join('; ')+'.</span>':'')+'</span>'+(soft.length?'<button type="button" title="Uznaj obecne ustawienia za wybrane – moduł przestanie świecić">Zatwierdź obecne ustawienia</button>':'');
+    const btn=bar.querySelector('button');if(!btn)continue;let ro=false;try{ro=!!HouserStore.lockReason()}catch(_){}if(ro){btn.remove();continue}btn.onclick=()=>{HouserStore.update(p=>{p.confirmed={...(p.confirmed||{}),[id]:new Date().toISOString()}},'shell');renderTodo()}}}
 HouserStore.subscribe(renderTodo);setTimeout(renderTodo,0);
 try{HouserStore.projectId()}catch(_){}
 HouserStore.subscribe(renderBar);HouserStore.subscribe(()=>{if(onHome())renderHome()});renderBar();renderUndo();setInterval(renderBar,30000);
