@@ -35,16 +35,24 @@
   }
   // cb(record) wywoływane, gdy projekt zmienił INNY dokument (inna ramka/karta).
   function subscribe(cb){listeners.push(cb);}
+  // moduł schowany w tle (ramka strony głównej z display:none) nie przelicza się przy każdej zmianie – zapamiętuje
+  // tylko ostatnią wersję i odświeża się raz, gdy znów jest widoczny (strona główna woła HouserStore.wake()).
+  // Bez tego każda zmiana przeliczała wszystkie odwiedzone moduły naraz i strona zwalniała z czasem.
+  let pendingRec=null;
+  const hiddenFrame=()=>{try{const fe=global.frameElement;return !!fe&&!fe.getClientRects().length}catch(_){return false}};
+  const notify=rec=>{for(const cb of listeners){try{cb(rec);}catch(err){console.error(err);}}};
   global.addEventListener('storage',e=>{
     if(e.key!==KEY||!e.newValue)return;
     let rec;try{rec=JSON.parse(e.newValue);}catch(_){return;}
     if(!rec||!rec.project||rec.writer===selfId)return;
-    for(const cb of listeners){try{cb(rec);}catch(err){console.error(err);}}
+    if(hiddenFrame()){pendingRec=rec;return}
+    pendingRec=null;notify(rec);
   });
+  function wake(){if(!pendingRec)return;const rec=load()||pendingRec;pendingRec=null;if(rec.writer!==selfId)notify(rec)}
   function clear(){try{localStorage.removeItem(KEY);}catch(_){}}
   // stały identyfikator projektu (np. do galerii zdjęć) – nie zmienia się przy edycji pomieszczeń
   function newId(){return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
   function projectId(){const rec=load();if(!rec)return null;if(rec.project.projectId)return rec.project.projectId;const id=newId();rec.project.projectId=id;save(rec.project,rec.source||'');return id}
 
-  global.HouserStore={KEY,load,save,update,subscribe,clear,newId,projectId,lockReason};
+  global.HouserStore={KEY,load,save,update,subscribe,wake,clear,newId,projectId,lockReason};
 })(window);

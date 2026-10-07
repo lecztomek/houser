@@ -381,6 +381,8 @@ function show(id){
     sec.appendChild(f);views.appendChild(sec);frames[id]=sec;
   }
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v===(m?frames[id]:document.getElementById(id))));
+  // moduł wraca na ekran – dociąga zmiany zrobione w innych modułach, gdy był schowany
+  if(m&&frames[id]){const fw=frames[id].querySelector('iframe')?.contentWindow;const wk=()=>{try{fw?.HouserStore?.wake?.()}catch(_){}};wk();requestAnimationFrame(wk)}
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.id===id));
   renderTodo();
   document.getElementById('brand').classList.toggle('active',id==='projekty');
