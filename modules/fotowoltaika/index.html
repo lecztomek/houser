@@ -38,6 +38,7 @@ h1{font-size:19px;margin:0 0 4px}
 .roofs{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px}
 .roof{flex:1 1 260px;min-width:0}
 .roof h4{margin:0 0 4px;font-size:13px}
+.roof .use{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;margin-bottom:4px;cursor:pointer;color:#1e3a8a}.roof .use input{width:16px;height:16px}
 .roof .d{font-size:12px;color:var(--hs-muted);margin-bottom:6px}
 .roof svg{width:100%;height:auto;display:block;max-height:260px}
 .chart svg{width:100%;height:auto;display:block}
@@ -112,6 +113,8 @@ const zl=v=>(Math.round(v/100)*100).toLocaleString('pl-PL')+' zł';
 const MON=['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'];
 const COL={prod:'#d97706',cons:'#2563eb'};
 function settings(){return HouserPV.settings(project)}
+// które połacie biorą udział – tak samo jak w HouserPV (auto: bez północnych i o uzysku < 70%)
+const slopeOn=(sl,s)=>String(s.slopes||'auto').startsWith('side:')?String(s.slopes).slice(5).split(',').includes(sl.side):s.slopes==='all'||(sl.dAz<=110&&sl.k>=.7);
 function save(patch){const s={...settings(),...patch};project.pvSettings=s;HouserStore.update(p=>{p.pvSettings=s},'fotowoltaika');render()}
 $('enabled').onchange=()=>save({enabled:$('enabled').checked});
 for(const id of ['size','slopes'])$(id).onchange=()=>save({[id]:$(id).value});
@@ -147,7 +150,7 @@ function render(){const M_=$('main');
   const s=settings();
   try{R=HouserPV.compute(project)}catch(e){console.error(e);M_.innerHTML='<div class="empty">Nie udało się policzyć.</div>';return}
   $('enabled').checked=!!s.enabled;$('size').value=s.size;$('kWpF').hidden=s.size!=='manual';$('kWp').value=s.kWp;{const base='<option value="auto">tylko opłacalne (bez północnych)</option><option value="all">wszystkie</option>',sl=R?R.slopes:[],one=sl.length>1?sl.map(x=>'<option value="side:'+x.side+'">tylko połać '+esc(x.side==='flat'?'– dach płaski':x.dirPL)+'</option>').join(''):'';
-    $('slopes').innerHTML=base+one;$('slopes').value=[...$('slopes').options].some(o=>o.value===s.slopes)?s.slopes:'auto'}$('battery').value=String(s.battery);$('evKm').value=s.evKm;$('pExp').value=s.pExp;$('priceKWp').value=s.priceKWp;
+    const multi=String(s.slopes).startsWith('side:')&&String(s.slopes).includes(',')?'<option value="'+esc(s.slopes)+'">wybrane na rysunku</option>':'';$('slopes').innerHTML=base+one+multi;$('slopes').value=[...$('slopes').options].some(o=>o.value===s.slopes)?s.slopes:'auto'}$('battery').value=String(s.battery);$('evKm').value=s.evKm;$('pExp').value=s.pExp;$('priceKWp').value=s.priceKWp;
   const C=R.cons,cover=R.cons.total?R.prod/R.cons.total:0;
   let h=s.enabled?'<div class="note">Fotowoltaika jest włączona – Ogrzewanie, Instalacja grzewcza i Energia liczą prąd po ok. <b>'+Math.round(R.priceFactor*100)+'%</b> ceny ('+fmt(R.pEl*R.priceFactor,2)+' zł zamiast '+fmt(R.pEl,2)+' zł za kWh).</div>':
     '<div class="note off">To propozycja – zaznacz po lewej „Montuję fotowoltaikę”, żeby rachunki w innych modułach liczyły się z tańszym prądem.</div>';
@@ -157,7 +160,7 @@ function render(){const M_=$('main');
     '<div class="tile"><div class="l">Koszt i zwrot</div><div class="v">'+zl(R.invest)+'</div><div class="s">'+(R.payback?'zwrot po ok. '+fmt(R.payback,0)+' latach':'brak zwrotu')+(s.battery?' · z magazynem '+s.battery+' kWh':'')+'</div></div></div>';
   // dach
   h+='<div class="card"><h2>Panele na dachu</h2><p class="hint">Każda połać rozłożona płasko: u góry kalenica, na dole okap, szerokość = długość wzdłuż kalenicy. Kąt dachu '+fmt(R.slopes[0]?.tilt||0,0)+'°. Jasnoniebieskie – okna dachowe, brązowe – komin; panele je omijają.</p><div class="roofs">'+
-    R.slopes.map(sl=>'<div class="roof"><h4>'+esc(sl.side==='flat'?'Dach płaski':'Połać – '+sl.dirPL)+' <span class="hint">· '+sl.panels+' pan. · '+fmt(sl.kWp)+' kWp · '+kwh(sl.prod)+'</span></h4><div class="d">uzysk '+Math.round(sl.k*100)+'% połaci na południe'+(sl.roofWins?' · okna dachowe: '+sl.roofWins:'')+(sl.panels===0&&sl.maxPanels?' · nieużyta':'')+'</div>'+roofSVG(sl)+'</div>').join('')+'</div></div>';
+    R.slopes.map(sl=>'<div class="roof"><label class="use"><input type="checkbox" data-side="'+sl.side+'"'+(slopeOn(sl,s)?' checked':'')+'> panele na tej połaci</label><h4>'+esc(sl.side==='flat'?'Dach płaski':'Połać – '+sl.dirPL)+' <span class="hint">· '+sl.panels+' pan. · '+fmt(sl.kWp)+' kWp · '+kwh(sl.prod)+'</span></h4><div class="d">uzysk '+Math.round(sl.k*100)+'% połaci na południe'+(sl.roofWins?' · okna dachowe: '+sl.roofWins:'')+(sl.panels===0&&sl.maxPanels?' · nieużyta':'')+'</div>'+roofSVG(sl)+'</div>').join('')+'</div></div>';
   // kąt dachu
   if(R.pitches.length){const best=R.pitches.reduce((a,b)=>b.yield>a.yield?b:a),cur=R.pitches.find(x=>x.cur);
     h+='<div class="card"><h2>Kąt dachu a uzysk</h2><p class="hint">Ile kWh rocznie daje 1 kWp na połaci '+esc(R.pitchDir)+' przy różnym nachyleniu dachu. Kąt zmieniasz w module Kondygnacje i dach (wpływa też na poddasze i wygląd).</p><table><thead><tr><th>Kąt dachu</th><th class="n">kWh z 1 kWp</th><th class="n">wobec obecnego</th></tr></thead><tbody>'+
@@ -180,6 +183,10 @@ function render(){const M_=$('main');
     '<p class="hint" style="margin-top:8px">Rachunek za prąd bez paneli ok. '+zl(C.total*R.pEl)+' / rok, z panelami ok. '+zl(Math.max(0,C.total*R.pEl-R.savings))+' / rok.</p></div>';
   h+='<div class="card"><h2>Dach pod fotowoltaikę · '+fmt(R.score)+' / 10</h2>'+(R.issues.length?'<ul class="iss">'+R.issues.map(i=>'<li><span class="pen">−'+fmt(i.p)+'</span>'+esc(i.text)+(i.tip?'<span class="t2">'+esc(i.tip)+'</span>':'')+'</li>').join('')+'</ul>':'')+R.good.map(g=>'<div class="good">✓ '+esc(g)+'</div>').join('')+'</div>';
   M_.innerHTML=h;
+  // zaznaczenie połaci na rysunku = to samo co lista „Połacie”: wszystkie zaznaczone → „wszystkie”, część → „tylko …”
+  M_.querySelectorAll('input[data-side]').forEach(cb=>cb.onchange=()=>{const on=[...M_.querySelectorAll('input[data-side]')].filter(x=>x.checked).map(x=>x.dataset.side);
+    if(!on.length){cb.checked=true;alert('Zostaw zaznaczoną przynajmniej jedną połać – albo wyłącz fotowoltaikę.');return}
+    save({slopes:on.length===R.slopes.length?'all':'side:'+on.join(',')})});
   M_.querySelectorAll('[data-batt]').forEach(b=>b.onclick=()=>save({battery:+b.dataset.batt}));
   const tip=$('tip');M_.querySelectorAll('[data-m]').forEach(el=>{el.onmousemove=e=>{const m=R.monthly[+el.dataset.m];tip.innerHTML='<b>'+MON[m.m]+'</b><br>produkcja '+kwh(m.prod)+'<br>zużycie '+kwh(m.cons)+'<br>do sieci '+kwh(m.export)+' · z sieci '+kwh(m.import);tip.style.display='block';tip.style.left=Math.min(innerWidth-200,e.clientX+12)+'px';tip.style.top=(e.clientY+12)+'px'};el.onmouseleave=()=>{tip.style.display='none'}});
 }

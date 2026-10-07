@@ -4109,4 +4109,7 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "osobne":"separate",
 "Kółka to piony kanalizacyjne z piętra: niebieskie – nad mokrym pomieszczeniem, czerwone – osobny pion (widać go na obu kondygnacjach – na parterze w pokoju, przez który schodzi; woda dochodzi do niego po parterze). Czerwona linia na piętrze – krótka rura w stropie do pionu obok.":"Circles are soil stacks from the upper floor: blue – above a wet room, red – a separate stack (shown on both floors – on the ground floor in the room it passes through; water reaches it along the ground floor). Red line upstairs – a short pipe in the slab to the neighbouring stack.",
 "tylko połać":"only roof slope",
-"– dach płaski":"– flat roof"};
+"– dach płaski":"– flat roof",
+"panele na tej połaci":"panels on this slope",
+"Zostaw zaznaczoną przynajmniej jedną połać – albo wyłącz fotowoltaikę.":"Keep at least one slope selected – or turn PV off.",
+"wybrane na rysunku":"selected on the drawing"};
