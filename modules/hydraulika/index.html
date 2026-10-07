@@ -115,11 +115,16 @@ function planSVG(f){
   for(let y=ys;y<=ye;y++)for(let x=xs;x<xe;x++)h+=E(x+','+(y-1),x+','+y,x*S,y*S,(x+1)*S,y*S);
   for(let x=xs;x<=xe;x++)for(let y=ys;y<ye;y++)h+=E((x-1)+','+y,x+','+y,x*S,y*S,x*S,(y+1)*S);
   // orientacyjne połączenia od źródła (linia prosta – kierunek, nie trasa rury)
-  if(source)for(const p of points){if(p.isSrc||!p.pa||p.f!==f)continue;const [ax,ay]=p.pa,[bx,by]=p.pb;
+  if(source)for(const p of points){if(p.isSrc||!p.pa||(p.paFloor||p.f)!==f)continue;const [ax,ay]=p.pa,[bx,by]=p.pb;
     h+='<path d="M'+((bx+.5)*S)+' '+((by+.5)*S)+' L'+((bx+.5)*S)+' '+((ay+.5)*S)+' L'+((ax+.5)*S)+' '+((ay+.5)*S)+'" fill="none" stroke="'+(p.len>10?'#dc2626':p.len>5?'#d97706':'#2563eb')+'" stroke-width="3" stroke-dasharray="7 5" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>'}
   // piony
+  // własny pion widać na obu kondygnacjach (na parterze – w pokoju, przez który schodzi); krótka rura w stropie – linia do pionu sąsiada
   for(const p of points){if(p.f!==up||!res.hasUp)continue;let cx,cy,col;
-    if(p.stackOver){const s=new Set(p.stackOver.cells.map(a=>a.join(',')));const cell=p.cells.find(([x,y])=>s.has(x+','+y));if(!cell)continue;[cx,cy]=cell;col='#1d4ed8'}else{[cx,cy]=p.cells[Math.floor(p.cells.length/2)];col='#dc2626'}
+    if(p.drain==='slab'&&p.offsetTo&&f===up){const [ax,ay]=p.cells[Math.floor(p.cells.length/2)];let bb=null;for(const [x,y] of p.offsetTo.cells){const d=Math.abs(x-ax)+Math.abs(y-ay);if(!bb||d<bb.d)bb={d,x,y}}
+      h+='<line x1="'+((ax+.5)*S)+'" y1="'+((ay+.5)*S)+'" x2="'+((bb.x+.5)*S)+'" y2="'+((bb.y+.5)*S)+'" stroke="#dc2626" stroke-width="3" stroke-linecap="round"/>';continue}
+    if(p.drain==='slab')continue;
+    if(f!==up&&!p.riserCell)continue;
+    if(p.stackOver){if(f!==up)continue;const s=new Set(p.stackOver.cells.map(a=>a.join(',')));const cell=p.cells.find(([x,y])=>s.has(x+','+y));if(!cell)continue;[cx,cy]=cell;col='#1d4ed8'}else{[cx,cy]=p.riserCell||p.cells[Math.floor(p.cells.length/2)];col='#dc2626'}
     const X=(cx+.5)*S,Y=(cy+.5)*S;h+='<circle cx="'+X+'" cy="'+Y+'" r="7" fill="#fff" stroke="'+col+'" stroke-width="3"/><circle cx="'+X+'" cy="'+Y+'" r="2.5" fill="'+col+'"/>'}
   // etykiety
   for(const r of rooms){if(r.f!==f||r.cells.length<6)continue;const cx=r.cells.reduce((a,p)=>a+p[0],0)/r.cells.length,cy=r.cells.reduce((a,p)=>a+p[1],0)/r.cells.length,p=P[r.key],X=(cx+.5)*S,Y=(cy+.5)*S;
@@ -133,7 +138,7 @@ function card(p){
   const v=verdict(p.score);
   return '<div class="rc '+v+'"><div class="hd"><div class="num c-'+v+'">'+fmt(p.score)+'</div><div><div class="t">'+esc(p.name)+'</div><div class="d">'+(p.f===res.lo?'Parter':'Piętro')+' · '+esc(p.kind.need)+'</div></div><span class="pill '+v+'">'+VERD[v]+'</span></div>'+
     '<div class="facts">'+(p.len!=null?'<span><small>Do źródła</small><b>'+fmt(p.len)+' m</b></span><span><small>Ciepła woda po</small><b>'+(res.circ?'od razu (cyrkulacja)':'ok. '+p.wait+' s')+'</b></span>':'')+
-      (p.f===res.up&&res.hasUp?'<span><small>Pion</small><b class="'+(p.stackOver?'c-ok':'c-bad')+'">'+(p.stackOver?'nad „'+esc(p.stackOver.name)+'”':'przesunięty')+'</b></span>':'')+'</div>'+
+      (p.f===res.up&&res.hasUp?'<span><small>Pion</small><b class="'+(p.stackOver?'c-ok':'c-bad')+'">'+(p.stackOver?'nad „'+esc(p.stackOver.name)+'”':p.drain==='slab'?'rura w stropie':'własny pion')+'</b></span>':'')+'</div>'+
     (p.issues.length?'<ul class="iss">'+p.issues.map(i=>'<li><span class="pen">−'+fmt(i.p)+'</span>'+esc(i.text)+'<span class="tip">'+esc(i.tip)+'</span></li>').join('')+'</ul>':'')+
     ((p.good||[]).length?'<div class="good">✓ '+p.good.map(esc).join(' ')+'</div>':'')+(!p.issues.length&&!(p.good||[]).length?'<div class="good">✓ Blisko źródła, krótkie podejścia.</div>':'')+'</div>'}
 
@@ -152,8 +157,8 @@ function render(){
   h+='<div class="tiles"><div class="tile"><div class="l">Łatwość instalacji</div><div class="v c-'+v+'">'+fmt(res.overall)+' <small>/ 10</small></div><div class="s"><span class="pill '+v+'" style="margin:0">'+VERD[v]+'</span> średnia pomieszczeń '+fmt(res.avg)+(res.extraPen>=.05?' − '+fmt(res.extraPen)+' za dopłatę':'')+'</div></div>'+
     '<div class="tile"><div class="l">Koszt zależny od układu</div><div class="v">'+zl(res.cost.total)+'</div><div class="s">'+(res.extra>=500?'<b class="c-bad">+'+zl(res.extra)+'</b> więcej niż układ zwarty':'<span class="c-ok">tyle co układ zwarty</span>')+'</div></div>'+
     '<div class="tile"><div class="l">Najdłuższa ciepła woda</div><div class="v">'+fmt(res.maxLen)+' <small>m</small></div><div class="s">'+esc(far.name)+' · '+(res.circ?'z cyrkulacją':'czekanie ok. '+far.wait+' s')+'</div></div>'+
-    (res.hasUp?'<div class="tile"><div class="l">Piony kanalizacyjne</div><div class="v">'+res.risers.length+'</div><div class="s">'+(offs.length?'<b class="c-bad">'+offs.length+' przesunięte</b> – mokre na piętrze nie nad mokrym':'<span class="c-ok">wszystkie proste – piętro nad parterem</span>')+'</div></div>':'<div class="tile"><div class="l">Grupy mokrych pomieszczeń</div><div class="v">'+res.clusters.length+'</div><div class="s">mniej = krótsza kanalizacja</div></div>')+'</div>';
-  h+='<div class="card"><h2>Schemat</h2><p class="hint">Mokre pomieszczenia w kolorach grup (jedna grupa = wspólna ściana instalacyjna / pion), na czerwono – z problemem. Przerywane linie to kierunek połączenia od źródła (nie trasa rury): niebieska do 5 m, pomarańczowa do 10 m, czerwona dalej. Kółka to piony kanalizacyjne z piętra: niebieskie – nad mokrym pomieszczeniem, czerwone – przesunięte (na parterze widać, przez który pokój zejdą).</p><div class="plans">'+[res.lo,res.up].map(planSVG).join('')+'</div>'+
+    (res.hasUp?'<div class="tile"><div class="l">Piony kanalizacyjne</div><div class="v">'+res.risers.length+'</div><div class="s">'+(offs.length?'<b class="c-bad">'+offs.length+' '+(offs.length===1?'osobny':'osobne')+'</b> – mokre na piętrze nie nad mokrym':'<span class="c-ok">wszystkie proste – piętro nad parterem</span>')+'</div></div>':'<div class="tile"><div class="l">Grupy mokrych pomieszczeń</div><div class="v">'+res.clusters.length+'</div><div class="s">mniej = krótsza kanalizacja</div></div>')+'</div>';
+  h+='<div class="card"><h2>Schemat</h2><p class="hint">Mokre pomieszczenia w kolorach grup (jedna grupa = wspólna ściana instalacyjna / pion), na czerwono – z problemem. Przerywane linie to kierunek połączenia od źródła (nie trasa rury): niebieska do 5 m, pomarańczowa do 10 m, czerwona dalej. Kółka to piony kanalizacyjne z piętra: niebieskie – nad mokrym pomieszczeniem, czerwone – osobny pion (widać go na obu kondygnacjach – na parterze w pokoju, przez który schodzi; woda dochodzi do niego po parterze). Czerwona linia na piętrze – krótka rura w stropie do pionu obok.</p><div class="plans">'+[res.lo,res.up].map(planSVG).join('')+'</div>'+
     '<div class="legend"><span><i style="background:#93c5fd"></i>źródło wody</span><span><i style="background:'+CL[0]+'"></i>mokre pomieszczenia (grupa)</span><span><i style="background:#fecaca"></i>z problemem</span><span><i style="background:#f8fafc;border:1px solid #cbd5e1"></i>suche</span></div></div>';
   const sorted=[...res.points].sort((a,b)=>(a.isSrc?-1:0)-(b.isSrc?-1:0)||(a.score??11)-(b.score??11));
   h+='<div><h2 style="font-size:15px;margin:4px 0 8px">Mokre pomieszczenia – od najtrudniejszego</h2><div class="rooms">'+sorted.map(card).join('')+'</div></div>';

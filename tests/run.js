@@ -128,6 +128,11 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  for(let y=14;y<=21;y++){const k='v:0:'+y;q.openings.ground[k]=y<18?'hst':'window';q.openingVariants.ground[k]=y<18?{variant:'hst',sill:0,height:2.35}:y<20?{variant:'balcony',sill:0,height:2.2}:{variant:'standard',sill:.9,height:1.4}}
  const K2=S.evaluate(q),o=K2.wide.find(x=>x.keys.includes('v:0:14'));ok(o&&o.w===4&&o.bases.length===2,'szerokie otwory: HST + drzwi balkonowe + okno obok siebie = jeden otwór 4 m');}
 
+{const R=W.HouserPlumbing.evaluate(JSON.parse(fs.readFileSync(path.join(ROOT,'examples','zefir-2.json'),'utf8')),{}),own=R.points.filter(p=>p.f===R.up&&!p.stackOver&&p.drain==='riser');
+ ok(own.length>0&&own.every(p=>p.riserCell&&R.risers.some(r=>r.own&&r.cell===p.riserCell)),'hydraulika: mokre na piętrze nie nad mokrym – własny pion (nie długa rura w stropie)');
+ ok(R.cost.offsets===0||R.points.some(p=>p.drain==='slab'),'hydraulika: przesunięcia w stropie tylko dla krótkich odcinków');
+ ok(own.every(p=>p.paFloor===R.lo&&fin(p.len)),'hydraulika: woda do własnego pionu idzie po parterze');}
+
 // ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować
 console.log('• składnia skryptów');
 {const vm=require('vm'),walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?(['node_modules','.git'].includes(e.name)?[]:walk(path.join(d,e.name))):[path.join(d,e.name)]);

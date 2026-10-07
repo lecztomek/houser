@@ -67,7 +67,9 @@
     if(flatPanels>0)slopes.push({side:'flat',dir:'south',dirPL:'płaski dach (stelaż na południe)',dAz:0,tilt:15,k:orientK(15,0)*.97,yield:BASE_YIELD*orientK(15,0)*.97,area:q.flatA,maxPanels:flatPanels,roofWins:0,obstacles:[],rects:null,panels:0,kWp:0,prod:0});
     const cons=consumption(project,E,set);
     // które połacie: auto – bez północnych (odchylenie > 110°) i o uzysku poniżej 70%
-    const okS=slopes.filter(s=>set.slopes==='all'||(s.dAz<=110&&s.k>=.7));
+    // set.slopes: 'auto' | 'all' | 'side:left,right' – wybrane połacie (np. tylko zachodnia)
+    const pick=String(set.slopes||'auto').startsWith('side:')?new Set(String(set.slopes).slice(5).split(',')):null;
+    const okS=slopes.filter(s=>pick?pick.has(s.side):set.slopes==='all'||(s.dAz<=110&&s.k>=.7));
     const ranked=[...okS].sort((a,b)=>b.yield-a.yield),maxKWp=ranked.reduce((a,s)=>a+s.maxPanels*PANEL.wp/1000,0);
     const bestY=ranked[0]?.yield||BASE_YIELD*.8;
     let target=set.size==='max'?maxKWp:set.size==='manual'?Math.max(0,+set.kWp||0):Math.max(3,cons.total*1.1/bestY);

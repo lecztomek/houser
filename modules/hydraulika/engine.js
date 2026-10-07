@@ -45,7 +45,14 @@
         if(!P.stackOver){let nd=1e9,near=null;for(const g of groundWet){const d=minDist(r,g).d;if(d<nd){nd=d;near=g}}P.offset=near?nd+1:null;P.offsetTo=near;
           // przez które suche pomieszczenie parteru zejdzie pion
           const s=cellSet(r);const cnt={};for(const g of rooms)if(g.f===lo&&!g.kind){let n=0;for(const [x,y] of g.cells)if(s.has(x+','+y))n++;if(n)cnt[g.key]=n}
-          const dry=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];P.dryBelow=dry?byKey[dry[0]]:null}}
+          const dry=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];P.dryBelow=dry?byKey[dry[0]]:null;
+          // odpływ: rura w stropie tylko gdy pion obok jest najwyżej ok. 1 m dalej; inaczej własny pion (WC – rura 110 mm, w stropie się nie mieści)
+          P.drain=P.offset!=null&&P.offset<=1?'slab':'riser';
+          if(P.drain==='riser'){let best=null;if(source)for(const [x,y] of r.cells){let d=1e9;for(const [sx,sy] of source.cells)d=Math.min(d,Math.abs(x-sx)+Math.abs(y-sy));if(!best||d<best.d)best={d,cell:[x,y]}}
+            P.riserCell=best?best.cell:r.cells[Math.floor(r.cells.length/2)];
+            const below=rooms.find(g=>g.f===lo&&g.cells.some(([x,y])=>x===P.riserCell[0]&&y===P.riserCell[1]));P.dryBelow=below&&!below.kind?below:null;P.wetBelow=below&&below.kind?below:null;
+            // woda: po parterze do pionu, potem w górę (zamiast „na skos” po piętrze)
+            if(source&&!isSrc){const md=minDist({cells:[P.riserCell]},source);P.hor=md.d+1.5;P.len=P.hor+P.ver;P.pa=P.riserCell;P.pb=md.pb;P.paFloor=lo;P.wait=Math.round(P.len*2)}}}}
       points.push(P)}
     // grupy mokrych pomieszczeń (sąsiadujące na kondygnacji albo jedno nad drugim) = wspólne piony / gałęzie kanalizacji
     const parent={};const find=k=>parent[k]===k?k:(parent[k]=find(parent[k]));for(const p of points)parent[p.key]=p.key;
@@ -57,7 +64,7 @@
     // piony: jeden na grupę z piętrem + osobny dla każdego mokrego pomieszczenia na piętrze, które nie stoi nad mokrym
     const hasUp=q.net[up]>0;
     const risers=[];for(const g of clusters){if(g.some(p=>p.f===up&&p.stackOver))risers.push({group:g,stacked:true,rooms:g.filter(p=>p.f===up).map(p=>p.name)})}
-    for(const p of points)if(p.f===up&&!p.stackOver)risers.push({group:[p],stacked:false,rooms:[p.name],through:p.dryBelow?.name||null});
+    for(const p of points)if(p.f===up&&!p.stackOver&&p.drain!=='slab')risers.push({group:[p],stacked:false,own:true,rooms:[p.name],through:p.dryBelow?.name||null,cell:p.riserCell});
     // cyrkulacja ciepłej wody – gdy najdłuższe połączenie > 10 m (albo wymuszona w ustawieniach)
     const maxLen=Math.max(0,...points.filter(p=>!p.isSrc&&p.len!=null).map(p=>p.len));
     const circ=set.circulation==='yes'||(set.circulation==='auto'&&maxLen>10);
@@ -70,16 +77,19 @@
         if(p.ver)add(.5,'vertical','Na innej kondygnacji niż źródło – rury idą przez strop ('+fmtM(p.ver)+' w pionie).','Najkrócej, gdy łazienka na piętrze stoi nad technicznym lub łazienką na parterze.')}
       if(p.f===up&&hasUp){
         if(p.stackOver)p.good=(p.good||[]).concat('Stoi nad pomieszczeniem „'+p.stackOver.name+'” – wspólny pion kanalizacyjny.');
+        else if(p.drain==='riser'){add(1+(p.kind.toilet?.5:0),'ownriser','Nie stoi nad mokrym pomieszczeniem parteru – ma własny pion kanalizacyjny'+(p.dryBelow?' schodzący przez „'+p.dryBelow.name+'”':p.wetBelow?' schodzący przez „'+p.wetBelow.name+'”':'')+(p.kind.toilet?' (rura 110 mm od WC)':'')+'.',
+            'Drugi pion kosztuje (rury, obudowa), ale to lepsze niż długa pozioma rura w stropie. Najtaniej, gdy mokre pomieszczenie na piętrze stoi nad łazienką / technicznym na parterze.');
+          if(p.dryBelow)add(1,'boxing','Pion zejdzie przez „'+p.dryBelow.name+'” – trzeba go obudować (szacht w rogu pokoju, szum wody).','Pion kanalizacyjny w obudowie z wełną; najlepiej w ścianie przy łazience, a nie w salonie czy sypialni.')}
         else if(p.offset!=null){add(Math.min(4,2+(p.kind.toilet?1:0)+.4*Math.max(0,p.offset-1)),'offset','Nie stoi nad żadnym mokrym pomieszczeniem parteru – kanalizacja musi iść poziomo w stropie ok. '+fmtM(p.offset)+(p.kind.toilet?' (rura 110 mm od WC)':'')+' do pionu przy „'+p.offsetTo.name+'”.',
             'Przesuń pomieszczenie nad łazienkę / kuchnię / techniczne na parterze. Poziomą rurę trzeba ukryć w stropie (spadek 2%) albo w podwieszanym suficie pomieszczenia poniżej.');
-          if(p.dryBelow)add(1,'boxing','Pion zejdzie przez „'+p.dryBelow.name+'” – trzeba go obudować (szacht w rogu pokoju, szum wody).','Pion kanalizacyjny w obudowie z wełną; najlepiej w ścianie przy łazience, a nie w salonie czy sypialni.')}}
+          if(p.dryBelow)add(1,'boxing','Rura w stropie nad „'+p.dryBelow.name+'” – potrzebny sufit podwieszany albo obudowa.','Krótką rurę najłatwiej schować w suficie podwieszanym korytarza albo łazienki.')}}
       if(!clusters[p.cluster].some(o=>o!==p&&o.f===p.f)&&!(p.f===up&&p.stackOver)&&points.length>2)add(.8,'alone','Stoi osobno – nie sąsiaduje z innym mokrym pomieszczeniem, więc potrzebuje własnych podejść i gałęzi kanalizacji.','Mokre pomieszczenia (łazienka, WC, kuchnia, pralnia) najlepiej grupować przy jednej ścianie instalacyjnej.');
       p.score=Math.max(0,Math.min(10,p.score))}
     // koszt orientacyjny
     const pts=points.reduce((a,p)=>a+p.kind.pts,0),runLen=points.filter(p=>!p.isSrc&&p.len!=null).reduce((a,p)=>a+p.len,0);
-    const upperOff=points.filter(p=>p.f===up&&!p.stackOver&&p.offset!=null);
+    const upperOff=points.filter(p=>p.f===up&&!p.stackOver&&p.offset!=null&&p.drain==='slab'),upperBox=points.filter(p=>p.f===up&&!p.stackOver&&p.dryBelow);
     const cost={points:pts*PRICE.point,supply:runLen*PRICE.supply,drain:points.filter(p=>!p.isSrc).reduce((a,p)=>a+Math.min(8,(p.hor||0)*.6+1.5),0)*PRICE.drain,
-      risers:risers.length*PRICE.riserFloor*(hasUp?2:1),offsets:upperOff.reduce((a,p)=>a+PRICE.upperOffset+p.offset*PRICE.upperOffsetM,0),boxing:upperOff.filter(p=>p.dryBelow).length*PRICE.boxing,
+      risers:risers.length*PRICE.riserFloor*(hasUp?2:1),offsets:upperOff.reduce((a,p)=>a+PRICE.upperOffset+p.offset*PRICE.upperOffsetM,0),boxing:upperBox.length*PRICE.boxing,
       circ:circ?PRICE.circBase+runLen*PRICE.circ:0};
     cost.total=Object.values(cost).reduce((a,b)=>a+b,0);
     // układ zwarty: te same przybory, każde pomieszczenie ok. 3 m od technicznego, piętro nad parterem (jeden pion)

@@ -146,7 +146,8 @@ function render(){const M_=$('main');
   if(!project||!(project.grid||project.definitionSnapshot?.grid)){M_.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej albo narysuj rzut w <b>Układzie pomieszczeń</b>.</div>';return}
   const s=settings();
   try{R=HouserPV.compute(project)}catch(e){console.error(e);M_.innerHTML='<div class="empty">Nie udało się policzyć.</div>';return}
-  $('enabled').checked=!!s.enabled;$('size').value=s.size;$('kWpF').hidden=s.size!=='manual';$('kWp').value=s.kWp;$('slopes').value=s.slopes;$('battery').value=String(s.battery);$('evKm').value=s.evKm;$('pExp').value=s.pExp;$('priceKWp').value=s.priceKWp;
+  $('enabled').checked=!!s.enabled;$('size').value=s.size;$('kWpF').hidden=s.size!=='manual';$('kWp').value=s.kWp;{const base='<option value="auto">tylko opłacalne (bez północnych)</option><option value="all">wszystkie</option>',sl=R?R.slopes:[],one=sl.length>1?sl.map(x=>'<option value="side:'+x.side+'">tylko połać '+esc(x.side==='flat'?'– dach płaski':x.dirPL)+'</option>').join(''):'';
+    $('slopes').innerHTML=base+one;$('slopes').value=[...$('slopes').options].some(o=>o.value===s.slopes)?s.slopes:'auto'}$('battery').value=String(s.battery);$('evKm').value=s.evKm;$('pExp').value=s.pExp;$('priceKWp').value=s.priceKWp;
   const C=R.cons,cover=R.cons.total?R.prod/R.cons.total:0;
   let h=s.enabled?'<div class="note">Fotowoltaika jest włączona – Ogrzewanie, Instalacja grzewcza i Energia liczą prąd po ok. <b>'+Math.round(R.priceFactor*100)+'%</b> ceny ('+fmt(R.pEl*R.priceFactor,2)+' zł zamiast '+fmt(R.pEl,2)+' zł za kWh).</div>':
     '<div class="note off">To propozycja – zaznacz po lewej „Montuję fotowoltaikę”, żeby rachunki w innych modułach liczyły się z tańszym prądem.</div>';

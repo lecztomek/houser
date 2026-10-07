@@ -150,8 +150,8 @@
   }
  },
  "stodola-mini-2a-g2.json": {
-  "overall": 7.1,
-  "cost": 1406129,
+  "overall": 7.2,
+  "cost": 1402692,
   "Qh": 13847,
   "bills": 5836,
   "area": 240.5,
@@ -165,7 +165,7 @@
    "Ocieplenie i elewacja": 7.6,
    "Wygląd": 8.4,
    "Balkony": null,
-   "Hydraulika": 5.9,
+   "Hydraulika": 6.2,
    "Ogrzewanie": null,
    "Konstrukcja": 4.2,
    "Elektryka": 9.5,
@@ -176,7 +176,7 @@
  },
  "uklad-domu-v7.json": {
   "overall": 8.3,
-  "cost": 919320,
+  "cost": 916157,
   "Qh": 7453,
   "bills": 3882,
   "area": 148.75,
@@ -190,7 +190,7 @@
    "Ocieplenie i elewacja": 7.6,
    "Wygląd": 8.7,
    "Balkony": null,
-   "Hydraulika": 7,
+   "Hydraulika": 7.2,
    "Ogrzewanie": 10,
    "Konstrukcja": 6.2,
    "Elektryka": 9.6,
@@ -200,8 +200,8 @@
   }
  },
  "zefir-2.json": {
-  "overall": 7.7,
-  "cost": 976224,
+  "overall": 7.8,
+  "cost": 972786,
   "Qh": 8182,
   "bills": 4426,
   "area": 165.5,
@@ -215,7 +215,7 @@
    "Ocieplenie i elewacja": 7,
    "Wygląd": 8.4,
    "Balkony": null,
-   "Hydraulika": 5.7,
+   "Hydraulika": 7.3,
    "Ogrzewanie": 9.5,
    "Konstrukcja": 7.1,
    "Elektryka": 10,
