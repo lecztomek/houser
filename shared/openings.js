@@ -64,7 +64,9 @@
     const bk=info.blind||project?.solarSettings?.blinds||'none',bp=BLIND_PRICE[bk];const blind=!bp?0:roof?ROOF_BLIND_PRICE[bk]:Math.max(bp[1],area*bp[0]);
     return {win,blind,k,blindKind:bp?bk:null}}
   // podpis ustawień otworu – sąsiednie kratki z tym samym podpisem to jedno okno / drzwi
-  const sig=i=>[i.variant,i.slope,i.angle,i.rise,i.sill,i.height,i.blind].join('|');
+  // podpis okna (sąsiednie kratki o tym samym podpisie = jedno okno); skos (slope/angle/rise) liczy się tylko dla okien ściętych –
+  // resztki tych ustawień po zmianie okna ściętego na zwykłe nie dzielą okna
+  const sig=i=>[i.variant,...(i.shape==='sloped'?[i.slope,i.angle,i.rise]:['','','']),i.sill,i.height,i.blind].join('|');
   function runExtent(project,floor,key){const ops=project?.openings?.[floor]||{},base=ops[key],[o,aS,bS]=key.split(':'),a=+aS,b=+bS,v=sig(resolve(project,floor,key,base));
     const k=i=>o==='h'?'h:'+i+':'+b:'v:'+a+':'+i,same=i=>ops[k(i)]===base&&(base==='door'||sig(resolve(project,floor,k(i),base))===v),at=o==='h'?a:b;
     let from=at,to=at;while(same(from-1))from--;while(same(to+1))to++;return {from,to,at}}

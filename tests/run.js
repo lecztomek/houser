@@ -148,6 +148,11 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  ok(pk(A1)!=null&&pk(A1)<=pk(A0),'ścianka szklana: gorsza akustyka niż ściana ('+pk(A0)+' → '+pk(A1)+')');
  ok(!W.HouserOpenings.walkable(g,'ground','h:3:13'),'ścianka szklana: nie da się przez nią przejść');}
 
+{const O=W.HouserOpenings,pr={openings:{upper:{'h:4:0':'window','h:5:0':'window','h:6:0':'window'}},openingVariants:{upper:{'h:4:0':{variant:'standard',sill:.5,slope:'manual',angle:35,rise:'left'},'h:5:0':{variant:'standard',sill:.5,slope:'manual',angle:35,rise:'left'},'h:6:0':{variant:'standard',sill:.5}}}};
+ const e=O.runExtent(pr,'upper','h:6:0');ok(e.from===4&&e.to===6,'okna: resztki ustawień skosu w zwykłym oknie nie dzielą okna');
+ pr.openingVariants.upper['h:6:0']={variant:'sloped',sill:.3,height:2.4};pr.openingVariants.upper['h:4:0'].variant=pr.openingVariants.upper['h:5:0'].variant='sloped';
+ ok(O.runExtent(pr,'upper','h:6:0').from===6,'okna: ścięte z innym skosem to osobne okna');}
+
 // ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować
 console.log('• składnia skryptów');
 {const vm=require('vm'),walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?(['node_modules','.git'].includes(e.name)?[]:walk(path.join(d,e.name))):[path.join(d,e.name)]);
