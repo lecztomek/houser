@@ -153,22 +153,35 @@
   // automatyczny zapis powiązanego projektu po zmianach: chwilę po ostatniej zmianie, ale najwyżej raz na minutę
   // (zmiany z tej minuty idą jednym zapisem); od razu przy zamknięciu / schowaniu karty i przy otwieraniu innego domu (saveNow)
   const MIN_GAP=60000,QUIET={project:3000,photos:1500};let timer=null,want={project:false,photos:false},busy=false,lastSave=0;
+  // kilka kart / okien z tym samym domem: każda dostaje te same zmiany, więc zapis uzgadniamy przez localStorage –
+  // zapisuje jedna karta, raz na minutę dla wszystkich; wersja już zapisana przez inną kartę nie idzie drugi raz
+  const SH='houser:cloud-save',me=Math.random().toString(36).slice(2);
+  const shGet=()=>{try{return JSON.parse(localStorage.getItem(SH)||'null')||{}}catch(_){return {}}},shSet=v=>{try{localStorage.setItem(SH,JSON.stringify(v))}catch(_){}};
+  const lastAny=pid=>{const sh=shGet();return Math.max(lastSave,sh.pid===pid?+sh.t||0:0)};
   function touch(what){if(!enabled||!user)return;const pid=curPid();if(!eligible(pid)){emit();return}
     want[what==='photos'?'photos':'project']=true;if(op.state==='conflict')return;clearTimeout(timer);setOp('pending');
-    const wait=Math.max(want.project?QUIET.project:QUIET.photos,MIN_GAP-(Date.now()-lastSave));timer=setTimeout(flush,wait)}
-  async function flush(){if(busy){clearTimeout(timer);timer=setTimeout(flush,1000);return}
+    const wait=Math.max(want.project?QUIET.project:QUIET.photos,MIN_GAP-(Date.now()-lastAny(pid)));timer=setTimeout(flush,wait)}
+  async function flush(force){if(busy){clearTimeout(timer);timer=setTimeout(()=>flush(force),1000);return}
     const rec=HouserStore.load(),pid=rec?.project?.projectId;if(!eligible(pid)){setOp('idle');return}
-    busy=true;setOp('saving');lastSave=Date.now();const w=want;want={project:false,photos:false};
-    try{if(w.project||!linkOf(pid)){const r=await saveProject(rec.project);if(r.conflict){setOp('conflict');hooks.conflict?.(r.conflict);return}}
+    const upd=rec.updatedAt||'',sh=shGet(),same=sh.pid===pid;
+    // inna karta właśnie zapisuje – poczekaj chwilę; ta wersja jest już w chmurze – nic do roboty
+    if(same&&sh.saving&&sh.by!==me&&Date.now()-sh.t<20000){clearTimeout(timer);timer=setTimeout(()=>flush(force),1500);return}
+    if(same&&!want.photos&&upd&&sh.upd>=upd&&linkOf(pid)){want.project=false;lastSave=Math.max(lastSave,+sh.t||0);setOp('saved');return}
+    if(!force&&same&&Date.now()-(+sh.t||0)<MIN_GAP-500){clearTimeout(timer);timer=setTimeout(flush,MIN_GAP-(Date.now()-sh.t));return}
+    // zajęcie zapisu (dwie karty w tej samej chwili – wygrywa ta, której wpis został)
+    shSet({pid,t:Date.now(),upd:sh.upd&&same?sh.upd:'',saving:1,by:me});await new Promise(r=>setTimeout(r,120));
+    if(shGet().by!==me){clearTimeout(timer);timer=setTimeout(()=>flush(force),1500);return}
+    busy=true;setOp('saving');lastSave=Date.now();const w=want;want={project:false,photos:false};let okUpd='';
+    try{if(w.project||!linkOf(pid)){const r=await saveProject(rec.project);if(r.conflict){setOp('conflict');hooks.conflict?.(r.conflict);return}okUpd=upd}
       if(w.photos)await pushPhotos(curPid());setOp('saved')}
     catch(e){console.error(e);want={project:want.project||w.project,photos:want.photos||w.photos};setOp('error',e.message||String(e))}
-    finally{busy=false}}
+    finally{busy=false;const s2=shGet();if(s2.by===me)shSet({pid,t:lastSave,upd:okUpd||(s2.upd||''),saving:0,by:me})}}
   global.addEventListener('online',()=>{if(op.state==='error')touch('project')});
   // karta znika / zamyka się – zapisz od razu to, co czeka
-  const flushPending=()=>{if(op.state==='pending'&&(want.project||want.photos)){clearTimeout(timer);flush()}};
+  const flushPending=()=>{if(op.state==='pending'&&(want.project||want.photos)){clearTimeout(timer);flush(true)}};
   global.document?.addEventListener?.('visibilitychange',()=>{if(global.document.visibilityState==='hidden')flushPending()});
   global.addEventListener('pagehide',flushPending);
-  function saveNow(){clearTimeout(timer);want.project=true;want.photos=true;return flush()}
+  function saveNow(){clearTimeout(timer);want.project=true;want.photos=true;return flush(true)}
 
   const hooks={};
   global.HouserCloud={enabled,init,signIn,signOut,_testSignIn,user:()=>user,onAuth:cb=>authCbs.push(cb),onStatus:cb=>statusCbs.push(cb),status,
