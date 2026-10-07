@@ -12,6 +12,7 @@ const ITEMS=[
   ['utilities','Stan zerowy','Przyłącza (prąd, woda, kanalizacja)','kpl',()=>1,25000,0,'ryczałt'],
   ['extwalls','Stan surowy otwarty','Ściany zewnętrzne (mur z robocizną)','m²',q=>q.extNet,320,0,'ściany netto bez otworów, ze szczytami'],
   ['partwalls','Stan surowy otwarty','Ściany działowe','m²',q=>q.partA,170,0,'długość × wysokość kondygnacji'],
+  ['glasswalls','Elewacja i wykończenie','Ścianki szklane (aluminium + szkło hartowane, z montażem)','m²',q=>q.glassA||0,1300,1,'długość × wysokość kondygnacji'],
   ['slab','Stan surowy otwarty','Strop nad parterem','m²',q=>q.slab,430,0,'powierzchnia piętra bez otworów w stropie'],
   ['structExtra','Stan surowy otwarty','Wzmocnienia konstrukcji (podciągi, nadproża, wsporniki)','kpl',()=>0,0,0,'moduł Konstrukcja'],
   ['stairs','Stan surowy otwarty','Schody','szt',q=>q.stairs.length,null,0,q=>q.stairs.map(t=>STAIR_PL[t]||t).join(', ')||'brak'],
@@ -70,7 +71,8 @@ function compute(){
   const q=quantities(),s=cs(),rows=[],DYN=fromModules();
   for(let [id,stage,name,unit,qf,defPrice,fin,how,defOn] of ITEMS){
     const dy=DYN[id];if(dy){unit='kpl';name=dy.name;how=dy.how;qf=()=>1;defPrice=dy.total;fin=0}
-    const qty=Math.max(0,qf(q)||0);let base=defPrice;if(id==='windows'&&q.ops.winA>0&&q.ops.winCost)base=q.ops.winCost/q.ops.winA;if(id==='hst'&&q.ops.hstA>0&&q.ops.hstCost)base=q.ops.hstCost/q.ops.hstA;if(id==='roofwin'&&q.ops.roofWin>0&&q.ops.roofWinCost)base=q.ops.roofWinCost/q.ops.roofWin;if(id==='blinds'&&q.ops.blinds>0)base=q.ops.blindCost/q.ops.blinds; // średnia z cen okien wg typu (moduł Okna i drzwi)
+    const qty=Math.max(0,qf(q)||0);if(id==='glasswalls'&&!qty)continue; // pozycja tylko gdy są ścianki szklane
+    let base=defPrice;if(id==='windows'&&q.ops.winA>0&&q.ops.winCost)base=q.ops.winCost/q.ops.winA;if(id==='hst'&&q.ops.hstA>0&&q.ops.hstCost)base=q.ops.hstCost/q.ops.hstA;if(id==='roofwin'&&q.ops.roofWin>0&&q.ops.roofWinCost)base=q.ops.roofWinCost/q.ops.roofWin;if(id==='blinds'&&q.ops.blinds>0)base=q.ops.blindCost/q.ops.blinds; // średnia z cen okien wg typu (moduł Okna i drzwi)
     if(id==='stairs')base=q.stairs.length?q.stairs.reduce((a,t)=>a+(STAIR_PRICE[t]||18000),0)/q.stairs.length:18000;const ek=+project.envelopePriceK?.[id];if(ek>0)base*=ek; // mur, elewacja, okna wg modułu Ocieplenie i elewacja
     const def=base*(fin?STD[s.std]:1)*s.factor,share=MAT[id]??.6,old=s.prices[id]!=null?+s.prices[id]:null; // starsze zapisy: jedna cena -> dzielona wg udziału
     const defMat=def*share,defLab=def*(1-share),mat=s.mat[id]!=null?+s.mat[id]:(old!=null?old*share:defMat),lab=s.lab[id]!=null?+s.lab[id]:(old!=null?old*(1-share):defLab);

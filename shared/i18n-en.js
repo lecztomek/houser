@@ -4117,4 +4117,11 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 " + spocznik + ":" + landing + ",
 " (na środku)":" (in the middle)",
 " (bliżej wejścia)":" (closer to the bottom)",
-" (bliżej góry)":" (closer to the top)"};
+" (bliżej góry)":" (closer to the top)",
+"Ścianka szklana":"Glass partition",
+"Ścianki szklane (aluminium + szkło hartowane, z montażem)":"Glass partitions (aluminium + tempered glass, installed)",
+"ścianka szklana (nienośna)":"glass partition (non-load-bearing)",
+" – w tym ":" – including ",
+"ścianki szklanej, która słabo tłumi":"of glass partition, which insulates sound poorly",
+"Ścianka szklana z pokojem „":"Glass partition with room “",
+") – słychać i widać, co dzieje się obok.":") – you can hear and see what happens next door."};

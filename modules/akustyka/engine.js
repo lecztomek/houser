@@ -37,7 +37,7 @@
     // pomieszczenia
     const rooms={};
     for(const r of q.rooms){const cls=classify(r.name);rooms[r.f+'|'+r.id]={key:r.f+'|'+r.id,f:r.f,id:r.id,name:r.name,area:r.area,cells:r.cells,color:defs[r.f][r.id]?.color||'#cbd5e1',cls,
-      quiet:cls.quiet||0,src:cls.src||0,buffer:!!cls.buffer,walls:{},opens:{},doors:{},above:{},below:{},winSides:{},voidEdge:0,issues:[],score:null}}
+      quiet:cls.quiet||0,src:cls.src||0,buffer:!!cls.buffer,walls:{},glass:{},opens:{},doors:{},above:{},below:{},winSides:{},voidEdge:0,issues:[],score:null}}
     const R=(f,v)=>rooms[f+'|'+v];
     // krawędzie między kratkami: wspólne ściany, otwarte przejścia, drzwi
     const ops=f=>project.openings?.[f]||{};
@@ -48,6 +48,7 @@
           if(isHole(f,va)||isHole(f,vb)){const r=isHole(f,va)?rb:ra;if(r&&va==='pustka'||vb==='pustka')r&&(r.voidEdge+=c);return}
           if(!ra||!rb)return;
           const tgt=o==='opening'?'opens':'walls';ra[tgt][rb.key]=(ra[tgt][rb.key]||0)+c;rb[tgt][ra.key]=(rb[tgt][ra.key]||0)+c;
+          if(o==='glass'){ra.glass[rb.key]=(ra.glass[rb.key]||0)+c;rb.glass[ra.key]=(rb.glass[ra.key]||0)+c} // ścianka szklana: ściana, ale tłumi słabo (Rw ok. 32–37 dB)
           if(o==='door'||o==='hst'){ra.doors[rb.key]=1;rb.doors[ra.key]=1}}
         else if(A!==B&&(o==='window'||o==='hst')){const r=A?R(f,va):R(f,vb);if(r){const side=A?sideB:sideA;r.winSides[sm[side]]=(r.winSides[sm[side]]||0)+c}}};
       for(let y=0;y<=H;y++)for(let x=0;x<W;x++)edge(x,y-1,x,y,'h:'+x+':'+y,'top','bottom');
@@ -70,9 +71,10 @@
     const conflicts=[];
     for(const r of Object.values(rooms)){if(!r.quiet)continue;let pen=0;const add=(p,type,text,tip,other,len)=>{p=Math.round(p*100)/100;if(p<=0)return;pen+=p;const it={p,type,text,tip,other,len};r.issues.push(it);if(other)conflicts.push({a:r.key,b:other,p,type,len})};
       for(const [k,len] of Object.entries(r.walls)){const o=rooms[k];if(!o||o.buffer)continue;const E=eff(o);
-        if(E.src){const p=E.src*Math.min(1,len/3)*soft;add(p,'wall',E.via?'Wspólna ściana z pomieszczeniem „'+o.name+'” ('+fmtM(len)+'), otwartym '+(E.vv?'przez pustkę ':'')+'na „'+E.via.name+'” – '+E.via.cls.why+'.':'Wspólna ściana z pomieszczeniem „'+o.name+'” ('+fmtM(len)+') – '+o.cls.why+'.',
+        const gl=r.glass[k]||0,gTxt=gl?' – w tym '+fmtM(gl)+' ścianki szklanej, która słabo tłumi':'',lenEq=len+1.5*gl; // metr szkła ≈ 2,5 m zwykłej ściany
+        if(E.src){const p=E.src*Math.min(1,lenEq/3)*soft*(gl?1.3:1);add(p,'wall',E.via?'Wspólna ściana z pomieszczeniem „'+o.name+'” ('+fmtM(len)+gTxt+'), otwartym '+(E.vv?'przez pustkę ':'')+'na „'+E.via.name+'” – '+E.via.cls.why+'.':'Wspólna ściana z pomieszczeniem „'+o.name+'” ('+fmtM(len)+gTxt+') – '+o.cls.why+'.',
           o.cls.k==='bath'||o.cls.k==='wc'?'Pion kanalizacyjny prowadź z dala od tej ściany (w bruździe z izolacją), ściana z bloczków silikatowych lub podwójna płyta g-k z wełną.':o.cls.k==='garage'?'Ściana z garażem powinna być masywna (Rw ≥ 55 dB), najlepiej oddzielona garderobą lub korytarzem.':'Ściana akustyczna (np. silikat 18 cm albo podwójna płyta g-k z wełną) albo szafa wnękowa na całej ścianie jako bufor.',k,len)}
-        else if(o.quiet&&len>=1)add(.3*soft,'wall','Ściana z pokojem „'+o.name+'” – rozmowy i muzyka zza ściany.','Między sypialniami ściana pełna (bez gniazdek na wprost siebie) albo szafy wnękowe.',k,len)}
+        else if(o.quiet&&len>=1)add((gl?.9:.3)*soft,'wall',gl?'Ścianka szklana z pokojem „'+o.name+'” ('+fmtM(gl)+') – słychać i widać, co dzieje się obok.':'Ściana z pokojem „'+o.name+'” – rozmowy i muzyka zza ściany.','Między sypialniami ściana pełna (bez gniazdek na wprost siebie) albo szafy wnękowe.',k,len)}
       for(const [k,len] of Object.entries(r.opens)){const o=rooms[k];if(!o)continue;const E=eff(o);if(!E.src)continue;add(E.src*1.6,'open','Otwarte przejście do pomieszczenia „'+o.name+'” – nic nie tłumi hałasu.','Zamiast otwartego przejścia daj drzwi (najlepiej z uszczelką).',k,len)}
       for(const k of Object.keys(r.doors)){const o=rooms[k];if(!o||o.cls.k==='bath'||o.cls.k==='wc')continue;const E=eff(o);
         if(o.src>=1.5)add(1.2,'door','Drzwi otwierają się prosto do pomieszczenia „'+o.name+'” (bez holu).','Wejście do sypialni z holu lub korytarza, a nie wprost z salonu czy kuchni.',k);

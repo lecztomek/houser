@@ -289,7 +289,7 @@ function drawPlan(){
   // otwory
   const ops=project.openings?.[f]||{};for(const [k,t] of Object.entries(ops)){
     const parts=k.split(':'), typ=parts[0], a=+parts[1], b=+parts[2];
-    pctx.lineWidth=4; pctx.strokeStyle=t==='window'?'#2563eb':t==='hst'?'#0891b2':t==='opening'?'#16a34a':'#111827';
+    pctx.lineWidth=4; pctx.strokeStyle=t==='window'?'#2563eb':t==='hst'?'#0891b2':t==='opening'?'#16a34a':t==='glass'?'#0ea5e9':'#111827';
     pctx.beginPath(); if(typ==='h'){pctx.moveTo(ox+a*s+2,oy+b*s);pctx.lineTo(ox+(a+1)*s-2,oy+b*s)}else{pctx.moveTo(ox+a*s,oy+b*s+2);pctx.lineTo(ox+a*s,oy+(b+1)*s-2)} pctx.stroke();
   }
   drawStairsOnPlan(ox,oy,s);
@@ -543,6 +543,8 @@ function addWall2D(orient,x,z,len,height,base,opening,exterior){const info=openi
   const go=exterior&&curOut?curOut*WALL_EXT*.4:0,gx=orient==='v'?x+go:x,gz=orient==='h'?z+go:z; // szyba w głębi muru
   const wallColor=exterior?'#dedbd7':'#f0f1f2';
   if(opening==='opening')return;
+  // ścianka szklana: tafla na całą wysokość z cienką ramą (bez muru), widać przez nią sąsiednie pomieszczenie
+  if(opening==='glass'){if(settings.showGlass)wallQuad(orient,x,z,len,base,0,height,'#9fd3ee',{alpha:.22,stroke:'#475569',kind:'glass'});const fr=.04;wallSlab(orient,x,z,len,base,0,fr,'#475569',false);wallSlab(orient,x,z,len,base,height-fr,height,'#475569',false);return}
   if(['door','hiddenDoor','slidingDoor'].includes(opening)){
     const dh=Math.min(info?.height??settings.doorH,height-.05);wallSlab(orient,x,z,len,base,dh,height,wallColor,exterior);return;
   }

@@ -13,7 +13,10 @@
   const floors=d=>Array.isArray(d?.floorOrder)&&d.floorOrder.length?d.floorOrder:Object.keys(d?.floors||{});
   const floorDef=(d,f)=>d?.floors?.[f]||{name:f,rooms:[]};
   const rooms=(d,f)=>floorDef(d,f).rooms||[];
-  const openingTypes=d=>Array.isArray(d?.openingTypes)&&d.openingTypes.length?d.openingTypes:DEFAULT_OPENING_TYPES;
+  // ścianka szklana: wewnętrzna przegroda ze szkła (lekka, nienośna, przepuszcza światło) – dostępna w każdym domu, także w starszych definicjach
+  const GLASS_TYPE={id:'glass',name:'Ścianka szklana',color:'#0ea5e9',placement:'interior'};
+  const withGlass=l=>l.some(t=>t.id==='glass')?l:[...l,GLASS_TYPE];
+  const openingTypes=d=>withGlass(Array.isArray(d?.openingTypes)&&d.openingTypes.length?d.openingTypes:DEFAULT_OPENING_TYPES);
   const roomName=(d,f,id)=>rooms(d,f).find(r=>r.id===id)?.name||id||'?';
 
   // Nowa, pusta definicja (gdy ktoś zaczyna od zera)
@@ -90,5 +93,5 @@
     return out;
   }
 
-  global.HouserDefinition={CONDITION_TYPE_NAMES,SEVERITY,DIR_PL,DEFAULT_OPENING_TYPES,floors,floorDef,rooms,openingTypes,roomName,emptyDefinition,isDefinition,projectFromDefinition,slugRoomId,normalizeCondition,defaultCondition,conditionLabel,conditionUsesRoom,areaTargets};
+  global.HouserDefinition={GLASS_TYPE,withGlass,CONDITION_TYPE_NAMES,SEVERITY,DIR_PL,DEFAULT_OPENING_TYPES,floors,floorDef,rooms,openingTypes,roomName,emptyDefinition,isDefinition,projectFromDefinition,slugRoomId,normalizeCondition,defaultCondition,conditionLabel,conditionUsesRoom,areaTargets};
 })(window);

@@ -33,10 +33,10 @@
 
     // ściany zewnętrzne i działowe
     const hWall={[lo]:G.groundHeight,[up]:G.upperWall},hPart={[lo]:G.groundHeight,[up]:attic?Math.max(G.kneeWall,(G.kneeWall+G.upperHeight)/2):G.upperHeight};
-    const extLen={[lo]:0,[up]:0},partLen={[lo]:0,[up]:0};
+    const extLen={[lo]:0,[up]:0},partLen={[lo]:0,[up]:0},glassLen={[lo]:0,[up]:0}; // glassLen – ścianki szklane (osobno od murowanych działowych)
     const edge=(f,ax,ay,bx,by,key)=>{const A=occ(f,ax,ay),B=occ(f,bx,by);
       if(A!==B){extLen[f]+=c;const r=R[f+'|'+(A?id(f,ax,ay):id(f,bx,by))];if(r)r.extEdges++;return}
-      if(!A)return;const va=id(f,ax,ay),vb=id(f,bx,by);if(va===vb||isHole(f,va)||isHole(f,vb))return;if(project.openings?.[f]?.[key]==='opening')return;partLen[f]+=c};
+      if(!A)return;const va=id(f,ax,ay),vb=id(f,bx,by);if(va===vb||isHole(f,va)||isHole(f,vb))return;const ot=project.openings?.[f]?.[key];if(ot==='opening')return;if(ot==='glass'){glassLen[f]+=c;return}partLen[f]+=c};
     for(const f of [lo,up]){for(let y=0;y<=H;y++)for(let x=0;x<W;x++)edge(f,x,y-1,x,y,'h:'+x+':'+y);for(let x=0;x<=W;x++)for(let y=0;y<H;y++)edge(f,x-1,y,x,y,'v:'+x+':'+y)}
     const gable=span*G.rise;
 
@@ -57,7 +57,7 @@
       else{if(r.ext){ops.extDoor++;ops.extDoorA+=r.area}else ops.intDoor++;for(const m of rooms_)m.doors.push(r)}}
     const wallGross=extLen[lo]*hWall[lo]+extLen[up]*hWall[up],glaz=ops.winA+ops.hstA+ops.extDoorA;
     const extGross=wallGross+gable,extNet=Math.max(0,extGross-glaz);
-    Object.assign(q,{hWall,hPart,extLen,partLen,gable,extGross,extNet,wallNet:Math.max(0,wallGross-glaz),partA:partLen[lo]*hPart[lo]+partLen[up]*hPart[up],ops,runs});
+    Object.assign(q,{hWall,hPart,extLen,partLen,gable,extGross,extNet,wallNet:Math.max(0,wallGross-glaz),partA:partLen[lo]*hPart[lo]+partLen[up]*hPart[up],glassLen,glassA:glassLen[lo]*hPart[lo]+glassLen[up]*hPart[up],ops,runs});
 
     // dach
     // dach tylko nad częścią domu, gdy piętro jest krótsze, a na końcu parteru jest balkon / taras (HouserModel.roofRange)

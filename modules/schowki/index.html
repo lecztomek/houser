@@ -109,7 +109,7 @@ function plan(R){
   for(let y=0;y<=g.height;y++)for(let x=0;x<g.width;x++)edge(idAt(x,y-1),idAt(x,y),x*c,y*c,(x+1)*c,y*c);
   for(let y=0;y<g.height;y++)for(let x=0;x<=g.width;x++)edge(idAt(x-1,y),idAt(x,y),x*c,y*c,x*c,(y+1)*c);
   // okna i drzwi
-  for(const [key,base] of Object.entries(project.openings?.[floor]||{})){const [o,a,b]=key.split(':').map((v,i)=>i?+v:v);const x1=o==='h'?a*c:a*c,y1=o==='h'?b*c:b*c,x2=o==='h'?(a+1)*c:a*c,y2=o==='h'?b*c:(b+1)*c;el('line',{x1:X(x1),y1:X(y1),x2:X(x2),y2:X(y2),stroke:base==='door'?'#ffffff':base==='opening'?'#ffffff':'#60a5fa','stroke-width':base==='door'||base==='opening'?4:3},svg)}
+  for(const [key,base] of Object.entries(project.openings?.[floor]||{})){const [o,a,b]=key.split(':').map((v,i)=>i?+v:v);const x1=o==='h'?a*c:a*c,y1=o==='h'?b*c:b*c,x2=o==='h'?(a+1)*c:a*c,y2=o==='h'?b*c:(b+1)*c;el('line',{x1:X(x1),y1:X(y1),x2:X(x2),y2:X(y2),stroke:base==='door'?'#ffffff':base==='opening'?'#ffffff':base==='glass'?'#7dd3fc':'#60a5fa','stroke-width':base==='door'||base==='opening'?4:3},svg)}
   // meble do przechowywania
   const SET=new Set(['b_szafa','g_szafa','o_szafa','p_szafa','b_komoda','b_nocna','p_buty','k_dolne','k_narozne','k_zlew','k_wysokie','k_wyspa','l_umywalka','l_szafka','t_regal']);
   for(const it of project.furniture?.[floor]||[]){if(!SET.has(it.item))continue;el('rect',{x:X(it.x),y:X(it.y),width:X(it.w),height:X(it.h),fill:'#2563eb','fill-opacity':.75,stroke:'#1e3a8a','stroke-width':1,rx:2},svg)}

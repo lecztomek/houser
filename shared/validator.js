@@ -45,7 +45,7 @@
     function neighbors(i){const[x,y]=xy(i),o=[];if(x>0)o.push(idx(x-1,y));if(x<W-1)o.push(idx(x+1,y));if(y>0)o.push(idx(x,y-1));if(y<H-1)o.push(idx(x,y+1));return o;}
     function openingBetweenLength(f,a,b,types){return longestOpeningRun(f,k=>edgeMatchesRooms(f,k,a,b),types);}
     function openingTypeDef(id){return openingTypes().find(t=>t.id===id)||null;}
-    function openingTypes(){return definition.openingTypes||[];}
+    function openingTypes(){const l=definition.openingTypes||[];return l.some(t=>t.id==='glass')?l:[...l,{id:'glass',name:'Ścianka szklana',color:'#0ea5e9',placement:'interior'}];} // ścianka szklana – zawsze dostępna
     function overlapRatio(uf,ur,lf,lrs){let total=0,ok=0;for(let i=0;i<W*H;i++)if(state[uf][i]===ur){total++;if(lrs.includes(state[lf][i]))ok++;}return total?ok/total:0;}
     function parseEdgeKey(k){const m=/^([vh]):(\d+):(\d+)$/.exec(k);return m?{o:m[1],x:Number(m[2]),y:Number(m[3])}:null;}
     function reachableRooms(f,start,types){const graph={};for(const r of interiorRooms(f))graph[r.id]=new Set();for(const[k,t]of Object.entries(openings[f]||{})){if(!types.includes(t)||!canPlaceType(f,k,t))continue;const info=edgeInfo(f,k);if(info.kind==='interior'){const[a,b]=info.rooms;graph[a]?.add(b);graph[b]?.add(a);}}const seen=new Set([start]),q=[start];while(q.length){const cur=q.shift();for(const n of graph[cur]||[])if(!seen.has(n)){seen.add(n);q.push(n);}}return seen;}

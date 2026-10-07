@@ -137,6 +137,17 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  ok(Math.abs(mid.x1-mid.z1)<.01&&e.x1>l.x1&&e.z1<l.z1,'schody L: skręt po wybranym stopniu zmienia długości biegów (środek = równe)');
  ok(S.geometry({type:'U',risers:16,width:.9,tread:.27,turn:'left',rot:0,x:0,y:0,split:4},.5,2.8).steps.length===15&&S.splitOf({split:99},15)===13&&S.splitOf({split:0},15)===1,'schody: spocznik zawsze z min. 1 stopniem w każdym biegu');}
 
+// ścianka szklana (salon | pokój w Stodole Jasnej): osobno w ilościach i wycenie, nienośna w konstrukcji, słabo tłumi w akustyce, nieprzechodnia
+{const sj=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','stodola-jasna.json'),'utf8')),g=JSON.parse(JSON.stringify(sj));for(let x=0;x<=6;x++)g.openings.ground['h:'+x+':13']='glass';
+ const q0=W.HouserQuantities.compute(sj),q1=W.HouserQuantities.compute(g);
+ ok(Math.abs(q1.glassLen.ground-3.5)<1e-6&&q1.partLen.ground<q0.partLen.ground-3.4&&q1.glassA>8,'ścianka szklana: liczona osobno od ścian działowych ('+q1.glassA.toFixed(1)+' m²)');
+ const c0=W.HouserCost.compute(sj),c1=W.HouserCost.compute(g),r=c1.rows.find(x=>x.id==='glasswalls');
+ ok(r&&r.value>0&&!c0.rows.some(x=>x.id==='glasswalls')&&c1.total>c0.total,'ścianka szklana: pozycja w wycenie tylko gdy jest');
+ const K=W.HouserStructure.evaluate(g);ok(K.hWall('ground',3,13)==='glass'&&!K.supH(3,13),'ścianka szklana: nienośna (nie podpiera stropu)');
+ const A0=W.HouserAcoustics.evaluate(sj),A1=W.HouserAcoustics.evaluate(g),pk=A=>(A.quiet.find(x=>/pok/i.test(x.name))||{}).score;
+ ok(pk(A1)!=null&&pk(A1)<=pk(A0),'ścianka szklana: gorsza akustyka niż ściana ('+pk(A0)+' → '+pk(A1)+')');
+ ok(!W.HouserOpenings.walkable(g,'ground','h:3:13'),'ścianka szklana: nie da się przez nią przejść');}
+
 // ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować
 console.log('• składnia skryptów');
 {const vm=require('vm'),walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?(['node_modules','.git'].includes(e.name)?[]:walk(path.join(d,e.name))):[path.join(d,e.name)]);

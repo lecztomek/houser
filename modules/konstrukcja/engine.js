@@ -47,7 +47,7 @@
     const hasUp=q.net[up]>0;
     // ściana na krawędzi: zewnętrzna (dom / na zewnątrz) albo między różnymi pomieszczeniami bez otwartego przejścia
     const wallAt=(f,ax,ay,bx,by,key)=>{const A=occ(f,ax,ay),B=occ(f,bx,by);if(A!==B)return f===up&&((A&&hole(ax,ay))||(B&&hole(bx,by)))?null:'ext';if(!A)return null;
-      if(f===up&&(hole(ax,ay)||hole(bx,by)))return null;const va=id(f,ax,ay),vb=id(f,bx,by);if(va===vb)return null;return O(f)[key]==='opening'?null:'int'};
+      if(f===up&&(hole(ax,ay)||hole(bx,by)))return null;const va=id(f,ax,ay),vb=id(f,bx,by);if(va===vb)return null;const ot=O(f)[key];return ot==='opening'?null:ot==='glass'?'glass':'int'}; // 'glass' – ścianka szklana: lekka, nienośna
     const vWall=(f,x,y)=>wallAt(f,x-1,y,x,y,'v:'+x+':'+y),hWall=(f,x,y)=>wallAt(f,x,y-1,x,y,'h:'+x+':'+y);
     // krawędzie siatki zajęte przez podciągi (h:x:linia / v:linia:y) – podpierają strop jak ściana
     const beamKey=new Map();beams.forEach((b,i)=>{for(let a=+b.from;a<=+b.to;a++)beamKey.set(b.o==='h'?'h:'+a+':'+b.line:'v:'+b.line+':'+a,i)});
@@ -116,7 +116,8 @@
 
     // ---------- 2. ściany piętra bez ściany pod spodem
     let extUns=0,intUns=0;const unsupported=[];
-    if(hasUp){const chk=(key,ax,ay,bx,by)=>{const u=wallAt(up,ax,ay,bx,by,key);if(!u)return;if(!occ(lo,ax,ay)&&!occ(lo,bx,by))return; // nad niczym – wspornik, liczony niżej
+    // ścianka szklana na piętrze ('glass') jest lekka – stoi na stropie bez wzmocnień
+    if(hasUp){const chk=(key,ax,ay,bx,by)=>{const u=wallAt(up,ax,ay,bx,by,key);if(!u||u==='glass')return;if(!occ(lo,ax,ay)&&!occ(lo,bx,by))return; // nad niczym – wspornik, liczony niżej
         const lw=wallAt(lo,ax,ay,bx,by,key),l=(lw==='ext'||(lw==='int'&&!lightLo(key)))||beamKey.has(key);if(l)return;
         // ściana zewnętrzna piętra stojąca nad wnętrzem parteru (piętro cofnięte – np. balkon nad parterem)
         unsupported.push({key,kind:u});if(u==='ext')extUns+=c;else intUns+=c};
