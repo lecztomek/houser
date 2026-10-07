@@ -88,9 +88,11 @@ body.dropping .wrap{outline:3px dashed #2563eb;outline-offset:-8px;border-radius
     <label class="btn primary" id="upBtn">⬆ Wgraj zdjęcia<input type="file" id="up" accept="image/*" multiple hidden></label>
     <button class="btn" id="show">▶ Pokaz</button>
     <button class="btn" id="dlAll">⬇ Pobierz</button>
+    <button class="btn" id="galExp" title="Cała galeria (zdjęcia, podpisy, okładka) w jednym pliku – kopia zapasowa albo przeniesienie do innego domu / urządzenia">⤓ Eksportuj galerię</button>
+    <label class="btn" id="galImpBtn" title="Dodaj zdjęcia z pliku galerii do tego domu (obecne zdjęcia zostają)">⤒ Importuj galerię<input type="file" id="galImp" accept="application/json,.json" hidden></label>
   </div>
   <div id="content"></div>
-  <p class="hint">Galeria to wizytówka domu – najwyżej <b id="max"></b> najlepszych zdjęć: wizualizacje AI, ujęcia z podglądów 3D i Twoje własne zdjęcia (działka, inspiracje, budowa). ⭐ oznacza okładkę widoczną na stronie głównej. Kolejność zmieniasz przeciągając kafelki. Zdjęcia zapisują się razem z domem na Twoim koncie (nie trafiają do pliku eksportu).</p>
+  <p class="hint">Galeria to wizytówka domu – najwyżej <b id="max"></b> najlepszych zdjęć: wizualizacje AI, ujęcia z podglądów 3D i Twoje własne zdjęcia (działka, inspiracje, budowa). ⭐ oznacza okładkę widoczną na stronie głównej. Kolejność zmieniasz przeciągając kafelki. Zdjęcia zapisują się razem z domem na Twoim koncie. Plik projektu ich nie zawiera – kopię galerii robisz przyciskiem „Eksportuj galerię”, a „Importuj galerię” dokłada zdjęcia z takiego pliku do otwartego domu.</p>
 </div>
 
 <div class="modal" id="picker"><div class="sheet"><header><h3>Dodaj z wizualizacji AI i zdjęć 3D</h3><div class="grow" style="flex:1"></div><button class="btn sm" id="pickClose">Zamknij</button></header><div class="body" id="pickBody"></div></div></div>
@@ -120,7 +122,8 @@ function render(){
   $('max').textContent=G.MAX;$('count').textContent=items.length+' / '+G.MAX;
   const full=items.length>=G.MAX,none=!pid;
   $('sub').textContent=none?'Brak projektu – wybierz dom w Projektach.':projectName();
-  for(const id of ['fromAi','show','dlAll'])$(id).disabled=none||(id!=='fromAi'&&!items.length)||(id==='fromAi'&&full);
+  for(const id of ['fromAi','show','dlAll','galExp'])$(id).disabled=none||(id!=='fromAi'&&!items.length)||(id==='fromAi'&&full);
+  $('galImpBtn').style.opacity=none||full?.45:1;$('galImp').disabled=none||full;
   $('upBtn').style.opacity=none||full?.45:1;$('up').disabled=none||full;
   const C=$('content');
   if(none){C.innerHTML='<div class="empty"><h2>Najpierw wybierz projekt</h2>Galeria należy do konkretnego domu.</div>';return}
@@ -184,6 +187,20 @@ const step=d=>{lbIdx=(lbIdx+d+items.length)%items.length;cmp=false;drawLb()};
 $('lbPrev').onclick=()=>step(-1);$('lbNext').onclick=()=>step(1);$('lbClose').onclick=()=>$('lb').classList.remove('open');$('lbCmp').onclick=()=>{cmp=!cmp;drawLb()};
 addEventListener('keydown',e=>{if(!$('lb').classList.contains('open'))return;if(e.key==='Escape')$('lb').classList.remove('open');else if(e.key==='ArrowLeft')step(-1);else if(e.key==='ArrowRight')step(1)});
 $('show').onclick=()=>items.length&&openLb(0);
+// eksport / import galerii: plik JSON ze zdjęciami (JPEG w środku) – niezależny od pliku projektu, który zdjęć nie zawiera
+$('galExp').onclick=()=>{const out={houserGallery:1,project:projectName(),savedAt:new Date().toISOString(),items:items.map(({caption,cover,source,image,thumb,before,ref,order,createdAt})=>({caption,cover,source,image,thumb,before,ref,order,createdAt}))};
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(out)],{type:'application/json'}));a.download='galeria-'+projectName().replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-|-$/g,'')+'.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)};
+$('galImp').onchange=async e=>{const f=e.target.files?.[0];e.target.value='';if(!f||!pid)return;
+  try{const d=JSON.parse(await f.text()),src=(d&&d.houserGallery&&Array.isArray(d.items)?d.items:[]).filter(r=>typeof r?.image==='string'&&r.image.startsWith('data:image/'));
+    if(!src.length)throw new Error('To nie jest plik galerii Housera (brak zdjęć).');
+    const have=new Set(items.map(r=>r.image)),fresh=src.filter(r=>!have.has(r.image)),free=G.MAX-items.length,take=fresh.slice(0,Math.max(0,free));let order=(items.at(-1)?.order??-1)+1,empty=!items.length;
+    for(const r of take){const thumb=typeof r.thumb==='string'&&r.thumb.startsWith('data:image/')?r.thumb:await G.resize(r.image,420,.8);
+      await G.put({id:'g'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),projectId:pid,order:order++,createdAt:r.createdAt||new Date().toISOString(),caption:String(r.caption||'').slice(0,200),
+        cover:empty&&!!r.cover,source:['ai','3d','upload'].includes(r.source)?r.source:'upload',image:r.image,thumb,before:typeof r.before==='string'&&r.before.startsWith('data:image/')?r.before:null,ref:null,cloudUp:false,cloudSig:''})}
+    if(empty&&take.length&&!take.some(r=>r.cover)){const L=await G.list(pid);if(L[0])await G.setCover(pid,L[0].id)}
+    const skipDup=src.length-fresh.length,skipFull=fresh.length-take.length;
+    const n=take.length,pl=n===1?'zdjęcie':(n%10>=2&&n%10<=4&&(n%100<12||n%100>14))?'zdjęcia':'zdjęć';toast('Dodano '+n+' '+pl+(skipDup?' · pominięto '+skipDup+' (już są w galerii)':'')+(skipFull?' · '+skipFull+' nie zmieściło się (limit '+G.MAX+')':''));
+    await load()}catch(err){alert('Nie udało się zaimportować galerii: '+err.message)}};
 $('dlAll').onclick=async()=>{for(const r of items){download(r);await new Promise(r=>setTimeout(r,350))}};
 
 G.onChange(load);HouserStore.subscribe(()=>load());load();
