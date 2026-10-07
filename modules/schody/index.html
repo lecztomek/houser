@@ -71,6 +71,7 @@ html,body{height:100%;margin:0}
       <div class="field"><label>Liczba stopni (podniesień)</label><input id="pRisers" type="number" step="1" min="8" max="24"></div>
       <div class="field"><label>Głębokość stopnia [m]</label><input id="pTread" type="number" step="0.01" min="0.2" max="0.35"></div>
       <div class="field" id="turnField"><label>Skręt</label><select id="pTurn"><option value="left">w lewo</option><option value="right">w prawo</option></select></div>
+      <div class="field" id="splitField" style="grid-column:1/-1"><label>Gdzie skręt: stopnie przed + spocznik + stopnie po</label><select id="pSplit"></select></div>
     </div>
     <div class="row" style="margin-top:10px"><button id="rotL" class="btn">↺ Obróć</button><button id="rotR" class="btn">↻ Obróć</button><button id="del" class="btn danger">Usuń schody</button></div>
     <div class="pos"><div class="ptitle">Położenie (od lewego górnego rogu siatki)</div>
@@ -166,10 +167,16 @@ function renderSide(){
   if(!s)return;
   const set=(id,v)=>{if(document.activeElement!==$(id))$(id).value=v};set('pWidth',s.width);set('pRisers',s.risers);set('pTread',s.tread);set('pTurn',s.turn||'left');set('pX',(s.x*grid().cellMeters).toFixed(2));set('pY',(s.y*grid().cellMeters).toFixed(2));
   $('turnField').style.visibility=s.type==='straight'?'hidden':'visible';
+  // gdzie jest skręt: liczba stopni w pierwszym biegu (przed spocznikiem); reszta w drugim
+  const hasSplit=s.type==='L'||s.type==='U';$('splitField').style.display=hasSplit?'':'none';
+  if(hasSplit){const n=Math.max(3,Math.round(s.risers))-1,m=n-1,cur=S.splitOf(s,n),mid=Math.floor(m/2);
+    $('pSplit').innerHTML=Array.from({length:m-1},(_,i)=>i+1).map(k=>'<option value="'+k+'">'+k+' + spocznik + '+(m-k)+(k===mid?' (na środku)':k<mid?' (bliżej wejścia)':' (bliżej góry)')+'</option>').join('');
+    if(document.activeElement!==$('pSplit'))$('pSplit').value=String(cur)}
   const k=S.comfort(s,gh()),geo=S.geometry(s,grid().cellMeters,gh()),bb=geo.bbox,c=S.cells(s,grid().cellMeters,gh(),grid().width,grid().height);
   $('stats').innerHTML=[['Wysokość stopnia',(k.rise*100).toFixed(1)+' cm'],['Wygoda 2h + s',(k.step*100).toFixed(0)+' cm <span class="'+(k.ok?'ok':'warn')+'">'+(k.ok?'✓':'(zalecane 59–66, h ≤ 19)')+'</span>'],['Obrys',(bb.x1-bb.x0).toFixed(2)+' × '+(bb.z1-bb.z0).toFixed(2)+' m'],['Zajmuje na parterze',(c.lower.length*grid().cellMeters**2).toFixed(2)+' m²'],['Otwór w stropie',c.upper.length+' kratek']].map(([a,b])=>'<span>'+a+'</span><span>'+b+'</span>').join('');
 }
 let pendingType='U';
+$('pSplit').addEventListener('change',()=>{const s=stair();if(!s)return;s.split=Number($('pSplit').value);commit()});
 for(const [id,k] of [['pWidth','width'],['pRisers','risers'],['pTread','tread'],['pTurn','turn']])$(id).addEventListener('change',()=>{const s=stair();if(!s)return;const v=$(id).value;s[k]=k==='turn'?v:Number(v)||s[k];commit()});
 document.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{const [dx,dy]=b.dataset.n.split(',').map(Number);moveBy(dx*STEP_M,dy*STEP_M)});
 document.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>toWall(b.dataset.w));

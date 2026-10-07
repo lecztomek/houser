@@ -4,6 +4,7 @@
 //   x,y    kratka lewego-górnego rogu obrysu schodów na siatce
 //   rot    0|90|180|270 – obrót (0 = wejście na dole, wchodzimy „w górę” rzutu)
 //   width  szerokość biegu [m], risers – liczba podniesień, tread – głębokość stopnia [m], turn 'left'|'right'
+//   split  (L, U) ile stopni przed spocznikiem – gdzie jest skręt; brak = na środku
 (function(global){
   const TYPES={straight:'Proste (jednobiegowe)',L:'L – ze spocznikiem 90°',U:'Dwubiegowe 180° (U)',spiral:'Kręcone'};
   const HEADROOM=2.0, SLAB=.25; // min. wysokość nad stopniem, grubość stropu
@@ -12,6 +13,8 @@
     const risers=Math.max(10,Math.round((floorHeight||2.8)/.175));
     return {type,rot:0,width:type==='spiral'?.8:.9,risers,tread:type==='spiral'?.25:.27,turn:'left'};
   }
+  // stopnie przed spocznikiem: z ustawienia (split) albo po równo; zawsze min. 1 stopień w każdym biegu
+  const splitOf=(s,n)=>{const m=n-1;return Number.isFinite(+s.split)&&s.split!==''&&s.split!=null?Math.max(1,Math.min(m-1,Math.round(+s.split))):Math.floor(m/2)};
   const rotPt=([u,v],rot)=>rot===90?[-v,u]:rot===180?[-u,-v]:rot===270?[v,-u]:[u,v];
 
   // Stopnie w układzie lokalnym: u w poprzek biegu (0..width), v do przodu (w górę rzutu = -y na ekranie).
@@ -21,12 +24,12 @@
     const rect=(u0,v0,u1,v1,k)=>out.push({poly:[[u0,v0],[u1,v0],[u1,v1],[u0,v1]],top:k});
     const L=s.turn==='right'?1:-1; // skręt: lewo = w stronę -u
     if(s.type==='L'){
-      const n1=Math.floor((n-1)/2),n2=n-1-n1;
+      const n1=splitOf(s,n),n2=n-1-n1;
       for(let i=0;i<n1;i++)rect(0,i*t,w,(i+1)*t,i+1);
       const lv=n1*t;rect(0,lv,w,lv+w,n1+1); // spocznik
       for(let j=0;j<n2;j++){const a=j*t,b=(j+1)*t;if(L<0)rect(-b,lv,-a,lv+w,n1+2+j);else rect(w+a,lv,w+b,lv+w,n1+2+j);}
     }else if(s.type==='U'){
-      const gap=.1,n1=Math.floor((n-1)/2),n2=n-1-n1,lv=Math.max(n1,n2)*t;
+      const gap=.1,n1=splitOf(s,n),n2=n-1-n1,lv=Math.max(n1,n2)*t;
       for(let i=0;i<n1;i++)rect(0,lv-(n1-i)*t,w,lv-(n1-i-1)*t,i+1); // pierwszy bieg kończy się przy spoczniku
       const u2=L<0?-(w+gap):w+gap;
       rect(Math.min(0,u2),lv,Math.max(w,u2+w),lv+w,n1+1); // spocznik na całą szerokość obu biegów
@@ -77,5 +80,5 @@
   // wygoda: ocena wygody (2h + s ≈ 60–65 cm)
   function comfort(s,floorHeight){const h=(floorHeight||2.8)/Math.max(3,Math.round(s.risers)),t=+s.tread||.27,k=2*h+t;return {rise:h,tread:t,step:k,ok:h<=.19&&k>=.59&&k<=.66};}
 
-  global.HouserStairs={TYPES,HEADROOM,SLAB,defaults,geometry,cells,comfort,inPoly};
+  global.HouserStairs={splitOf,TYPES,HEADROOM,SLAB,defaults,geometry,cells,comfort,inPoly};
 })(window);

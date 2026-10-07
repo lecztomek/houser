@@ -4112,4 +4112,9 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "– dach płaski":"– flat roof",
 "panele na tej połaci":"panels on this slope",
 "Zostaw zaznaczoną przynajmniej jedną połać – albo wyłącz fotowoltaikę.":"Keep at least one slope selected – or turn PV off.",
-"wybrane na rysunku":"selected on the drawing"};
+"wybrane na rysunku":"selected on the drawing",
+"Gdzie skręt: stopnie przed + spocznik + stopnie po":"Where it turns: steps before + landing + steps after",
+" + spocznik + ":" + landing + ",
+" (na środku)":" (in the middle)",
+" (bliżej wejścia)":" (closer to the bottom)",
+" (bliżej góry)":" (closer to the top)"};

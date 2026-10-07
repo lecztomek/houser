@@ -133,6 +133,10 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  ok(R.cost.offsets===0||R.points.some(p=>p.drain==='slab'),'hydraulika: przesunięcia w stropie tylko dla krótkich odcinków');
  ok(own.every(p=>p.paFloor===R.lo&&fin(p.len)),'hydraulika: woda do własnego pionu idzie po parterze');}
 
+{const S=W.HouserStairs,b=sp=>S.geometry({type:'L',risers:16,width:.9,tread:.27,turn:'left',rot:0,x:0,y:0,split:sp},.5,2.8).bbox,mid=b(),e=b(2),l=b(12);
+ ok(Math.abs(mid.x1-mid.z1)<.01&&e.x1>l.x1&&e.z1<l.z1,'schody L: skręt po wybranym stopniu zmienia długości biegów (środek = równe)');
+ ok(S.geometry({type:'U',risers:16,width:.9,tread:.27,turn:'left',rot:0,x:0,y:0,split:4},.5,2.8).steps.length===15&&S.splitOf({split:99},15)===13&&S.splitOf({split:0},15)===1,'schody: spocznik zawsze z min. 1 stopniem w każdym biegu');}
+
 // ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować
 console.log('• składnia skryptów');
 {const vm=require('vm'),walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?(['node_modules','.git'].includes(e.name)?[]:walk(path.join(d,e.name))):[path.join(d,e.name)]);
