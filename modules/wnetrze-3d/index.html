@@ -373,7 +373,7 @@ function drawFurnitureOnPlan(f,ox,oy,s){
 // Bez jasnych niebieskich/szarych – te oznaczają okna i ściany.
 const SNAP_PALETTE=[['#e6194b','red'],['#3cb44b','green'],['#ffe119','yellow'],['#f58231','orange'],['#911eb4','purple'],['#f032e6','magenta'],['#9a6324','brown'],['#bfef45','lime green'],['#000075','navy blue'],['#469990','teal'],['#fabed4','pink'],['#808000','olive'],['#dcbeff','lavender'],['#4363d8','royal blue'],['#aaffc3','mint'],['#b8860b','dark gold'],['#ff7f50','coral'],['#4b0082','indigo']];
 // kody części pokoju (w trybie kolorów do wizualizacji): podłoga, drzwi, schody – inne niż kolory mebli
-const SCENE_CODE={floor:['#8d939c','medium grey','floor'],door:['#c9a26b','tan','door leaves'],stairs:['#00e5ff','cyan','staircase']};
+const SCENE_CODE={floor:['#8d939c','medium grey','floor'],door:['#c9a26b','tan','door leaves'],stairs:['#00e5ff','cyan','staircase'],structure:['#5f7a96','steel blue-grey','structural beams, columns and roof timbers']};
 function codedOn(){return !!els('snapCoded')?.checked}
 // stałe przypisanie kolorów: kolejne rodzaje mebli w projekcie (obie kondygnacje) dostają kolejne kolory palety
 function codeMap(){ensureFurniture();const map={};let i=0;for(const f of [observer.floor])for(const it of furnitureList(f)){if(!validFurnitureItem(it))continue;const k=furnKey(it);if(map[k]||i>=SNAP_PALETTE.length)continue;map[k]=SNAP_PALETTE[i++]}return map}
@@ -415,11 +415,17 @@ function snapLayout(){const f=observer.floor,base=floorBase(f),cm=codedOn()?code
     out.push({item:it.item||null,type:it.type||'other',name:(window.HouserFurniture?HouserFurniture.nameFor(it):(it.label||it.type)),side,dist:Math.round(dist*10)/10,w:Math.round(Math.max(+it.w,+it.h)*10)/10,d:Math.round(Math.min(+it.w,+it.h)*10)/10,h:Math.round((furnViewDef(it).height||0)*10)/10,code:cm[furnKey(it)]?.[1]||null})}
   return out.sort((a,b)=>a.dist-b.dist).slice(0,24)}
 // opis kolorów części pokoju widocznych na zdjęciu (do promptu)
-function sceneKey(){const k=[{color:'#f0f1f2',colorName:'off-white',what:'walls (solid, keep them plain)'},{color:'#f7f7f5',colorName:'white',what:'ceiling'},{color:SCENE_CODE.floor[0],colorName:SCENE_CODE.floor[1],what:'floor'},{color:'#6fb4de',colorName:'translucent light blue',what:'window glass and glass doors'}];
+function sceneKey(){const P=three.scenePolys||[],has=c=>P.some(p=>p.color===c);
+  const k=[{color:'#f0f1f2',colorName:'off-white',what:'walls (solid, keep them plain)'},{color:'#f7f7f5',colorName:'white',what:'flat ceiling'},{color:SCENE_CODE.floor[0],colorName:SCENE_CODE.floor[1],what:'floor'},{color:'#6fb4de',colorName:'translucent light blue',what:'window glass, glass doors and glass partitions (white bars around them are window frames)'}];
+  if(roofEnabled()&&has('#ece9e3'))k.push({color:'#ece9e3',colorName:'warm white sloped',what:'sloped attic ceiling under the roof (plasterboard following the roof pitch)'});
   const o=visibleOpenings();if(o.doors)k.push({color:SCENE_CODE.door[0],colorName:SCENE_CODE.door[1],what:'door leaves (interior and entrance doors)'});
-  if(settings.showStairs&&modelStairs().length&&observer.floor==='ground')k.push({color:SCENE_CODE.stairs[0],colorName:SCENE_CODE.stairs[1],what:'staircase (treads)'});return k}
+  if(settings.showStairs&&modelStairs().length)k.push({color:SCENE_CODE.stairs[0],colorName:SCENE_CODE.stairs[1],what:'staircase (treads)'});
+  if(has(SCENE_CODE.structure[0]))k.push({color:SCENE_CODE.structure[0],colorName:SCENE_CODE.structure[1],what:'structural elements – concrete beams and columns on the ground floor, wooden roof timbers in the attic (collar ties, purlins, posts, ridge beam); keep them, render as plastered beams / exposed natural wood'});
+  if(has('#27313d'))k.push({color:'#27313d',colorName:'thin dark charcoal bars',what:'railings and balustrades (stairs, gallery, void edge) – slim black metal or glass balustrade'});
+  if(has('#6b6459')||has('#7c2d12'))k.push({color:'#6b6459',colorName:'grey-brown bands at windows',what:'window blinds / roller shutters'});
+  return k}
 let _legendKey='';
-function updateCodeLegend(){const el=els('codeLegend');if(!el)return;const L=snapLegend();if(codedOn()&&chimneyVisible())L.push({color:CHIMNEY_CODE[0],name:'Komin'});if(codedOn()){L.push({color:SCENE_CODE.floor[0],name:'Podłoga'});if(visibleOpenings().doors)L.push({color:SCENE_CODE.door[0],name:'Drzwi'});if(settings.showStairs&&modelStairs().length&&observer.floor==='ground')L.push({color:SCENE_CODE.stairs[0],name:'Schody'})}const key=L.map(l=>l.color).join();if(key===_legendKey)return;_legendKey=key;
+function updateCodeLegend(){const el=els('codeLegend');if(!el)return;const L=snapLegend();if(codedOn()&&chimneyVisible())L.push({color:CHIMNEY_CODE[0],name:'Komin'});if(codedOn()){L.push({color:SCENE_CODE.floor[0],name:'Podłoga'});if(visibleOpenings().doors)L.push({color:SCENE_CODE.door[0],name:'Drzwi'});if(settings.showStairs&&modelStairs().length&&observer.floor==='ground')L.push({color:SCENE_CODE.stairs[0],name:'Schody'});if((three.scenePolys||[]).some(p=>p.color===SCENE_CODE.structure[0]))L.push({color:SCENE_CODE.structure[0],name:'Konstrukcja (belki, słupy, więźba)'})}const key=L.map(l=>l.color).join();if(key===_legendKey)return;_legendKey=key;
   el.hidden=!L.length;el.innerHTML='<b style="display:block;margin-bottom:3px">Meble kolorami</b>'+L.map(l=>'<div style="display:flex;align-items:center;gap:6px"><i style="width:12px;height:12px;border-radius:3px;border:1px solid #0003;background:'+l.color+'"></i>'+l.name.replace(/</g,'&lt;')+'</div>').join('')}
 // Kominek: przy kominie od strony salonu/pokoju dziennego/jadalni rysujemy wkład kominkowy (czarny, z pomarańczowym ogniem),
 // półkę i podest – wyraźna podpowiedź dla wizualizacji AI.
@@ -449,13 +455,13 @@ function addTvFor(it,fl,top){const c=grid().cellMeters,x0=+it.x,z0=+it.y,x1=x0+ 
   else{const mz=(z0+z1)/2,backMin=probe(x0-.25,mz),backMax=probe(x1+.25,mz),xb=backMax&&!backMin?x1:x0,s=xb===x1?-1:1;addBoxFaces(Math.min(xb,xb+s*t),y0,mz-tw/2,Math.max(xb,xb+s*t),y1,mz+tw/2,'#0b0b0f',{stroke:'#3f3f46',line:.6})}}
 function tvVisible(){const f=observer.floor;return furnitureList(f).some(it=>it.item==='s_rtv'&&validFurnitureItem(it)&&furnitureVisible(it))}
 // słupy i podciągi z modułu Konstrukcja (parter): słup 25 × 25 cm od podłogi do stropu, podciąg widoczny ok. 30 cm pod sufitem
-function addStructure3D(){const st=project.structure||{},c=grid().cellMeters,H=floorHeight('ground'),col='#d6d0c7',str={stroke:'#a8a196'};
+function addStructure3D(){const st=project.structure||{},c=grid().cellMeters,H=floorHeight('ground'),cd=codedOn(),col=cd?SCENE_CODE.structure[0]:'#d6d0c7',str={stroke:cd?'#111827':'#a8a196'};
   for(const p of Array.isArray(st.columns)?st.columns:[]){const x=+p.x*c,z=+p.y*c;if(!Number.isFinite(x)||!Number.isFinite(z))continue;addBoxFaces(x-.125,0,z-.125,x+.125,H,z+.125,col,str)}
   for(const b of Array.isArray(st.beams)?st.beams:[]){if(b.hidden)continue;const a0=+b.from*c,a1=(+b.to+1)*c,L=+b.line*c;if(!Number.isFinite(a0+a1+L))continue;
     if(b.o==='h')addBoxFaces(a0,H-.3,L-.125,a1,H-.01,L+.125,col,str);else addBoxFaces(L-.125,H-.3,a0,L+.125,H-.01,a1,col,str)}
   // więźba z modułu Konstrukcja dachu: słupy (nad pustką – od podłogi parteru) i płatwie / belka kalenicowa
   if(!window.HouserRoof)return;let R=null;try{R=HouserRoof.evaluate(project)}catch(e){console.warn(e)}if(!R?.ok)return;
-  const g=R.geom,ub=floorBase('upper'),wood='#b9895a',ws={stroke:'#7c5a36'},P=(a,l)=>g.across?[a,l]:[l,a];
+  const g=R.geom,ub=floorBase('upper'),wood=cd?SCENE_CODE.structure[0]:'#b9895a',ws={stroke:cd?'#111827':'#7c5a36'},P=(a,l)=>g.across?[a,l]:[l,a];
   // jętki (więźba jętkowa) i kleszcze (płatwiowa): poziome belki w poprzek dachu co rozstaw krokwi, na wysokości jętek
   if(R.system==='collar'||R.system==='purlin'){const sp=Math.max(.6,+R.set.spacing||.9),y=ub+g.zc,n=Math.max(1,Math.round(g.Lr/sp));
     for(let i=0;i<=n;i++){const l=g.L0+Math.min(g.Lr-.05,Math.max(.05,i*g.Lr/n)),[x0,z0]=P(g.xp,l),[x1,z1]=P(g.S-g.xp,l);

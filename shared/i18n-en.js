@@ -4296,4 +4296,8 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "Szałwiowa zieleń":"Sage green",
 "Terakota":"Terracotta",
 "Granat i mosiądz":"Navy and brass",
-"Szarości, grafit":"Greys, graphite"};
+"Szarości, grafit":"Greys, graphite",
+"Konstrukcja (belki, słupy, więźba)":"Structure (beams, columns, roof timbers)",
+"Balustrady":"Railings",
+"Skos sufitu":"Sloped ceiling",
+"Rolety":"Blinds"};
