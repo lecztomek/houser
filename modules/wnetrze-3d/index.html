@@ -371,10 +371,12 @@ function drawFurnitureOnPlan(f,ox,oy,s){
 }
 // Zdjęcie do wizualizacji AI: każdy rodzaj mebla dostaje wyraźny kolor-kod, a legenda trafia do promptu.
 // Bez jasnych niebieskich/szarych – te oznaczają okna i ściany.
-const SNAP_PALETTE=[['#e6194b','red'],['#3cb44b','green'],['#ffe119','yellow'],['#f58231','orange'],['#911eb4','purple'],['#f032e6','magenta'],['#9a6324','brown'],['#bfef45','lime green'],['#000075','navy blue'],['#469990','teal'],['#fabed4','pink'],['#808000','olive'],['#ffd8b1','peach'],['#dcbeff','lavender']];
+const SNAP_PALETTE=[['#e6194b','red'],['#3cb44b','green'],['#ffe119','yellow'],['#f58231','orange'],['#911eb4','purple'],['#f032e6','magenta'],['#9a6324','brown'],['#bfef45','lime green'],['#000075','navy blue'],['#469990','teal'],['#fabed4','pink'],['#808000','olive'],['#dcbeff','lavender'],['#4363d8','royal blue'],['#aaffc3','mint'],['#b8860b','dark gold'],['#ff7f50','coral'],['#4b0082','indigo']];
+// kody części pokoju (w trybie kolorów do wizualizacji): podłoga, drzwi, schody – inne niż kolory mebli
+const SCENE_CODE={floor:['#8d939c','medium grey','floor'],door:['#c9a26b','tan','door leaves'],stairs:['#00e5ff','cyan','staircase']};
 function codedOn(){return !!els('snapCoded')?.checked}
 // stałe przypisanie kolorów: kolejne rodzaje mebli w projekcie (obie kondygnacje) dostają kolejne kolory palety
-function codeMap(){ensureFurniture();const map={};let i=0;for(const f of ['ground','upper'])for(const it of furnitureList(f)){if(!validFurnitureItem(it))continue;const k=furnKey(it);if(map[k]||i>=SNAP_PALETTE.length)continue;map[k]=SNAP_PALETTE[i++]}return map}
+function codeMap(){ensureFurniture();const map={};let i=0;for(const f of [observer.floor])for(const it of furnitureList(f)){if(!validFurnitureItem(it))continue;const k=furnKey(it);if(map[k]||i>=SNAP_PALETTE.length)continue;map[k]=SNAP_PALETTE[i++]}return map}
 function furnKey(it){return it.item||('type:'+(it.type||'other'))}
 const CHIMNEY_CODE=['#800000','maroon'];
 // Czy punkt na rzucie widać z oka obserwatora: w kadrze i bez ściany po drodze (przejście przez otwór/okno/otwarte drzwi jest wolne).
@@ -406,8 +408,18 @@ function snapLegend(){if(!codedOn())return [];const cm=codeMap(),seen=new Set(),
   for(const it of furnitureList(observer.floor).filter(validFurnitureItem).filter(furnitureVisible)){const k=furnKey(it);if(seen.has(k)||!cm[k])continue;seen.add(k);
     legend.push({color:cm[k][0],colorName:cm[k][1],item:it.item||null,type:it.type||'other',name:(window.HouserFurniture?HouserFurniture.nameFor(it):(it.label||it.type))})}
   return legend}
+// układ mebli widziany z kamery (do promptu wizualizacji): strona kadru, odległość, wymiary, kolor-kod
+function snapLayout(){const f=observer.floor,base=floorBase(f),cm=codedOn()?codeMap():{},tf=Math.tan(observer.fov*Math.PI/360),out=[];
+  for(const it of furnitureList(f).filter(validFurnitureItem).filter(furnitureVisible)){const cx=+it.x+ +it.w/2,cz=+it.y+ +it.h/2,c=worldToCamera([cx,base+.5,cz]);if(c.z<=.05)continue;
+    const r=c.x/(c.z*tf),side=r<-.55?'far left':r<-.2?'left':r>.55?'far right':r>.2?'right':'centre',dist=Math.hypot(cx-observer.x,cz-observer.z);
+    out.push({item:it.item||null,type:it.type||'other',name:(window.HouserFurniture?HouserFurniture.nameFor(it):(it.label||it.type)),side,dist:Math.round(dist*10)/10,w:Math.round(Math.max(+it.w,+it.h)*10)/10,d:Math.round(Math.min(+it.w,+it.h)*10)/10,h:Math.round((furnViewDef(it).height||0)*10)/10,code:cm[furnKey(it)]?.[1]||null})}
+  return out.sort((a,b)=>a.dist-b.dist).slice(0,24)}
+// opis kolorów części pokoju widocznych na zdjęciu (do promptu)
+function sceneKey(){const k=[{color:'#f0f1f2',colorName:'off-white',what:'walls (solid, keep them plain)'},{color:'#f7f7f5',colorName:'white',what:'ceiling'},{color:SCENE_CODE.floor[0],colorName:SCENE_CODE.floor[1],what:'floor'},{color:'#6fb4de',colorName:'translucent light blue',what:'window glass and glass doors'}];
+  const o=visibleOpenings();if(o.doors)k.push({color:SCENE_CODE.door[0],colorName:SCENE_CODE.door[1],what:'door leaves (interior and entrance doors)'});
+  if(settings.showStairs&&modelStairs().length&&observer.floor==='ground')k.push({color:SCENE_CODE.stairs[0],colorName:SCENE_CODE.stairs[1],what:'staircase (treads)'});return k}
 let _legendKey='';
-function updateCodeLegend(){const el=els('codeLegend');if(!el)return;const L=snapLegend();if(codedOn()&&chimneyVisible())L.push({color:CHIMNEY_CODE[0],name:'Komin'});const key=L.map(l=>l.color).join();if(key===_legendKey)return;_legendKey=key;
+function updateCodeLegend(){const el=els('codeLegend');if(!el)return;const L=snapLegend();if(codedOn()&&chimneyVisible())L.push({color:CHIMNEY_CODE[0],name:'Komin'});if(codedOn()){L.push({color:SCENE_CODE.floor[0],name:'Podłoga'});if(visibleOpenings().doors)L.push({color:SCENE_CODE.door[0],name:'Drzwi'});if(settings.showStairs&&modelStairs().length&&observer.floor==='ground')L.push({color:SCENE_CODE.stairs[0],name:'Schody'})}const key=L.map(l=>l.color).join();if(key===_legendKey)return;_legendKey=key;
   el.hidden=!L.length;el.innerHTML='<b style="display:block;margin-bottom:3px">Meble kolorami</b>'+L.map(l=>'<div style="display:flex;align-items:center;gap:6px"><i style="width:12px;height:12px;border-radius:3px;border:1px solid #0003;background:'+l.color+'"></i>'+l.name.replace(/</g,'&lt;')+'</div>').join('')}
 // Kominek: przy kominie od strony salonu/pokoju dziennego/jadalni rysujemy wkład kominkowy (czarny, z pomarańczowym ogniem),
 // półkę i podest – wyraźna podpowiedź dla wizualizacji AI.
@@ -537,7 +549,7 @@ function slideWall(f,d,i){const [ax,ay,bx,by]=d.o==='h'?[i,d.line-1,i,d.line]:[d
 function doorModeFor(f,key){const v=project.openingVariants?.[f]?.[key]?.view;return ['open','closed','none'].includes(v)?v:settings.doorMode}
 function addDoorLeaves(){
   for(const f of ['ground','upper']){const base=floorBase(f);for(const d of doorGroups(f)){const mode=doorModeFor(f,d.keys[0]);if(mode==='none')continue;
-    const gl=!!d.info?.glass,th=gl?.02:.045,col=gl?'#9fd3ee':d.exterior?'#7c5a3e':'#f4f2ee',edge=gl?'#64748b':d.exterior?'#4b3726':'#a8a29e',op=gl?{stroke:edge,line:.6,alpha:.32,kind:'glass'}:{stroke:edge,line:.6},hc='#3f3f46',ho={stroke:hc,line:.4};
+    const gl=!!d.info?.glass,th=gl?.02:.045,col=gl?'#9fd3ee':codedOn()?SCENE_CODE.door[0]:d.exterior?'#7c5a3e':'#f4f2ee',edge=gl?'#64748b':d.exterior?'#4b3726':'#a8a29e',op=gl?{stroke:edge,line:.6,alpha:.32,kind:'glass'}:{stroke:edge,line:.6},hc='#3f3f46',ho={stroke:hc,line:.4};
     const sg=d.swing==='a'?-1:1,mid=d.exterior?(d.inA?1:-1)*WALL_EXT*.25:0,face=d.exterior?(d.inA?0:0):WALL_IN/2,W=d.s1-d.s0,y1=d.h;
     const leaf=(hp,dir,w)=>{ // hp – oś zawiasu, dir – w którą stronę otworu leży skrzydło (+1/-1), w – szerokość skrzydła
       if(mode==='closed'){doorBox(d,base,hp,hp+dir*w,mid-th/2,mid+th/2,0,y1,col,op);
@@ -634,7 +646,7 @@ function addStairRail(sp,N,H){
 function addPrism(poly,y0,y1,color,opts){const n=poly.length;pushPoly(poly.map(([x,z])=>[x,y1,z]),color,opts);pushPoly(poly.slice().reverse().map(([x,z])=>[x,y0,z]),color,opts);for(let i=0;i<n;i++){const a=poly[i],b=poly[(i+1)%n];addQuad([a[0],y0,a[1]],[b[0],y0,b[1]],[b[0],y1,b[1]],[a[0],y1,a[1]],color,opts)}}
 function modelStairs(){return Array.isArray(project.stairs)?project.stairs.filter(s=>s&&HouserStairs.TYPES[s.type]):[]}
 function addStairsFromModel(){
-  if(!settings.showStairs)return;const c=grid().cellMeters,H=floorHeight('ground'),oak='#b8895b',edge='#805d3d',thick=.06;
+  if(!settings.showStairs)return;const c=grid().cellMeters,H=floorHeight('ground'),oak=codedOn()?SCENE_CODE.stairs[0]:'#b8895b',edge='#805d3d',thick=.06;
   for(const s of modelStairs()){const g=HouserStairs.geometry(s,c,H);
     for(const st of g.steps){const top=st.top*g.rise;addPrism(st.poly,Math.max(0,top-thick),top,oak,{stroke:edge,line:.55})}
     if(g.center){const r=g.pole,[cx,cz]=g.center;addBoxFaces(cx-r,0,cz-r,cx+r,H+.9,cz+r,'#374151',{stroke:'#1f2937'})}
@@ -664,7 +676,7 @@ function build3D(){
         if(f==='upper'&&isExteriorVoid(f,id)&&cellClass('ground',roomAt('ground',x,y))!=='outside'&&!roofEnabled()){const cy=base+h;addQuad([x*c,cy,y*c],[(x+1)*c,cy,y*c],[(x+1)*c,cy,(y+1)*c],[x*c,cy,(y+1)*c],'#ece8e1',{stroke:'#ece8e1'})}
         continue}
       if(cls==='room'&&settings.showFloor){
-        const fc=f==='ground'?'#cfc9c1':'#ddd8d0';
+        const fc=codedOn()?SCENE_CODE.floor[0]:f==='ground'?'#cfc9c1':'#ddd8d0';
         addQuad([x*c,base,(y+1)*c],[(x+1)*c,base,(y+1)*c],[(x+1)*c,base,y*c],[x*c,base,y*c],fc,{stroke:'#bbb4aa',line:.35});
       }
       let topCap=true;
@@ -769,7 +781,7 @@ function snapToast(){let t=document.querySelector('.hsToast');if(t)t.remove();t=
 els('snap').addEventListener('click',async()=>{ if(!three.ready){showTab('three');await new Promise(r=>setTimeout(r,300))} if(els('view3d').style.display!=='block')showTab('three');
   render3D(); const img=HouserSnapshots.capture(three.canvas,'#a9c5dd','#e7edf1'), legend=snapLegend(),openingsSeen=visibleOpenings(),chim=chimneyVisible(),fire=fireplaceVisible(),tv=tvVisible();
   const cell=currentCell(),id=roomAt(observer.floor,cell.x,cell.y),rm=roomMap(observer.floor)[id];
-  await HouserSnapshots.add(img,'wnetrze-3d',{kind:'interior',floor:observer.floor,roomId:id||null,roomName:rm?.name||null,angle:Math.round(observer.angle),fov:Math.round(observer.fov),eye:observer.eye,legend:legend.length?legend:undefined,openings:openingsSeen,doorMode:settings.doorMode,chimney:chim?{color:codedOn()?CHIMNEY_CODE[1]:'grey'}:undefined,fireplace:fire||undefined,tv:tv||undefined}); snapToast(); });
+  await HouserSnapshots.add(img,'wnetrze-3d',{kind:'interior',floor:observer.floor,roomId:id||null,roomName:rm?.name||null,angle:Math.round(observer.angle),fov:Math.round(observer.fov),eye:observer.eye,legend:legend.length?legend:undefined,layout:snapLayout(),scene:codedOn()?sceneKey():undefined,obs:{x:Math.round(observer.x*100)/100,z:Math.round(observer.z*100)/100},openings:openingsSeen,doorMode:settings.doorMode,chimney:chim?{color:codedOn()?CHIMNEY_CODE[1]:'grey'}:undefined,fireplace:fire||undefined,tv:tv||undefined}); snapToast(); });
 (()=>{const cb=els('snapCoded');if(!cb)return;try{const v=localStorage.getItem('houser:snap-coded');if(v!==null&&cb.checked!==(v==='1')){cb.checked=v==='1';if(three.ready)build3D()}}catch(_){}
   cb.addEventListener('change',()=>{try{localStorage.setItem('houser:snap-coded',cb.checked?'1':'0')}catch(_){}_legendKey='x';build3D()})})();
 (()=>{const i=els('wallIn'),e=els('wallExt');if(!i||!e)return;i.value=Math.round(WALL_IN*100);e.value=Math.round(WALL_EXT*100);
