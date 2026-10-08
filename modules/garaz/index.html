@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Garaż</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:330px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
+h1{font-size:19px;margin:0 0 4px}
+.lead,.hint{font-size:12.5px;color:var(--hs-muted);line-height:1.5;margin:0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field{display:grid;gap:4px;margin-bottom:9px}.field label{font-size:12px;color:var(--hs-muted)}
+.field select,.field input{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tool{display:flex;gap:7px;align-items:center;font:inherit;font-size:12.5px;text-align:left;border:1px solid var(--hs-line-strong);background:#fff;border-radius:var(--hs-radius);padding:6px 8px;cursor:pointer;color:var(--hs-text)}
+.tool.on{border-color:#1d4ed8;box-shadow:0 0 0 2px rgba(29,78,216,.25);font-weight:700}
+.tool .sw{width:16px;height:16px;border-radius:4px;border:1px solid rgba(15,23,42,.2);flex:none}
+.btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.tile .l{font-size:12px;color:var(--hs-muted);font-weight:600}
+.tile .v{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-top:4px}
+.tile .v small{font-size:14px;color:var(--hs-muted);font-weight:600}
+.tile .s{font-size:12.5px;color:var(--hs-muted);margin-top:4px;line-height:1.4}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.card h2{font-size:15px;margin:0 0 3px}
+#plan{width:100%;height:auto;display:block;touch-action:none;user-select:none;max-height:78vh}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:#475569;margin-top:8px;align-items:center}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:5px}
+.iss{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:7px}
+.iss li{font-size:12.5px;line-height:1.45;border-top:1px solid #eef2f6;padding-top:7px}
+.iss .pen{float:right;font-weight:700;color:#b91c1c;font-size:12px;margin-left:8px}
+.iss .tip{display:block;color:#475569;margin-top:2px}
+.iss .tip:before{content:'→ ';color:#2563eb;font-weight:700}
+.good{font-size:12.5px;color:#15803d;margin-top:8px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #eef2f6;vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+th{font-size:11.5px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.04em}
+tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
+.c-ok{color:#15803d}.c-mid{color:#b45309}.c-bad{color:#b91c1c}
+.empty{padding:40px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){html,body{overflow:auto;height:auto}.wrap{height:auto;grid-template-rows:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{overflow:visible}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1>Garaż</h1>
+  <p class="lead">Gdzie stoi auto: garaż w bryle domu (pomieszczenie „Garaż” na parterze), garaż wolnostojący albo wiata. Tu wybierasz rodzaj i wymiary; miejsce na działce ustawiasz w module Działka (przeciąganie). Garaż widać w Zewnątrz 3D, koszt – w Wycenie.</p>
+  <div class="section">
+    <h3>Rodzaj</h3>
+    <div class="field"><select id="type"></select></div>
+    <p class="hint" id="typeHint"></p>
+  </div>
+  <div class="section" id="dimS">
+    <h3>Wymiary</h3>
+    <div class="field"><label>Liczba aut</label><select id="cars"><option value="1">1 auto</option><option value="2">2 auta</option><option value="3">3 auta</option></select></div>
+    <div class="row2">
+      <div class="field"><label>Szerokość (m)</label><input id="w" type="number" min="2.5" max="15" step="0.1"></div>
+      <div class="field"><label>Głębokość (m)</label><input id="d" type="number" min="3" max="12" step="0.1"></div>
+    </div>
+    <div class="field" id="roofF"><label>Dach</label><select id="roof"><option value="flat">płaski</option><option value="gable">dwuspadowy</option></select></div>
+    <div class="btns"><button class="hs-btn" id="std">Wymiary typowe</button></div>
+  </div>
+  <div class="section">
+    <h3>Jak liczymy</h3>
+    <p class="hint">Na auto w środku min. ok. 2,8 × 5,4 m (wygodnie 3,2 × 6 m). Garaż w domu: auta mieszczą się obok siebie wzdłuż dłuższego boku pomieszczenia „Garaż”; brama to drzwi zewnętrzne w tym pomieszczeniu (na 1 auto ok. 2,5 m, na 2 – ok. 5 m albo dwie bramy).</p>
+    <p class="hint" style="margin-top:8px">Koszt garażu wolnostojącego ok. 2 600 zł/m² (murowany, ocieplony, z posadzką; dach dwuspadowy +12%) + brama segmentowa z napędem; wiata ok. 850 zł/m². Garaż w bryle domu jest już w koszcie domu.</p>
+  </div>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/balconies.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="engine.js"></script>
+<script src="../dzialka/engine.js"></script>
+<script>
+const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d}),zl=v=>(Math.round(v/100)*100).toLocaleString('pl-PL')+' zł';
+const HINT={auto:'Garaż w domu, jeśli na parterze jest pomieszczenie „Garaż”; inaczej – bez garażu.',none:'Auta na podjeździe i miejscach postojowych (moduł Działka).',house:'Pomieszczenie „Garaż” na parterze – wymiary z rzutu.',detached:'Osobny budynek na działce – zamykany, można ogrzewać.',carport:'Dach na słupach – najtańszy, osłania od śniegu i słońca.'};
+let project=null,R=null;
+function save(patch){project.garage={...(project.garage||{}),...patch};const g=project.garage;HouserStore.update(p=>{p.garage={...(p.garage||{}),...g}},'garaz');render()}
+$('type').innerHTML='<option value="auto">automatycznie</option>'+Object.entries(HouserGarage.TYPES).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('');
+$('type').onchange=()=>save({type:$('type').value,x:null,y:null});
+$('cars').onchange=()=>save({cars:+$('cars').value,w:null,d:null});
+for(const id of ['w','d'])$(id).onchange=()=>{const v=+$(id).value;if(v>0)save({[id]:Math.round(v*10)/10})};
+$('roof').onchange=()=>save({roof:$('roof').value});$('std').onclick=()=>save({w:null,d:null});
+function sketch(){if(!(R.type==='detached'||R.type==='carport'))return '';const sc=34,pad=30,W=R.w*sc+2*pad,H=R.d*sc+2*pad,pw=HouserGarage.PER_CAR.w,cw=R.w/R.cars;let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:'+Math.min(520,W)+'px;height:auto;display:block">';
+  s+='<rect x="'+pad+'" y="'+pad+'" width="'+R.w*sc+'" height="'+R.d*sc+'" fill="'+(R.type==='carport'?'#f1f5f9':'#e2e8f0')+'" stroke="#334155" stroke-width="'+(R.type==='carport'?2:6)+'"'+(R.type==='carport'?' stroke-dasharray="8 5"':'')+'/>';
+  for(let i=0;i<R.cars;i++){const cx=pad+(i+.5)*cw*sc,w=1.85*sc,l=4.7*sc;s+='<rect x="'+(cx-w/2)+'" y="'+(pad+(R.d-4.7)/2*sc)+'" width="'+w+'" height="'+l+'" rx="14" fill="#93c5fd" stroke="#1d4ed8" stroke-width="2"/>'}
+  s+='<line x1="'+(pad+R.w*sc*.12)+'" y1="'+(pad+R.d*sc)+'" x2="'+(pad+R.w*sc*.88)+'" y2="'+(pad+R.d*sc)+'" stroke="#f59e0b" stroke-width="6"/>';
+  s+='<text x="'+W/2+'" y="'+(H-8)+'" text-anchor="middle" font-size="13" font-weight="700" fill="#334155">'+fmt(R.w)+' m · brama od frontu</text><text x="12" y="'+H/2+'" font-size="13" font-weight="700" fill="#334155" transform="rotate(-90 12 '+H/2+')" text-anchor="middle">'+fmt(R.d)+' m</text></svg>';return s}
+function render(){const M=$('main');
+  if(!project){M.innerHTML='<div class="empty">Brak projektu.</div>';return}
+  try{R=HouserGarage.evaluate(project)}catch(e){console.error(e);M.innerHTML='<div class="empty">Nie udało się policzyć.</div>';return}
+  const s=HouserGarage.settings(project),sep=R.type==='detached'||R.type==='carport';
+  $('type').value=project.garage?.type||'auto';$('typeHint').textContent=HINT[project.garage?.type||'auto']+(project.garage?.type&&project.garage.type!=='auto'?'':' Teraz: '+R.name.toLowerCase()+'.');
+  $('dimS').hidden=!sep;$('cars').value=s.cars;$('w').value=sep?fmt(R.w).replace(',','.'):'';$('d').value=sep?fmt(R.d).replace(',','.'):'';$('roof').value=s.roof==='gable'?'gable':'flat';$('roofF').hidden=R.type!=='detached';
+  let site=null;try{site=window.HouserSite?HouserSite.evaluate(project):null}catch(e){}
+  const pc=v=>v>=8?'c-ok':v>=6?'c-mid':'c-bad',H=R.inHouse;
+  let h='<div class="tiles"><div class="tile"><div class="l">Garaż</div><div class="v" style="font-size:19px">'+esc(R.name)+'</div><div class="s">'+(R.cars?R.cars+' '+(R.cars===1?'auto':'auta'):'')+(R.area?' · '+fmt(R.area)+' m²':'')+'</div></div>'+
+    (R.score!=null?'<div class="tile"><div class="l">Ocena</div><div class="v '+pc(R.score)+'">'+fmt(R.score)+'<small> / 10</small></div><div class="s">'+R.issues.length+' uwag</div></div>':'')+
+    '<div class="tile"><div class="l">Koszt</div><div class="v" style="font-size:22px">'+(R.cost.total?zl(R.cost.total):R.type==='house'?'w koszcie domu':'—')+'</div><div class="s">'+(R.cost.total?'w Wycenie jako „Garaż / wiata”':'')+'</div></div>'+
+    (site?'<div class="tile"><div class="l">Na działce</div><div class="v '+(site.spots>=2?'c-ok':'c-mid')+'">'+site.spots+'<small> miejsc</small></div><div class="s">'+site.links.filter(l=>!l.walk).map(l=>(l.ok?'✓ ':'✗ ')+'podjazd do: '+l.what).join('<br>')+'<br>(moduł Działka)</div></div>':'')+'</div>';
+  if(sep)h+='<div class="card"><h2>Rzut garażu</h2><p class="hint">Auta 1,85 × 4,7 m. Położenie i podjazd – w module Działka.</p>'+sketch()+'</div>';
+  if(H)h+='<div class="card"><h2>Garaż w bryle domu</h2><table><tbody><tr><td>Pomieszczenia</td><td class="n">'+esc(H.rooms.join(', '))+'</td></tr><tr><td>Powierzchnia</td><td class="n">'+fmt(H.area)+' m²</td></tr><tr><td>Wymiary (obrys)</td><td class="n">'+fmt(H.w)+' × '+fmt(H.d)+' m</td></tr><tr><td>Mieści aut</td><td class="n">'+H.cars+'</td></tr><tr><td>Bramy (drzwi zewnętrzne)</td><td class="n">'+(H.gates.length?H.gates.map(g=>fmt(g.w)+' m').join(' + '):'brak')+'</td></tr>'+(H.doors?'<tr><td>Zwykłe drzwi do garażu</td><td class="n">'+H.doors+'</td></tr>':'')+'</tbody></table>'+
+    (R.type!=='house'?'<p class="hint" style="margin-top:8px">W domu jest pomieszczenie „Garaż”, ale wybrano: '+esc(R.name.toLowerCase())+'.</p>':'')+'</div>';
+  h+='<div class="card"><h2>Uwagi</h2>'+(R.issues.length?'<ul class="iss">'+[...R.issues].sort((a,b)=>b.p-a.p).map(i=>'<li><span class="pen">−'+fmt(i.p)+'</span>'+esc(i.text)+(i.tip?'<span class="tip">'+esc(i.tip)+'</span>':'')+'</li>').join('')+'</ul>':'<p class="hint">Bez uwag.</p>')+R.good.map(t=>'<div class="good">✓ '+esc(t)+'</div>').join('')+'</div>';
+  if(R.cost.items.length)h+='<div class="card"><h2>Koszt</h2><table><tbody>'+R.cost.items.map(x=>'<tr><td>'+esc(x.name)+'</td><td class="n">'+zl(x.v)+'</td></tr>').join('')+'<tr class="sum"><td>Razem</td><td class="n">'+zl(R.cost.total)+'</td></tr></tbody></table></div>';
+  M.innerHTML=h}
+const rec=HouserStore.load();project=rec?rec.project:null;render();
+HouserStore.subscribe(r=>{project=r.project;render()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

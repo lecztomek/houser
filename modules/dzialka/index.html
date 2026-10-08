@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Działka</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:330px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
+h1{font-size:19px;margin:0 0 4px}
+.lead,.hint{font-size:12.5px;color:var(--hs-muted);line-height:1.5;margin:0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field{display:grid;gap:4px;margin-bottom:9px}.field label{font-size:12px;color:var(--hs-muted)}
+.field select,.field input{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tool{display:flex;gap:7px;align-items:center;font:inherit;font-size:12.5px;text-align:left;border:1px solid var(--hs-line-strong);background:#fff;border-radius:var(--hs-radius);padding:6px 8px;cursor:pointer;color:var(--hs-text)}
+.tool.on{border-color:#1d4ed8;box-shadow:0 0 0 2px rgba(29,78,216,.25);font-weight:700}
+.tool .sw{width:16px;height:16px;border-radius:4px;border:1px solid rgba(15,23,42,.2);flex:none}
+.btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.tile .l{font-size:12px;color:var(--hs-muted);font-weight:600}
+.tile .v{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-top:4px}
+.tile .v small{font-size:14px;color:var(--hs-muted);font-weight:600}
+.tile .s{font-size:12.5px;color:var(--hs-muted);margin-top:4px;line-height:1.4}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.card h2{font-size:15px;margin:0 0 3px}
+#plan{width:100%;height:auto;display:block;touch-action:none;user-select:none;max-height:78vh}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:#475569;margin-top:8px;align-items:center}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:5px}
+.iss{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:7px}
+.iss li{font-size:12.5px;line-height:1.45;border-top:1px solid #eef2f6;padding-top:7px}
+.iss .pen{float:right;font-weight:700;color:#b91c1c;font-size:12px;margin-left:8px}
+.iss .tip{display:block;color:#475569;margin-top:2px}
+.iss .tip:before{content:'→ ';color:#2563eb;font-weight:700}
+.good{font-size:12.5px;color:#15803d;margin-top:8px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #eef2f6;vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+th{font-size:11.5px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.04em}
+tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
+.c-ok{color:#15803d}.c-mid{color:#b45309}.c-bad{color:#b91c1c}
+.empty{padding:40px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){html,body{overflow:auto;height:auto}.wrap{height:auto;grid-template-rows:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{overflow:visible}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1>Działka</h1>
+  <p class="lead">Gdzie stoi dom: wymiary działki, ulica, odległości od granic. Malujesz podjazd, chodniki, miejsca postojowe, żwir i rabaty – reszta to trawa. Garaż wolnostojący albo wiatę (moduł Garaż) przeciągasz na miejsce. Wszystko widać w Zewnątrz 3D i w Wycenie.</p>
+  <div class="section">
+    <h3>Działka</h3>
+    <div class="row2">
+      <div class="field"><label>Szerokość (m)</label><input id="w" type="number" min="8" max="200" step="0.5"></div>
+      <div class="field"><label>Głębokość (m)</label><input id="d" type="number" min="8" max="300" step="0.5"></div>
+    </div>
+    <div class="field"><label>Ulica (wjazd)</label><select id="road"></select></div>
+    <div class="field"><label>Ogrodzenie</label><select id="fence"></select></div>
+    <div class="row2">
+      <div class="field"><label>Biol. czynna min. (%)</label><input id="pbcMin" type="number" min="0" max="90" step="5"></div>
+      <div class="field"><label>Zabudowa maks. (%)</label><input id="coverMax" type="number" min="5" max="100" step="5"></div>
+    </div>
+    <p class="hint">Wymagania z miejscowego planu albo warunków zabudowy (zwykle 40–70% biologicznie czynnej, 20–30% zabudowy).</p>
+    <div class="btns"><button class="hs-btn" id="center">Dom na środek</button></div>
+  </div>
+  <div class="section">
+    <h3>Garaż</h3>
+    <div class="row2">
+      <div class="field"><label>Rodzaj</label><select id="gtype"></select></div>
+      <div class="field"><label>Auta</label><select id="gcars"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+    </div>
+    <p class="hint" id="ginfo"></p>
+  </div>
+  <div class="section">
+    <h3>Rysowanie</h3>
+    <div class="tools" id="tools"></div>
+    <div class="field" style="margin-top:9px"><label>Pędzel</label><select id="brush"><option value="1">0,5 m</option><option value="2">1 m</option><option value="4">2 m</option><option value="6">3 m</option></select></div>
+    <p class="hint" id="toolHint"></p>
+    <div class="btns"><button class="hs-btn" id="auto" title="Zastępuje podjazdy, miejsca postojowe i chodniki; żwir i rabaty zostają">Podjazd i chodnik automatycznie</button><button class="hs-btn" id="clear">Wyczyść nawierzchnie</button></div>
+  </div>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/balconies.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="../garaz/engine.js"></script>
+<script src="engine.js"></script>
+<script>
+const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d}),zl=v=>(Math.round(v/100)*100).toLocaleString('pl-PL')+' zł';
+const NS='http://www.w3.org/2000/svg',C=HouserSite.C,S=20,SURF=HouserSite.SURF;
+const TREES={tree:{name:'Drzewo',r:2,fill:'#4d7c0f'},pine:{name:'Iglak',r:1.3,fill:'#166534'},shrub:{name:'Krzew',r:.6,fill:'#65a30d'}};
+const TOOLS={move:{name:'Przesuń dom / garaż',sw:'#fff'},...Object.fromEntries(Object.entries(SURF).map(([k,v])=>[k,{name:v.name.replace(' (kostka)',''),sw:v.color}])),grass:{name:'Trawa (gumka)',sw:'#bcd9a8'},
+  tree:{name:'Drzewo',sw:TREES.tree.fill},pine:{name:'Iglak',sw:TREES.pine.fill},shrub:{name:'Krzew',sw:TREES.shrub.fill}};
+const HINT={move:'Przeciągnij dom albo garaż na planie (co 0,5 m).',grass:'Maluj, żeby przywrócić trawę.',tree:'Kliknij, żeby posadzić; kliknij drzewo, żeby je usunąć.',pine:'Kliknij, żeby posadzić; kliknij drzewo, żeby je usunąć.',shrub:'Kliknij, żeby posadzić; kliknij krzew, żeby go usunąć.'};
+let project=null,R=null,tool='move',drag=null;
+try{tool=localStorage.getItem('houser:dzialka:tool')||'move';if(!TOOLS[tool])tool='move'}catch(e){}
+
+// zapis: pełne ustawienia (z domyślnymi), żeby działka nie „pływała” po zmianie domu
+function saveSite(patch){const s={...R.set,...patch};project.site=s;HouserStore.update(p=>{p.site=s},'dzialka');render()}
+function saveGarage(patch){project.garage={...(project.garage||{}),...patch};const g=project.garage;HouserStore.update(p=>{p.garage={...(p.garage||{}),...g}},'dzialka');render()}
+$('road').innerHTML=Object.entries(HouserSite.ROAD).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('');
+$('fence').innerHTML=Object.entries(HouserSite.FENCE).map(([k,v])=>'<option value="'+k+'">'+v.name+'</option>').join('');
+$('gtype').innerHTML='<option value="auto">automatycznie</option>'+Object.entries(HouserGarage.TYPES).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('');
+for(const id of ['w','d','pbcMin','coverMax'])$(id).onchange=()=>{const v=+$(id).value;if(Number.isFinite(v)&&v>=0)saveSite({[id]:v})};
+$('road').onchange=()=>{const r=$('road').value,ax=v=>v==='left'||v==='right',turn=ax(r)!==ax(R.set.road);saveSite(turn?{road:r,hx:null,hy:null,w:R.set.d,d:R.set.w,cells:{},trees:[]}:{road:r,hx:null,hy:null})};
+$('fence').onchange=()=>saveSite({fence:$('fence').value});
+$('center').onclick=()=>saveSite({hx:null,hy:null});
+$('gtype').onchange=()=>saveGarage({type:$('gtype').value,x:null,y:null});$('gcars').onchange=()=>saveGarage({cars:+$('gcars').value,w:null,d:null});
+$('auto').onclick=()=>{const cells=HouserSite.autoPaths(project,{fresh:true});saveSite({cells})};
+$('clear').onclick=()=>{if(Object.keys(R.set.cells).length&&!confirm('Usunąć wszystkie nawierzchnie (zostanie trawa)?'))return;saveSite({cells:{}})};
+$('brush').onchange=()=>{try{localStorage.setItem('houser:dzialka:brush',$('brush').value)}catch(e){}};
+try{const b=localStorage.getItem('houser:dzialka:brush');if(b)$('brush').value=b}catch(e){}
+
+function renderTools(){$('tools').innerHTML=Object.entries(TOOLS).map(([k,t])=>'<button class="tool'+(k===tool?' on':'')+'" data-t="'+k+'"><span class="sw" style="background:'+t.sw+'"></span>'+esc(t.name)+'</button>').join('');
+  $('tools').querySelectorAll('.tool').forEach(b=>b.onclick=()=>{tool=b.dataset.t;try{localStorage.setItem('houser:dzialka:tool',tool)}catch(e){}renderTools();const svg=$('plan');if(svg)svg.style.cursor=tool==='move'?'grab':'crosshair'});
+  $('toolHint').textContent=HINT[tool]||(SURF[tool]?SURF[tool].name+' – '+SURF[tool].price+' zł/m². Maluj przeciągając po planie.':'')}
+
+// ---------- plan działki
+function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
+function groundRooms(){const fl=project.definitionSnapshot?.floorOrder||['ground','upper'],f=fl[0],g=project.grid||project.definitionSnapshot.grid,st=project.state?.[f]||[],s=Array.isArray(st[0])?st.flat():st;
+  const rooms=Object.fromEntries((project.definitionSnapshot?.floors?.[f]?.rooms||[]).map(r=>[r.id,r]));return {f,W:g.width,H:g.height,at:(x,y)=>x<0||y<0||x>=g.width||y>=g.height?null:s[y*g.width+x]||null,rooms}}
+function planSVG(){const s=R.set,P=R.plot,h=R.house,M=1.5,RB=4,road=s.road;
+  const x0=-M-(road==='left'?RB:0),y0=-M-(road==='top'?RB:0),x1=s.w+M+(road==='right'?RB:0),y1=s.d+M+(road==='bottom'?RB:0);
+  const svg=document.createElementNS(NS,'svg');svg.id='plan';svg.setAttribute('viewBox',[x0*S,y0*S,(x1-x0)*S,(y1-y0)*S].join(' '));svg.style.cursor=tool==='move'?'grab':'crosshair';
+  const m=v=>v*S;
+  el('rect',{x:x0*S,y:y0*S,width:(x1-x0)*S,height:(y1-y0)*S,fill:'#eef2f6'},svg);
+  // ulica
+  const rr=road==='bottom'?[x0,s.d+M,x1-x0,RB]:road==='top'?[x0,y0,x1-x0,RB]:road==='left'?[x0,y0,RB,y1-y0]:[s.w+M,y0,RB,y1-y0];
+  el('rect',{x:m(rr[0]),y:m(rr[1]),width:m(rr[2]),height:m(rr[3]),fill:'#9ca3af'},svg);
+  el('text',{x:m(rr[0]+rr[2]/2),y:m(rr[1]+rr[3]/2),'text-anchor':'middle','dominant-baseline':'middle','font-size':16,'font-weight':800,fill:'#f8fafc','letter-spacing':4,transform:road==='left'||road==='right'?'rotate(-90 '+m(rr[0]+rr[2]/2)+' '+m(rr[1]+rr[3]/2)+')':''},svg,'ULICA');
+  // trawa + siatka co 1 m
+  el('rect',{x:0,y:0,width:m(s.w),height:m(s.d),fill:'#cfe3bf'},svg);
+  const gl=el('g',{stroke:'rgba(15,23,42,.07)','stroke-width':1,'pointer-events':'none'},svg);
+  for(let x=1;x<s.w;x++)el('line',{x1:m(x),y1:0,x2:m(x),y2:m(s.d)},gl);for(let y=1;y<s.d;y++)el('line',{x1:0,y1:m(y),x2:m(s.w),y2:m(y)},gl);
+  // nawierzchnie (pasy w wierszach)
+  const sg=el('g',{id:'surf','pointer-events':'none'},svg);
+  for(let j=0;j<P.NJ;j++){let i=0;while(i<P.NI){const t=s.cells[i+','+j];if(!SURF[t]){i++;continue}let e=i+1;while(e<P.NI&&s.cells[e+','+j]===t)e++;el('rect',{x:m(i*C),y:m(j*C),width:m((e-i)*C)+.4,height:m(C)+.4,fill:SURF[t].color},sg);i=e}}
+  // dom + tarasy (przesuwane razem)
+  const hg=el('g',{id:'gHouse',style:'cursor:'+(tool==='move'?'move':'inherit')},svg),G=groundRooms(),c=h.c,hx=s.hx,hy=s.hy,X=x=>m(hx+x*c),Y=y=>m(hy+y*c);
+  const isH=(x,y)=>{const v=G.at(x,y);return !!v&&G.rooms[v]?.kind!=='exteriorVoid'};
+  for(const it of project.outdoorStructures||[])for(const [cx,cy] of HouserModel.outdoorCells(it,c))el('rect',{x:X(cx),y:Y(cy),width:m(c)+.4,height:m(c)+.4,fill:it.type==='pergola'?'#e9d5a8':it.type==='coveredTerrace'?'#c8a46e':'#d9bf8f'},hg);
+  for(let y=0;y<G.H;y++)for(let x=0;x<G.W;x++){if(!isH(x,y))continue;el('rect',{x:X(x),y:Y(y),width:m(c)+.4,height:m(c)+.4,fill:G.rooms[G.at(x,y)]?.color||'#cbd5e1','fill-opacity':.55},hg)}
+  const ops=project.openings?.[G.f]||{},OPC={door:'#ffffff',window:'#60a5fa',hst:'#22d3ee',opening:'#ffffff',glass:'#a5f3fc'};
+  const edge=(key,a,b,xa,ya,xb,yb)=>{if(a===b)return;el('line',{x1:X(xa),y1:Y(ya),x2:X(xb),y2:Y(yb),stroke:'#0f172a','stroke-width':5,'stroke-linecap':'square'},hg);const op=ops[key];if(op&&OPC[op])el('line',{x1:X(xa),y1:Y(ya),x2:X(xb),y2:Y(yb),stroke:op==='door'&&R.entKeys?.has(key)?'#f59e0b':OPC[op],'stroke-width':2.5},hg)};
+  for(let y=0;y<=G.H;y++)for(let x=0;x<G.W;x++)edge('h:'+x+':'+y,isH(x,y-1),isH(x,y),x,y,x+1,y);
+  for(let y=0;y<G.H;y++)for(let x=0;x<=G.W;x++)edge('v:'+x+':'+y,isH(x-1,y),isH(x,y),x,y,x,y+1);
+  const b=h.box;el('text',{x:X((b.minX+b.maxX)/2),y:Y((b.minY+b.maxY)/2),'text-anchor':'middle','dominant-baseline':'middle','font-size':18,'font-weight':800,fill:'rgba(15,23,42,.45)','pointer-events':'none'},hg,'DOM');
+  // garaż wolnostojący / wiata
+  if(R.garage){const g=R.garage,gg=el('g',{id:'gGar',style:'cursor:'+(tool==='move'?'move':'inherit')},svg);
+    el('rect',{x:m(g.x),y:m(g.y),width:m(g.w),height:m(g.d),fill:g.type==='carport'?'rgba(148,163,184,.45)':'#94a3b8',stroke:'#334155','stroke-width':g.type==='carport'?2:4,'stroke-dasharray':g.type==='carport'?'8 5':''},gg);
+    if(g.type==='carport')for(const [px,py] of [[g.x,g.y],[g.x+g.w,g.y],[g.x,g.y+g.d],[g.x+g.w,g.y+g.d]])el('rect',{x:m(px)-4,y:m(py)-4,width:8,height:8,fill:'#334155'},gg);
+    const gw=Math.min(g.w,g.d)*.75,fr=road==='bottom'?[g.x+(g.w-gw)/2,g.y+g.d,g.x+(g.w+gw)/2,g.y+g.d]:road==='top'?[g.x+(g.w-gw)/2,g.y,g.x+(g.w+gw)/2,g.y]:road==='left'?[g.x,g.y+(g.d-gw)/2,g.x,g.y+(g.d+gw)/2]:[g.x+g.w,g.y+(g.d-gw)/2,g.x+g.w,g.y+(g.d+gw)/2];
+    if(g.type==='detached')el('line',{x1:m(fr[0]),y1:m(fr[1]),x2:m(fr[2]),y2:m(fr[3]),stroke:'#f8fafc','stroke-width':4},gg);
+    el('text',{x:m(g.x+g.w/2),y:m(g.y+g.d/2),'text-anchor':'middle','dominant-baseline':'middle','font-size':14,'font-weight':800,fill:'#0f172a','pointer-events':'none'},gg,g.type==='carport'?'WIATA':'GARAŻ')}
+  // drzewa
+  const tg=el('g',{id:'trees','pointer-events':'none'},svg);
+  for(const t of s.trees){const T=TREES[t.k]||TREES.tree;el('circle',{cx:m(t.x),cy:m(t.y),r:m(T.r),fill:T.fill,'fill-opacity':.55,stroke:T.fill,'stroke-width':2},tg);el('circle',{cx:m(t.x),cy:m(t.y),r:3,fill:'#3f2d1c'},tg)}
+  // ogrodzenie z bramą / furtką tam, gdzie nawierzchnia dochodzi do ulicy
+  const fs=s.fence==='hedge'?{stroke:'#3f6212','stroke-width':7}:s.fence==='panel'?{stroke:'#334155','stroke-width':2.5}:{stroke:'#64748b','stroke-width':1.5,'stroke-dasharray':'6 6'};
+  const gaps=HouserSite.gates(R),side=(ax,ay,bx,by,isRoad)=>{if(!isRoad){el('line',{x1:m(ax),y1:m(ay),x2:m(bx),y2:m(by),...fs,'pointer-events':'none'},svg);return}
+    const L=Math.hypot(bx-ax,by-ay),ux=(bx-ax)/L,uy=(by-ay)/L;let p=0;for(const g of gaps){if(g.a>p)el('line',{x1:m(ax+ux*p),y1:m(ay+uy*p),x2:m(ax+ux*g.a),y2:m(ay+uy*g.a),...fs,'pointer-events':'none'},svg);
+      el('line',{x1:m(ax+ux*g.a),y1:m(ay+uy*g.a),x2:m(ax+ux*g.b),y2:m(ay+uy*g.b),stroke:'#b45309','stroke-width':3,'stroke-dasharray':'3 4','pointer-events':'none'},svg);p=g.b}
+    if(p<L)el('line',{x1:m(ax+ux*p),y1:m(ay+uy*p),x2:m(bx),y2:m(by),...fs,'pointer-events':'none'},svg)};
+  side(0,0,s.w,0,road==='top');side(0,s.d,s.w,s.d,road==='bottom');side(0,0,0,s.d,road==='left');side(s.w,0,s.w,s.d,road==='right');
+  // odległości domu od granic
+  const hb={l:hx+b.minX*c,r:hx+b.maxX*c,t:hy+b.minY*c,b:hy+b.maxY*c},mid={x:(hb.l+hb.r)/2,y:(hb.t+hb.b)/2};
+  for(const sb of R.setbacks){const bad=sb.d<sb.need-1e-6,col=bad?'#dc2626':'#475569',a=sb.side==='left'?[0,mid.y,hb.l,mid.y]:sb.side==='right'?[hb.r,mid.y,s.w,mid.y]:sb.side==='top'?[mid.x,0,mid.x,hb.t]:[mid.x,hb.b,mid.x,s.d];
+    if(sb.d<=0)continue;el('line',{x1:m(a[0]),y1:m(a[1]),x2:m(a[2]),y2:m(a[3]),stroke:col,'stroke-width':1.5,'stroke-dasharray':'5 4','pointer-events':'none'},svg);
+    const tx=m((a[0]+a[2])/2),ty=m((a[1]+a[3])/2);el('rect',{x:tx-24,y:ty-10,width:48,height:20,rx:5,fill:'#fff','fill-opacity':.9,'pointer-events':'none'},svg);el('text',{x:tx,y:ty,'text-anchor':'middle','dominant-baseline':'middle','font-size':12,'font-weight':700,fill:col,'pointer-events':'none'},svg,fmt(sb.d)+' m')}
+  // wymiary działki i kierunki świata
+  el('text',{x:m(s.w/2),y:m(road==='top'?s.d+.9:-.6),'text-anchor':'middle','font-size':13,'font-weight':700,fill:'#334155'},svg,fmt(s.w)+' m');
+  el('text',{x:m(road==='left'?s.w+.9:-.6),y:m(s.d/2),'text-anchor':'middle','font-size':13,'font-weight':700,fill:'#334155',transform:'rotate(-90 '+m(road==='left'?s.w+.9:-.6)+' '+m(s.d/2)+')'},svg,fmt(s.d)+' m');
+  const top=project.orientation?.top||'north',ORD=['north','east','south','west'],oi=ORD.indexOf(top),ang=-(oi<0?0:oi)*90;
+  const cg=el('g',{transform:'translate('+m(x1-1.2)+' '+m(y0+1.2)+') rotate('+ang+')','pointer-events':'none'},svg);el('circle',{r:16,fill:'#fff',stroke:'#cbd5e1'},cg);el('path',{d:'M0 -12 L5 4 L0 1 L-5 4Z',fill:'#dc2626'},cg);el('text',{y:-1,x:0,'text-anchor':'middle','font-size':9,'font-weight':800,fill:'#0f172a',transform:'translate(0 13)'},cg,'N');
+  return svg}
+// ---------- interakcja
+function pt(e){const svg=$('plan'),p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const q=p.matrixTransform(svg.getScreenCTM().inverse());return {x:q.x/S,y:q.y/S}}
+function paintAt(p){const s=R.set,P=R.plot,n=+$('brush').value||1,i0=Math.floor(p.x/C-(n-1)/2),j0=Math.floor(p.y/C-(n-1)/2);let ch=false;
+  for(let a=0;a<n;a++)for(let b=0;b<n;b++){const i=i0+a,j=j0+b,key=i+','+j;if(i<0||j<0||i>=P.NI||j>=P.NJ||R.occ.has(key))continue;
+    if(tool==='grass'){if(s.cells[key]){delete s.cells[key];ch=true}}else if(s.cells[key]!==tool){s.cells[key]=tool;ch=true}}
+  if(ch)drag.changed=drag.dirty=true}
+function repaint(){if(!drag?.dirty)return;drag.dirty=false;$('plan').replaceWith(planSVG())}
+document.addEventListener('pointerdown',e=>{const svg=$('plan');if(!project||!R||!svg||!svg.contains(e.target))return;e.preventDefault();const p=pt(e),s=R.set;
+  if(tool==='move'){const g=R.garage;if(g&&p.x>=g.x&&p.x<=g.x+g.w&&p.y>=g.y&&p.y<=g.y+g.d){drag={what:'garage',p,ox:g.x,oy:g.y};return}
+    const c=R.house.c,hx=Math.floor((p.x-s.hx)/c),hy=Math.floor((p.y-s.hy)/c),F=HouserSite.footprint(project);if(F.house.has(hx+','+hy)||F.out.has(hx+','+hy)){drag={what:'house',p,ox:s.hx,oy:s.hy};svg.style.cursor='grabbing'}return}
+  if(TREES[tool]){const T=TREES[tool],near=s.trees.findIndex(t=>Math.hypot(t.x-p.x,t.y-p.y)<Math.max(.6,(TREES[t.k]||TREES.tree).r*.7));
+    const trees=[...s.trees];if(near>=0)trees.splice(near,1);else if(p.x>=0&&p.y>=0&&p.x<=s.w&&p.y<=s.d)trees.push({x:Math.round(p.x*4)/4,y:Math.round(p.y*4)/4,k:tool});else return;saveSite({trees});return}
+  drag={what:'paint',changed:false,last:p};s.cells={...s.cells};paintAt(p);repaint()});
+document.addEventListener('pointermove',e=>{if(!drag)return;const p=pt(e);
+  if(drag.what==='paint'){const a=drag.last||p,n=Math.ceil(Math.hypot(p.x-a.x,p.y-a.y)/(C/2));for(let t=1;t<=n;t++)paintAt({x:a.x+(p.x-a.x)*t/n,y:a.y+(p.y-a.y)*t/n});if(!n)paintAt(p);drag.last=p;repaint();return}
+  const dx=Math.round((p.x-drag.p.x)/C)*C,dy=Math.round((p.y-drag.p.y)/C)*C;drag.dx=dx;drag.dy=dy;const g=$(drag.what==='house'?'gHouse':'gGar');if(g)g.setAttribute('transform','translate('+dx*S+' '+dy*S+')')});
+document.addEventListener('pointerup',()=>{if(!drag)return;const d=drag;drag=null;
+  if(d.what==='paint'){if(d.changed)saveSite({cells:R.set.cells});return}
+  if(!d.dx&&!d.dy){render();return}
+  // nawierzchnie zostają na miejscu – przesuwa się tylko dom
+  if(d.what==='house')saveSite({hx:d.ox+d.dx,hy:d.oy+d.dy})
+  else saveGarage({x:d.ox+d.dx,y:d.oy+d.dy})});
+
+// ---------- widok
+function render(){const M=$('main');renderTools();
+  if(!project){M.innerHTML='<div class="empty">Brak projektu. Najpierw narysuj dom w module <b>Obrys domu</b> i <b>Układ pomieszczeń</b>.</div>';return}
+  try{R=HouserSite.evaluate(project)}catch(e){console.error(e);M.innerHTML='<div class="empty">Nie udało się policzyć działki.</div>';return}
+  const s=R.set,G=R.garageEval;
+  $('w').value=s.w;$('d').value=s.d;$('road').value=s.road;$('fence').value=s.fence;$('pbcMin').value=s.pbcMin;$('coverMax').value=s.coverMax;
+  $('gtype').value=project.garage?.type||'auto';$('gcars').value=HouserGarage.settings(project).cars;$('gcars').disabled=!(G&&(G.type==='detached'||G.type==='carport'));
+  $('ginfo').textContent=G?(G.type==='house'?'Garaż w bryle domu'+(G.inHouse?' – '+fmt(G.area)+' m², '+G.cars+' '+(G.cars===1?'auto':'auta'):'')+'. Podjazd prowadzi do jego bramy.':G.type==='none'?'Bez garażu – auta na miejscach postojowych (pomaluj je).':G.name+' '+fmt(G.w)+' × '+fmt(G.d)+' m – przeciągnij go na planie. Wymiary i dach – w module Garaż.'):'';
+  R.entKeys=new Set(HouserSite.entrances(HouserQuantities.compute(project)).flatMap(r=>r.keys));
+  const pc=v=>v>=8?'c-ok':v>=6?'c-mid':'c-bad',L=R.links;
+  let h='<div class="tiles">'+
+    '<div class="tile"><div class="l">Ocena działki</div><div class="v '+pc(R.score)+'">'+fmt(R.score)+'<small> / 10</small></div><div class="s">'+R.issues.length+' uwag · działka '+fmt(R.plot.area,0)+' m²</div></div>'+
+    '<div class="tile"><div class="l">Biologicznie czynna</div><div class="v '+(R.pbc>=s.pbcMin?'c-ok':'c-bad')+'">'+fmt(R.pbc,0)+'<small> %</small></div><div class="s">trawa i rabaty '+fmt(R.area.grass+R.area.bed,0)+' m² · wymóg '+s.pbcMin+'%</div></div>'+
+    '<div class="tile"><div class="l">Zabudowa</div><div class="v '+(R.cover<=s.coverMax?'c-ok':'c-bad')+'">'+fmt(R.cover,0)+'<small> %</small></div><div class="s">dom'+(R.garage?' + garaż':'')+' '+fmt(R.built,0)+' m² · maks. '+s.coverMax+'%</div></div>'+
+    '<div class="tile"><div class="l">Miejsca postojowe</div><div class="v '+(R.spots>=2?'c-ok':'c-mid')+'">'+R.spots+'</div><div class="s">'+(L.length?L.filter(x=>x.ok).length+' z '+L.length+' połączeń z ulicą':'')+'</div></div>'+
+    '<div class="tile"><div class="l">Zagospodarowanie</div><div class="v" style="font-size:22px">'+zl(R.cost.site)+'</div><div class="s">'+(R.cost.garage?'+ garaż / wiata '+zl(R.cost.garage):'nawierzchnie, trawnik, ogrodzenie')+'</div></div></div>';
+  h+='<div class="card"><h2>Plan działki</h2><p class="hint">Skala: kratka 1 m. Brązowa przerywana linia przy ulicy – brama / furtka (tam, gdzie podjazd albo chodnik dochodzi do ulicy). Pomarańczowe – drzwi wejściowe.</p><div id="planBox"></div>'+
+    '<div class="legend">'+Object.values(SURF).map(v=>'<span><i style="background:'+v.color+'"></i>'+esc(v.name)+'</span>').join('')+'<span><i style="background:#cfe3bf"></i>Trawa</span><span><i style="background:#d9bf8f"></i>Taras</span></div></div>';
+  h+='<div class="cols"><div class="card"><h2>Uwagi</h2>'+(R.issues.length?'<ul class="iss">'+[...R.issues].sort((a,b)=>b.p-a.p).map(i=>'<li><span class="pen">−'+fmt(i.p)+'</span>'+esc(i.text)+(i.tip?'<span class="tip">'+esc(i.tip)+'</span>':'')+'</li>').join('')+'</ul>':'<p class="hint">Bez uwag.</p>')+R.good.map(t=>'<div class="good">✓ '+esc(t)+'</div>').join('')+'</div>';
+  h+='<div class="card"><h2>Odległości od granic</h2><table><thead><tr><th>Granica</th><th class="n">Odległość</th><th class="n">Min.</th></tr></thead><tbody>'+
+    R.setbacks.map(b=>'<tr><td>'+({left:'lewa',right:'prawa',top:'górna',bottom:'dolna'}[b.side])+(b.side===s.road?' (ulica)':'')+'<br><span class="hint">'+(b.open?'ściana z oknami / drzwiami':'ściana bez otworów')+'</span></td><td class="n '+(b.d<b.need-1e-6?'c-bad':'c-ok')+'">'+fmt(b.d)+' m</td><td class="n">'+fmt(b.need,0)+' m</td></tr>').join('')+'</tbody></table>'+
+    '<p class="hint" style="margin-top:8px">WT § 12: ściana z oknami lub drzwiami min. 4 m od granicy, bez otworów – 3 m. Od ulicy obowiązuje też linia zabudowy z planu miejscowego.</p></div></div>';
+  h+='<div class="card"><h2>Powierzchnie i koszt zagospodarowania</h2><p class="hint">Orientacyjnie, z robocizną. W Wycenie jako „Zagospodarowanie działki” (do włączenia) i „Garaż / wiata”.</p><table><thead><tr><th>Pozycja</th><th class="n">Ilość</th><th class="n">Koszt</th></tr></thead><tbody>'+
+    R.cost.items.map(x=>'<tr><td>'+esc(x.name)+'</td><td class="n">'+esc(x.note||'')+'</td><td class="n">'+zl(x.v)+'</td></tr>').join('')+'<tr class="sum"><td>Razem</td><td></td><td class="n">'+zl(R.cost.total)+'</td></tr></tbody></table></div>';
+  M.innerHTML=h;$('planBox').appendChild(planSVG())}
+const rec=HouserStore.load();project=rec?rec.project:null;render();
+HouserStore.subscribe(r=>{if(drag)return;project=r.project;render()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

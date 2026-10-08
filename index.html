@@ -265,6 +265,8 @@ a{color:var(--accent)}
 <script src="shared/quantities.js"></script>
 <script src="modules/konstrukcja/engine.js"></script>
 <script src="modules/konstrukcja-dachu/engine.js"></script>
+<script src="modules/garaz/engine.js"></script>
+<script src="modules/dzialka/engine.js"></script>
 <script src="shared/completeness.js"></script>
 <script src="shared/gallery.js"></script>
 <script src="shared/library.js"></script>
@@ -286,6 +288,8 @@ const MODULES=[
   {id:'ocieplenie',group:'Projekt',name:'Ocieplenie i elewacja',src:'modules/ocieplenie/',desc:'Z czego są ściany, dach i podłoga: mur, rodzaj i grubość ocieplenia, okna, wykończenie elewacji – współczynniki U do bilansu energii, koszt i czy warto grubiej.'},
   {id:'drzwi-wewnetrzne',group:'Projekt',name:'Drzwi wewnętrzne',src:'modules/drzwi-wewnetrzne/',desc:'Drzwi między pomieszczeniami na rzucie: rodzaj, wysokość (też niskie pod skosem) i kierunek otwierania.'},
   {id:'tarasy',group:'Projekt',name:'Tarasy i pergole',src:'modules/tarasy/',desc:'Malowanie kratek wokół domu: taras, zadaszony taras, pergola.'},
+  {id:'garaz',group:'Projekt',name:'Garaż',src:'modules/garaz/',desc:'Garaż w bryle domu, wolnostojący albo wiata: ile aut się zmieści, szerokość bramy, wymiary i koszt. Miejsce na działce – w module Działka.'},
+  {id:'dzialka',group:'Projekt',name:'Działka',src:'modules/dzialka/',desc:'Gdzie stoi dom: wymiary działki, ulica, odległości od granic; malowanie podjazdu, chodników, miejsc postojowych, żwiru i rabat, drzewa, ogrodzenie. Widać w Zewnątrz 3D, koszt w Wycenie.'},
   {id:'instalacja-grzewcza',group:'Wnętrza',name:'Instalacja grzewcza',src:'modules/instalacja-grzewcza/',desc:'Źródła ciepła (główne i alternatywne, np. pompa + kominek), urządzenia na rzucie: kocioł, jednostka zewnętrzna, bufor, zasobnik, rozdzielacze – i czym grzeje każdy pokój.'},
   {id:'meblowanie',group:'Wnętrza',name:'Meblowanie',src:'modules/meblowanie/',desc:'Rozmieszczanie mebli na gotowym rzucie – pomieszczeń tu nie zmieniasz.'},
   {id:'wnetrze-3d',group:'Podgląd',name:'Wnętrze 3D',src:'modules/wnetrze-3d/',desc:'Spacer po domu z punktu obserwatora (strzałki), schody, skosy dachu, meble.'},
@@ -342,6 +346,8 @@ const ICON_PATH={pomieszczenia:'<rect x="3" y="3" width="7.5" height="7.5" rx="1
   oszczednosci:'<circle cx="12" cy="12" r="8.5"/><path d="M14.8 9.2c-.6-.8-1.6-1.2-2.8-1.2-1.6 0-2.8.8-2.8 2s1.2 1.7 2.8 2 2.8.8 2.8 2-1.2 2-2.8 2c-1.2 0-2.3-.5-2.9-1.3M12 6.5v11"/>',
   ranking:'<path d="M4 20V13h4v7M10 20V8h4v12M16 20v-9h4v9"/><path d="M12 2.8l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2L9.1 4.9l2-.3z"/>',
   porownanie:'<rect x="3" y="4" width="7.5" height="16" rx="1.8"/><rect x="13.5" y="4" width="7.5" height="16" rx="1.8"/><path d="M5.5 8.5h2.5M5.5 12h2.5M16 8.5h2.5M16 12h2.5"/>',
+  garaz:'<path d="M3 21V9l9-5 9 5v12"/><path d="M6.5 21v-8h11v8"/><path d="M6.5 16h11"/>',
+  dzialka:'<path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/>',
   konstrukcja:'<path d="M3 4h18M3 7h18"/><path d="M12 7v10"/><path d="M3 20h18M3 17h18"/><path d="M6 17v3M18 17v3"/>',
   'konstrukcja-dachu':'<path d="M2 13 12 4l10 9"/><path d="M5 10.5V20M19 10.5V20"/><path d="M7.5 13h9"/><path d="M12 4v9"/>',
   elektryka:'<path d="M13 2.5 5 13.5h6l-1 8 8-11h-6z"/>',

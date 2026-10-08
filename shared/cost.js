@@ -46,13 +46,15 @@ const ITEMS=[
   ['terrace','Na zewnątrz','Taras','m²',q=>q.out.terrace,450,1,'z modułu Tarasy'],
   ['covterrace','Na zewnątrz','Taras zadaszony','m²',q=>q.out.coveredTerrace,1100,1,'z modułu Tarasy'],
   ['pergola','Na zewnątrz','Pergola','m²',q=>q.out.pergola,700,1,'z modułu Tarasy'],
+  ['garage','Na zewnątrz','Garaż wolnostojący / wiata','kpl',()=>0,0,0,'moduł Garaż'],
+  ['site','Na zewnątrz','Zagospodarowanie działki (podjazd, chodniki, trawnik, ogrodzenie)','kpl',()=>0,0,0,'moduł Działka – włącz, jeśli liczysz z budową',false],
   ['design','Inne','Projekt, adaptacja, formalności','kpl',()=>1,18000,0,'ryczałt'],
   ['manager','Inne','Kierownik budowy, geodeta','kpl',()=>1,10000,0,'ryczałt'],
 ];
 const STD={eco:.85,std:1,high:1.35};
 // udział materiałów w cenie jednostkowej (reszta = robocizna / usługa)
 const MAT={blinds:.7,found:.6,groundslab:.6,utilities:.7,extwalls:.55,partwalls:.5,slab:.6,stairs:.65,chimney:.6,roof:.6,gutters:.55,soffit:.5,windows:.85,roofwin:.8,hst:.88,extdoor:.85,
-  elec:.45,plumb:.45,structExtra:.55,roofExtra:.55,heatsrc:.8,floorheat:.55,vent:.65,facade:.45,plaster:.35,screed:.5,floors:.6,paint:.3,intdoor:.75,baths:.6,wc:.6,kitchen:.85,terrace:.6,covterrace:.6,pergola:.6,design:0,manager:0};
+  elec:.45,plumb:.45,structExtra:.55,roofExtra:.55,heatsrc:.8,floorheat:.55,vent:.65,facade:.45,plaster:.35,screed:.5,floors:.6,paint:.3,intdoor:.75,baths:.6,wc:.6,kitchen:.85,terrace:.6,covterrace:.6,pergola:.6,garage:.55,site:.5,design:0,manager:0};
 function cs(){const s=project.costSettings||{};return {std:STD[s.std]?s.std:'std',factor:Number.isFinite(+s.factor)&&+s.factor>0?+s.factor:1,prices:s.prices||{},mat:s.mat||{},lab:s.lab||{},off:s.off||{},on:s.on||{},reserve:Number.isFinite(+s.reserve)?+s.reserve:10}}
 // koszty z modułów (gdy ich obliczenia są załadowane na stronie): wentylacja wybrana w module Wentylacja, instalacja
 // grzewcza z modułu Instalacja grzewcza, wod-kan z Hydrauliki, klimatyzacja. Bez nich – stawki za m² jak wyżej.
@@ -68,12 +70,15 @@ function fromModules(){const D={};const T=f=>{try{return f()}catch(e){console.wa
   // konstrukcja: podciągi, belki nad szerokimi otworami, wsporniki, słupy (moduł Konstrukcja)
   if(global.HouserRoof){const Rf=T(()=>HouserRoof.evaluate(project));if(Rf&&Rf.ok&&Rf.cost.total>0)D.roofExtra={name:'Konstrukcja dachu – dopłaty ('+Rf.cost.items.length+')',total:Rf.cost.total,how:'z modułu Konstrukcja dachu – '+Rf.cost.items.slice(0,3).map(x=>x.name.toLowerCase()).join(', ')+(Rf.cost.items.length>3?'…':'')}}
   if(global.HouserStructure){const K=T(()=>HouserStructure.evaluate(project));if(K&&K.cost.total>0)D.structExtra={name:'Wzmocnienia konstrukcji ('+K.cost.items.length+')',total:K.cost.total,how:'z modułu Konstrukcja – '+K.cost.items.slice(0,3).map(x=>x.name.toLowerCase()).join(', ')+(K.cost.items.length>3?'…':'')}}
+  // garaż wolnostojący / wiata (moduł Garaż) i zagospodarowanie działki (moduł Działka – tylko gdy działka narysowana)
+  if(global.HouserGarage){const G=T(()=>HouserGarage.evaluate(project));if(G&&G.cost.total>0)D.garage={name:G.name+' ('+G.cars+' '+(G.cars===1?'auto':'auta')+', '+Math.round(G.area)+' m²)',total:G.cost.total,how:'z modułu Garaż'}}
+  if(global.HouserSite&&project.site){const S=T(()=>HouserSite.evaluate(project));if(S&&S.cost.site>0)D.site={name:'Zagospodarowanie działki ('+Math.round(S.plot.area)+' m²)',total:S.cost.site,how:'z modułu Działka – podjazd, chodniki, trawnik, ogrodzenie, nasadzenia; włącz, jeśli liczysz z budową'}}
   return D}
 function compute(){
   const q=quantities(),s=cs(),rows=[],DYN=fromModules();
   for(let [id,stage,name,unit,qf,defPrice,fin,how,defOn] of ITEMS){
     const dy=DYN[id];if(dy){unit='kpl';name=dy.name;how=dy.how;qf=()=>1;defPrice=dy.total;fin=0}
-    const qty=Math.max(0,qf(q)||0);if(id==='glasswalls'&&!qty)continue; // pozycja tylko gdy są ścianki szklane
+    const qty=Math.max(0,qf(q)||0);if((id==='glasswalls'||id==='garage'||id==='site')&&!qty)continue; // pozycje tylko gdy są ścianki szklane / garaż / działka
     let base=defPrice;if(id==='windows'&&q.ops.winA>0&&q.ops.winCost)base=q.ops.winCost/q.ops.winA;if(id==='hst'&&q.ops.hstA>0&&q.ops.hstCost)base=q.ops.hstCost/q.ops.hstA;if(id==='roofwin'&&q.ops.roofWin>0&&q.ops.roofWinCost)base=q.ops.roofWinCost/q.ops.roofWin;if(id==='blinds'&&q.ops.blinds>0)base=q.ops.blindCost/q.ops.blinds; // średnia z cen okien wg typu (moduł Okna i drzwi)
     if(id==='stairs')base=q.stairs.length?q.stairs.reduce((a,t)=>a+(STAIR_PRICE[t]||18000),0)/q.stairs.length:18000;const ek=+project.envelopePriceK?.[id];if(ek>0)base*=ek; // mur, elewacja, okna wg modułu Ocieplenie i elewacja
     const def=base*(fin?STD[s.std]:1)*s.factor,share=MAT[id]??.6,old=s.prices[id]!=null?+s.prices[id]:null; // starsze zapisy: jedna cena -> dzielona wg udziału

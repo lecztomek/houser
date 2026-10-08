@@ -19,6 +19,7 @@
       done:p=>{if(!global.HouserStructure)return true;const K=HouserStructure.evaluate(p);return !K.hasUp||!K.regions.length},
       label:p=>{try{const R=HouserStructure.evaluate(p).regions;return R.length?'Strop nie wyrabia nad: '+R.map(r=>r.room).join('; '):null}catch(_){return null}}},
     {mod:'konstrukcja-dachu',name:'Układ więźby dachu',done:p=>!!p.roofSettings?.system||!global.HouserRoof||!HouserRoof.evaluate(p).ok,assumed:'dobrany automatycznie (np. jętkowa)'},
+    {mod:'garaz',name:'Garaż – w domu, wolnostojący, wiata czy bez',done:p=>has(p.garage,'type'),assumed:'garaż w domu, jeśli jest pomieszczenie „Garaż”; inaczej bez garażu'},
     {mod:'elektryka',name:'Standard instalacji elektrycznej',done:p=>!!p.elecSettings,assumed:'typowa liczba gniazd, płyta indukcyjna'},
     {mod:'wycena',name:'Standard wykończenia i ceny',done:p=>has(p.costSettings,'std'),assumed:'standard, ceny średnie'},
     {mod:'klimatyzacja',name:'Klimatyzacja – czy będzie',done:p=>has(p.hvacSettings,'ac'),assumed:'tylko pokoje z dużym ryzykiem przegrzania'},
@@ -29,5 +30,5 @@
     const missing=items.filter(i=>!i.done).length,byMod={};for(const i of items)(byMod[i.mod]=byMod[i.mod]||[]).push(i);
     return {items,missing,total:items.length,complete:!missing,byMod}}
   // VERSION: zmień przy każdej zmianie reguł – zapamiętane liczby braków (lista Projekty) przeliczą się od nowa
-  global.HouserComplete={VERSION:3,DECISIONS,check};
+  global.HouserComplete={VERSION:4,DECISIONS,check};
 })(window);

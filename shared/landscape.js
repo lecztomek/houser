@@ -1,6 +1,8 @@
 // Prosty krajobraz wokół domu do podglądów 3D (i jako podpowiedź dla wizualizacji AI):
 // trawa, działka z żywopłotem, drzewa w ogrodzie, las i wzgórza na horyzoncie. Bez losowości między przebudowami (stałe ziarno).
-// HouserLandscape.build({minX,minZ,maxX,maxZ,y}) -> {ground:{y,color,size}, polys:[{points,color,stroke,line,alpha}]}
+// HouserLandscape.build({minX,minZ,maxX,maxZ,y,plot?,trees?}) -> {ground:{y,color,size}, polys:[{points,color,stroke,line,alpha}]}
+// plot:{x0,z0,x1,z1} – działka narysowana w module Działka: bez własnej działki, żywopłotu i drzew w ogrodzie (las i wzgórza zostają);
+// trees:[{x,z,k:'tree'|'pine'|'shrub'}] – drzewa posadzone na działce.
 (function(global){
   function rng(seed){let s=seed>>>0||1;return ()=>{s^=s<<13;s^=s>>>17;s^=s<<5;return ((s>>>0)%100000)/100000}}
   function build(o){
@@ -21,8 +23,12 @@
       frustum(x,z,y+h*.8,y+h+1.3*s,w*.55,w,7,c);frustum(x,z,y+h+1.3*s,y+h+2.9*s,w,0,7,c)}
     function pine(x,z,s){box(x-.1*s,y,z-.1*s,x+.1*s,y+1*s,z+.1*s,'#5b4330');const c=PINE[Math.floor(r()*PINE.length)];
       frustum(x,z,y+.8*s,y+4.2*s,1.5*s,.35*s,6,c);frustum(x,z,y+3.2*s,y+7*s,1.05*s,0,6,c)}
+    const PL=o.plot,outPlot=(x,z,mg)=>!PL||x<PL.x0-mg||x>PL.x1+mg||z<PL.z0-mg||z>PL.z1+mg;
+    for(const t of o.trees||[])(t.k==='pine'?pine(t.x,t.z,.75):t.k==='shrub'?tree(t.x,t.z,.3):tree(t.x,t.z,1));
+    const m=Math.max(12,R*1.1);
+    if(!PL){
     // działka: jaśniejsza, skoszona trawa + żywopłot z przerwą na wjazd
-    const m=Math.max(12,R*1.1),px0=minX-m,px1=maxX+m,pz0=minZ-m,pz1=maxZ+m;
+    const px0=minX-m,px1=maxX+m,pz0=minZ-m,pz1=maxZ+m;
     quad(px0,pz0,px1,pz1,y+.012,'#9cc26f');
     const hh=1.1,ht=.7,hc='#3f7134',gap=4;
     box(px0,y,pz0,px1,y+hh,pz0+ht,hc);box(px0,y,pz0,px0+ht,y+hh,pz1,hc);box(px1-ht,y,pz0,px1,y+hh,pz1,hc);
@@ -34,8 +40,9 @@
       if(x>minX-inner&&x<maxX+inner&&z>minZ-inner&&z<maxZ+inner)continue;if(Math.abs(x-cx)<gap+2&&z>maxZ)continue;
       if(Math.min(x-px0,px1-x,z-pz0,pz1-z)>3.5)continue; // tylko przy żywopłocie – środek ogrodu wolny, dom widać
       (r()<.3?pine:tree)(x,z,.8+r()*.6);placed++}
+    }
     // pas drzew za działką i las na horyzoncie
-    for(let i=0;i<26;i++){const a=r()*Math.PI*2,d=m+R+24+r()*30,x=cx+Math.cos(a)*d,z=cz+Math.sin(a)*d;if(Math.abs(x-cx)<5&&z>cz)continue;(r()<.5?pine:tree)(x,z,1+r()*.7)}
+    for(let i=0;i<26;i++){const a=r()*Math.PI*2,d=m+R+24+r()*30,x=cx+Math.cos(a)*d,z=cz+Math.sin(a)*d;if(Math.abs(x-cx)<5&&z>cz||!outPlot(x,z,4))continue;(r()<.5?pine:tree)(x,z,1+r()*.7)}
     for(let i=0;i<70;i++){const a=i/70*Math.PI*2+r()*.05,d=95+r()*20,x=cx+Math.cos(a)*d,z=cz+Math.sin(a)*d;pine(x,z,1.6+r()*1.2)}
     // wzgórza: pierścień łagodnych wzniesień za lasem
     const N=36;for(let i=0;i<N;i++){const a=i/N*Math.PI*2,b=(i+1)/N*Math.PI*2,d0=125,d1=170,h0=6+8*Math.abs(Math.sin(i*1.7)),h1=6+8*Math.abs(Math.sin((i+1)*1.7));

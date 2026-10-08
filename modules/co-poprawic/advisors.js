@@ -43,6 +43,10 @@
       return {score:K.score,items:K.issues.map(i=>({p:Math.min(3,i.p),text:i.text,tip:i.tip})),good:K.good.slice(0,2)}}},
     {id:'konstrukcja-dachu',name:'Konstrukcja dachu',w:.5,need:'HouserRoof',run:p=>{const R=HouserRoof.evaluate(p);if(!R.ok)return {score:null,items:[],good:[]};
       return {score:R.score,items:R.issues.map(i=>({p:Math.min(3,i.p),text:i.text,tip:i.tip})),good:R.good.slice(0,1)}}},
+    {id:'garaz',name:'Garaż',w:.3,need:'HouserGarage',run:p=>{const G=HouserGarage.evaluate(p);if(G.score==null)return {score:null,items:[],good:[]};
+      return {score:G.score,items:G.issues.map(i=>({p:Math.min(3,i.p),text:i.text,tip:i.tip})),good:G.good.slice(0,1)}}},
+    {id:'dzialka',name:'Działka',w:.4,need:'HouserSite',run:p=>{if(!p.site)return {score:null,items:[],good:[]};const R=HouserSite.evaluate(p);
+      return {score:R.score,items:R.issues.map(i=>({p:Math.min(3,i.p),text:i.text,tip:i.tip})),good:R.good.slice(0,1)}}},
     {id:'elektryka',name:'Elektryka',w:.4,need:'HouserElectric',run:p=>{const L=HouserElectric.evaluate(p);
       return {score:L.score,items:L.issues.map(i=>({p:Math.min(3,i.p),text:i.text,tip:i.tip})),good:L.good.slice(0,1)}}},
     {id:'fotowoltaika',name:'Fotowoltaika',w:.4,need:'HouserPV',run:p=>{const R=HouserPV.compute(p);

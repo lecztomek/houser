@@ -164,6 +164,23 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  const rg=JSON.parse(JSON.stringify(sj));rg.roofSettings={system:'ridge',postSpan:6};const R3=RF.evaluate(rg);ok(R3.members.some(m=>/kalenic/i.test(m.name))&&R3.lines.length===1,'konstrukcja dachu: belka kalenicowa');
  ok(W.HouserCost.compute(pu).rows.some(r=>r.id==='roofExtra'&&r.value>0),'konstrukcja dachu: dopłaty w Wycenie');}
 
+// garaż i działka: rodzaj garażu, miejsca, podjazd automatycznie, odległości od granic, Wycena
+{const G=W.HouserGarage,SI=W.HouserSite,ld=f=>JSON.parse(fs.readFileSync(path.join(ROOT,'examples',f),'utf8'));
+ for(const f of examples){const p=ld(f),g=G.evaluate(p),R=SI.evaluate(p);
+   ok(fin(g.cost.total)&&g.cost.total>=0&&(g.score==null||g.score>=0&&g.score<=10),f+': garaż – liczby skończone ('+g.type+')');
+   ok(fin(R.score)&&R.score>=0&&R.score<=10&&fin(R.pbc)&&R.pbc>0&&R.pbc<=100&&fin(R.cover)&&R.cover>0&&R.cover<100&&fin(R.cost.total)&&R.plot.area>=R.built,f+': działka – liczby skończone, rozsądne granice');
+   ok(R.setbacks.every(b=>b.d>=b.need-1e-6),f+': działka domyślna – odległości od granic spełnione');
+   const p2={...p,site:{...R.set,cells:SI.autoPaths(p)}},R2=SI.evaluate(p2);ok(R2.links.length&&R2.links.every(l=>l.ok)&&R2.spots>=2,f+': podjazd automatycznie łączy ulicę z garażem i wejściem, 2 miejsca postojowe');
+   ok(R2.pbc<R.pbc&&R2.cost.site>R.cost.site,f+': nawierzchnie zmniejszają biologicznie czynną i kosztują')}
+ const par=ld('dom-parterowy.json'),gp=G.evaluate(par);ok(gp.type==='house'&&gp.cars===1&&gp.issues.some(i=>/Brama/.test(i.text)),'garaż w domu: dom parterowy – 1 auto, wąska brama');
+ const sm=G.evaluate(ld('stodola-mini-2a-g2.json'));ok(sm.cars===2&&sm.inHouse.gates.length===1&&sm.inHouse.gate>=5,'garaż w domu: Stodoła Mini – 2 auta, jedna brama 5,5 m');
+ const sj=ld('stodola-jasna.json');sj.garage={type:'detached',cars:2};const gd=G.evaluate(sj);ok(gd.w>=6&&gd.cost.total>80000&&gd.cost.total<200000,'garaż wolnostojący na 2 auta: wymiary i koszt');
+ const sc={...sj,garage:{type:'carport',cars:2}};ok(G.evaluate(sc).cost.total<gd.cost.total/2,'wiata tańsza od garażu');
+ const Rd=SI.evaluate(sj);ok(Rd.garage&&!Rd.issues.some(i=>i.type==='garage'),'działka: garaż wolnostojący domyślnie obok domu, bez kolizji');
+ ok(W.HouserCost.compute(sj).rows.some(r=>r.id==='garage'&&r.value>0)&&!W.HouserCost.compute(ld('stodola-jasna.json')).rows.some(r=>r.id==='garage'),'Wycena: garaż wolnostojący tylko gdy wybrany');
+ const ss=ld('zefir-2.json');ss.site={w:14,d:20};const Rs=SI.evaluate(ss);ok(Rs.issues.some(i=>i.type==='setback'||i.type==='house'),'działka: za wąska działka – uwaga o odległości od granicy');
+ const ws={...ss,site:{...SI.evaluate(ld('zefir-2.json')).set}},cr=W.HouserCost.compute(ws).rows.find(r=>r.id==='site');ok(cr&&!cr.on&&cr.qty===1,'Wycena: zagospodarowanie działki – pozycja do włączenia');}
+
 // ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować
 console.log('• składnia skryptów');
 {const vm=require('vm'),walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?(['node_modules','.git'].includes(e.name)?[]:walk(path.join(d,e.name))):[path.join(d,e.name)]);
