@@ -4261,4 +4261,10 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "wejście do domu":"house entrance",
 "brama garażu":"garage gate",
 "brama garażu w domu":"garage gate in the house",
-"wiata":"carport"};
+"wiata":"carport",
+"Góra planu działki to":"Top of the plot plan is",
+"⟳ Obróć dom":"⟳ Rotate house",
+"⟳ Obróć garaż":"⟳ Rotate garage",
+"Obrót domu: ":"House rotation: ",
+"⚠ Dom obrócony względem projektu":"⚠ House rotated against the design",
+"Obróć dom na działce z powrotem albo zmień strony świata w module Obrys domu (wtedy przeliczą się analizy).":"Rotate the house back on the plot or change the compass directions in the House outline module (the analyses will then be recalculated)."};

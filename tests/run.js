@@ -179,6 +179,10 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  const Rd=SI.evaluate(sj);ok(Rd.garage&&!Rd.issues.some(i=>i.type==='garage'),'działka: garaż wolnostojący domyślnie obok domu, bez kolizji');
  ok(W.HouserCost.compute(sj).rows.some(r=>r.id==='garage'&&r.value>0)&&!W.HouserCost.compute(ld('stodola-jasna.json')).rows.some(r=>r.id==='garage'),'Wycena: garaż wolnostojący tylko gdy wybrany');
  const ss=ld('zefir-2.json');ss.site={w:14,d:20};const Rs=SI.evaluate(ss);ok(Rs.issues.some(i=>i.type==='setback'||i.type==='house'),'działka: za wąska działka – uwaga o odległości od granicy');
+ for(const rot of [90,180,270]){const pr=ld('dom-parterowy.json');pr.site={rot};const Rr=SI.evaluate(pr),R2=SI.evaluate({...pr,site:{...Rr.set,cells:SI.autoPaths(pr)}});
+   ok(!Rr.orient.ok&&Rr.issues.some(i=>i.type==='orient')&&R2.links.every(l=>l.ok)&&Rr.setbacks.every(b=>b.d>=b.need-1e-6),'działka: dom obrócony o '+rot+'° – uwaga o stronach świata, podjazd i odległości liczone po obrocie')}
+ {const pr=ld('dom-parterowy.json');pr.site={rot:90,top:'west'};ok(SI.evaluate(pr).orient.ok,'działka: obrót domu zgodny ze stronami świata działki – bez uwagi')}
+ {const pr=ld('stodola-jasna.json');pr.garage={type:'detached',cars:2,rot:90};const Rg=SI.evaluate(pr);ok(Rg.garage.gate==='left'&&Rg.garage.w===Rg.garage.len*0+6.2,'działka: obrócony garaż – brama z boku, wymiary zamienione')}
  const ws={...ss,site:{...SI.evaluate(ld('zefir-2.json')).set}},cr=W.HouserCost.compute(ws).rows.find(r=>r.id==='site');ok(cr&&!cr.on&&cr.qty===1,'Wycena: zagospodarowanie działki – pozycja do włączenia');}
 
 // ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować

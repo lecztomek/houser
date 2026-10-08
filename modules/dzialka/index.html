@@ -73,7 +73,9 @@ tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
       <div class="field"><label>Zabudowa maks. (%)</label><input id="coverMax" type="number" min="5" max="100" step="5"></div>
     </div>
     <p class="hint">Wymagania z miejscowego planu albo warunków zabudowy (zwykle 40–70% biologicznie czynnej, 20–30% zabudowy).</p>
-    <div class="btns"><button class="hs-btn" id="center">Dom na środek</button></div>
+    <div class="field" style="margin-top:9px"><label>Góra planu działki to</label><select id="top"><option value="north">północ</option><option value="east">wschód</option><option value="south">południe</option><option value="west">zachód</option></select></div>
+    <div class="btns"><button class="hs-btn" id="center">Dom na środek</button><button class="hs-btn" id="rotH" title="Obróć dom na działce o 90° w prawo">⟳ Obróć dom</button></div>
+    <p class="hint" id="rotInfo" style="margin-top:6px"></p>
   </div>
   <div class="section">
     <h3>Garaż</h3>
@@ -82,6 +84,7 @@ tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
       <div class="field"><label>Auta</label><select id="gcars"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
     </div>
     <p class="hint" id="ginfo"></p>
+    <div class="btns"><button class="hs-btn" id="rotG" title="Obróć garaż o 90° – brama na inny bok">⟳ Obróć garaż</button></div>
   </div>
   <div class="section">
     <h3>Rysowanie</h3>
@@ -121,6 +124,10 @@ for(const id of ['w','d','pbcMin','coverMax'])$(id).onchange=()=>{const v=+$(id)
 $('road').onchange=()=>{const r=$('road').value,ax=v=>v==='left'||v==='right',turn=ax(r)!==ax(R.set.road);saveSite(turn?{road:r,hx:null,hy:null,w:R.set.d,d:R.set.w,cells:{},trees:[]}:{road:r,hx:null,hy:null})};
 $('fence').onchange=()=>saveSite({fence:$('fence').value});
 $('center').onclick=()=>saveSite({hx:null,hy:null});
+$('top').onchange=()=>saveSite({top:$('top').value});
+// obrót domu o 90° wokół środka obrysu (bez tarasów nie trzeba – siatka obraca się cała)
+$('rotH').onclick=()=>{const h=R.house,c=h.c,cx=R.set.hx+h.W2*c/2,cy=R.set.hy+h.H2*c/2,r=(h.rot+90)%360,W2=r%180?h.H:h.W,H2=r%180?h.W:h.H,r05=v=>Math.round(v/C)*C;saveSite({rot:r,hx:r05(cx-W2*c/2),hy:r05(cy-H2*c/2)})};
+$('rotG').onclick=()=>{const g=R.garage;if(!g)return;const cx=g.x+g.w/2,cy=g.y+g.d/2,r05=v=>Math.round(v/C)*C;saveGarage({rot:((g.rot||0)+90)%360,x:r05(cx-g.d/2),y:r05(cy-g.w/2)})};
 $('gtype').onchange=()=>saveGarage({type:$('gtype').value,x:null,y:null});$('gcars').onchange=()=>saveGarage({cars:+$('gcars').value,w:null,d:null});
 $('auto').onclick=()=>{const cells=HouserSite.autoPaths(project,{fresh:true});saveSite({cells})};
 $('clear').onclick=()=>{if(Object.keys(R.set.cells).length&&!confirm('Usunąć wszystkie nawierzchnie (zostanie trawa)?'))return;saveSite({cells:{}})};
@@ -152,7 +159,10 @@ function planSVG(){const s=R.set,P=R.plot,h=R.house,M=1.5,RB=4,road=s.road;
   const sg=el('g',{id:'surf','pointer-events':'none'},svg);
   for(let j=0;j<P.NJ;j++){let i=0;while(i<P.NI){const t=s.cells[i+','+j];if(!SURF[t]){i++;continue}let e=i+1;while(e<P.NI&&s.cells[e+','+j]===t)e++;el('rect',{x:m(i*C),y:m(j*C),width:m((e-i)*C)+.4,height:m(C)+.4,fill:SURF[t].color},sg);i=e}}
   // dom + tarasy (przesuwane razem)
-  const hg=el('g',{id:'gHouse',style:'cursor:'+(tool==='move'?'move':'inherit')},svg),G=groundRooms(),c=h.c,hx=s.hx,hy=s.hy,X=x=>m(hx+x*c),Y=y=>m(hy+y*c);
+  // dom rysowany w układzie swojej siatki, ustawiony na działce przesunięciem i obrotem (co 90°)
+  const G=groundRooms(),c=h.c,hx=s.hx,hy=s.hy,X=x=>m(x*c),Y=y=>m(y*c),Wm=m(G.W*c),Hm=m(G.H*c),rot=h.rot||0;
+  const MAT={0:'matrix(1,0,0,1,0,0)',90:'matrix(0,1,-1,0,'+Hm+',0)',180:'matrix(-1,0,0,-1,'+Wm+','+Hm+')',270:'matrix(0,-1,1,0,0,'+Wm+')'}[rot];
+  const hg=el('g',{transform:'translate('+m(hx)+' '+m(hy)+') '+MAT},el('g',{id:'gHouse',style:'cursor:'+(tool==='move'?'move':'inherit')},svg));
   const isH=(x,y)=>{const v=G.at(x,y);return !!v&&G.rooms[v]?.kind!=='exteriorVoid'};
   for(const it of project.outdoorStructures||[])for(const [cx,cy] of HouserModel.outdoorCells(it,c))el('rect',{x:X(cx),y:Y(cy),width:m(c)+.4,height:m(c)+.4,fill:it.type==='pergola'?'#e9d5a8':it.type==='coveredTerrace'?'#c8a46e':'#d9bf8f'},hg);
   for(let y=0;y<G.H;y++)for(let x=0;x<G.W;x++){if(!isH(x,y))continue;el('rect',{x:X(x),y:Y(y),width:m(c)+.4,height:m(c)+.4,fill:G.rooms[G.at(x,y)]?.color||'#cbd5e1','fill-opacity':.55},hg)}
@@ -160,12 +170,12 @@ function planSVG(){const s=R.set,P=R.plot,h=R.house,M=1.5,RB=4,road=s.road;
   const edge=(key,a,b,xa,ya,xb,yb)=>{if(a===b)return;el('line',{x1:X(xa),y1:Y(ya),x2:X(xb),y2:Y(yb),stroke:'#0f172a','stroke-width':5,'stroke-linecap':'square'},hg);const op=ops[key];if(op&&OPC[op])el('line',{x1:X(xa),y1:Y(ya),x2:X(xb),y2:Y(yb),stroke:op==='door'&&R.entKeys?.has(key)?'#f59e0b':OPC[op],'stroke-width':2.5},hg)};
   for(let y=0;y<=G.H;y++)for(let x=0;x<G.W;x++)edge('h:'+x+':'+y,isH(x,y-1),isH(x,y),x,y,x+1,y);
   for(let y=0;y<G.H;y++)for(let x=0;x<=G.W;x++)edge('v:'+x+':'+y,isH(x-1,y),isH(x,y),x,y,x,y+1);
-  const b=h.box;el('text',{x:X((b.minX+b.maxX)/2),y:Y((b.minY+b.maxY)/2),'text-anchor':'middle','dominant-baseline':'middle','font-size':18,'font-weight':800,fill:'rgba(15,23,42,.45)','pointer-events':'none'},hg,'DOM');
+  const b=h.box;el('text',{x:m(hx+(b.minX+b.maxX)/2*c),y:m(hy+(b.minY+b.maxY)/2*c),'text-anchor':'middle','dominant-baseline':'middle','font-size':18,'font-weight':800,fill:'rgba(15,23,42,.45)','pointer-events':'none'},hg.parentNode,'DOM');
   // garaż wolnostojący / wiata
   if(R.garage){const g=R.garage,gg=el('g',{id:'gGar',style:'cursor:'+(tool==='move'?'move':'inherit')},svg);
     el('rect',{x:m(g.x),y:m(g.y),width:m(g.w),height:m(g.d),fill:g.type==='carport'?'rgba(148,163,184,.45)':'#94a3b8',stroke:'#334155','stroke-width':g.type==='carport'?2:4,'stroke-dasharray':g.type==='carport'?'8 5':''},gg);
     if(g.type==='carport')for(const [px,py] of [[g.x,g.y],[g.x+g.w,g.y],[g.x,g.y+g.d],[g.x+g.w,g.y+g.d]])el('rect',{x:m(px)-4,y:m(py)-4,width:8,height:8,fill:'#334155'},gg);
-    const gw=Math.min(g.w,g.d)*.75,fr=road==='bottom'?[g.x+(g.w-gw)/2,g.y+g.d,g.x+(g.w+gw)/2,g.y+g.d]:road==='top'?[g.x+(g.w-gw)/2,g.y,g.x+(g.w+gw)/2,g.y]:road==='left'?[g.x,g.y+(g.d-gw)/2,g.x,g.y+(g.d+gw)/2]:[g.x+g.w,g.y+(g.d-gw)/2,g.x+g.w,g.y+(g.d+gw)/2];
+    const gw=Math.min(g.w,g.d)*.75,gs=g.gate||road,fr=gs==='bottom'?[g.x+(g.w-gw)/2,g.y+g.d,g.x+(g.w+gw)/2,g.y+g.d]:gs==='top'?[g.x+(g.w-gw)/2,g.y,g.x+(g.w+gw)/2,g.y]:gs==='left'?[g.x,g.y+(g.d-gw)/2,g.x,g.y+(g.d+gw)/2]:[g.x+g.w,g.y+(g.d-gw)/2,g.x+g.w,g.y+(g.d+gw)/2];
     if(g.type==='detached')el('line',{x1:m(fr[0]),y1:m(fr[1]),x2:m(fr[2]),y2:m(fr[3]),stroke:'#f8fafc','stroke-width':4},gg);
     el('text',{x:m(g.x+g.w/2),y:m(g.y+g.d/2),'text-anchor':'middle','dominant-baseline':'middle','font-size':14,'font-weight':800,fill:'#0f172a','pointer-events':'none'},gg,g.type==='carport'?'WIATA':'GARAŻ')}
   // drzewa
@@ -186,7 +196,7 @@ function planSVG(){const s=R.set,P=R.plot,h=R.house,M=1.5,RB=4,road=s.road;
   // wymiary działki i kierunki świata
   el('text',{x:m(s.w/2),y:m(road==='top'?s.d+.9:-.6),'text-anchor':'middle','font-size':13,'font-weight':700,fill:'#334155'},svg,fmt(s.w)+' m');
   el('text',{x:m(road==='left'?s.w+.9:-.6),y:m(s.d/2),'text-anchor':'middle','font-size':13,'font-weight':700,fill:'#334155',transform:'rotate(-90 '+m(road==='left'?s.w+.9:-.6)+' '+m(s.d/2)+')'},svg,fmt(s.d)+' m');
-  const top=project.orientation?.top||'north',ORD=['north','east','south','west'],oi=ORD.indexOf(top),ang=-(oi<0?0:oi)*90;
+  const top=s.top||'north',ORD=['north','east','south','west'],oi=ORD.indexOf(top),ang=-(oi<0?0:oi)*90;
   const cg=el('g',{transform:'translate('+m(x1-1.2)+' '+m(y0+1.2)+') rotate('+ang+')','pointer-events':'none'},svg);el('circle',{r:16,fill:'#fff',stroke:'#cbd5e1'},cg);el('path',{d:'M0 -12 L5 4 L0 1 L-5 4Z',fill:'#dc2626'},cg);el('text',{y:-1,x:0,'text-anchor':'middle','font-size':9,'font-weight':800,fill:'#0f172a',transform:'translate(0 13)'},cg,'N');
   return svg}
 // ---------- interakcja
@@ -198,7 +208,7 @@ function paintAt(p){const s=R.set,P=R.plot,n=+$('brush').value||1,i0=Math.floor(
 function repaint(){if(!drag?.dirty)return;drag.dirty=false;$('plan').replaceWith(planSVG())}
 document.addEventListener('pointerdown',e=>{const svg=$('plan');if(!project||!R||!svg||!svg.contains(e.target))return;e.preventDefault();const p=pt(e),s=R.set;
   if(tool==='move'){const g=R.garage;if(g&&p.x>=g.x&&p.x<=g.x+g.w&&p.y>=g.y&&p.y<=g.y+g.d){drag={what:'garage',p,ox:g.x,oy:g.y};return}
-    const c=R.house.c,hx=Math.floor((p.x-s.hx)/c),hy=Math.floor((p.y-s.hy)/c),F=HouserSite.footprint(project);if(F.house.has(hx+','+hy)||F.out.has(hx+','+hy)){drag={what:'house',p,ox:s.hx,oy:s.hy};svg.style.cursor='grabbing'}return}
+    const o=R.occ.get(Math.floor(p.x/C)+','+Math.floor(p.y/C));if(o==='house'||o?.startsWith('out:')){drag={what:'house',p,ox:s.hx,oy:s.hy};svg.style.cursor='grabbing'}return}
   if(TREES[tool]){const T=TREES[tool],near=s.trees.findIndex(t=>Math.hypot(t.x-p.x,t.y-p.y)<Math.max(.6,(TREES[t.k]||TREES.tree).r*.7));
     const trees=[...s.trees];if(near>=0)trees.splice(near,1);else if(p.x>=0&&p.y>=0&&p.x<=s.w&&p.y<=s.d)trees.push({x:Math.round(p.x*4)/4,y:Math.round(p.y*4)/4,k:tool});else return;saveSite({trees});return}
   drag={what:'paint',changed:false,last:p};s.cells={...s.cells};paintAt(p);repaint()});
@@ -217,12 +227,16 @@ function render(){const M=$('main');renderTools();
   if(!project){M.innerHTML='<div class="empty">Brak projektu. Najpierw narysuj dom w module <b>Obrys domu</b> i <b>Układ pomieszczeń</b>.</div>';return}
   try{R=HouserSite.evaluate(project)}catch(e){console.error(e);M.innerHTML='<div class="empty">Nie udało się policzyć działki.</div>';return}
   const s=R.set,G=R.garageEval;
+  $('top').value=s.top;$('rotG').disabled=!R.garage;
+  const PLS={north:'północ',east:'wschód',south:'południe',west:'zachód'},O=R.orient;
+  $('rotInfo').innerHTML='Obrót domu: '+s.rot+'° · góra rzutu domu wypada na '+PLS[O.actual]+(O.ok?' – tak jak w projekcie.':' – <b style="color:#b91c1c">⚠ w projekcie: '+PLS[O.designed]+'</b>');
   $('w').value=s.w;$('d').value=s.d;$('road').value=s.road;$('fence').value=s.fence;$('pbcMin').value=s.pbcMin;$('coverMax').value=s.coverMax;
   $('gtype').value=project.garage?.type||'auto';$('gcars').value=HouserGarage.settings(project).cars;$('gcars').disabled=!(G&&(G.type==='detached'||G.type==='carport'));
   $('ginfo').textContent=G?(G.type==='house'?'Garaż w bryle domu'+(G.inHouse?' – '+fmt(G.area)+' m², '+G.cars+' '+(G.cars===1?'auto':'auta'):'')+'. Podjazd prowadzi do jego bramy.':G.type==='none'?'Bez garażu – auta na miejscach postojowych (pomaluj je).':G.name+' '+fmt(G.w)+' × '+fmt(G.d)+' m – przeciągnij go na planie. Wymiary i dach – w module Garaż.'):'';
   R.entKeys=new Set(HouserSite.entrances(HouserQuantities.compute(project)).flatMap(r=>r.keys));
   const pc=v=>v>=8?'c-ok':v>=6?'c-mid':'c-bad',L=R.links;
   let h='<div class="tiles">'+
+    (R.orient.ok?'':'<div class="tile" style="border-color:#fca5a5;background:#fef2f2"><div class="l" style="color:#b91c1c">⚠ Dom obrócony względem projektu</div><div class="v c-bad" style="font-size:19px">'+PLS[R.orient.actual]+' zamiast '+PLS[R.orient.designed]+'</div><div class="s">góra rzutu domu. Nasłonecznienie i energia liczą się dla projektu – obróć dom z powrotem albo zmień strony świata w Obrysie.</div></div>')+
     '<div class="tile"><div class="l">Ocena działki</div><div class="v '+pc(R.score)+'">'+fmt(R.score)+'<small> / 10</small></div><div class="s">'+R.issues.length+' uwag · działka '+fmt(R.plot.area,0)+' m²</div></div>'+
     '<div class="tile"><div class="l">Biologicznie czynna</div><div class="v '+(R.pbc>=s.pbcMin?'c-ok':'c-bad')+'">'+fmt(R.pbc,0)+'<small> %</small></div><div class="s">trawa i rabaty '+fmt(R.area.grass+R.area.bed,0)+' m² · wymóg '+s.pbcMin+'%</div></div>'+
     '<div class="tile"><div class="l">Zabudowa</div><div class="v '+(R.cover<=s.coverMax?'c-ok':'c-bad')+'">'+fmt(R.cover,0)+'<small> %</small></div><div class="s">dom'+(R.garage?' + garaż':'')+' '+fmt(R.built,0)+' m² · maks. '+s.coverMax+'%</div></div>'+
