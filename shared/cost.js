@@ -15,6 +15,7 @@ const ITEMS=[
   ['glasswalls','Elewacja i wykończenie','Ścianki szklane (aluminium + szkło hartowane, z montażem)','m²',q=>q.glassA||0,1300,1,'długość × wysokość kondygnacji'],
   ['slab','Stan surowy otwarty','Strop nad parterem','m²',q=>q.slab,430,0,'powierzchnia piętra bez otworów w stropie'],
   ['structExtra','Stan surowy otwarty','Wzmocnienia konstrukcji (podciągi, nadproża, wsporniki)','kpl',()=>0,0,0,'moduł Konstrukcja'],
+  ['roofExtra','Stan surowy otwarty','Konstrukcja dachu – dopłaty (płatwie, słupy, belka kalenicowa, usztywnienia przy pustce)','kpl',()=>0,0,0,'moduł Konstrukcja dachu'],
   ['stairs','Stan surowy otwarty','Schody','szt',q=>q.stairs.length,null,0,q=>q.stairs.map(t=>STAIR_PL[t]||t).join(', ')||'brak'],
   ['chimney','Stan surowy otwarty','Komin','szt',q=>q.chimneys,9000,0,'z rzutu'],
   ['roof','Stan surowy otwarty','Dach: więźba, membrana, łaty, pokrycie','m²',q=>q.roofA,480,0,'połacie z okapami'],
@@ -51,7 +52,7 @@ const ITEMS=[
 const STD={eco:.85,std:1,high:1.35};
 // udział materiałów w cenie jednostkowej (reszta = robocizna / usługa)
 const MAT={blinds:.7,found:.6,groundslab:.6,utilities:.7,extwalls:.55,partwalls:.5,slab:.6,stairs:.65,chimney:.6,roof:.6,gutters:.55,soffit:.5,windows:.85,roofwin:.8,hst:.88,extdoor:.85,
-  elec:.45,plumb:.45,structExtra:.55,heatsrc:.8,floorheat:.55,vent:.65,facade:.45,plaster:.35,screed:.5,floors:.6,paint:.3,intdoor:.75,baths:.6,wc:.6,kitchen:.85,terrace:.6,covterrace:.6,pergola:.6,design:0,manager:0};
+  elec:.45,plumb:.45,structExtra:.55,roofExtra:.55,heatsrc:.8,floorheat:.55,vent:.65,facade:.45,plaster:.35,screed:.5,floors:.6,paint:.3,intdoor:.75,baths:.6,wc:.6,kitchen:.85,terrace:.6,covterrace:.6,pergola:.6,design:0,manager:0};
 function cs(){const s=project.costSettings||{};return {std:STD[s.std]?s.std:'std',factor:Number.isFinite(+s.factor)&&+s.factor>0?+s.factor:1,prices:s.prices||{},mat:s.mat||{},lab:s.lab||{},off:s.off||{},on:s.on||{},reserve:Number.isFinite(+s.reserve)?+s.reserve:10}}
 // koszty z modułów (gdy ich obliczenia są załadowane na stronie): wentylacja wybrana w module Wentylacja, instalacja
 // grzewcza z modułu Instalacja grzewcza, wod-kan z Hydrauliki, klimatyzacja. Bez nich – stawki za m² jak wyżej.
@@ -65,6 +66,7 @@ function fromModules(){const D={};const T=f=>{try{return f()}catch(e){console.wa
   // instalacja elektryczna: punkty, obwody, rozdzielnica (moduł Elektryka i oświetlenie)
   if(global.HouserElectric){const L=T(()=>HouserElectric.evaluate(project));if(L&&L.cost.total>0)D.elec={name:'Instalacja elektryczna ('+L.points+' gniazd i łączników, '+L.lights+' punktów światła, '+L.circuits+' obwodów)',total:L.cost.total,how:'z modułu Elektryka i oświetlenie – bez opraw oświetleniowych'}}
   // konstrukcja: podciągi, belki nad szerokimi otworami, wsporniki, słupy (moduł Konstrukcja)
+  if(global.HouserRoof){const Rf=T(()=>HouserRoof.evaluate(project));if(Rf&&Rf.ok&&Rf.cost.total>0)D.roofExtra={name:'Konstrukcja dachu – dopłaty ('+Rf.cost.items.length+')',total:Rf.cost.total,how:'z modułu Konstrukcja dachu – '+Rf.cost.items.slice(0,3).map(x=>x.name.toLowerCase()).join(', ')+(Rf.cost.items.length>3?'…':'')}}
   if(global.HouserStructure){const K=T(()=>HouserStructure.evaluate(project));if(K&&K.cost.total>0)D.structExtra={name:'Wzmocnienia konstrukcji ('+K.cost.items.length+')',total:K.cost.total,how:'z modułu Konstrukcja – '+K.cost.items.slice(0,3).map(x=>x.name.toLowerCase()).join(', ')+(K.cost.items.length>3?'…':'')}}
   return D}
 function compute(){

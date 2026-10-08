@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Konstrukcja dachu</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}.mapmode{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:4px 0 10px}.mapmode .hint{flex-basis:100%;margin:0}
+.field{display:grid;gap:4px;margin-bottom:9px}.field label{font-size:12px;color:var(--hs-muted)}
+.field select{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+.tools{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}.tools .hs-btn.on{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+.el{display:flex;gap:6px;align-items:center;font-size:12.5px;border-top:1px solid #eef2f6;padding:6px 0}.el b{flex:1}.el.bad b{color:#b91c1c}.el select{font-size:12px;padding:2px 4px}
+.vars{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:8px}.var{border:1px solid var(--hs-line);border-radius:10px;padding:10px 12px}.var h4{margin:0 0 4px;font-size:13.5px}.var .d{font-size:12px;color:var(--hs-muted);margin-bottom:6px}.var .k{font-size:12.5px;margin-bottom:8px}
+svg.edit{cursor:crosshair;touch-action:none}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:330px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
+h1{font-size:19px;margin:0 0 4px}
+.lead,.hint{font-size:12.5px;color:var(--hs-muted);line-height:1.5;margin:0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.tile .l{font-size:12px;color:var(--hs-muted);font-weight:600}
+.tile .v{font-size:28px;font-weight:800;letter-spacing:-.02em;margin-top:4px}
+.tile .v small{font-size:14px;color:var(--hs-muted);font-weight:600}
+.tile .s{font-size:12.5px;color:var(--hs-muted);margin-top:4px;line-height:1.4}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.card h2{font-size:15px;margin:0 0 3px}
+.plans{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;margin-top:8px}
+.plan{flex:1 1 320px;min-width:0}
+.plan h4{margin:6px 0;font-size:12px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.06em}
+.plan svg{width:100%;height:auto;display:block;max-height:480px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#475569;margin-top:8px;align-items:center}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:5px}
+.iss{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:7px}
+.iss li{font-size:12.5px;line-height:1.45;border-top:1px solid #eef2f6;padding-top:7px}
+.iss .pen{float:right;font-weight:700;color:#b91c1c;font-size:12px;margin-left:8px}
+.iss .tip{display:block;color:#475569;margin-top:2px}
+.iss .tip:before{content:'→ ';color:#2563eb;font-weight:700}
+.good{font-size:12.5px;color:#15803d;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #eef2f6;vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+th{font-size:11.5px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.04em}
+tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
+.c-ok{color:#15803d}.c-mid{color:#b45309}.c-bad{color:#b91c1c}
+.pill{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.pill.ok{background:#dcfce7;color:#166534}.pill.mid{background:#fef3c7;color:#92400e}.pill.bad{background:#fee2e2;color:#991b1b}
+.empty{padding:40px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){html,body{overflow:auto;height:auto}.wrap{height:auto;grid-template-rows:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{overflow:visible}}
+.roofsec svg{width:100%;height:auto;display:block;max-height:340px}
+.pl{cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1>Konstrukcja dachu</h1>
+  <p class="lead">Jak zbudować więźbę i na czym się oprze: krokwie, jętki, płatwie, belka kalenicowa, słupy – i czy pod każdym słupem jest ściana, strop czy pustka. Sprawdza też ściany i brzegi stropu przy pustce nad parterem. Orientacyjnie – do porównania wariantów, nie zamiast konstruktora.</p>
+  <div class="section">
+    <h3>Układ więźby</h3>
+    <div class="field"><select id="system"></select></div>
+    <p class="hint" id="sysHint"></p>
+  </div>
+  <div class="section">
+    <h3>Rozstaw</h3>
+    <div class="field"><label>Krokwie co</label><select id="spacing"><option value="0.8">0,8 m</option><option value="0.9">0,9 m</option><option value="1">1,0 m</option></select></div>
+    <div class="field" id="postF"><label>Słupy (płatwie / belka kalenicowa) co</label><select id="postSpan"><option value="auto">automatycznie</option><option value="3">3 m</option><option value="3.5">3,5 m</option><option value="4">4 m</option><option value="5">5 m</option><option value="6">6 m</option><option value="7">7 m</option></select></div>
+    <p class="hint" id="postHint"></p>
+    <button class="hs-btn" id="postReset" hidden>Rozstaw słupy automatycznie</button>
+  </div>
+  <div class="section">
+    <h3>Jak liczymy</h3>
+    <p class="hint">Ciężar pokrycia i strefa śniegowa – z modułu Konstrukcja. Obciążenie obliczeniowe: stałe × 1,35 + śnieg × 1,5 (na m² rzutu dachu). Krokwie i płatwie z drewna C24, belka kalenicowa z drewna klejonego; wysokość przekroju z nośności na zginanie i ugięcia (krokwie l/20, belki l/17–20).</p>
+    <p class="hint" style="margin-top:8px">Słup nad pustką albo otworem schodów nie ma stropu, na którym mógłby stanąć – musi zejść na parter. Ściany przy pustce nie są usztywnione stropem na wysokości piętra: powyżej ok. 4 m potrzebny rygiel / słupki, szczyt – wieniec skośny.</p>
+    <p class="hint" style="margin-top:8px">Koszty: dopłaty do zwykłej więźby (płatwie, słupy, belka kalenicowa, usztywnienia przy pustce) – w Wycenie jako „Konstrukcja dachu – dopłaty”.</p>
+  </div>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/balconies.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="../konstrukcja/engine.js"></script>
+<script src="engine.js"></script>
+<script>
+const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d}),zl=v=>(Math.round(v/100)*100).toLocaleString('pl-PL')+' zł';
+let project=null,R=null;
+const RS=()=>HouserRoof.settings(project);
+function save(patch){project.roofSettings={...(project.roofSettings||{}),...patch};HouserStore.update(p=>{p.roofSettings={...(p.roofSettings||{}),...patch}},'konstrukcja-dachu');render()}
+$('system').onchange=()=>save({system:$('system').value});$('spacing').onchange=()=>save({spacing:+$('spacing').value});$('postSpan').onchange=()=>save({postSpan:$('postSpan').value==='auto'?'auto':+$('postSpan').value,posts:null});
+$('postReset').onclick=()=>save({posts:null});
+const ST={ok:['#16a34a','na ścianie / podciągu'],slab:['#d97706','na stropie bez podparcia'],void:['#dc2626','nad pustką – na całą wysokość'],ceiling:['#64748b','na stropie (bez poddasza)']};
+// ---------- przekrój dachu (widok od szczytu), przez pustkę, jeśli jest
+function sectionSVG(){const g=R.geom,sc=34,pad=26,hg=g.hLo,sl=.25,base=hg+sl,top=base+g.knee+g.rise;const X=a=>pad+(a+g.eo)*sc,Y=z=>pad+(top-z)*sc,Wd=(g.S+2*g.eo)*sc+2*pad,Hd=(top+.2)*sc+2*pad;
+  // pustka w przekroju: zakres w poprzek na linii przez środek pustki
+  let vr=null;if(g.hasVoid){const cells=[];for(let i=0;i<g.W*g.H;i++){const x=i%g.W,y=i/g.W|0;const st=project.state?.upper;const v=(Array.isArray(st?.[0])?st.flat():st||[])[i];if(v==='pustka')cells.push([x,y])}
+    if(cells.length){const al=cells.map(([x,y])=>g.across?y:x),mid=al.sort((a,b)=>a-b)[al.length>>1],row=cells.filter(([x,y])=>(g.across?y:x)===mid).map(([x,y])=>g.across?x:y);vr=[Math.min(...row)*g.c,(Math.max(...row)+1)*g.c]}}
+  let h='<rect x="0" y="0" width="'+Wd+'" height="'+Hd+'" fill="#f8fafc"/>';
+  // parter: ściany i podłoga
+  h+='<rect x="'+X(0)+'" y="'+Y(hg)+'" width="'+(.35*sc)+'" height="'+hg*sc+'" fill="#cbd5e1"/><rect x="'+(X(g.S)-.35*sc)+'" y="'+Y(hg)+'" width="'+(.35*sc)+'" height="'+hg*sc+'" fill="#cbd5e1"/>';
+  h+='<line x1="'+X(0)+'" y1="'+Y(0)+'" x2="'+X(g.S)+'" y2="'+Y(0)+'" stroke="#475569" stroke-width="3"/>';
+  // strop nad parterem (z przerwą na pustkę)
+  if(g.hasUp){const segs=vr?[[0,vr[0]],[vr[1],g.S]]:[[0,g.S]];for(const [a,b] of segs)if(b-a>.01)h+='<rect x="'+X(a)+'" y="'+Y(base)+'" width="'+(b-a)*sc+'" height="'+sl*sc+'" fill="#94a3b8"/>';
+    if(vr)h+='<text x="'+X((vr[0]+vr[1])/2)+'" y="'+(Y(base)+14)+'" text-anchor="middle" font-size="11" fill="#2563eb" font-weight="700">pustka</text>';
+    // ścianka kolankowa
+    if(g.knee>0){h+='<rect x="'+X(0)+'" y="'+Y(base+g.knee)+'" width="'+(.35*sc)+'" height="'+g.knee*sc+'" fill="#cbd5e1"/><rect x="'+(X(g.S)-.35*sc)+'" y="'+Y(base+g.knee)+'" width="'+(.35*sc)+'" height="'+g.knee*sc+'" fill="#cbd5e1"/>'}}
+  const eaveZ=base+g.knee,ridgeZ=eaveZ+g.rise,zE=eaveZ-g.eo*Math.tan(g.pitch*Math.PI/180);
+  // krokwie
+  h+='<polyline points="'+X(-g.eo)+','+Y(zE)+' '+X(g.half)+','+Y(ridgeZ)+' '+X(g.S+g.eo)+','+Y(zE)+'" fill="none" stroke="#92400e" stroke-width="7" stroke-linejoin="round"/>';
+  const sys=R.system,col='#b45309';
+  if(sys==='collar'){const z=base+g.zc;h+='<line x1="'+X(g.xp)+'" y1="'+Y(z)+'" x2="'+X(g.S-g.xp)+'" y2="'+Y(z)+'" stroke="'+col+'" stroke-width="5"/><text x="'+X(g.half)+'" y="'+(Y(z)-6)+'" text-anchor="middle" font-size="11" fill="#78350f">jętka ~'+fmt(g.zc,2)+' m</text>'}
+  if(sys==='truss'){for(const t of [.25,.5,.75]){const a=g.S*t,z=eaveZ+Math.min(a,g.S-a)*Math.tan(g.pitch*Math.PI/180);h+='<line x1="'+X(a)+'" y1="'+Y(eaveZ)+'" x2="'+X(a)+'" y2="'+Y(z)+'" stroke="'+col+'" stroke-width="2.5"/>'}h+='<line x1="'+X(0)+'" y1="'+Y(eaveZ)+'" x2="'+X(g.S)+'" y2="'+Y(eaveZ)+'" stroke="'+col+'" stroke-width="4"/>'}
+  for(const ln of R.lines){const z=base+ln.z,overVoid=vr&&ln.a>vr[0]&&ln.a<vr[1],z0=overVoid?0:base;
+    h+='<line x1="'+X(ln.a)+'" y1="'+Y(z0)+'" x2="'+X(ln.a)+'" y2="'+Y(z)+'" stroke="'+(overVoid?'#dc2626':'#78350f')+'" stroke-width="5"'+(overVoid?' stroke-dasharray="7 4"':'')+'/>';
+    h+='<rect x="'+(X(ln.a)-8)+'" y="'+(Y(z)-8)+'" width="16" height="16" fill="'+col+'" stroke="#78350f" stroke-width="2"/>';
+    if(sys==='purlin'&&ln.id==='L')h+='<line x1="'+X(g.xp)+'" y1="'+Y(z)+'" x2="'+X(g.S-g.xp)+'" y2="'+Y(z)+'" stroke="'+col+'" stroke-width="2.5" stroke-dasharray="5 4"/>';
+    h+='<text x="'+(X(ln.a)+12)+'" y="'+(Y(z)+4)+'" font-size="11" fill="#78350f">'+esc(ln.name)+(overVoid?' – słup na całą wysokość':'')+'</text>'}
+  // wymiary
+  h+='<text x="'+X(g.half)+'" y="'+(Y(0)+16)+'" text-anchor="middle" font-size="11" fill="#475569">rozpiętość '+fmt(g.S)+' m · kąt '+fmt(g.pitch,0)+'° · kalenica ok. '+fmt(ridgeZ)+' m nad terenem</text>';
+  return '<svg viewBox="0 0 '+Wd+' '+(Hd+8)+'">'+h+'</svg>'}
+// ---------- rzut poddasza: pustki, linie płatwi / belki, słupy (klik w linię = dodaj / usuń słup)
+function planSVG(){const g=R.geom,S=22,W=g.W,H=g.H,c=g.c,st=project.state?.upper,fl=Array.isArray(st?.[0])?st.flat():st||[],gr=project.state?.ground,fg=Array.isArray(gr?.[0])?gr.flat():gr||[];
+  const rooms=Object.fromEntries((project.definitionSnapshot?.floors?.upper?.rooms||[]).map(r=>[r.id,r]));
+  let h='<defs><pattern id="vh" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#dbeafe"/><line x1="0" y1="0" x2="0" y2="6" stroke="#60a5fa" stroke-width="2"/></pattern></defs>';
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const v=fl[y*W+x],gv=fg[y*W+x];if(!v&&!gv)continue;const fill=v==='pustka'?'url(#vh)':v==='schody'?'#cbd5e1':v&&rooms[v]?.kind!=='exteriorVoid'?'#f1f5f9':'#fff';
+    h+='<rect x="'+x*S+'" y="'+y*S+'" width="'+(S+.4)+'" height="'+(S+.4)+'" fill="'+fill+'"/>'}
+  // ściany nośne parteru (pod spodem) – cienkie przerywane
+  const K=HouserStructure.evaluate(project);for(let y=0;y<=H;y++)for(let x=0;x<W;x++)if(K.bearH(x,y))h+='<line x1="'+x*S+'" y1="'+y*S+'" x2="'+(x+1)*S+'" y2="'+y*S+'" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4 3"/>';
+  for(let x=0;x<=W;x++)for(let y=0;y<H;y++)if(K.bearV(x,y))h+='<line x1="'+x*S+'" y1="'+y*S+'" x2="'+x*S+'" y2="'+(y+1)*S+'" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4 3"/>';
+  // obrys i ściany piętra
+  const id=(x,y)=>x<0||y<0||x>=W||y>=H?null:fl[y*W+x]||null;
+  for(let y=0;y<=H;y++)for(let x=0;x<W;x++){const a=id(x,y-1),b=id(x,y);if(a!==b&&(a||b))h+='<line x1="'+x*S+'" y1="'+y*S+'" x2="'+(x+1)*S+'" y2="'+y*S+'" stroke="'+(!a||!b?'#1e293b':'#94a3b8')+'" stroke-width="'+(!a||!b?3:1.2)+'"/>'}
+  for(let x=0;x<=W;x++)for(let y=0;y<H;y++){const a=id(x-1,y),b=id(x,y);if(a!==b&&(a||b))h+='<line x1="'+x*S+'" y1="'+y*S+'" x2="'+x*S+'" y2="'+(y+1)*S+'" stroke="'+(!a||!b?'#1e293b':'#94a3b8')+'" stroke-width="'+(!a||!b?3:1.2)+'"/>'}
+  const P=(a,l)=>g.across?[a/c*S,l/c*S]:[l/c*S,a/c*S];
+  for(const ln of R.lines){const [x1,y1]=P(ln.a,g.L0),[x2,y2]=P(ln.a,g.L1);h+='<line class="pl" data-line="'+ln.id+'" x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#b45309" stroke-width="7" stroke-linecap="round" opacity=".85"><title>'+esc(ln.name)+' – kliknij, żeby dodać albo usunąć słup</title></line>'}
+  if(R.system==='collar'){for(const a of [g.xp,g.S-g.xp]){const [x1,y1]=P(a,g.L0),[x2,y2]=P(a,g.L1);h+='<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#b45309" stroke-width="2" stroke-dasharray="6 4"/>'}}
+  for(const p of R.posts){const [x,y]=P(p.a,p.l),cl=ST[p.status]||ST.ok;h+='<circle cx="'+x+'" cy="'+y+'" r="8" fill="'+cl[0]+'" stroke="#fff" stroke-width="2.5"><title>Słup: '+esc(p.text)+'</title></circle>'}
+  return '<svg id="rplan" viewBox="-4 -4 '+(W*S+8)+' '+(H*S+8)+'">'+h+'</svg>'}
+function render(){const M=$('main');
+  if(!project||!(project.grid||project.definitionSnapshot?.grid)){M.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej.</div>';return}
+  try{R=HouserRoof.evaluate(project)}catch(e){console.error(e);M.innerHTML='<div class="empty">Nie udało się policzyć.</div>';return}
+  if(!R.ok){M.innerHTML='<div class="empty">'+esc(R.why)+'</div>';return}
+  const s=RS(),g=R.geom;
+  $('system').innerHTML='<option value="auto">automatycznie – '+esc(HouserRoof.SYSTEMS[R.auto].name.toLowerCase())+'</option>'+Object.entries(R.systems).map(([k,v])=>'<option value="'+k+'">'+(v.ok?'':'✗ ')+esc(v.name)+'</option>').join('');$('system').value=s.system in R.systems?s.system:'auto';
+  $('sysHint').textContent=HouserRoof.SYSTEMS[R.system].desc+'. '+R.systems[R.system].why[0].toUpperCase()+R.systems[R.system].why.slice(1)+'.';
+  $('spacing').value=String(+s.spacing||.9);$('postSpan').value=String(s.postSpan);$('postF').hidden=!R.lines.length;$('postReset').hidden=!Array.isArray(s.posts);
+  $('postHint').textContent=R.lines.length?(Array.isArray(s.posts)?'Słupy ustawione ręcznie: ':'Słupy rozstawione automatycznie: ')+(R.postsAt.length?R.postsAt.map(v=>fmt(v-g.L0)+' m').join(', ')+' od szczytu':'brak (belka oparta tylko na szczytach)')+'. Kliknij linię na rzucie, żeby dodać / usunąć słup.':'';
+  const v=R.score>=8?'ok':R.score>=6?'mid':'bad';
+  let h='<div class="tiles"><div class="tile"><div class="l">Ocena konstrukcji dachu</div><div class="v c-'+v+'">'+fmt(R.score)+' <small>/ 10</small></div><div class="s">'+(R.issues.length?R.issues.length+' uwag':'bez uwag')+'</div></div>'+
+    '<div class="tile"><div class="l">Układ więźby</div><div class="v" style="font-size:18px">'+esc(HouserRoof.SYSTEMS[R.system].name)+'</div><div class="s">'+(s.system==='auto'?'dobrany automatycznie':'wybrany ręcznie')+'</div></div>'+
+    '<div class="tile"><div class="l">Krokiew</div><div class="v">'+fmt(g.L)+' <small>m</small></div><div class="s">rozpiętość '+fmt(g.S)+' m, kąt '+fmt(g.pitch,0)+'°, obciążenie ok. '+fmt(R.loads.qd,2)+' kN/m²</div></div>'+
+    '<div class="tile"><div class="l">Słupy</div><div class="v">'+R.posts.length+'</div><div class="s">'+(R.posts.length?Object.entries(ST).map(([k,c])=>{const n=R.posts.filter(p=>p.status===k).length;return n?'<span style="color:'+c[0]+'">●</span> '+n+' '+c[1]:''}).filter(Boolean).join(' · '):'bez słupów')+'</div></div>'+
+    '<div class="tile"><div class="l">Dopłaty</div><div class="v" style="font-size:22px">'+zl(R.cost.total)+'</div><div class="s">ponad zwykłą więźbę – w Wycenie</div></div></div>';
+  h+='<div class="card roofsec"><h2>Przekrój dachu</h2><p class="hint">Widok od szczytu'+(g.hasVoid?', przekrój przez pustkę':'')+'. Brązowe – drewno więźby; kwadraty – płatwie / belka kalenicowa; czerwony przerywany słup – schodzi na parter, bo nad pustką nie ma stropu.</p>'+sectionSVG()+'</div>';
+  h+='<div class="card"><h2>Rzut poddasza – na czym stoją słupy</h2><p class="hint">Niebieskie kreskowanie – pustka (brak stropu). Pomarańczowe przerywane – ściany nośne parteru pod spodem. Brązowe linie – płatwie / belka kalenicowa'+(R.system==='collar'?' (przerywane – jętki)':'')+'. Kliknij linię, żeby dodać albo usunąć słup.</p><div class="plans"><div class="plan">'+planSVG()+'</div></div>'+
+    '<div class="legend">'+Object.values(ST).map(c=>'<span><i style="background:'+c[0]+'"></i>'+c[1]+'</span>').join('')+'<span><i style="background:#dbeafe;border:1px solid #60a5fa"></i>pustka</span><span><i style="background:#f59e0b"></i>ściana nośna parteru</span></div></div>';
+  h+='<div class="card"><h2>Elementy więźby</h2><table><thead><tr><th>Element</th><th>Przekrój</th><th class="n">Długość</th><th class="n">Szt.</th><th>Uwagi</th></tr></thead><tbody>'+R.members.map(m=>'<tr><td>'+esc(m.name)+'</td><td><b>'+esc(m.sec)+'</b></td><td class="n">'+fmt(m.len)+' m</td><td class="n">'+m.n+'</td><td class="hint">'+esc(m.note)+'</td></tr>').join('')+'</tbody></table></div>';
+  if(g.hasVoid)h+='<div class="card"><h2>Pustka na piętrze</h2><p class="hint">Tam, gdzie jest pustka, nie ma stropu: ściany nie są nim usztywnione na wysokości piętra, a słupy nie mają na czym stanąć.</p><table><thead><tr><th>Miejsce</th><th class="n">Długość</th><th class="n">Wysokość bez stropu</th></tr></thead><tbody>'+
+    R.voidWalls.map(w=>'<tr><td>'+esc(w.name)+' przy pustce</td><td class="n">'+fmt(w.len)+' m</td><td class="n'+(w.h>HouserRoof.LIM.wallFree?' c-bad':'')+'">'+fmt(w.h)+' m</td></tr>').join('')+
+    (R.voidEdges[0]?'<tr><td>brzeg pustki (krawędź stropu) – nad ścianą / podciągiem</td><td class="n">'+fmt(R.voidEdges[0].sup)+' m</td><td></td></tr><tr><td>brzeg pustki – bez podparcia pod spodem</td><td class="n'+(R.voidEdges[0].uns>=1?' c-bad':'')+'">'+fmt(R.voidEdges[0].uns)+' m</td><td></td></tr>':'')+'</tbody></table></div>';
+  h+='<div class="card"><h2>Uwagi</h2>'+(R.issues.length?'<ul class="iss">'+[...R.issues].sort((a,b)=>b.p-a.p).map(i=>'<li><span class="pen">−'+fmt(i.p)+'</span>'+esc(i.text)+(i.tip?'<span class="tip">'+esc(i.tip)+'</span>':'')+'</li>').join('')+'</ul>':'<p class="hint">Bez uwag.</p>')+R.good.map(t=>'<div class="good">✓ '+esc(t)+'</div>').join('')+'</div>';
+  if(R.cost.items.length)h+='<div class="card"><h2>Dopłaty do więźby</h2><p class="hint">Ponad zwykłą więźbę liczoną w Wycenie (cena dachu za m²). Orientacyjnie, z robocizną.</p><table><tbody>'+R.cost.items.map(x=>'<tr><td>'+esc(x.name)+(x.note?'<br><span class="hint">'+esc(x.note)+'</span>':'')+'</td><td class="n">'+zl(x.v)+'</td></tr>').join('')+'<tr class="sum"><td>Razem</td><td class="n">'+zl(R.cost.total)+'</td></tr></tbody></table></div>';
+  M.innerHTML=h;bindPlan()}
+function bindPlan(){const svg=$('rplan');if(!svg)return;const g=R.geom;
+  svg.querySelectorAll('[data-line]').forEach(el=>el.onclick=e=>{const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(svg.getScreenCTM().inverse()),m=(g.across?q.y:q.x)/22*g.c;
+    const l=Math.round(m*4)/4;if(l<=g.L0+.3||l>=g.L1-.3)return;let at=[...R.postsAt];const near=at.findIndex(v=>Math.abs(v-l)<.45);if(near>=0)at.splice(near,1);else at.push(l);save({posts:at.sort((a,b)=>a-b)})})}
+const rec=HouserStore.load();project=rec?rec.project:null;render();
+HouserStore.subscribe(r=>{project=r.project;render()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

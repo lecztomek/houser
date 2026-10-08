@@ -88,6 +88,7 @@ tr.tot td{background:#f8fafc;font-weight:800;font-size:14px}
 <script src="../../shared/quantities.js"></script>
 <script src="../../shared/completeness.js"></script>
 <script src="../konstrukcja/engine.js"></script>
+<script src="../konstrukcja-dachu/engine.js"></script>
 <script src="../elektryka/engine.js"></script>
 <script src="../../shared/library.js"></script>
 <script src="../../shared/energy.js"></script>
@@ -147,7 +148,7 @@ function planSvg(p){const g=p.grid||p.definitionSnapshot?.grid;if(!g)return '';c
 // ---------- wskaźniki jednego domu
 function metrics(p){const m={p};const tryc=(k,fn)=>{try{m[k]=fn()}catch(e){console.error(k,e);m[k]=null}};
   tryc('q',()=>HouserQuantities.compute(p));const q=m.q;if(!q)return m;
-  tryc('E',()=>HouserEnergy.compute(p));tryc('K',()=>HouserStructure.evaluate(p));tryc('L',()=>HouserElectric.evaluate(p));tryc('PV',()=>HouserPV.compute(p));tryc('C',()=>HouserCost.compute(p));tryc('D',()=>HouserDaily.evaluate(p,p.dailySettings));tryc('S',()=>HouserSolar.compute(p));tryc('A',()=>HouserAcoustics.evaluate(p,p.acousticSettings));tryc('P',()=>HouserPlumbing.evaluate(p,p.plumbingSettings));tryc('V',()=>HouserHVAC.evaluate(p,p.hvacSettings));tryc('VM',()=>HouserHVAC.methods(p,p.hvacSettings,m.V));tryc('HS',()=>HouserHeatSys.evaluate(p)); // bez projektu: domyślna instalacja (pompa powietrzna + podłogówka), żeby domy były porównywalnetryc('Ht',()=>HouserHeating.compare(p,{...(p.heatingSettings||{}),...(m.HS?.designed?{emitters:m.HS.emitters}:{})}));tryc('ST',()=>HouserStorage.evaluate(p,p.storageSettings));tryc('ADV',()=>HouserAdvice.collect(p));
+  tryc('E',()=>HouserEnergy.compute(p));tryc('K',()=>HouserStructure.evaluate(p));tryc('RF',()=>window.HouserRoof?HouserRoof.evaluate(p):null);tryc('L',()=>HouserElectric.evaluate(p));tryc('PV',()=>HouserPV.compute(p));tryc('C',()=>HouserCost.compute(p));tryc('D',()=>HouserDaily.evaluate(p,p.dailySettings));tryc('S',()=>HouserSolar.compute(p));tryc('A',()=>HouserAcoustics.evaluate(p,p.acousticSettings));tryc('P',()=>HouserPlumbing.evaluate(p,p.plumbingSettings));tryc('V',()=>HouserHVAC.evaluate(p,p.hvacSettings));tryc('VM',()=>HouserHVAC.methods(p,p.hvacSettings,m.V));tryc('HS',()=>HouserHeatSys.evaluate(p)); // bez projektu: domyślna instalacja (pompa powietrzna + podłogówka), żeby domy były porównywalnetryc('Ht',()=>HouserHeating.compare(p,{...(p.heatingSettings||{}),...(m.HS?.designed?{emitters:m.HS.emitters}:{})}));tryc('ST',()=>HouserStorage.evaluate(p,p.storageSettings));tryc('ADV',()=>HouserAdvice.collect(p));
   const rooms=q.rooms.filter(r=>r.area>=2),name=r=>(r.name||'').toLowerCase();
   m.beds=rooms.filter(r=>/sypial|pokój|pokoj|gabinet/.test(name(r))).length;m.wet=q.baths+q.wcs;m.nrooms=rooms.length;
   m.floors=q.net[q.up]>0?(q.attic?'parter + poddasze':'parter + piętro'):'parterowy';
@@ -224,6 +225,8 @@ const ROWS=[
   ['Łatwość konstrukcji','0–10: rozpiętość stropu, ściany piętra nad ścianami parteru, szerokie otwory, wysunięcia, więźba (moduł Konstrukcja); niżej – najtrudniejsze miejsce',m=>m.K?.score,v=>nf(v,1)+' / 10','high',m=>m.K?.issues[0]?(m.K.issues[0].text.length>70?m.K.issues[0].text.slice(0,68)+'…':m.K.issues[0].text):''],
   ['Największa rozpiętość stropu','powyżej ok. 6 m potrzebny podciąg',m=>m.K?.hasUp?m.K.maxSpan:null,v=>v==null?'dom parterowy':nf(v,1)+' m','low'],
   ['Koszt wzmocnień konstrukcji','podciągi, belki nad szerokimi otworami, wsporniki, słupy – w Wycenie',m=>m.K?.cost.total,zl,'low'],
+  ['Konstrukcja dachu – więźba','układ więźby (moduł Konstrukcja dachu); niżej – ocena i słupy nad pustką',m=>m.RF?.ok?HouserRoof.SYSTEMS[m.RF.system].name:null,v=>v||'–',null,m=>m.RF?.ok?'ocena '+nf(m.RF.score,1)+' / 10'+(m.RF.posts.some(x=>x.status==='void')?' · słup nad pustką':''):''],
+  ['Konstrukcja dachu – dopłaty','płatwie, słupy, belka kalenicowa, usztywnienia ścian przy pustce – w Wycenie',m=>m.RF?.ok?m.RF.cost.total:null,zl,'low'],
   ['Elektryka'],
   ['Instalacja elektryczna – koszt','gniazda, łączniki, punkty światła, obwody, rozdzielnica (moduł Elektryka i oświetlenie) – w Wycenie; niżej – punkty i obwody',m=>m.L?.cost.total,zl,'low',m=>m.L?(m.L.points+m.L.lights)+' punktów · '+m.L.circuits+' obwodów':''],
   ['Moc przyłączeniowa','moc szczytowa domu (pompa ciepła, płyta, ładowarka…); typowe przyłącze to 14 kW',m=>m.L?.peak,v=>nf(v,1)+' kW','low',m=>m.L?'zabezpieczenie '+m.L.conn[1]:''],

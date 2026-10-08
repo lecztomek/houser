@@ -153,6 +153,17 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  pr.openingVariants.upper['h:6:0']={variant:'sloped',sill:.3,height:2.4};pr.openingVariants.upper['h:4:0'].variant=pr.openingVariants.upper['h:5:0'].variant='sloped';
  ok(O.runExtent(pr,'upper','h:6:0').from===6,'okna: ścięte z innym skosem to osobne okna');}
 
+// konstrukcja dachu: układ więźby, słupy i pustka na piętrze
+{const RF=W.HouserRoof,ld=f=>JSON.parse(fs.readFileSync(path.join(ROOT,'examples',f),'utf8'));
+ for(const f of examples){const p=ld(f),R=RF.evaluate(p);if(!R.ok)continue;ok(fin(R.score)&&R.score>=0&&R.score<=10&&fin(R.cost.total)&&R.members.every(m=>fin(m.len)&&m.n>=0),f+': konstrukcja dachu – liczby skończone ('+R.system+')')}
+ const par=RF.evaluate(ld('dom-parterowy.json'));ok(par.system==='truss','konstrukcja dachu: dom bez poddasza – wiązary');
+ const sj=ld('stodola-jasna.json'),R0=RF.evaluate(sj);ok(R0.geom.hasVoid&&R0.voidWalls.some(w=>w.kind==='gable'&&w.h>7)&&R0.issues.some(i=>i.type==='voidwall'),'konstrukcja dachu: szczyt przy pustce bez stropu – uwaga');
+ const pu=JSON.parse(JSON.stringify(sj));pu.roofSettings={system:'purlin'};const R1=RF.evaluate(pu);
+ ok(R1.posts.some(x=>x.status==='void'&&x.len>5)&&R1.issues.some(i=>i.type==='void'),'konstrukcja dachu: słup nad pustką schodzi na parter');
+ const okAt=R1.postsAt.map(v=>v);pu.roofSettings.posts=[2.5,7.5];const R2=RF.evaluate(pu);ok(R2.postsAt.length===2&&R2.postsAt[0]===2.5,'konstrukcja dachu: słupy ustawione ręcznie');
+ const rg=JSON.parse(JSON.stringify(sj));rg.roofSettings={system:'ridge',postSpan:6};const R3=RF.evaluate(rg);ok(R3.members.some(m=>/kalenic/i.test(m.name))&&R3.lines.length===1,'konstrukcja dachu: belka kalenicowa');
+ ok(W.HouserCost.compute(pu).rows.some(r=>r.id==='roofExtra'&&r.value>0),'konstrukcja dachu: dopłaty w Wycenie');}
+
 // ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować
 console.log('• składnia skryptów');
 {const vm=require('vm'),walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?(['node_modules','.git'].includes(e.name)?[]:walk(path.join(d,e.name))):[path.join(d,e.name)]);

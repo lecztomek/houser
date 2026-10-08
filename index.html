@@ -264,6 +264,7 @@ a{color:var(--accent)}
 <script src="shared/openings.js"></script>
 <script src="shared/quantities.js"></script>
 <script src="modules/konstrukcja/engine.js"></script>
+<script src="modules/konstrukcja-dachu/engine.js"></script>
 <script src="shared/completeness.js"></script>
 <script src="shared/gallery.js"></script>
 <script src="shared/library.js"></script>
@@ -299,6 +300,7 @@ const MODULES=[
   {id:'energia',group:'Analizy',name:'Energia',src:'modules/energia/',desc:'Bilans cieplny: straty przez przegrody i wentylację, moc grzewcza, zapotrzebowanie kWh/m² i koszt ogrzewania różnymi źródłami.'},
   {id:'ogrzewanie',group:'Analizy',name:'Ogrzewanie',src:'modules/ogrzewanie/',desc:'Porównanie źródeł ciepła: pompy ciepła, gaz, pellet, ekogroszek, drewno, kominek z płaszczem wodnym, prąd – koszt instalacji, rachunki, koszt w 20 lat i dopasowanie do domu.'},
   {id:'konstrukcja',group:'Analizy',name:'Konstrukcja',src:'modules/konstrukcja/',desc:'Czy układ da się tanio zbudować: rozpiętość stropu (podciągi), ściany piętra nad ścianami parteru, wysunięcia, szerokie otwory i przeszklenia narożne, więźba dachu – z kosztem wzmocnień w Wycenie.'},
+  {id:'konstrukcja-dachu',group:'Analizy',name:'Konstrukcja dachu',src:'modules/konstrukcja-dachu/',desc:'Więźba dachu: krokwie, jętki, płatwie albo belka kalenicowa, przekroje elementów i na czym stoją słupy – także pustka na piętrze (słupy na całą wysokość, ściany i brzegi stropu bez podparcia)'},
   {id:'elektryka',group:'Analizy',name:'Elektryka i oświetlenie',src:'modules/elektryka/',desc:'Gniazda, łączniki i punkty światła w każdym pomieszczeniu, obwody i rozdzielnica, urządzenia na osobnych obwodach, moc przyłączeniowa (z pompą ciepła, ładowarką, PV) i koszt instalacji do Wyceny.'},
   {id:'fotowoltaika',group:'Analizy',name:'Fotowoltaika',src:'modules/fotowoltaika/',desc:'Panele na dachu: ile się zmieści na połaciach, produkcja w miesiącach wobec zużycia domu (z pompą ciepła), magazyn energii, oszczędność i zwrot – po włączeniu tańszy prąd w Ogrzewaniu i Energii.'},
   {id:'wentylacja',group:'Analizy',name:'Wentylacja',src:'modules/wentylacja/',desc:'Porównanie sposobów wentylacji dla tego domu: grawitacyjna, hybrydowa, mechaniczna wywiewna, rekuperatory ścienne, rekuperacja – koszty, jakość powietrza, dopasowanie.'},
@@ -341,6 +343,7 @@ const ICON_PATH={pomieszczenia:'<rect x="3" y="3" width="7.5" height="7.5" rx="1
   ranking:'<path d="M4 20V13h4v7M10 20V8h4v12M16 20v-9h4v9"/><path d="M12 2.8l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2L9.1 4.9l2-.3z"/>',
   porownanie:'<rect x="3" y="4" width="7.5" height="16" rx="1.8"/><rect x="13.5" y="4" width="7.5" height="16" rx="1.8"/><path d="M5.5 8.5h2.5M5.5 12h2.5M16 8.5h2.5M16 12h2.5"/>',
   konstrukcja:'<path d="M3 4h18M3 7h18"/><path d="M12 7v10"/><path d="M3 20h18M3 17h18"/><path d="M6 17v3M18 17v3"/>',
+  'konstrukcja-dachu':'<path d="M2 13 12 4l10 9"/><path d="M5 10.5V20M19 10.5V20"/><path d="M7.5 13h9"/><path d="M12 4v9"/>',
   elektryka:'<path d="M13 2.5 5 13.5h6l-1 8 8-11h-6z"/>',
   fotowoltaika:'<path d="M4 20 6.5 10h11L20 20z"/><path d="M5.3 15h13.4M10 10l-1 10M14 10l1 10"/><circle cx="17.5" cy="4.5" r="1.8"/><path d="M17.5 1v.6M21 4.5h-.6M14.6 2l.4.4M20.4 2l-.4.4"/>',
   hydraulika:'<path d="M12 3.5c3 3.6 5.5 6.6 5.5 9.8a5.5 5.5 0 0 1-11 0c0-3.2 2.5-6.2 5.5-9.8z"/><path d="M9.5 14a2.5 2.5 0 0 0 2.5 2.5"/>',

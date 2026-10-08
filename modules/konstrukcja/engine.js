@@ -177,7 +177,9 @@
     const halfSpan=q.span/2,rafter=(halfSpan+(G.eaveOverhang||0))/Math.cos((G.roofPitch||35)*Math.PI/180),attic=q.attic;
     let roofType;if(q.roofA<=0)roofType='–';
     else if(rafter<=LIM.rafter)roofType='krokwiowa (krokwie bez podparcia)';else if(rafter<=LIM.rafterMax)roofType='krokwiowo-jętkowa (jętki podpierają krokwie)';else roofType='płatwiowo-kleszczowa (płatwie na słupach) albo wiązary';
-    if(q.roofA>0&&rafter>LIM.rafterMax){if(attic){add(1,'Krokwie ok. '+fmt(rafter)+' m – dach potrzebuje płatwi podpartych słupami, które staną na poddaszu.','Słupy wypadną w pokojach poddasza – zaplanuj je przy ściankach albo węższy dom / większy kąt dachu.','roof');addC('Słupy i płatwie w więźbie (poddasze)',2*PRICE.purlinPost)}
+    // szczegóły więźby (płatwie, słupy, na czym stoją) – moduł Konstrukcja dachu; tutaj tylko zgrubnie, gdy go nie ma
+    if(global.HouserRoof&&q.roofA>0)good.push('Więźba dachu: '+roofType.split(' (')[0]+' – szczegóły (słupy, płatwie, pustka) w module Konstrukcja dachu.');
+    else if(q.roofA>0&&rafter>LIM.rafterMax){if(attic){add(1,'Krokwie ok. '+fmt(rafter)+' m – dach potrzebuje płatwi podpartych słupami, które staną na poddaszu.','Słupy wypadną w pokojach poddasza – zaplanuj je przy ściankach albo węższy dom / większy kąt dachu.','roof');addC('Słupy i płatwie w więźbie (poddasze)',2*PRICE.purlinPost)}
       else good.push('Szeroki dom bez poddasza użytkowego – dach na wiązarach (prefabrykowane, szybki montaż).')}
     else if(q.roofA>0)good.push('Dach: krokwie ok. '+fmt(rafter)+' m – więźba '+roofType.split(' (')[0]+', bez słupów na poddaszu.');
     const knee=attic?(G.kneeWall||0):0;if(knee>LIM.knee){const L=2*(q.roofL||0);add(.3,'Ścianka kolankowa '+fmt(knee,2)+' m – przy wysokiej ściance potrzebny wieniec i słupki żelbetowe (rozpór dachu).','','roof');addC('Wieniec i słupki ścianki kolankowej',L*PRICE.knee,'ok. '+fmt(L)+' m')}
