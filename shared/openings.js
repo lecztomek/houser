@@ -19,7 +19,9 @@
       double:{name:'Dwuskrzydłowe',sill:0,height:2.05,leaves:2},
       sliding:{name:'Przesuwne',sill:0,height:2.05,sliding:true},
       entrance:{name:'Wejściowe z doświetlem',sill:0,height:2.3,glassTop:true},
-      knee:{name:'Niskie – do schowka pod skosem',sill:0,height:1.0}
+      knee:{name:'Niskie – do schowka pod skosem',sill:0,height:1.0},
+      glass:{name:'Szklane (skrzydło ze szkła hartowanego)',sill:0,height:2.05,glass:true},
+      glassSliding:{name:'Szklane przesuwne',sill:0,height:2.05,glass:true,sliding:true}
     },
     hst:{
       hst:{name:'HST – przesuwne tarasowe',sill:0,height:2.35},

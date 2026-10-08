@@ -41,7 +41,7 @@
     const gable=span*G.rise;
 
     // otwory: sąsiednie krawędzie tego samego rodzaju = jeden otwór
-    const ops={win:0,winA:0,roofWin:0,roofWinA:0,hst:0,hstA:0,extDoor:0,extDoorA:0,intDoor:0,winCost:0,roofWinCost:0,hstCost:0,blinds:0,blindCost:0},runs=[];
+    const ops={win:0,winA:0,roofWin:0,roofWinA:0,hst:0,hstA:0,extDoor:0,extDoorA:0,intDoor:0,glassDoor:0,winCost:0,roofWinCost:0,hstCost:0,blinds:0,blindCost:0},runs=[];
     for(const f of [lo,up]){const groups={};
       for(const [key,base] of Object.entries(project.openings?.[f]||{})){if(!['window','door','hst'].includes(base))continue;const [o,aS,bS]=key.split(':'),a=+aS,b=+bS;
         const ax=o==='h'?a:a-1,ay=o==='h'?b-1:b,A=occ(f,ax,ay),B=occ(f,a,b);if(!A&&!B)continue;const ext=A!==B,line=o==='h'?b:a,along=o==='h'?a:b;
@@ -54,7 +54,7 @@
       if(pr){if(r.base==='hst')ops.hstCost+=pr.win;else if(info.shape==='roof')ops.roofWinCost+=pr.win;else ops.winCost+=pr.win;if(pr.blind){ops.blinds++;ops.blindCost+=pr.blind}}
       if(r.base==='window'){if(info.shape==='roof'){ops.roofWin++;ops.roofWinA+=r.area;for(const m of rooms_){m.roofWinA+=r.area;m.roofWins++}}else if(r.ext){ops.win++;ops.winA+=r.area;for(const m of rooms_){m.winA+=r.area;m.wins++}}}
       else if(r.base==='hst'){ops.hst++;ops.hstA+=r.area;for(const m of rooms_)m.hstA+=r.area}
-      else{if(r.ext){ops.extDoor++;ops.extDoorA+=r.area}else ops.intDoor++;for(const m of rooms_)m.doors.push(r)}}
+      else{if(r.ext){ops.extDoor++;ops.extDoorA+=r.area}else ops.intDoor++;if(r.info?.glass)ops.glassDoor++;for(const m of rooms_)m.doors.push(r)}}
     const wallGross=extLen[lo]*hWall[lo]+extLen[up]*hWall[up],glaz=ops.winA+ops.hstA+ops.extDoorA;
     const extGross=wallGross+gable,extNet=Math.max(0,extGross-glaz);
     Object.assign(q,{hWall,hPart,extLen,partLen,gable,extGross,extNet,wallNet:Math.max(0,wallGross-glaz),partA:partLen[lo]*hPart[lo]+partLen[up]*hPart[up],glassLen,glassA:glassLen[lo]*hPart[lo]+glassLen[up]*hPart[up],ops,runs});

@@ -37,7 +37,7 @@
     // pomieszczenia
     const rooms={};
     for(const r of q.rooms){const cls=classify(r.name);rooms[r.f+'|'+r.id]={key:r.f+'|'+r.id,f:r.f,id:r.id,name:r.name,area:r.area,cells:r.cells,color:defs[r.f][r.id]?.color||'#cbd5e1',cls,
-      quiet:cls.quiet||0,src:cls.src||0,buffer:!!cls.buffer,walls:{},glass:{},opens:{},doors:{},above:{},below:{},winSides:{},voidEdge:0,issues:[],score:null}}
+      quiet:cls.quiet||0,src:cls.src||0,buffer:!!cls.buffer,walls:{},glass:{},opens:{},doors:{},gdoors:{},above:{},below:{},winSides:{},voidEdge:0,issues:[],score:null}}
     const R=(f,v)=>rooms[f+'|'+v];
     // krawędzie między kratkami: wspólne ściany, otwarte przejścia, drzwi
     const ops=f=>project.openings?.[f]||{};
@@ -49,7 +49,8 @@
           if(!ra||!rb)return;
           const tgt=o==='opening'?'opens':'walls';ra[tgt][rb.key]=(ra[tgt][rb.key]||0)+c;rb[tgt][ra.key]=(rb[tgt][ra.key]||0)+c;
           if(o==='glass'){ra.glass[rb.key]=(ra.glass[rb.key]||0)+c;rb.glass[ra.key]=(rb.glass[ra.key]||0)+c} // ścianka szklana: ściana, ale tłumi słabo (Rw ok. 32–37 dB)
-          if(o==='door'||o==='hst'){ra.doors[rb.key]=1;rb.doors[ra.key]=1}}
+          if(o==='door'||o==='hst'){ra.doors[rb.key]=1;rb.doors[ra.key]=1}
+          if(o==='door'&&global.HouserOpenings?.resolve(project,f,key,'door').glass){ra.gdoors[rb.key]=1;rb.gdoors[ra.key]=1}}
         else if(A!==B&&(o==='window'||o==='hst')){const r=A?R(f,va):R(f,vb);if(r){const side=A?sideB:sideA;r.winSides[sm[side]]=(r.winSides[sm[side]]||0)+c}}};
       for(let y=0;y<=H;y++)for(let x=0;x<W;x++)edge(x,y-1,x,y,'h:'+x+':'+y,'top','bottom');
       for(let x=0;x<=W;x++)for(let y=0;y<H;y++)edge(x-1,y,x,y,'v:'+x+':'+y,'left','right')}
@@ -76,6 +77,7 @@
           o.cls.k==='bath'||o.cls.k==='wc'?'Pion kanalizacyjny prowadź z dala od tej ściany (w bruździe z izolacją), ściana z bloczków silikatowych lub podwójna płyta g-k z wełną.':o.cls.k==='garage'?'Ściana z garażem powinna być masywna (Rw ≥ 55 dB), najlepiej oddzielona garderobą lub korytarzem.':'Ściana akustyczna (np. silikat 18 cm albo podwójna płyta g-k z wełną) albo szafa wnękowa na całej ścianie jako bufor.',k,len)}
         else if(o.quiet&&len>=1)add((gl?.9:.3)*soft,'wall',gl?'Ścianka szklana z pokojem „'+o.name+'” ('+fmtM(gl)+') – słychać i widać, co dzieje się obok.':'Ściana z pokojem „'+o.name+'” – rozmowy i muzyka zza ściany.','Między sypialniami ściana pełna (bez gniazdek na wprost siebie) albo szafy wnękowe.',k,len)}
       for(const [k,len] of Object.entries(r.opens)){const o=rooms[k];if(!o)continue;const E=eff(o);if(!E.src)continue;add(E.src*1.6,'open','Otwarte przejście do pomieszczenia „'+o.name+'” – nic nie tłumi hałasu.','Zamiast otwartego przejścia daj drzwi (najlepiej z uszczelką).',k,len)}
+      for(const k of Object.keys(r.gdoors)){const o=rooms[k];if(!o||!(eff(o).src||o.src))continue;add(.5,'door','Szklane drzwi do „'+o.name+'” – szkło tłumi słabiej niż pełne skrzydło, widać światło i ruch.','Do sypialni pełne drzwi z uszczelką; szklane lepiej do salonu, gabinetu czy holu.',k)}
       for(const k of Object.keys(r.doors)){const o=rooms[k];if(!o||o.cls.k==='bath'||o.cls.k==='wc')continue;const E=eff(o);
         if(o.src>=1.5)add(1.2,'door','Drzwi otwierają się prosto do pomieszczenia „'+o.name+'” (bez holu).','Wejście do sypialni z holu lub korytarza, a nie wprost z salonu czy kuchni.',k);
         else if(E.via&&E.src>=1&&!upOpen.has(k))add(.9,'door','Drzwi wychodzą na „'+o.name+'”, otwarty na „'+E.via.name+'” – hałas dochodzi pod drzwi.','Oddziel hol od strefy dziennej drzwiami (np. przeszklonymi) albo daj do sypialni drzwi z uszczelką i progiem.',k)}

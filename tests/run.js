@@ -185,6 +185,13 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  {const pr=ld('stodola-jasna.json');pr.garage={type:'detached',cars:2,rot:90};const Rg=SI.evaluate(pr);ok(Rg.garage.gate==='left'&&Rg.garage.w===Rg.garage.len*0+6.2,'działka: obrócony garaż – brama z boku, wymiary zamienione')}
  const ws={...ss,site:{...SI.evaluate(ld('zefir-2.json')).set}},cr=W.HouserCost.compute(ws).rows.find(r=>r.id==='site');ok(cr&&!cr.on&&cr.qty===1,'Wycena: zagospodarowanie działki – pozycja do włączenia');}
 
+// drzwi szklane: wariant drzwi, liczony w ilościach, Wycenie i Akustyce
+{const ld=f=>JSON.parse(fs.readFileSync(path.join(ROOT,'examples',f),'utf8')),p=ld('dom-parterowy.json'),q0=W.HouserQuantities.compute(p);
+ const d=q0.runs.find(r=>!r.ext&&r.base==='door'&&(r.rooms||[]).some(x=>/syp/i.test(x.name||'')));W.HouserOpenings.setVariant(p,d.f,d.keys,{variant:'glass',sill:0,height:2.05});
+ const q1=W.HouserQuantities.compute(p);ok(q0.ops.glassDoor===0&&q1.ops.glassDoor===1&&q1.ops.intDoor===q0.ops.intDoor,'drzwi szklane: liczone osobno, nadal jako drzwi wewnętrzne');
+ ok(W.HouserCost.compute(p).rows.some(r=>r.id==='glassdoors'&&r.value>0)&&!W.HouserCost.compute(ld('dom-parterowy.json')).rows.some(r=>r.id==='glassdoors'),'drzwi szklane: dopłata w Wycenie tylko gdy są');
+ ok(W.HouserOpenings.resolve(p,d.f,d.keys[0],'door').glass,'drzwi szklane: wariant zapisany');}
+
 // ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować
 console.log('• składnia skryptów');
 {const vm=require('vm'),walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?(['node_modules','.git'].includes(e.name)?[]:walk(path.join(d,e.name))):[path.join(d,e.name)]);

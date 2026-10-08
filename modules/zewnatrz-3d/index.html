@@ -156,6 +156,7 @@ function drawWallOpening(q,base,t0,t1,info){ info=info||HouserOpenings.resolve(p
   poly(a0,a1,flat(y0),top,.015,frame,{stroke:fr,line:1});                                           // rama
   if(q.type==='door'){ const leaf='#8a6a4a',yt=t=>top(t)-fw;
     if(info.glassTop){ const gy=y0+2.05; poly(a0+fw,a1-fw,flat(y0),flat(Math.min(gy,y0+info.height-.25)),.03,leaf,{stroke:'#5b4330'}); poly(a0+fw,a1-fw,flat(Math.min(gy,y0+info.height-.25)+.05),yt,.03,glassCol,{stroke:fr,alpha:.85}); return; }
+    if(info.glass){ poly(a0+fw,a1-fw,flat(y0),yt,.03,glassCol,{stroke:fr,alpha:.8}); if(info.sliding){ const m=(a0+a1)/2; poly(m-.02,m+.02,flat(y0),yt,.04,frame,{stroke:fr}); } return; }
     poly(a0+fw,a1-fw,flat(y0),yt,.03,leaf,{stroke:'#5b4330',line:1});
     if(info.leaves===2||info.sliding){ const m=(a0+a1)/2; poly(m-.015,m+.015,flat(y0),yt,.04,'#5b4330',{stroke:'#5b4330'}); }
     return; }

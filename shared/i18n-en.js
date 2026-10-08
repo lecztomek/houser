@@ -4267,4 +4267,9 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "⟳ Obróć garaż":"⟳ Rotate garage",
 "Obrót domu: ":"House rotation: ",
 "⚠ Dom obrócony względem projektu":"⚠ House rotated against the design",
-"Obróć dom na działce z powrotem albo zmień strony świata w module Obrys domu (wtedy przeliczą się analizy).":"Rotate the house back on the plot or change the compass directions in the House outline module (the analyses will then be recalculated)."};
+"Obróć dom na działce z powrotem albo zmień strony świata w module Obrys domu (wtedy przeliczą się analizy).":"Rotate the house back on the plot or change the compass directions in the House outline module (the analyses will then be recalculated).",
+"Szklane (skrzydło ze szkła hartowanego)":"Glass (tempered glass leaf)",
+"Szklane przesuwne":"Glass sliding",
+"Dopłata: drzwi szklane (szkło hartowane, okucia)":"Extra: glass doors (tempered glass, fittings)",
+"wariant „Szklane” w module Drzwi wewnętrzne / Okna i drzwi":"„Glass” variant in the Interior doors / Windows and doors module",
+"Do sypialni pełne drzwi z uszczelką; szklane lepiej do salonu, gabinetu czy holu.":"Use solid doors with a seal for bedrooms; glass ones suit the living room, study or hall better."};

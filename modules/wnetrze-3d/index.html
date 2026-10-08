@@ -537,7 +537,7 @@ function slideWall(f,d,i){const [ax,ay,bx,by]=d.o==='h'?[i,d.line-1,i,d.line]:[d
 function doorModeFor(f,key){const v=project.openingVariants?.[f]?.[key]?.view;return ['open','closed','none'].includes(v)?v:settings.doorMode}
 function addDoorLeaves(){
   for(const f of ['ground','upper']){const base=floorBase(f);for(const d of doorGroups(f)){const mode=doorModeFor(f,d.keys[0]);if(mode==='none')continue;
-    const th=.045,col=d.exterior?'#7c5a3e':'#f4f2ee',edge=d.exterior?'#4b3726':'#a8a29e',op={stroke:edge,line:.6},hc='#3f3f46',ho={stroke:hc,line:.4};
+    const gl=!!d.info?.glass,th=gl?.02:.045,col=gl?'#9fd3ee':d.exterior?'#7c5a3e':'#f4f2ee',edge=gl?'#64748b':d.exterior?'#4b3726':'#a8a29e',op=gl?{stroke:edge,line:.6,alpha:.32,kind:'glass'}:{stroke:edge,line:.6},hc='#3f3f46',ho={stroke:hc,line:.4};
     const sg=d.swing==='a'?-1:1,mid=d.exterior?(d.inA?1:-1)*WALL_EXT*.25:0,face=d.exterior?(d.inA?0:0):WALL_IN/2,W=d.s1-d.s0,y1=d.h;
     const leaf=(hp,dir,w)=>{ // hp – oś zawiasu, dir – w którą stronę otworu leży skrzydło (+1/-1), w – szerokość skrzydła
       if(mode==='closed'){doorBox(d,base,hp,hp+dir*w,mid-th/2,mid+th/2,0,y1,col,op);

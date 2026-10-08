@@ -40,6 +40,7 @@ const ITEMS=[
   ['floors','Elewacja i wykończenie','Posadzki (panele, deska, płytki)','m²',q=>Object.values(q.net).reduce((a,b)=>a+b,0),220,1,'powierzchnia podłóg'],
   ['paint','Elewacja i wykończenie','Malowanie','m²',q=>q.plaster,28,1,'ściany i sufity'],
   ['intdoor','Elewacja i wykończenie','Drzwi wewnętrzne z montażem','szt',q=>q.ops.intDoor,1500,1,'z projektu'],
+  ['glassdoors','Elewacja i wykończenie','Dopłata: drzwi szklane (szkło hartowane, okucia)','szt',q=>q.ops.glassDoor||0,2200,1,'wariant „Szklane” w module Drzwi wewnętrzne / Okna i drzwi'],
   ['baths','Elewacja i wykończenie','Łazienki (płytki, biały montaż, armatura)','szt',q=>q.baths,24000,1,'pomieszczenia „łazienka”'],
   ['wc','Elewacja i wykończenie','WC','szt',q=>q.wcs,12000,1,'pomieszczenia „WC”'],
   ['kitchen','Elewacja i wykończenie','Zabudowa kuchenna z AGD','kpl',()=>1,35000,1,'ryczałt',false],
@@ -54,7 +55,7 @@ const ITEMS=[
 const STD={eco:.85,std:1,high:1.35};
 // udział materiałów w cenie jednostkowej (reszta = robocizna / usługa)
 const MAT={blinds:.7,found:.6,groundslab:.6,utilities:.7,extwalls:.55,partwalls:.5,slab:.6,stairs:.65,chimney:.6,roof:.6,gutters:.55,soffit:.5,windows:.85,roofwin:.8,hst:.88,extdoor:.85,
-  elec:.45,plumb:.45,structExtra:.55,roofExtra:.55,heatsrc:.8,floorheat:.55,vent:.65,facade:.45,plaster:.35,screed:.5,floors:.6,paint:.3,intdoor:.75,baths:.6,wc:.6,kitchen:.85,terrace:.6,covterrace:.6,pergola:.6,garage:.55,site:.5,design:0,manager:0};
+  elec:.45,plumb:.45,structExtra:.55,roofExtra:.55,heatsrc:.8,floorheat:.55,vent:.65,facade:.45,plaster:.35,screed:.5,floors:.6,paint:.3,intdoor:.75,glassdoors:.8,baths:.6,wc:.6,kitchen:.85,terrace:.6,covterrace:.6,pergola:.6,garage:.55,site:.5,design:0,manager:0};
 function cs(){const s=project.costSettings||{};return {std:STD[s.std]?s.std:'std',factor:Number.isFinite(+s.factor)&&+s.factor>0?+s.factor:1,prices:s.prices||{},mat:s.mat||{},lab:s.lab||{},off:s.off||{},on:s.on||{},reserve:Number.isFinite(+s.reserve)?+s.reserve:10}}
 // koszty z modułów (gdy ich obliczenia są załadowane na stronie): wentylacja wybrana w module Wentylacja, instalacja
 // grzewcza z modułu Instalacja grzewcza, wod-kan z Hydrauliki, klimatyzacja. Bez nich – stawki za m² jak wyżej.
@@ -78,7 +79,7 @@ function compute(){
   const q=quantities(),s=cs(),rows=[],DYN=fromModules();
   for(let [id,stage,name,unit,qf,defPrice,fin,how,defOn] of ITEMS){
     const dy=DYN[id];if(dy){unit='kpl';name=dy.name;how=dy.how;qf=()=>1;defPrice=dy.total;fin=0}
-    const qty=Math.max(0,qf(q)||0);if((id==='glasswalls'||id==='garage'||id==='site')&&!qty)continue; // pozycje tylko gdy są ścianki szklane / garaż / działka
+    const qty=Math.max(0,qf(q)||0);if((id==='glasswalls'||id==='glassdoors'||id==='garage'||id==='site')&&!qty)continue; // pozycje tylko gdy są ścianki szklane / garaż / działka
     let base=defPrice;if(id==='windows'&&q.ops.winA>0&&q.ops.winCost)base=q.ops.winCost/q.ops.winA;if(id==='hst'&&q.ops.hstA>0&&q.ops.hstCost)base=q.ops.hstCost/q.ops.hstA;if(id==='roofwin'&&q.ops.roofWin>0&&q.ops.roofWinCost)base=q.ops.roofWinCost/q.ops.roofWin;if(id==='blinds'&&q.ops.blinds>0)base=q.ops.blindCost/q.ops.blinds; // średnia z cen okien wg typu (moduł Okna i drzwi)
     if(id==='stairs')base=q.stairs.length?q.stairs.reduce((a,t)=>a+(STAIR_PRICE[t]||18000),0)/q.stairs.length:18000;const ek=+project.envelopePriceK?.[id];if(ek>0)base*=ek; // mur, elewacja, okna wg modułu Ocieplenie i elewacja
     const def=base*(fin?STD[s.std]:1)*s.factor,share=MAT[id]??.6,old=s.prices[id]!=null?+s.prices[id]:null; // starsze zapisy: jedna cena -> dzielona wg udziału
