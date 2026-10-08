@@ -464,23 +464,48 @@ function addStructure3D(){const st=project.structure||{},c=grid().cellMeters,H=f
   for(const ln of R.lines){const y=ub+ln.z,[x0,z0]=P(ln.a,g.L0),[x1,z1]=P(ln.a,g.L1);
     if(g.across)addBoxFaces(x0-.08,y,z0,x0+.08,y+.22,z1,wood,ws);else addBoxFaces(x0,y,z0-.08,x1,y+.22,z0+.08,wood,ws)}
   for(const p of R.posts){const [x,z]=P(p.a,p.l),y1=ub+(R.lines.find(l=>l.id===p.line)?.z||2.2),y0=p.status==='void'?0:ub;addBoxFaces(x-.07,y0,z-.07,x+.07,y1,z+.07,wood,ws)}}
+// strona mebla od ściany (oparcie sofy, wezgłowie łóżka, tył szafy): bok, za którym najbliżej kończy się pokój;
+// krzesło – oparcie od strony przeciwnej do najbliższego stołu / biurka / wyspy
+function furnBackSide(it,f,sides){const c=grid().cellMeters,x0=+it.x,z0=+it.y,x1=x0+ +it.w,z1=z0+ +it.h,cx=(x0+x1)/2,cz=(z0+z1)/2,rid=roomAt(f,Math.floor(cx/c),Math.floor(cz/c));
+  if(/krzeslo/.test(it.item||'')){let best=null,bd=1e9;for(const o of furnitureList(f)){if(o===it||!validFurnitureItem(o)||!(o.type==='surface'||/stol|biurk|wyspa/.test(o.item||'')))continue;const ox=+o.x+ +o.w/2,oz=+o.y+ +o.h/2,d=Math.hypot(ox-cx,oz-cz);if(d<bd){bd=d;best=[ox-cx,oz-cz]}}
+    if(best&&bd<2.5){const [dx,dz]=best;const s=Math.abs(dx)>Math.abs(dz)?(dx>0?'x0':'x1'):(dz>0?'z0':'z1');if(sides.includes(s))return s}}
+  const gap=side=>{for(let t=0;t<=1.6;t+=c/2){const px=side==='x0'?x0-t-.01:side==='x1'?x1+t+.01:cx,pz=side==='z0'?z0-t-.01:side==='z1'?z1+t+.01:cz;if(roomAt(f,Math.floor(px/c),Math.floor(pz/c))!==rid)return t}return 9};
+  return sides.reduce((a,b)=>gap(b)<gap(a)?b:a)}
 function addFurniture3D(){
-  ensureFurniture();const cm=codedOn()?codeMap():null;
+  ensureFurniture();const cm=codedOn()?codeMap():null,K=cm?{stroke:'#111827',line:1.3}:null;
   for(const f of ['ground','upper']){const base=floorBase(f),fh=floorHeight(f);for(const it of furnitureList(f)){
     if(!validFurnitureItem(it))continue;const d=furnViewDef(it),m=.025,x0=Number(it.x)+m,z0=Number(it.y)+m,x1=Number(it.x)+Number(it.w)-m,z1=Number(it.y)+Number(it.h)-m;if(x1<=x0||z1<=z0)continue;
     if(it.item==='s_rtv')addTvFor(it,f,base+Math.min(d.height,fh-.04));
-    let top=base+Math.min(d.height,fh-.04);const col=cm?(cm[furnKey(it)]?.[0]||'#d4d4d4'):d.color;
+    let top=base+Math.min(d.height,fh-.04);const col=cm?(cm[furnKey(it)]?.[0]||'#d4d4d4'):d.color,st=s=>K||{stroke:s};
     // na poddaszu mebel nie może przebić skosu dachu – przycinamy do najniższego punktu połaci nad nim
     if(f==='upper'&&roofEnabled()){const lim=Math.min(roofAbsYAt(x0,z0),roofAbsYAt(x1,z0),roofAbsYAt(x0,z1),roofAbsYAt(x1,z1))-.03;top=Math.max(base+.1,Math.min(top,lim));}
+    // pas przy boku: side – x0/x1/z0/z1, t – grubość, y0..y1 – wysokość
+    const strip=(side,t,y0,y1,c2,o)=>side==='x0'?addBoxFaces(x0,y0,z0,x0+t,y1,z1,c2,o):side==='x1'?addBoxFaces(x1-t,y0,z0,x1,y1,z1,c2,o):side==='z0'?addBoxFaces(x0,y0,z0,x1,y1,z0+t,c2,o):addBoxFaces(x0,y0,z1-t,x1,y1,z1,c2,o);
+    const legs=(yTop,lw)=>{for(const [a,b] of [[x0,z0],[x1-lw,z0],[x0,z1-lw],[x1-lw,z1-lw]])addBoxFaces(a,base,b,a+lw,yTop,b+lw,col,st('#4b5563'))};
+    const id=it.item||'',W=x1-x0,D=z1-z0;
     if(d.kind==='ring'){
-      const ins=Math.min((x1-x0)*.22,(z1-z0)*.22,.30);if(ins>.04){addBoxFaces(x0,base,z0,x1,top,z0+ins,col,{stroke:'#475569'});addBoxFaces(x0,base,z1-ins,x1,top,z1,col,{stroke:'#475569'});addBoxFaces(x0,base,z0+ins,x0+ins,top,z1-ins,col,{stroke:'#475569'});addBoxFaces(x1-ins,base,z0+ins,x1,top,z1-ins,col,{stroke:'#475569'});}else addBoxFaces(x0,base,z0,x1,top,z1,col,{stroke:'#475569'});
-    }else if(d.kind==='bed'){
-      addBoxFaces(x0,base+.18,z0,x1,top,z1,col,{stroke:'#64748b'});const head=Math.min(.12,x1-x0);addBoxFaces(x0,base,z0,x0+head,base+.85,z1,cm?col:'#7aa2d6',{stroke:'#64748b'});
-    }else if(d.kind==='seating'){
-      const seatTop=base+.45;addBoxFaces(x0,base,z0,x1,seatTop,z1,col,{stroke:'#7f1d1d'});const back=Math.min(.14,z1-z0);addBoxFaces(x0,seatTop,z1-back,x1,base+.85,z1,col,{stroke:'#7f1d1d'});
+      const ins=Math.min((x1-x0)*.22,(z1-z0)*.22,.30);if(ins>.04){addBoxFaces(x0,base,z0,x1,top,z0+ins,col,st('#475569'));addBoxFaces(x0,base,z1-ins,x1,top,z1,col,st('#475569'));addBoxFaces(x0,base,z0+ins,x0+ins,top,z1-ins,col,st('#475569'));addBoxFaces(x1-ins,base,z0+ins,x1,top,z1-ins,col,st('#475569'));}else addBoxFaces(x0,base,z0,x1,top,z1,col,st('#475569'));
+    }else if(/krzeslo/.test(id)){ // krzesło: 4 nogi, siedzisko, oparcie
+      const seat=base+.45,back=furnBackSide(it,f,['x0','x1','z0','z1']);legs(seat-.04,.04);addBoxFaces(x0,seat-.04,z0,x1,seat,z1,col,st('#4b5563'));
+      const b0=back==='x0'?[x0,z0,x0+.05,z1]:back==='x1'?[x1-.05,z0,x1,z1]:back==='z0'?[x0,z0,x1,z0+.05]:[x0,z1-.05,x1,z1];addBoxFaces(b0[0],seat,b0[1],b0[2],Math.max(seat+.3,top),b0[3],col,st('#4b5563'));
+    }else if(d.kind==='bed'){ // łóżko: rama, materac, wezgłowie od ściany (na krótszym boku)
+      const hs=furnBackSide(it,f,W>D?['x0','x1']:['z0','z1']);addBoxFaces(x0,base+.06,z0,x1,base+.3,z1,col,st('#64748b'));addBoxFaces(x0+.03,base+.3,z0+.03,x1-.03,top,z1-.03,cm?col:'#e8edf3',st('#64748b'));
+      strip(hs,.1,base,base+.95,cm?col:'#7aa2d6',st('#64748b'));
+    }else if(d.kind==='seating'){ // sofa / fotel: siedzisko, oparcie od ściany, podłokietniki
+      const seatTop=base+.42,back=furnBackSide(it,f,['x0','x1','z0','z1']),bt=Math.min(.2,(back[0]==='x'?W:D)*.3);addBoxFaces(x0,base+.08,z0,x1,seatTop,z1,col,st('#7f1d1d'));strip(back,bt,seatTop,base+.85,col,st('#7f1d1d'));
+      if(!/krzeslo/.test(id)){const arms=back[0]==='x'?['z0','z1']:['x0','x1'];for(const a of arms)strip(a,.14,seatTop,base+.62,col,st('#7f1d1d'))}
     }else if(d.kind==='surface'){
-      const slab=.08,leg=.07;addBoxFaces(x0,top-slab,z0,x1,top,z1,col,{stroke:'#6b4f12'});const yLeg=top-slab;addBoxFaces(x0,base,z0,x0+leg,yLeg,z0+leg,col,{stroke:'#6b4f12'});addBoxFaces(x1-leg,base,z0,x1,yLeg,z0+leg,col,{stroke:'#6b4f12'});addBoxFaces(x0,base,z1-leg,x0+leg,yLeg,z1,col,{stroke:'#6b4f12'});addBoxFaces(x1-leg,base,z1-leg,x1,yLeg,z1,col,{stroke:'#6b4f12'});
-    }else addBoxFaces(x0,base,z0,x1,top,z1,col,{stroke:'#475569'});
+      const slab=.06,leg=.06;addBoxFaces(x0,top-slab,z0,x1,top,z1,col,st('#6b4f12'));legs(top-slab,leg);
+    }else if(d.kind==='counter'){ // zabudowa kuchenna / wyspa: cokół, korpus, blat z nawisem; wyspa – nawis na stołki od strony pokoju
+      const tp=.04;if(id==='k_wyspa'){const wall=furnBackSide(it,f,W>D?['z0','z1']:['x0','x1']),ov=Math.min(.3,(W>D?D:W)*.35),bx0=wall==='x1'?x0+ov:x0,bx1=wall==='x0'?x1-ov:x1,bz0=wall==='z1'?z0+ov:z0,bz1=wall==='z0'?z1-ov:z1;
+        addBoxFaces(bx0+.05,base,bz0+.05,bx1-.05,base+.1,bz1-.05,cm?col:'#4b5563',st('#374151'));addBoxFaces(bx0,base+.1,bz0,bx1,top-tp,bz1,col,st('#374151'));addBoxFaces(x0,top-tp,z0,x1,top,z1,cm?col:'#e5e7eb',st('#111827'))}
+      else{const fr=furnBackSide(it,f,['x0','x1','z0','z1']),front=({x0:'x1',x1:'x0',z0:'z1',z1:'z0'})[fr],pin=(sd,v)=>sd===front?v:0;
+        addBoxFaces(x0+pin('x0',.06),base,z0+pin('z0',.06),x1-pin('x1',.06),base+.1,z1-pin('z1',.06),cm?col:'#4b5563',st('#374151'));addBoxFaces(x0,base+.1,z0,x1,top-tp,z1,col,st('#374151'));addBoxFaces(x0-(front==='x0'?.02:0),top-tp,z0-(front==='z0'?.02:0),x1+(front==='x1'?.02:0),top,z1+(front==='z1'?.02:0),cm?col:'#e5e7eb',st('#111827'))}
+    }else{addBoxFaces(x0,base,z0,x1,top,z1,col,st('#475569'));
+      // wysoka zabudowa (szafa, regał, AGD): pionowe podziały frontów od strony pokoju – żeby nie wyglądała jak ściana
+      if(top-base>1.4){const fr=furnBackSide(it,f,['x0','x1','z0','z1']),front=({x0:'x1',x1:'x0',z0:'z1',z1:'z0'})[fr],along=front[0]==='x'?D:W,n=Math.max(2,Math.round(along/.5)),lc='#111827';
+        for(let i=1;i<n;i++){const t=i/n;if(front[0]==='x'){const z=z0+D*t,x=front==='x0'?x0-.012:x1+.002;addBoxFaces(x,base+.08,z-.008,x+.01,top-.05,z+.008,lc,{stroke:lc})}else{const x=x0+W*t,z=front==='z0'?z0-.012:z1+.002;addBoxFaces(x-.008,base+.08,z,x+.008,top-.05,z+.01,lc,{stroke:lc})}}
+        if(front[0]==='x'){const x=front==='x0'?x0-.02:x1+.005;addBoxFaces(x,base+.06,z0,x+.015,base+.1,z1,lc,{stroke:lc})}else{const z=front==='z0'?z0-.02:z1+.005;addBoxFaces(x0,base+.06,z,x1,base+.1,z+.015,lc,{stroke:lc})}}}
   }}
 }
 function pushPoly(points,color,opts={}){three.scenePolys.push({points,color,alpha:opts.alpha??1,stroke:opts.stroke??'#334155',line:opts.line??0.7,kind:opts.kind||'solid'})}
