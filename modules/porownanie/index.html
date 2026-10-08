@@ -150,7 +150,7 @@ function planSvg(p){const g=p.grid||p.definitionSnapshot?.grid;if(!g)return '';c
 // ---------- wskaźniki jednego domu
 function metrics(p){const m={p};const tryc=(k,fn)=>{try{m[k]=fn()}catch(e){console.error(k,e);m[k]=null}};
   tryc('q',()=>HouserQuantities.compute(p));const q=m.q;if(!q)return m;
-  tryc('E',()=>HouserEnergy.compute(p));tryc('K',()=>HouserStructure.evaluate(p));tryc('RF',()=>window.HouserRoof?HouserRoof.evaluate(p):null);tryc('L',()=>HouserElectric.evaluate(p));tryc('PV',()=>HouserPV.compute(p));tryc('C',()=>HouserCost.compute(p));tryc('D',()=>HouserDaily.evaluate(p,p.dailySettings));tryc('S',()=>HouserSolar.compute(p));tryc('A',()=>HouserAcoustics.evaluate(p,p.acousticSettings));tryc('P',()=>HouserPlumbing.evaluate(p,p.plumbingSettings));tryc('V',()=>HouserHVAC.evaluate(p,p.hvacSettings));tryc('VM',()=>HouserHVAC.methods(p,p.hvacSettings,m.V));tryc('HS',()=>HouserHeatSys.evaluate(p)); // bez projektu: domyślna instalacja (pompa powietrzna + podłogówka), żeby domy były porównywalnetryc('Ht',()=>HouserHeating.compare(p,{...(p.heatingSettings||{}),...(m.HS?.designed?{emitters:m.HS.emitters}:{})}));tryc('ST',()=>HouserStorage.evaluate(p,p.storageSettings));tryc('ADV',()=>HouserAdvice.collect(p));
+  tryc('E',()=>HouserEnergy.compute(p));tryc('K',()=>HouserStructure.evaluate(p));tryc('RF',()=>window.HouserRoof?HouserRoof.evaluate(p):null);tryc('L',()=>HouserElectric.evaluate(p));tryc('PV',()=>HouserPV.compute(p));tryc('C',()=>HouserCost.compute(p));tryc('G',()=>window.HouserGarage?HouserGarage.evaluate(p):null);tryc('D',()=>HouserDaily.evaluate(p,p.dailySettings));tryc('S',()=>HouserSolar.compute(p));tryc('A',()=>HouserAcoustics.evaluate(p,p.acousticSettings));tryc('P',()=>HouserPlumbing.evaluate(p,p.plumbingSettings));tryc('V',()=>HouserHVAC.evaluate(p,p.hvacSettings));tryc('VM',()=>HouserHVAC.methods(p,p.hvacSettings,m.V));tryc('HS',()=>HouserHeatSys.evaluate(p)); // bez projektu: domyślna instalacja (pompa powietrzna + podłogówka), żeby domy były porównywalnetryc('Ht',()=>HouserHeating.compare(p,{...(p.heatingSettings||{}),...(m.HS?.designed?{emitters:m.HS.emitters}:{})}));tryc('ST',()=>HouserStorage.evaluate(p,p.storageSettings));tryc('ADV',()=>HouserAdvice.collect(p));
   const rooms=q.rooms.filter(r=>r.area>=2),name=r=>(r.name||'').toLowerCase();
   m.beds=rooms.filter(r=>/sypial|pokój|pokoj|gabinet/.test(name(r))).length;m.wet=q.baths+q.wcs;m.nrooms=rooms.length;
   m.floors=q.net[q.up]>0?(q.attic?'parter + poddasze':'parter + piętro'):'parterowy';
@@ -172,15 +172,18 @@ const ROWS=[
   ['Dach','kąt nachylenia połaci',m=>m.q?.G?.roofPitch,v=>nf(v)+'°',null],
   ['Przeszklenia','okna + drzwi tarasowe + okna dachowe razem; niżej – w stosunku do powierzchni użytkowej',m=>m.glaz,v=>nf(v,1)+' m²',null,m=>m.q?.usableTotal?nf(m.glaz/m.q.usableTotal*100)+'% pow. użytkowej':''],
   ['Koszt budowy'],
-  ['Szacunkowy koszt','cała budowa do zamieszkania, z rezerwą – wg modułu Wycena',m=>m.C?.total,zl,'low'],
-  ['Koszt za m²','koszt całej budowy ÷ powierzchnia użytkowa',m=>m.C&&m.q?.usableTotal?m.C.total/m.q.usableTotal:null,v=>zl(v)+'/m²','low'],
+  ['Koszt domu','sam dom do zamieszkania, z rezerwą – bez garażu wolnostojącego / wiaty i bez zagospodarowania działki (te – osobno niżej), żeby domy porównywać tak samo',m=>m.C?.house,zl,'low'],
+  ['Koszt za m²','koszt domu ÷ powierzchnia użytkowa',m=>m.C&&m.q?.usableTotal?m.C.house/m.q.usableTotal:null,v=>zl(v)+'/m²','low'],
+  ['Garaż wolnostojący / wiata','moduł Garaż – osobny budynek (garaż w bryle domu jest w koszcie domu)',m=>m.C?m.C.garage:null,v=>v?zl(v):'brak',null,m=>m.G?m.G.name+(m.G.cars?' · '+m.G.cars+' '+(m.G.cars===1?'auto':'auta'):''):''],
+  ['Zagospodarowanie działki','moduł Działka – podjazd, chodniki, trawnik, ogrodzenie; liczone, gdy działka narysowana',m=>m.C?(m.C.siteFull||0):null,v=>v?zl(v):'brak',null,m=>m.C?.siteFull?(m.C.siteOn?'wliczone do kosztu całkowitego':'w Wycenie niewliczone (pozycja wyłączona)'):''],
+  ['Koszt całkowity','dom + garaż / wiata + działka (jeśli włączona w Wycenie) – wszystko, co policzone w Wycenie',m=>m.C?.total,zl,'low'],
   ['Materiały / robocizna','ile kosztu to materiały; niżej – robocizna',m=>m.C?.totalM,zl,null,m=>m.C?'robocizna '+zl(m.C.totalL):''],
   ['– Stan zerowy','fundamenty, podłoga na gruncie, przyłącza',m=>stageSum(m,'Stan zerowy'),zl,null],
   ['– Stan surowy otwarty','ściany, strop, schody, komin, dach, balkony',m=>stageSum(m,'Stan surowy otwarty'),zl,null],
   ['– Stan surowy zamknięty','okna, drzwi zewnętrzne',m=>stageSum(m,'Stan surowy zamknięty'),zl,null],
   ['– Instalacje','prąd, woda, ogrzewanie, wentylacja (wg wyborów w modułach), klimatyzacja jeśli włączona w Wycenie',m=>stageSum(m,'Instalacje'),zl,null],
   ['– Elewacja i wykończenie','ocieplenie, tynki, podłogi, łazienki, kuchnia, drzwi',m=>stageSum(m,'Elewacja i wykończenie'),zl,null],
-  ['– Na zewnątrz','tarasy, pergole',m=>stageSum(m,'Na zewnątrz'),zl,null],
+  ['– Na zewnątrz','tarasy, pergole (garaż wolnostojący i działka – wyżej osobno)',m=>stageSum(m,'Na zewnątrz'),zl,null],
   ['– Inne','projekt, kierownik budowy, geodeta',m=>stageSum(m,'Inne'),zl,null],
   ['Rezerwa na nieprzewidziane','doliczona do kosztu (procent ustawiony w Wycenie)',m=>m.C?.reserve,zl,null,m=>m.C?m.C.s.reserve+'%':''],
   ['Balkony','powierzchnia balkonów na piętrze (moduł Balkony); niżej – wystające / nad parterem',m=>m.q?.balc?.area,v=>v?nf(v,1)+' m²':'brak',null,m=>m.q?.balc?.area?nf(m.q.balc.cantA,1)+' m² wystające · '+nf(m.q.balc.overA,1)+' m² nad parterem':''],
@@ -245,12 +248,12 @@ const ROWS=[
   ['Pokoje z problemem akustycznym','cichy pokój z oceną poniżej 6; niżej – ze wszystkich cichych pokoi',m=>m.loud,v=>v==null?'–':nf(v)+' '+plF(v,'pokój','pokoje','pokoi'),'low',m=>m.loudOf!=null?'z '+m.loudOf:''],
 ];
 
-const stageSum=(m,st)=>m.C?m.C.rows.filter(r=>r.stage===st).reduce((a,r)=>a+r.value,0)*(m.C.s.factor?1:1):null;
+const stageSum=(m,st)=>m.C?m.C.rows.filter(r=>r.stage===st&&r.id!=='garage'&&r.id!=='site').reduce((a,r)=>a+r.value,0)*(m.C.s.factor?1:1):null;
 const CRIT=[['cost','Koszt budowy za m²',2],['struct','Konstrukcja (łatwość budowy)',1],['pv','Fotowoltaika (dach pod panele)',1],['energy','Energia (ogrzewanie)',2],['daily','Codzienność',2],['sun','Przegrzewanie latem',1],['quiet','Akustyka',1],['plumb','Hydraulika',1],['heat','Ogrzewanie (koszt w okresie)',1],['vent','Wentylacja (wybrana metoda)',1],['ac','Klimatyzacja (koszt)',1],['store','Schowki i szafy',1],['area','Metraż (większy = lepiej)',0]];
 const WKEY='houser:compare-weights',WOPT=[[0,'nieważne'],[1,'ważne'],[2,'bardzo ważne']];
 let W=(()=>{try{return {...Object.fromEntries(CRIT.map(c=>[c[0],c[2]])),...JSON.parse(localStorage.getItem(WKEY)||'{}')}}catch(_){return Object.fromEntries(CRIT.map(c=>[c[0],c[2]]))}})();
 const clamp=v=>Math.max(0,Math.min(10,v));
-function overallScores(cols){const cpm=cols.map(c=>c.m.C&&c.m.q?.usableTotal?c.m.C.total/c.m.q.usableTotal:null),minC=Math.min(...cpm.filter(v=>v!=null)),maxA=Math.max(...cols.map(c=>c.m.q?.usableTotal||0));
+function overallScores(cols){const cpm=cols.map(c=>c.m.C&&c.m.q?.usableTotal?c.m.C.house/c.m.q.usableTotal:null),minC=Math.min(...cpm.filter(v=>v!=null)),maxA=Math.max(...cols.map(c=>c.m.q?.usableTotal||0));
   const hT=cols.map(c=>c.m.HS?c.m.HS.totalSrc:c.m.Ht?.best.total).filter(v=>v!=null),minH=hT.length?Math.min(...hT):null;
   return cols.map((c,i)=>{const m=c.m,part={cost:cpm[i]!=null?clamp(10*minC/cpm[i]):null,energy:m.E?clamp(10*(120-m.E.EU)/105):null,daily:m.D?.overall??null,
       struct:m.K?.score??null,pv:m.PV?.score??null,sun:m.hotOf?clamp(10*(1-m.hot/m.hotOf)):null,quiet:m.A?.overall??null,plumb:m.P?.overall??null,store:m.ST?.overall??null,vent:m.VM?.chosen?.score??null,ac:m.V?clamp(10-(m.V.ac.best||0)/4000):null,heat:m.HS?m.HS.totalSrc:m.Ht?m.Ht.best.total:null,area:maxA?clamp(10*(m.q?.usableTotal||0)/maxA):null};
@@ -271,7 +274,7 @@ async function render(){
   h+='</tr></thead><tbody>';
   const OV=cols.length?overallScores(cols):[],rank=OV.map((o,i)=>i).sort((a,b)=>(OV[b].score??-1)-(OV[a].score??-1));
   // cena do jakości: ocena bez kryterium kosztu ÷ koszt budowy, najlepszy = 10
-  const VAL=cols.map((c,i)=>{const o=OV[i];let sw=0,sv=0;for(const [k] of CRIT){if(k==='cost')continue;const w=+W[k]||0;if(w&&o.part[k]!=null){sw+=w;sv+=w*o.part[k]}}const q=sw?sv/sw:null,C=c.m.C?.total;return {q,C,r:q!=null&&C?q/(C/1e5):null}});
+  const VAL=cols.map((c,i)=>{const o=OV[i];let sw=0,sv=0;for(const [k] of CRIT){if(k==='cost')continue;const w=+W[k]||0;if(w&&o.part[k]!=null){sw+=w;sv+=w*o.part[k]}}const q=sw?sv/sw:null,C=c.m.C?.house;return {q,C,r:q!=null&&C?q/(C/1e5):null}});
   const maxR=Math.max(...VAL.map(v=>v.r||0));VAL.forEach(v=>v.score=v.r&&maxR?10*v.r/maxR:null);
   h+='<tr class="tot"><td class="lbl">Cena do jakości <span class="dir high">▲ więcej = lepiej</span><small>ocena ogólna bez kosztu, podzielona przez koszt budowy; najlepszy stosunek = 10</small></td>'+VAL.map((v,i)=>'<td><span class="'+(cols.length>1&&v.score===10?'best':'')+'">'+nf(v.score,1)+' / 10</span><small>'+(v.r!=null?nf(v.r,2)+' pkt jakości na 100 tys. zł':'')+'</small></td>').join('')+(cols.length<MAXC?'<td></td>':'')+'</tr>';
   h+='<tr class="tot"><td class="lbl">Ocena ogólna <span class="dir high">▲ więcej = lepiej</span><small>0–10, średnia punktów z kryteriów poniżej, ważona Twoimi wagami</small></td>'+OV.map((o,i)=>'<td><span class="'+(cols.length>1&&rank[0]===i?'best':'')+'">'+nf(o.score,1)+' / 10</span><small>miejsce '+(rank.indexOf(i)+1)+'</small></td>').join('')+(cols.length<MAXC?'<td></td>':'')+'</tr>';

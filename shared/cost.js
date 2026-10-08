@@ -87,7 +87,10 @@ function compute(){
     const on=s.off[id]?false:(defOn===false?!!s.on[id]:true),vm=on?qty*mat:0,vl=on?qty*lab:0;
     rows.push({id,stage,name,unit,qty,mat,lab,defMat,defLab,customMat:s.mat[id]!=null||old!=null,customLab:s.lab[id]!=null||old!=null,on,how:typeof how==='function'?how(q):how,vm,vl,value:vm+vl})}
   const subM=rows.reduce((a,r)=>a+r.vm,0),subL=rows.reduce((a,r)=>a+r.vl,0),sub=subM+subL,k=s.reserve/100;
-  return {q,s,rows,subM,subL,sub,reserve:sub*k,reserveM:subM*k,reserveL:subL*k,total:sub*(1+k),totalM:subM*(1+k),totalL:subL*(1+k)};
+  // podział do porównań: sam dom / garaż wolnostojący lub wiata / zagospodarowanie działki (z rezerwą); siteFull – działka także gdy niewliczona
+  const part=id=>rows.filter(r=>r.id===id).reduce((a,r)=>a+r.value,0)*(1+k),garage=part('garage'),site=part('site'),sr=rows.find(r=>r.id==='site');
+  return {q,s,rows,subM,subL,sub,reserve:sub*k,reserveM:subM*k,reserveL:subL*k,total:sub*(1+k),totalM:subM*(1+k),totalL:subL*(1+k),
+    house:sub*(1+k)-garage-site,garage,site,siteOn:!!sr?.on,siteFull:sr?sr.qty*(sr.mat+sr.lab)*(1+k):0};
 }
 
 const withP=fn=>p=>{const o=project;project=p;try{return fn()}finally{project=o}};

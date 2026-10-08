@@ -117,7 +117,7 @@ async function sources(withPub){const out=[],seen=new Set(),cur=HouserStore.load
 // liczby jednego domu
 function measure(p){const r={};const T=(k,fn)=>{try{r[k]=fn()}catch(e){console.error(k,e)}};
   T('q',()=>HouserQuantities.compute(p));if(!r.q||!r.q.usableTotal)return null;
-  T('A',()=>HouserAdvice.collect(p));T('C',()=>HouserCost.compute(p).total);T('H',()=>HouserHeatSys.evaluate(p).year);
+  T('A',()=>HouserAdvice.collect(p));T('C',()=>HouserCost.compute(p).house);T('H',()=>HouserHeatSys.evaluate(p).year);
   const rm=r.q.rooms.filter(x=>x.area>=2&&/sypial|pokój|pokoj|gabinet/i.test(x.name||''));
   const scored=(r.A?.mods||[]).filter(m=>m.score!=null).sort((a,b)=>b.score-a.score);
   return {area:r.q.usableTotal,beds:rm.length,floors:r.q.net[r.q.up]>0?(r.q.attic?'z poddaszem':'z piętrem'):'parterowy',score:r.A?.overall??null,cost:r.C??null,bills:r.H??null,
@@ -143,7 +143,7 @@ function render(){const L=$('list'),key=$('sort').value;
   L.innerHTML=S.map((r,i)=>{const m=r.m;return '<div class="h'+(r.o.cur?' cur':'')+(notMine(r.o)?' notmine':'')+'"><div class="rk">'+(i+1)+'</div><div class="th">'+r.plan+'</div><div>'+
     '<div class="nm">'+(notMine(r.o)?'<span class="own no">'+(r.o.edit?'✏️ Wspólny':'Nie mój')+(r.o.owner?' · '+esc(r.o.owner):'')+'</span>':'<span class="own">Mój</span>')+esc(r.o.name)+(m.todo?' <span class="todo" title="Dom nieskończony – nie wszystkie decyzje są podjęte">⚠ '+m.todo+' do wybrania</span>':'')+'<small>'+(r.o.cur?'<span>otwarty teraz</span> · ':'')+'<span>'+m.floors+'</span></small></div>'+
     '<div class="nums">'+n('ocena',(m.score!=null?'<span class="'+cls(m.score)+'">'+nf(m.score,1)+'</span><span class="sb"><i style="width:'+(m.score*10)+'%;background:'+col(m.score)+'"></i></span>':'–'),key==='score')+
-      n('cena do jakości',r.value!=null?nf(r.value,1)+' / 10':'–',key==='value')+n('budowa',zl(m.cost),key==='cost')+n('za m²',m.cost?nf(m.cost/m.area)+' zł':'–',key==='m2')+
+      n('cena do jakości',r.value!=null?nf(r.value,1)+' / 10':'–',key==='value')+n('dom',zl(m.cost),key==='cost')+n('za m²',m.cost?nf(m.cost/m.area)+' zł':'–',key==='m2')+
       n('rachunki / rok',m.bills!=null?nf(Math.round(m.bills/100)*100)+' zł':'–',key==='bills')+n('metraż',nf(m.area)+' m²',key==='area')+n('pokoje',String(m.beds))+'</div>'+
     '<div class="pm">'+(r.o.cur?'<button class="hs-btn go" data-go="co-poprawic">Co poprawić →</button>':'<button class="hs-btn go" data-open="'+esc(r.o.src+'|'+r.o.id)+'">'+(notMine(r.o)&&!r.o.edit?'👁 Podgląd':'Otwórz ten dom')+'</button>')+(m.best?'<span class="g">▲ <span>'+esc(m.best.name)+'</span> '+nf(m.best.score,1)+'</span>':'')+(m.worst&&m.worst.score<7?'<span class="b">▼ <span>'+esc(m.worst.name)+'</span> '+nf(m.worst.score,1)+'</span>':'')+'</div></div></div>'}).join('');
 }

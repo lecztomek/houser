@@ -123,7 +123,7 @@ let saveT=null;function saveCs(s){project.costSettings=s;clearTimeout(saveT);sav
 function render(){
   const M=$('main');
   if(!project||!grid()){M.innerHTML='<div class="empty">Brak projektu. Zacznij od modułu <b>Pomieszczenia</b> i narysuj rzut w <b>Układzie pomieszczeń</b> (albo kliknij „Przykład” na pasku u góry).</div>';$('stats').innerHTML='';return}
-  const R=compute(),{q,s}=R,perM=q.usableTotal>0?R.total/q.usableTotal:0;
+  const R=compute(),{q,s}=R,perM=q.usableTotal>0?R.house/q.usableTotal:0;
   for(const b of $('stdSeg').children)b.classList.toggle('active',b.dataset.v===s.std);if(document.activeElement!==$('factor'))$('factor').value=s.factor;
   $('stats').innerHTML=[['Powierzchnia użytkowa',n1(q.usableTotal)+' m²'],['– parter',n1(Object.values(q.usable)[0]||0)+' m²'],['– piętro'+(q.G.upperType==='attic'?' (wg wysokości)':''),n1(Object.values(q.usable)[1]||0)+' m²'],['Powierzchnia zabudowy',n1(q.foot)+' m²'],
     ['Ściany zewnętrzne netto',n1(q.extNet)+' m²'],['Ściany działowe',n1(q.partA)+' m²'],['Dach',n1(q.roofA)+' m²'],['Okna / HST',n1(q.ops.winA+q.ops.hstA)+' m² ('+(q.ops.win+q.ops.hst)+' szt.)'],['Okna dachowe',q.ops.roofWin+' szt.'],['Drzwi zewn. / wewn.',q.ops.extDoor+' / '+q.ops.intDoor+' szt.'],['Łazienki / WC',q.baths+' / '+q.wcs]]
@@ -131,7 +131,7 @@ function render(){
   const stage={};for(const r of R.rows){const t=stage[r.stage]||(stage[r.stage]={m:0,l:0});t.m+=r.vm;t.l+=r.vl}
   const sum=k=>(stage[k]?.m||0)+(stage[k]?.l||0),sso=sum('Stan zerowy')+sum('Stan surowy otwarty'),ssz=sso+sum('Stan surowy zamknięty');
   const pct=v=>R.total>0?Math.round(v/R.total*100)+'%':'';
-  let html='<div class="tiles"><div class="tile main"><div class="l">Szacunkowy koszt budowy</div><div class="v">'+zl(R.total)+'</div><div class="s">z rezerwą '+s.reserve+'% · '+zl(perM)+' / m² użytkowej</div></div>'+
+  let html='<div class="tiles"><div class="tile main"><div class="l">Szacunkowy koszt budowy</div><div class="v">'+zl(R.total)+'</div><div class="s">z rezerwą '+s.reserve+'% · '+zl(perM)+' / m² użytkowej (sam dom)'+(R.garage||R.site?'<br>dom '+zl(R.house)+(R.garage?' + garaż '+zl(R.garage):'')+(R.site?' + działka '+zl(R.site):''):'')+'</div></div>'+
     '<div class="tile mat"><div class="l">Materiały</div><div class="v">'+zl(R.totalM)+'</div><div class="s">'+pct(R.totalM)+' kosztu</div></div>'+
     '<div class="tile lab"><div class="l">Robocizna i usługi</div><div class="v">'+zl(R.totalL)+'</div><div class="s">'+pct(R.totalL)+' kosztu</div></div>'+
     '<div class="tile"><div class="l">Stan surowy zamknięty</div><div class="v">'+zl(ssz)+'</div><div class="s">w tym surowy otwarty '+zl(sso)+'</div></div></div>';

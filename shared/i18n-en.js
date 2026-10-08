@@ -4272,4 +4272,12 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "Szklane przesuwne":"Glass sliding",
 "Dopłata: drzwi szklane (szkło hartowane, okucia)":"Extra: glass doors (tempered glass, fittings)",
 "wariant „Szklane” w module Drzwi wewnętrzne / Okna i drzwi":"„Glass” variant in the Interior doors / Windows and doors module",
-"Do sypialni pełne drzwi z uszczelką; szklane lepiej do salonu, gabinetu czy holu.":"Use solid doors with a seal for bedrooms; glass ones suit the living room, study or hall better."};
+"Do sypialni pełne drzwi z uszczelką; szklane lepiej do salonu, gabinetu czy holu.":"Use solid doors with a seal for bedrooms; glass ones suit the living room, study or hall better.",
+"Koszt domu":"House cost",
+"Koszt całkowity":"Total cost",
+"Zagospodarowanie działki":"Plot landscaping",
+"wliczone do kosztu całkowitego":"included in the total cost",
+"w Wycenie niewliczone (pozycja wyłączona)":"not included in the Estimate (item switched off)",
+"sam dom do zamieszkania, z rezerwą – bez garażu wolnostojącego / wiaty i bez zagospodarowania działki (te – osobno niżej), żeby domy porównywać tak samo":"the house alone, ready to live in, with the reserve – without a detached garage / carport and without plot landscaping (those – separately below), so houses are compared the same way",
+"koszt domu ÷ powierzchnia użytkowa":"house cost ÷ usable area",
+"dom + garaż / wiata + działka (jeśli włączona w Wycenie) – wszystko, co policzone w Wycenie":"house + garage / carport + plot (if switched on in the Estimate) – everything counted in the Estimate"};

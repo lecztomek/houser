@@ -177,6 +177,7 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  const sj=ld('stodola-jasna.json');sj.garage={type:'detached',cars:2};const gd=G.evaluate(sj);ok(gd.w>=6&&gd.cost.total>80000&&gd.cost.total<200000,'garaż wolnostojący na 2 auta: wymiary i koszt');
  const sc={...sj,garage:{type:'carport',cars:2}};ok(G.evaluate(sc).cost.total<gd.cost.total/2,'wiata tańsza od garażu');
  const Rd=SI.evaluate(sj);ok(Rd.garage&&!Rd.issues.some(i=>i.type==='garage'),'działka: garaż wolnostojący domyślnie obok domu, bez kolizji');
+ {const Cg=W.HouserCost.compute(sj),C0=W.HouserCost.compute(ld('stodola-jasna.json'));ok(Cg.garage>0&&Math.abs(Cg.house-C0.house)<1&&Math.abs(Cg.total-Cg.house-Cg.garage-Cg.site)<1&&C0.house===C0.total,'Wycena: koszt domu bez garażu wolnostojącego – porównywalny między domami')}
  ok(W.HouserCost.compute(sj).rows.some(r=>r.id==='garage'&&r.value>0)&&!W.HouserCost.compute(ld('stodola-jasna.json')).rows.some(r=>r.id==='garage'),'Wycena: garaż wolnostojący tylko gdy wybrany');
  const ss=ld('zefir-2.json');ss.site={w:14,d:20};const Rs=SI.evaluate(ss);ok(Rs.issues.some(i=>i.type==='setback'||i.type==='house'),'działka: za wąska działka – uwaga o odległości od granicy');
  for(const rot of [90,180,270]){const pr=ld('dom-parterowy.json');pr.site={rot};const Rr=SI.evaluate(pr),R2=SI.evaluate({...pr,site:{...Rr.set,cells:SI.autoPaths(pr)}});
