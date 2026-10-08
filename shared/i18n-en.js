@@ -4280,4 +4280,9 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "w Wycenie niewliczone (pozycja wyłączona)":"not included in the Estimate (item switched off)",
 "sam dom do zamieszkania, z rezerwą – bez garażu wolnostojącego / wiaty i bez zagospodarowania działki (te – osobno niżej), żeby domy porównywać tak samo":"the house alone, ready to live in, with the reserve – without a detached garage / carport and without plot landscaping (those – separately below), so houses are compared the same way",
 "koszt domu ÷ powierzchnia użytkowa":"house cost ÷ usable area",
-"dom + garaż / wiata + działka (jeśli włączona w Wycenie) – wszystko, co policzone w Wycenie":"house + garage / carport + plot (if switched on in the Estimate) – everything counted in the Estimate"};
+"dom + garaż / wiata + działka (jeśli włączona w Wycenie) – wszystko, co policzone w Wycenie":"house + garage / carport + plot (if switched on in the Estimate) – everything counted in the Estimate",
+"Bryła i założenia":"Shape and brief",
+"Konstrukcja i materiały":"Structure and materials",
+"Energia i instalacje":"Energy and services",
+"Koszty i porównania":"Costs and comparisons",
+"Zwiń / rozwiń grupę":"Collapse / expand group"};

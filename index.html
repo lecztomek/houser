@@ -24,7 +24,14 @@ body.navopen #nav{width:320px;box-shadow:12px 0 32px rgba(15,23,42,.22)}
 .burger{flex:0 0 auto;width:42px;height:42px;border-radius:10px;border:1px solid #d3dbe5;background:#fff;color:#334155;display:grid;place-items:center;cursor:pointer}
 .burger:hover{border-color:#94a3b8;color:#0f172a}
 #tabs{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:2px 12px 14px;display:flex;flex-direction:column;gap:3px;scrollbar-width:thin}
-#tabs .grp{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8391a5;padding:12px 8px 5px;white-space:nowrap}
+#tabs .grp{--gc:#8391a5;display:flex;align-items:center;gap:7px;font:inherit;font-size:11.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--gc);padding:12px 8px 5px;white-space:nowrap;background:none;border:0;cursor:pointer;text-align:left;width:100%}
+#tabs .grp:before{content:'';flex:0 0 auto;width:8px;height:8px;border-radius:3px;background:var(--gc)}
+#tabs .grp .gn{flex:1;overflow:hidden;text-overflow:ellipsis}
+#tabs .grp .gc{font-size:10px;color:#9aa6b6;font-weight:700;letter-spacing:0}
+#tabs .grp .gv{font-size:10px;color:#9aa6b6;transition:transform .15s;display:inline-block}
+#tabs .grp.shut .gv{transform:rotate(-90deg)}
+#tabs .grp:hover .gn{text-decoration:underline}
+.tab.hid:not(.active){display:none}
 .tab{--gc:#64748b;--gt:#f1f5f9;display:flex;align-items:center;gap:12px;min-height:48px;padding:5px 10px 5px 6px;border:1px solid transparent;border-radius:10px;background:transparent;color:#1e293b;cursor:pointer;font:600 14.5px/1.2 var(--hs-font);text-align:left;width:100%;transition:background .12s,border-color .12s;white-space:nowrap}
 .tab .ic{flex:0 0 auto;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--gt);color:var(--gc)}
 .tab .ic svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -32,13 +39,15 @@ body.navopen #nav{width:320px;box-shadow:12px 0 32px rgba(15,23,42,.22)}
 .tab .no{font-size:12px;font-weight:600;color:#9aa6b6;font-variant-numeric:tabular-nums}
 .tab:hover{background:#fff;border-color:#dbe2ea}
 .tab.active{background:#fff;border-color:#93c5fd;color:#1d4ed8;box-shadow:0 1px 3px rgba(15,23,42,.08),0 0 0 2px rgba(59,130,246,.12)}
-.tab.active .ic{background:#2563eb;color:#fff}
+.tab.active .ic{background:var(--gc);color:#fff}
 .tab.active .no{color:#60a5fa}
 /* pasek (zamknięte): same ikony, burger nad logo */
 body:not(.navopen) .brand>span:last-child,body:not(.navopen) .tab .tx,body:not(.navopen) .tab .no{display:none}
 body:not(.navopen) .navtop{flex-direction:column}
 body:not(.navopen) #tabs{padding:2px 10px 14px}
-body:not(.navopen) #tabs .grp{font-size:0;padding:8px 0 4px;margin:0 6px;border-top:1px solid #d3dbe5}
+body:not(.navopen) #tabs .grp{font-size:0;padding:0;margin:8px 6px 4px;border-top:3px solid var(--gc);border-radius:2px;width:auto;cursor:default}
+body:not(.navopen) #tabs .grp:before,body:not(.navopen) #tabs .grp .gc,body:not(.navopen) #tabs .grp .gv{display:none}
+body:not(.navopen) .tab.hid{display:flex}
 body:not(.navopen) #tabs .grp:first-of-type{border-top:0}
 body:not(.navopen) .tab{justify-content:center;padding:4px}
 body.navopen .brand{flex:1}
@@ -277,46 +286,46 @@ a{color:var(--accent)}
 window.HouserI18n=window.HouserI18n||{lang:'pl',set(){},t:s=>s};
 // Moduły w kolejności projektowania. group: etap, step: numer kroku na karcie.
 const MODULES=[
-  {id:'obrys',group:'Bryła',name:'Obrys domu',src:'modules/obrys/',desc:'Tu zaczynasz nowy projekt: kształt budynku rysowany po liniach siatki – dowolny (L, T, wnęki); siatka i warstwy dopasowują się same.'},
-  {id:'kondygnacje-dach',group:'Bryła',name:'Kondygnacje i dach',src:'modules/kondygnacje-dach/',desc:'Widok z boku: parter, pełne piętro albo poddasze ze ścianką kolankową, kąt i kierunek dachu.'},
-  {id:'pomieszczenia',group:'Założenia',name:'Pomieszczenia',src:'modules/pomieszczenia/',desc:'Jakie pomieszczenia ma dom i na której kondygnacji: nazwy, kolory, wnęki.'},
-  {id:'warunki',group:'Założenia',name:'Warunki',src:'modules/warunki/',desc:'Zasady układu: powierzchnie, sąsiedztwa, szerokości, drzwi, dojście – pogrupowane i rozwijane.'},
-  {id:'projektowanie',group:'Projekt',name:'Układ pomieszczeń',src:'modules/projektowanie/',desc:'Malowanie pomieszczeń na siatce, drzwi, okna i komin; walidacja warunków na bieżąco.'},
-  {id:'schody',group:'Projekt',name:'Schody',src:'modules/schody/',desc:'Rodzaj schodów (proste, L, 180°, kręcone), parametry i wstawienie na rzut – kratki pojawiają się same.'},
-  {id:'okna-drzwi',group:'Projekt',name:'Okna i drzwi zewnętrzne',src:'modules/okna-drzwi/',desc:'Rodzaje okien (niskie, balkonowe, naświetla, ścięte pod skos, dachowe) i drzwi, z podglądem elewacji.'},
-  {id:'balkony',group:'Projekt',name:'Balkony',src:'modules/balkony/',desc:'Balkony na piętrze malowane kratkami: wystające poza ścianę albo nad częścią parteru, gdy piętro jest mniejsze – balustrada, łącznik termiczny, wyjście z pokoju.'},
-  {id:'ocieplenie',group:'Projekt',name:'Ocieplenie i elewacja',src:'modules/ocieplenie/',desc:'Z czego są ściany, dach i podłoga: mur, rodzaj i grubość ocieplenia, okna, wykończenie elewacji – współczynniki U do bilansu energii, koszt i czy warto grubiej.'},
-  {id:'drzwi-wewnetrzne',group:'Projekt',name:'Drzwi wewnętrzne',src:'modules/drzwi-wewnetrzne/',desc:'Drzwi między pomieszczeniami na rzucie: rodzaj, wysokość (też niskie pod skosem) i kierunek otwierania.'},
-  {id:'tarasy',group:'Projekt',name:'Tarasy i pergole',src:'modules/tarasy/',desc:'Malowanie kratek wokół domu: taras, zadaszony taras, pergola.'},
-  {id:'garaz',group:'Projekt',name:'Garaż',src:'modules/garaz/',desc:'Garaż w bryle domu, wolnostojący albo wiata: ile aut się zmieści, szerokość bramy, wymiary i koszt. Miejsce na działce – w module Działka.'},
-  {id:'dzialka',group:'Projekt',name:'Działka',src:'modules/dzialka/',desc:'Gdzie stoi dom: wymiary działki, ulica, odległości od granic; malowanie podjazdu, chodników, miejsc postojowych, żwiru i rabat, drzewa, ogrodzenie. Widać w Zewnątrz 3D, koszt w Wycenie.'},
-  {id:'instalacja-grzewcza',group:'Wnętrza',name:'Instalacja grzewcza',src:'modules/instalacja-grzewcza/',desc:'Źródła ciepła (główne i alternatywne, np. pompa + kominek), urządzenia na rzucie: kocioł, jednostka zewnętrzna, bufor, zasobnik, rozdzielacze – i czym grzeje każdy pokój.'},
+  {id:'obrys',group:'Bryła i założenia',name:'Obrys domu',src:'modules/obrys/',desc:'Tu zaczynasz nowy projekt: kształt budynku rysowany po liniach siatki – dowolny (L, T, wnęki); siatka i warstwy dopasowują się same.'},
+  {id:'kondygnacje-dach',group:'Bryła i założenia',name:'Kondygnacje i dach',src:'modules/kondygnacje-dach/',desc:'Widok z boku: parter, pełne piętro albo poddasze ze ścianką kolankową, kąt i kierunek dachu.'},
+  {id:'pomieszczenia',group:'Bryła i założenia',name:'Pomieszczenia',src:'modules/pomieszczenia/',desc:'Jakie pomieszczenia ma dom i na której kondygnacji: nazwy, kolory, wnęki.'},
+  {id:'warunki',group:'Bryła i założenia',name:'Warunki',src:'modules/warunki/',desc:'Zasady układu: powierzchnie, sąsiedztwa, szerokości, drzwi, dojście – pogrupowane i rozwijane.'},
+  {id:'projektowanie',group:'Rzut',name:'Układ pomieszczeń',src:'modules/projektowanie/',desc:'Malowanie pomieszczeń na siatce, drzwi, okna i komin; walidacja warunków na bieżąco.'},
+  {id:'schody',group:'Rzut',name:'Schody',src:'modules/schody/',desc:'Rodzaj schodów (proste, L, 180°, kręcone), parametry i wstawienie na rzut – kratki pojawiają się same.'},
+  {id:'okna-drzwi',group:'Rzut',name:'Okna i drzwi zewnętrzne',src:'modules/okna-drzwi/',desc:'Rodzaje okien (niskie, balkonowe, naświetla, ścięte pod skos, dachowe) i drzwi, z podglądem elewacji.'},
+  {id:'drzwi-wewnetrzne',group:'Rzut',name:'Drzwi wewnętrzne',src:'modules/drzwi-wewnetrzne/',desc:'Drzwi między pomieszczeniami na rzucie: rodzaj, wysokość (też niskie pod skosem) i kierunek otwierania.'},
+  {id:'balkony',group:'Rzut',name:'Balkony',src:'modules/balkony/',desc:'Balkony na piętrze malowane kratkami: wystające poza ścianę albo nad częścią parteru, gdy piętro jest mniejsze – balustrada, łącznik termiczny, wyjście z pokoju.'},
+  {id:'ocieplenie',group:'Konstrukcja i materiały',name:'Ocieplenie i elewacja',src:'modules/ocieplenie/',desc:'Z czego są ściany, dach i podłoga: mur, rodzaj i grubość ocieplenia, okna, wykończenie elewacji – współczynniki U do bilansu energii, koszt i czy warto grubiej.'},
+  {id:'konstrukcja',group:'Konstrukcja i materiały',name:'Konstrukcja',src:'modules/konstrukcja/',desc:'Czy układ da się tanio zbudować: rozpiętość stropu (podciągi), ściany piętra nad ścianami parteru, wysunięcia, szerokie otwory i przeszklenia narożne, więźba dachu – z kosztem wzmocnień w Wycenie.'},
+  {id:'konstrukcja-dachu',group:'Konstrukcja i materiały',name:'Konstrukcja dachu',src:'modules/konstrukcja-dachu/',desc:'Więźba dachu: krokwie, jętki, płatwie albo belka kalenicowa, przekroje elementów i na czym stoją słupy – także pustka na piętrze (słupy na całą wysokość, ściany i brzegi stropu bez podparcia)'},
+  {id:'energia',group:'Energia i instalacje',name:'Energia',src:'modules/energia/',desc:'Bilans cieplny: straty przez przegrody i wentylację, moc grzewcza, zapotrzebowanie kWh/m² i koszt ogrzewania różnymi źródłami.'},
+  {id:'ogrzewanie',group:'Energia i instalacje',name:'Ogrzewanie',src:'modules/ogrzewanie/',desc:'Porównanie źródeł ciepła: pompy ciepła, gaz, pellet, ekogroszek, drewno, kominek z płaszczem wodnym, prąd – koszt instalacji, rachunki, koszt w 20 lat i dopasowanie do domu.'},
+  {id:'instalacja-grzewcza',group:'Energia i instalacje',name:'Instalacja grzewcza',src:'modules/instalacja-grzewcza/',desc:'Źródła ciepła (główne i alternatywne, np. pompa + kominek), urządzenia na rzucie: kocioł, jednostka zewnętrzna, bufor, zasobnik, rozdzielacze – i czym grzeje każdy pokój.'},
+  {id:'wentylacja',group:'Energia i instalacje',name:'Wentylacja',src:'modules/wentylacja/',desc:'Porównanie sposobów wentylacji dla tego domu: grawitacyjna, hybrydowa, mechaniczna wywiewna, rekuperatory ścienne, rekuperacja – koszty, jakość powietrza, dopasowanie.'},
+  {id:'rekuperacja',group:'Energia i instalacje',name:'Rekuperacja',src:'modules/rekuperacja/',desc:'Rekuperacja w szczegółach: jak bardzo potrzebna, strumienie powietrza, centrala i kanały, trudność montażu, koszt i zwrot.'},
+  {id:'klimatyzacja',group:'Energia i instalacje',name:'Klimatyzacja',src:'modules/klimatyzacja/',desc:'Które pokoje latem się przegrzewają, jakiej mocy klimatyzatory, split czy multisplit, trudność montażu i koszt.'},
+  {id:'fotowoltaika',group:'Energia i instalacje',name:'Fotowoltaika',src:'modules/fotowoltaika/',desc:'Panele na dachu: ile się zmieści na połaciach, produkcja w miesiącach wobec zużycia domu (z pompą ciepła), magazyn energii, oszczędność i zwrot – po włączeniu tańszy prąd w Ogrzewaniu i Energii.'},
+  {id:'hydraulika',group:'Energia i instalacje',name:'Hydraulika',src:'modules/hydraulika/',desc:'Jak łatwo i tanio zrobić wod-kan: odległości łazienek, WC, kuchni i pralni od źródła ciepłej wody, piony parter–piętro, dopłata za układ.'},
+  {id:'elektryka',group:'Energia i instalacje',name:'Elektryka i oświetlenie',src:'modules/elektryka/',desc:'Gniazda, łączniki i punkty światła w każdym pomieszczeniu, obwody i rozdzielnica, urządzenia na osobnych obwodach, moc przyłączeniowa (z pompą ciepła, ładowarką, PV) i koszt instalacji do Wyceny.'},
   {id:'meblowanie',group:'Wnętrza',name:'Meblowanie',src:'modules/meblowanie/',desc:'Rozmieszczanie mebli na gotowym rzucie – pomieszczeń tu nie zmieniasz.'},
+  {id:'schowki',group:'Wnętrza',name:'Schowki i szafy',src:'modules/schowki/',desc:'Ile miejsca na rzeczy: szafy i szafki, garderoby, spiżarnia, schowki, garaż, skosy, pod schodami – czy wystarczy dla domowników i gdzie brakuje wolnej ściany na szafę.'},
+  {id:'tarasy',group:'Otoczenie',name:'Tarasy i pergole',src:'modules/tarasy/',desc:'Malowanie kratek wokół domu: taras, zadaszony taras, pergola.'},
+  {id:'garaz',group:'Otoczenie',name:'Garaż',src:'modules/garaz/',desc:'Garaż w bryle domu, wolnostojący albo wiata: ile aut się zmieści, szerokość bramy, wymiary i koszt. Miejsce na działce – w module Działka.'},
+  {id:'dzialka',group:'Otoczenie',name:'Działka',src:'modules/dzialka/',desc:'Gdzie stoi dom: wymiary działki, ulica, odległości od granic; malowanie podjazdu, chodników, miejsc postojowych, żwiru i rabat, drzewa, ogrodzenie. Widać w Zewnątrz 3D, koszt w Wycenie.'},
   {id:'wnetrze-3d',group:'Podgląd',name:'Wnętrze 3D',src:'modules/wnetrze-3d/',desc:'Spacer po domu z punktu obserwatora (strzałki), schody, skosy dachu, meble.'},
   {id:'zewnatrz-3d',group:'Podgląd',name:'Zewnątrz 3D',src:'modules/zewnatrz-3d/',desc:'Bryła domu z zewnątrz: dach, okna, drzwi, tarasy i pergole.'},
   {id:'wizualizacje',group:'Podgląd',name:'Wizualizacje AI',src:'modules/wizualizacje/',desc:'Zdjęcie z podglądu 3D zamienione przez AI (Gemini) na realistyczną wizualizację – prompt tworzy się sam z projektu.'},
   {id:'galeria',group:'Podgląd',name:'Galeria',src:'modules/galeria/',desc:'Wybrane zdjęcia domu: najlepsze wizualizacje AI, ujęcia z 3D i Twoje własne zdjęcia – okładka, podpisy, kolejność, pokaz i porównanie przed / po.'},
-  {id:'przepisy',group:'Analizy',name:'Przepisy',src:'modules/przepisy/',desc:'Sprawdzenie z warunkami technicznymi: okna do podłogi 1:8, wysokości, drzwi, schody, powierzchnie pokoi – z mapą pomieszczeń.'},
-  {id:'codziennosc',group:'Analizy',name:'Codzienność',src:'modules/codziennosc/',desc:'Jak się mieszka na co dzień: scenariusze (zakupy, pranie, palenie w piecu, goście, noc, łazienki i WC) – trasy po domu, odległości i przejścia przez pokoje, ocena i podpowiedzi.'},
-  {id:'schowki',group:'Analizy',name:'Schowki i szafy',src:'modules/schowki/',desc:'Ile miejsca na rzeczy: szafy i szafki, garderoby, spiżarnia, schowki, garaż, skosy, pod schodami – czy wystarczy dla domowników i gdzie brakuje wolnej ściany na szafę.'},
-  {id:'akustyka',group:'Analizy',name:'Akustyka',src:'modules/akustyka/',desc:'Czy w sypialniach będzie cicho: co jest za ścianą, nad i pod pokojem (garaż, pralnia, salon, łazienka, schody), ulica, antresola – ocena pokoi i podpowiedzi.'},
-  {id:'naslonecznienie',group:'Analizy',name:'Nasłonecznienie',src:'modules/naslonecznienie/',desc:'Zyski od słońca latem i zimą, pomieszczenie po pomieszczeniu: ryzyko przegrzania, mapa ciepła, wpływ okapu, tarasu i rolet.'},
-  {id:'energia',group:'Analizy',name:'Energia',src:'modules/energia/',desc:'Bilans cieplny: straty przez przegrody i wentylację, moc grzewcza, zapotrzebowanie kWh/m² i koszt ogrzewania różnymi źródłami.'},
-  {id:'ogrzewanie',group:'Analizy',name:'Ogrzewanie',src:'modules/ogrzewanie/',desc:'Porównanie źródeł ciepła: pompy ciepła, gaz, pellet, ekogroszek, drewno, kominek z płaszczem wodnym, prąd – koszt instalacji, rachunki, koszt w 20 lat i dopasowanie do domu.'},
-  {id:'konstrukcja',group:'Analizy',name:'Konstrukcja',src:'modules/konstrukcja/',desc:'Czy układ da się tanio zbudować: rozpiętość stropu (podciągi), ściany piętra nad ścianami parteru, wysunięcia, szerokie otwory i przeszklenia narożne, więźba dachu – z kosztem wzmocnień w Wycenie.'},
-  {id:'konstrukcja-dachu',group:'Analizy',name:'Konstrukcja dachu',src:'modules/konstrukcja-dachu/',desc:'Więźba dachu: krokwie, jętki, płatwie albo belka kalenicowa, przekroje elementów i na czym stoją słupy – także pustka na piętrze (słupy na całą wysokość, ściany i brzegi stropu bez podparcia)'},
-  {id:'elektryka',group:'Analizy',name:'Elektryka i oświetlenie',src:'modules/elektryka/',desc:'Gniazda, łączniki i punkty światła w każdym pomieszczeniu, obwody i rozdzielnica, urządzenia na osobnych obwodach, moc przyłączeniowa (z pompą ciepła, ładowarką, PV) i koszt instalacji do Wyceny.'},
-  {id:'fotowoltaika',group:'Analizy',name:'Fotowoltaika',src:'modules/fotowoltaika/',desc:'Panele na dachu: ile się zmieści na połaciach, produkcja w miesiącach wobec zużycia domu (z pompą ciepła), magazyn energii, oszczędność i zwrot – po włączeniu tańszy prąd w Ogrzewaniu i Energii.'},
-  {id:'wentylacja',group:'Analizy',name:'Wentylacja',src:'modules/wentylacja/',desc:'Porównanie sposobów wentylacji dla tego domu: grawitacyjna, hybrydowa, mechaniczna wywiewna, rekuperatory ścienne, rekuperacja – koszty, jakość powietrza, dopasowanie.'},
-  {id:'rekuperacja',group:'Analizy',name:'Rekuperacja',src:'modules/rekuperacja/',desc:'Rekuperacja w szczegółach: jak bardzo potrzebna, strumienie powietrza, centrala i kanały, trudność montażu, koszt i zwrot.'},
-  {id:'klimatyzacja',group:'Analizy',name:'Klimatyzacja',src:'modules/klimatyzacja/',desc:'Które pokoje latem się przegrzewają, jakiej mocy klimatyzatory, split czy multisplit, trudność montażu i koszt.'},
-  {id:'hydraulika',group:'Analizy',name:'Hydraulika',src:'modules/hydraulika/',desc:'Jak łatwo i tanio zrobić wod-kan: odległości łazienek, WC, kuchni i pralni od źródła ciepłej wody, piony parter–piętro, dopłata za układ.'},
-  {id:'wycena',group:'Analizy',name:'Wycena',src:'modules/wycena/',desc:'Orientacyjny koszt budowy z projektu: ilości (ściany, strop, dach, okna, drzwi, instalacje, wykończenie) × ceny jednostkowe, które możesz zmienić.'},
-  {id:'co-poprawic',group:'Analizy',name:'Co poprawić',src:'modules/co-poprawic/',desc:'Podsumowanie wszystkich analiz: 5 najważniejszych poprawek projektu, największe zalety i wady, oceny modułów w jednym miejscu.'},
-  {id:'wyglad',group:'Analizy',name:'Wygląd domu',src:'modules/wyglad/',desc:'Elewacje według zasad kompozycji: wyrównane okna, osie pionowe, symetria szczytów, rozmiary okien, puste ściany, dach – z rysunkiem, co poprawić.'},
-  {id:'oszczednosci',group:'Analizy',name:'Oszczędności',src:'modules/oszczednosci/',desc:'Zmiany, które obniżają koszt budowy: ile oszczędzasz, jak zmieniają się rachunki i ocena domu – z przyciskiem Zastosuj.'},
-  {id:'porownanie',group:'Analizy',name:'Porównanie domów',src:'modules/porownanie/',desc:'2–4 projekty obok siebie: metraż, koszt budowy (z etapami), energia, ogrzewanie, wentylacja, codzienność, przegrzewanie, akustyka, hydraulika, schowki – ocena ogólna wg Twoich wag, najlepsze wartości zaznaczone.'},
-  {id:'ranking',group:'Analizy',name:'Ranking domów',src:'modules/ranking/',desc:'Wszystkie Twoje domy na jednej liście: ogólna ocena, koszt budowy, rachunki i cena do jakości – posortowane od najlepszego.'},
+  {id:'przepisy',group:'Ocena domu',name:'Przepisy',src:'modules/przepisy/',desc:'Sprawdzenie z warunkami technicznymi: okna do podłogi 1:8, wysokości, drzwi, schody, powierzchnie pokoi – z mapą pomieszczeń.'},
+  {id:'codziennosc',group:'Ocena domu',name:'Codzienność',src:'modules/codziennosc/',desc:'Jak się mieszka na co dzień: scenariusze (zakupy, pranie, palenie w piecu, goście, noc, łazienki i WC) – trasy po domu, odległości i przejścia przez pokoje, ocena i podpowiedzi.'},
+  {id:'akustyka',group:'Ocena domu',name:'Akustyka',src:'modules/akustyka/',desc:'Czy w sypialniach będzie cicho: co jest za ścianą, nad i pod pokojem (garaż, pralnia, salon, łazienka, schody), ulica, antresola – ocena pokoi i podpowiedzi.'},
+  {id:'naslonecznienie',group:'Ocena domu',name:'Nasłonecznienie',src:'modules/naslonecznienie/',desc:'Zyski od słońca latem i zimą, pomieszczenie po pomieszczeniu: ryzyko przegrzania, mapa ciepła, wpływ okapu, tarasu i rolet.'},
+  {id:'wyglad',group:'Ocena domu',name:'Wygląd domu',src:'modules/wyglad/',desc:'Elewacje według zasad kompozycji: wyrównane okna, osie pionowe, symetria szczytów, rozmiary okien, puste ściany, dach – z rysunkiem, co poprawić.'},
+  {id:'wycena',group:'Koszty i porównania',name:'Wycena',src:'modules/wycena/',desc:'Orientacyjny koszt budowy z projektu: ilości (ściany, strop, dach, okna, drzwi, instalacje, wykończenie) × ceny jednostkowe, które możesz zmienić.'},
+  {id:'oszczednosci',group:'Koszty i porównania',name:'Oszczędności',src:'modules/oszczednosci/',desc:'Zmiany, które obniżają koszt budowy: ile oszczędzasz, jak zmieniają się rachunki i ocena domu – z przyciskiem Zastosuj.'},
+  {id:'co-poprawic',group:'Koszty i porównania',name:'Co poprawić',src:'modules/co-poprawic/',desc:'Podsumowanie wszystkich analiz: 5 najważniejszych poprawek projektu, największe zalety i wady, oceny modułów w jednym miejscu.'},
+  {id:'porownanie',group:'Koszty i porównania',name:'Porównanie domów',src:'modules/porownanie/',desc:'2–4 projekty obok siebie: metraż, koszt budowy (z etapami), energia, ogrzewanie, wentylacja, codzienność, przegrzewanie, akustyka, hydraulika, schowki – ocena ogólna wg Twoich wag, najlepsze wartości zaznaczone.'},
+  {id:'ranking',group:'Koszty i porównania',name:'Ranking domów',src:'modules/ranking/',desc:'Wszystkie Twoje domy na jednej liście: ogólna ocena, koszt budowy, rachunki i cena do jakości – posortowane od najlepszego.'},
 ];
 MODULES.forEach((m,i)=>m.step=i+1);
 const ICON_PATH={pomieszczenia:'<rect x="3" y="3" width="7.5" height="7.5" rx="1.8"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.8"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.8"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.8"/>',
@@ -362,7 +371,8 @@ const ICON_PATH={pomieszczenia:'<rect x="3" y="3" width="7.5" height="7.5" rx="1
 const icon=id=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+(ICON_PATH[id]||'<circle cx="12" cy="12" r="4"/>')+'</svg>';
 const SHORT={'kondygnacje-dach':'Dach i piętra','okna-drzwi':'Okna i drzwi','drzwi-wewnetrzne':'Drzwi wewn.',projektowanie:'Układ',wizualizacje:'Wizualizacje',tarasy:'Tarasy',meblowanie:'Meble',obrys:'Obrys'};
 // odcień etapu: kolor ikony i bardzo jasne tło pod nią
-const GROUP_COL={'Bryła':'#0f766e','Założenia':'#7c3aed','Projekt':'#2563eb','Wnętrza':'#d97706','Podgląd':'#0891b2','Analizy':'#059669'},GROUP_TINT={'Bryła':'#f0fdfa','Założenia':'#f5f3ff','Projekt':'#eff6ff','Wnętrza':'#fffbeb','Podgląd':'#ecfeff','Analizy':'#ecfdf5'};
+const GROUP_COL={'Bryła i założenia':'#0f766e','Rzut':'#2563eb','Konstrukcja i materiały':'#a16207','Energia i instalacje':'#ea580c','Wnętrza':'#db2777','Otoczenie':'#16a34a','Podgląd':'#0891b2','Ocena domu':'#7c3aed','Koszty i porównania':'#dc2626'},
+  GROUP_TINT={'Bryła i założenia':'#f0fdfa','Rzut':'#eff6ff','Konstrukcja i materiały':'#fefce8','Energia i instalacje':'#fff7ed','Wnętrza':'#fdf2f8','Otoczenie':'#f0fdf4','Podgląd':'#ecfeff','Ocena domu':'#f5f3ff','Koszty i porównania':'#fef2f2'};
 const tabs=document.getElementById('tabs'),cards=document.getElementById('cards'),views=document.getElementById('views'),openExt=document.getElementById('openExt');
 const frames={};
 function tabBtn(id,label,soon,m){const b=document.createElement('button');b.className='tab';b.dataset.id=id;b.title=m?m.step+'. '+m.name+' – '+m.desc:'Strona startowa';
@@ -372,10 +382,15 @@ ICON_PATH.projekty='<path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h3.8l2 2.3h7.2A2.5 2.5 0 
 {const b=document.createElement('button');b.className='tab';b.dataset.id='projekty';b.title='Projekty – nowy, import, eksport, duplikaty, chmura';b.style.setProperty('--gc','#475569');b.style.setProperty('--gt','#e2e8f0');
   b.innerHTML='<span class="ic">'+icon('projekty')+'</span><span class="tx">Projekty</span><span class="no"></span>';b.onclick=()=>{location.hash='projekty';document.body.classList.remove('navopen')};tabs.appendChild(b)}
 let lastGroup='',navGroup='';
+// grupy w menu można zwijać (zapamiętane w przeglądarce); otwarty moduł jest widoczny zawsze
+const navShut=new Set((()=>{try{return JSON.parse(localStorage.getItem('houser:nav-shut')||'[]')}catch(_){return []}})());
+function toggleGroup(g){if(navShut.has(g))navShut.delete(g);else navShut.add(g);try{localStorage.setItem('houser:nav-shut',JSON.stringify([...navShut]))}catch(_){}
+  for(const el of tabs.querySelectorAll('[data-g]'))if(el.dataset.g===g)el.classList.toggle(el.classList.contains('grp')?'shut':'hid',navShut.has(g))}
 MODULES.forEach(m=>{
-  if(m.group!==navGroup){navGroup=m.group;const g=document.createElement('div');g.className='grp';g.textContent=m.group;tabs.appendChild(g)}
-  tabBtn(m.id,m.name,m.soon,m);
-if(cards){  if(m.group!==lastGroup){lastGroup=m.group;const h=document.createElement('h3');h.className='group';h.textContent=m.group;cards.appendChild(h);}
+  if(m.group!==navGroup){navGroup=m.group;const g=document.createElement('button');g.className='grp'+(navShut.has(m.group)?' shut':'');g.dataset.g=m.group;g.style.setProperty('--gc',GROUP_COL[m.group]||'#8391a5');
+    const n=MODULES.filter(x=>x.group===m.group).length;g.innerHTML='<span class="gn"></span><span class="gc">'+n+'</span><span class="gv">▾</span>';g.querySelector('.gn').textContent=m.group;g.title='Zwiń / rozwiń grupę';g.onclick=()=>toggleGroup(m.group);tabs.appendChild(g)}
+  tabBtn(m.id,m.name,m.soon,m);tabs.lastChild.dataset.g=m.group;if(navShut.has(m.group))tabs.lastChild.classList.add('hid');
+if(cards){  if(m.group!==lastGroup){lastGroup=m.group;const h=document.createElement('h3');h.className='group';h.textContent=m.group;h.style.color=GROUP_COL[m.group]||'';cards.appendChild(h);}
   const c=document.createElement('button');c.className='card'+(m.soon?' disabled':'');
   c.innerHTML='<span class="cic" style="color:'+(GROUP_COL[m.group]||'')+';background:'+(GROUP_TINT[m.group]||'')+'">'+icon(m.id)+'</span><span class="num">Krok '+m.step+'</span><h2></h2><p></p>';
   c.querySelector('h2').textContent=m.name;c.querySelector('p').textContent=m.desc;
