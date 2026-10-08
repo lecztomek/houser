@@ -442,8 +442,13 @@ function addStructure3D(){const st=project.structure||{},c=grid().cellMeters,H=f
   for(const b of Array.isArray(st.beams)?st.beams:[]){if(b.hidden)continue;const a0=+b.from*c,a1=(+b.to+1)*c,L=+b.line*c;if(!Number.isFinite(a0+a1+L))continue;
     if(b.o==='h')addBoxFaces(a0,H-.3,L-.125,a1,H-.01,L+.125,col,str);else addBoxFaces(L-.125,H-.3,a0,L+.125,H-.01,a1,col,str)}
   // więźba z modułu Konstrukcja dachu: słupy (nad pustką – od podłogi parteru) i płatwie / belka kalenicowa
-  if(!window.HouserRoof)return;let R=null;try{R=HouserRoof.evaluate(project)}catch(e){console.warn(e)}if(!R?.ok||!R.lines.length)return;
+  if(!window.HouserRoof)return;let R=null;try{R=HouserRoof.evaluate(project)}catch(e){console.warn(e)}if(!R?.ok)return;
   const g=R.geom,ub=floorBase('upper'),wood='#b9895a',ws={stroke:'#7c5a36'},P=(a,l)=>g.across?[a,l]:[l,a];
+  // jętki (więźba jętkowa) i kleszcze (płatwiowa): poziome belki w poprzek dachu co rozstaw krokwi, na wysokości jętek
+  if(R.system==='collar'||R.system==='purlin'){const sp=Math.max(.6,+R.set.spacing||.9),y=ub+g.zc,n=Math.max(1,Math.round(g.Lr/sp));
+    for(let i=0;i<=n;i++){const l=g.L0+Math.min(g.Lr-.05,Math.max(.05,i*g.Lr/n)),[x0,z0]=P(g.xp,l),[x1,z1]=P(g.S-g.xp,l);
+      if(g.across)addBoxFaces(x0,y,z0-.04,x1,y+.16,z0+.04,wood,ws);else addBoxFaces(x0-.04,y,z0,x0+.04,y+.16,z1,wood,ws)}}
+  if(!R.lines.length)return;
   for(const ln of R.lines){const y=ub+ln.z,[x0,z0]=P(ln.a,g.L0),[x1,z1]=P(ln.a,g.L1);
     if(g.across)addBoxFaces(x0-.08,y,z0,x0+.08,y+.22,z1,wood,ws);else addBoxFaces(x0,y,z0-.08,x1,y+.22,z0+.08,wood,ws)}
   for(const p of R.posts){const [x,z]=P(p.a,p.l),y1=ub+(R.lines.find(l=>l.id===p.line)?.z||2.2),y0=p.status==='void'?0:ub;addBoxFaces(x-.07,y0,z-.07,x+.07,y1,z+.07,wood,ws)}}

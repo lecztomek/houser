@@ -2,7 +2,7 @@
 // Trzymane w przeglądarce (IndexedDB), NIE w pliku projektu. Później: synchronizacja do chmury.
 // Rekord: {id, projectId, order, createdAt, caption, cover, source:'ai'|'3d'|'upload', image (JPEG ≤1600 px), thumb (JPEG ≤420 px), before (zdjęcie z 3D do porównania), ref}
 (function(global){
-  const DB='houser-gallery',STORE='items',MAX=12;
+  const DB='houser-gallery',STORE='items',MAX=30;
   const bc=('BroadcastChannel' in global)?new BroadcastChannel('houser-gallery'):null;
   let dbp=null;
   // Safari (iOS) potrafi zawiesić indexedDB.open – najpierw „budzimy” bazę, a otwarcie ma limit czasu (bez wiecznego czekania)
