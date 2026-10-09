@@ -224,6 +224,12 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  const p=ld('zefir-2.json'),R=DU.evaluate(p);ok(R.riser&&R.shaft&&R.shaft.floors.length>=1&&R.shaft.w>0,'kanały: dom piętrowy – pion i szacht');
  const lo=R.lo;p.mvhrDesign={layers:{[lo]:'slab'}};const R2=DU.evaluate(p);ok(R2.screedA[R2.up]>0&&!Object.keys(R2.ceilA).length,'kanały: w stropie – wyższa wylewka piętra zamiast sufitu podwieszanego');
  p.mvhrDesign={layers:{[lo]:'ceiling'}};const R3=DU.evaluate(p);ok(R3.ceilA[lo]>0,'kanały: sufit podwieszany – powierzchnia obniżenia');
+ {const p=ld('zefir-2.json'),R0=DU.evaluate(p),u=R0.unit,t=R0.terms[R0.lo][0],L=R0.terms[R0.lo].filter(x=>x.key===t.key);
+  p.mvhrDesign={unit:{f:u.f,x:u.x+.37,y:u.y+.21}};const R1=DU.evaluate(p);ok(Math.abs(R1.unit.x-(u.x+.37))<.3&&Math.abs(R1.unit.y-(u.y+.21))<.3,'kanały: centrala zostaje tam, gdzie ją upuszczono');
+  p.mvhrDesign={unit:{f:u.f,x:-50,y:u.y}};const R2=DU.evaluate(p);const cy=Math.floor(R2.unit.y/R2.c),row=R2.H.rooms.filter(r=>r.f===u.f).flatMap(r=>r.cells).filter(([i,j])=>j===cy).map(([i])=>i);ok(row.length&&Math.floor(R2.unit.x/R2.c)===Math.min(...row),'kanały: centrala poza domem – przesunięta do najbliższego miejsca w domu, nie w miejsce automatyczne');
+  p.mvhrDesign={terms:{[t.key]:L.map((x,i)=>i?[x.x,x.y]:[x.x+.12,x.y+.08])}};const R3=DU.evaluate(p),t3=R3.terms[R3.lo].find(x=>x.key===t.key),P3=R3.paths[R3.lo].find(x=>x.key===t.key);
+  ok(Math.abs(t3.x-(t.x+.12))<1e-6&&Math.abs(t3.y-(t.y+.08))<1e-6&&P3&&P3.pts.at(-1)[0]===t3.x&&P3.pts.at(-1)[1]===t3.y,'kanały: kratka w dowolnym miejscu pokoju, kanał dochodzi do niej');
+  p.mvhrDesign={terms:{[t.key]:L.map(x=>[x.x+99,x.y])}};const R4=DU.evaluate(p),hr=R4.H.rooms.find(r=>r.key===R4.terms[R4.lo].find(x=>x.key===t.key).roomKey);ok(R4.terms[R4.lo].filter(x=>x.key===t.key).every(x=>hr.cells.some(([i,j])=>i===Math.floor(x.x/R4.c)&&j===Math.floor(x.y/R4.c))),'kanały: kratka wyciągnięta poza pokój zostaje na jego skraju');}
  const b=ld('dom-parterowy.json'),RB=DU.evaluate(b);ok(!RB.shaft&&RB.layer[RB.lo]==='attic','kanały: dom parterowy – kanały na strychu, bez szachtu');}
 
 // wyposażenie: rzeczy i ich miejsca

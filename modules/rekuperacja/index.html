@@ -43,6 +43,8 @@ ul.why{margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.55}
 .plan{flex:1 1 320px;min-width:0}
 .plan h4{margin:6px 0;font-size:12px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.06em}
 .plan svg{width:100%;height:auto;display:block;max-height:440px}
+.dplan svg.dsvg{max-height:78vh;background:#fff;border:1px solid var(--hs-line);border-radius:10px}.dsvg .drag{cursor:grab}.dsvg .drag:hover circle,.dsvg .drag:hover rect{filter:brightness(1.15)}body.ddrag,body.ddrag .drag{cursor:grabbing!important}
+.dtabs{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0}.dtabs button{font:inherit;font-size:13px;font-weight:700;padding:6px 14px;border-radius:8px;border:1px solid var(--hs-line-strong);background:#fff;cursor:pointer}.dtabs button.on{background:#0f766e;color:#fff;border-color:#0f766e}.dtabs .sp{flex:1}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#475569;margin-top:8px;align-items:center}
 .legend i{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:5px}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
@@ -123,7 +125,7 @@ function planSVG(f){
   return '<div class="plan"><h4>'+(f===lo?'Parter':'Piętro / poddasze')+'</h4><svg viewBox="'+[xs*S-8,ys*S-8,(xe-xs)*S+16,(ye-ys)*S+16].join(' ')+'">'+h+'</svg></div>'}
 
 // ---------- projekt kanałów (modules/rekuperacja/ducts.js)
-let D=null,dDrag=null;const DS=24;
+let D=null,dDrag=null,dFloor=null;const DS=24;
 function saveD(patch){const d={...(project.mvhrDesign||{}),...patch};project.mvhrDesign=d;HouserStore.update(p=>{p.mvhrDesign=d},'rekuperacja');render()}
 function ductPlan(f){const {W,H2:H,c,lo,up}=D,S=DS,X=m=>m/c*S,st=project.state?.[f]||[],fl=Array.isArray(st[0])?st.flat():st,defs=Object.fromEntries((project.definitionSnapshot?.floors?.[f]?.rooms||[]).map(r=>[r.id,r]));
   const su=project.state?.[up]||[],stU=Array.isArray(su[0])?su.flat():su,id=(x,y)=>x<0||y<0||x>=W||y>=H?null:(fl[y*W+x]||null),inside=v=>v&&defs[v]?.kind!=='exteriorVoid',hole=v=>f===up&&(v==='pustka'||v==='schody');let h='',xs=W,ys=H,xe=0,ye=0;
@@ -135,6 +137,7 @@ function ductPlan(f){const {W,H2:H,c,lo,up}=D,S=DS,X=m=>m/c*S,st=project.state?.
   const O=project.openings?.[f]||{},E=(k,a,b,x1,y1,x2,y2)=>{if(a===b)return '';const ia=inside(a),ib=inside(b);if(!ia&&!ib)return '';const o=O[k];if(ia!==ib)return ln(x1,y1,x2,y2,'#334155',4);return o==='door'||o==='opening'?ln(x1,y1,x2,y2,'#cbd5e1',1.5,'3 3'):ln(x1,y1,x2,y2,'#64748b',2)};
   for(let y=ys;y<=ye;y++)for(let x=xs;x<xe;x++)h+=E('h:'+x+':'+y,id(x,y-1),id(x,y),x*S,y*S,(x+1)*S,y*S);
   for(let x=xs;x<=xe;x++)for(let y=ys;y<ye;y++)h+=E('v:'+x+':'+y,id(x-1,y),id(x,y),x*S,y*S,x*S,(y+1)*S);
+  for(const r of D.H.rooms){if(r.f!==f||!r.cells?.length)continue;const cx=r.cells.reduce((a,p)=>a+p[0],0)/r.cells.length,cy=r.cells.reduce((a,p)=>a+p[1],0)/r.cells.length;h+='<text x="'+(cx+.5)*S+'" y="'+((cy+.5)*S+4)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#94a3b8" pointer-events="none">'+esc(r.name.length>18?r.name.slice(0,17)+'…':r.name)+'</text>'}
   // wiązki kanałów: grubość = liczba kanałów Ø75 na odcinku
   for(const [k,n] of Object.entries(D.bundle[f]||{})){const [o,a,b]=k.split(':').map((v,i)=>i?+v:v);const p=o==='h'?[(a+.5)*S,(b-.5)*S,(a+.5)*S,(b+.5)*S]:[(a-.5)*S,(b+.5)*S,(a+.5)*S,(b+.5)*S];h+=ln(p[0],p[1],p[2],p[3],'#475569',Math.min(14,2+n*1.1))}
   for(const P of D.paths[f])for(let i=1;i<P.pts.length;i++)h+=ln(X(P.pts[i-1][0]),X(P.pts[i-1][1]),X(P.pts[i][0]),X(P.pts[i][1]),P.kind==='sup'?'#60a5fa':'#fb923c',1.2);
@@ -146,9 +149,10 @@ function ductPlan(f){const {W,H2:H,c,lo,up}=D,S=DS,X=m=>m/c*S,st=project.state?.
   if(D.unit.f===f)h+='<g class="drag" data-k="unit" transform="translate('+X(D.unit.x)+' '+X(D.unit.y)+')"><rect x="-13" y="-13" width="26" height="26" rx="5" fill="#0f766e" stroke="#fff" stroke-width="2"/><text y="4" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">R</text></g>';
   const svg='<svg class="dsvg" data-f="'+f+'" viewBox="'+[xs*S-14,ys*S-14,(xe-xs)*S+28,(ye-ys)*S+28].join(' ')+'" style="width:100%;height:auto;touch-action:none">'+h+'</svg>';
   const opts=D.layersFor(f).map(k=>'<option value="'+k+'"'+(k===D.layer[f]?' selected':'')+'>'+esc(HouserDucts.LAYERS[k].name)+'</option>').join('');
-  return '<div class="plan"><h4>'+(f===lo?'Parter':'Piętro / poddasze')+'</h4><div class="field" style="margin:4px 0 8px"><label class="hint">Kanały prowadzone</label><select data-layer="'+f+'">'+opts+'</select></div>'+svg+'</div>'}
+  return '<div class="plan dplan"><div class="field" style="margin:4px 0 8px"><label class="hint">Kanały prowadzone ('+(f===lo?'parter':'piętro / poddasze')+')</label><select data-layer="'+f+'">'+opts+'</select></div>'+svg+'</div>'}
 function ductsCard(){try{D=HouserDucts.evaluate(project)}catch(e){console.error(e);return ''}
-  const fl=D.floors.filter(f=>D.terms[f].length||D.unit.f===f);let h='<div class="card"><h3>Projekt kanałów</h3><p class="hint">System rozdzielaczowy: centrala (R) → skrzynki rozdzielcze → osobny kanał Ø75 do każdej kratki (↓ nawiew, ↑ wywiew). Szare pasy – wiązki kanałów (grubsze = więcej kanałów), fioletowy – pion / szacht między kondygnacjami. Przeciągnij centralę, pion albo kratkę, żeby zmienić trasę.</p><div class="plans">'+fl.map(ductPlan).join('')+'</div>';
+  const fl=D.floors.filter(f=>D.terms[f].length||D.unit.f===f);let h='<div class="card"><h3>Projekt kanałów</h3><p class="hint">System rozdzielaczowy: centrala (R) → skrzynki rozdzielcze → osobny kanał Ø75 do każdej kratki (↓ nawiew, ↑ wywiew). Szare pasy – wiązki kanałów (grubsze = więcej kanałów), fioletowy – pion / szacht między kondygnacjami. Przeciągnij centralę, pion albo kratkę – zostaną tam, gdzie je upuścisz (kratka w obrębie swojego pomieszczenia), a trasy kanałów przeliczą się same.</p>';if(!fl.includes(dFloor))dFloor=fl.includes(D.unit.f)?D.unit.f:fl[0];const md=project.mvhrDesign||{},manual=md.unit||md.riser||Object.keys(md.terms||{}).length;
+  h+='<div class="dtabs">'+fl.map(f=>'<button data-dfloor="'+f+'" class="'+(f===dFloor?'on':'')+'">'+(f===D.lo?'Parter':'Piętro / poddasze')+'</button>').join('')+'<span class="sp"></span>'+(manual?'<button data-dreset title="Centrala, pion i kratki wrócą na miejsca dobrane automatycznie">↺ Ustaw automatycznie</button>':'')+'</div>'+ductPlan(dFloor);
   const C=D.cost,eff=[];if(D.shaft)eff.push('<b>Szacht</b> ok. '+fmt(D.shaft.w*100,0)+' × '+fmt(D.shaft.d*100,0)+' cm przez '+D.shaft.floors.map(f=>f===D.lo?'parter':'piętro').join(' i ')+(D.shaft.room?' ('+esc(D.shaft.room)+')':'')+' – w tym miejscu ściana grubsza o ok. '+fmt(D.shaft.d*100,0)+' cm, '+fmt(D.shaft.area,2)+' m² mniej podłogi');
   for(const [f,a] of Object.entries(D.ceilA))eff.push('<b>Sufit podwieszany</b> ('+(f===D.lo?'parter':'piętro')+'): ok. '+fmt(a,0)+' m², obniżenie ok. 25 cm');
   for(const [f,a] of Object.entries(D.screedA))eff.push('<b>Wyższa posadzka</b> ('+(f===D.lo?'parter':'piętro')+'): +7 cm na '+fmt(a,0)+' m² (kanały płaskie w wylewce)');
@@ -159,10 +163,11 @@ function ductsCard(){try{D=HouserDucts.evaluate(project)}catch(e){console.error(
     '<div><h4 style="margin:0 0 6px">Kanały i koszt wg projektu</h4><table><tbody>'+[['Kanały Ø75 ('+D.nDucts+' szt., '+fmt(D.flexLen,0)+' m, najdłuższy '+fmt(D.maxRun,0)+' m)',C.flex],['Kanały główne Ø160 izolowane (ok. '+fmt(D.mainLen,0)+' m)',C.main],['Skrzynki rozdzielcze ('+D.plenums.length*2+')',C.plenum],['Kratki / anemostaty ('+D.nTerms+')',C.terms],['Sufity podwieszane',C.ceiling],['Wyższa wylewka',C.screed],['Szacht',C.shaft],['Izolacja kanałów na strychu',C.attic]].filter(r=>r[1]>0).map(r=>'<tr><td>'+esc(r[0])+'</td><td class="n">'+zl(r[1])+'</td></tr>').join('')+'<tr class="sum"><td>Razem (bez centrali i montażu)</td><td class="n">'+zl(C.total)+'</td></tr></tbody></table>'+
     '<table style="margin-top:8px"><thead><tr><th>Pomieszczenie</th><th class="n">m³/h</th><th class="n">Kanały</th></tr></thead><tbody>'+D.rooms.map(r=>'<tr><td>'+(r.kind==='sup'?'↓ ':'↑ ')+esc(r.name)+'</td><td class="n">'+r.flow+'</td><td class="n">'+r.ducts+'</td></tr>').join('')+'</tbody></table></div></div></div>';
   return h}
-function bindDucts(){document.querySelectorAll('select[data-layer]').forEach(s=>s.onchange=()=>saveD({layers:{...(project.mvhrDesign?.layers||{}),[s.dataset.layer]:s.value}}))}
-document.addEventListener('pointerdown',e=>{const g=e.target.closest?.('.drag');const svg=e.target.closest?.('.dsvg');if(!g||!svg)return;e.preventDefault();const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());dDrag={g,svg,f:svg.dataset.f,k:g.dataset.k,key:g.dataset.key,p0:p,m:g.getAttribute('transform')}});
+function bindDucts(){document.querySelectorAll('[data-dfloor]').forEach(b=>b.onclick=()=>{dFloor=b.dataset.dfloor;render()});const rs=document.querySelector('[data-dreset]');if(rs)rs.onclick=()=>{const d={...(project.mvhrDesign||{})};delete d.unit;delete d.riser;delete d.terms;project.mvhrDesign=d;HouserStore.update(p=>{p.mvhrDesign=d},'rekuperacja');render()};
+  document.querySelectorAll('select[data-layer]').forEach(s=>s.onchange=()=>saveD({layers:{...(project.mvhrDesign?.layers||{}),[s.dataset.layer]:s.value}}))}
+document.addEventListener('pointerdown',e=>{const g=e.target.closest?.('.drag');const svg=e.target.closest?.('.dsvg');if(!g||!svg)return;e.preventDefault();const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());dDrag={g,svg,f:svg.dataset.f,k:g.dataset.k,key:g.dataset.key,p0:p,m:g.getAttribute('transform')};document.body.classList.add('ddrag')});
 document.addEventListener('pointermove',e=>{if(!dDrag)return;const pt=dDrag.svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(dDrag.svg.getScreenCTM().inverse());dDrag.dx=p.x-dDrag.p0.x;dDrag.dy=p.y-dDrag.p0.y;dDrag.g.setAttribute('transform',dDrag.m+' translate('+dDrag.dx+' '+dDrag.dy+')')});
-document.addEventListener('pointerup',()=>{if(!dDrag)return;const d=dDrag;dDrag=null;if(!d.dx&&!d.dy)return;const toM=v=>v/DS*D.c,r2=v=>Math.round(v*20)/20;
+document.addEventListener('pointerup',()=>{if(!dDrag)return;const d=dDrag;dDrag=null;document.body.classList.remove('ddrag');if(Math.hypot(d.dx||0,d.dy||0)<1)return;const toM=v=>v/DS*D.c,r2=v=>Math.round(v*20)/20;
   if(d.k==='unit')saveD({unit:{f:d.f,x:r2(D.unit.x+toM(d.dx)),y:r2(D.unit.y+toM(d.dy))}});
   else if(d.k==='riser')saveD({riser:{x:r2(D.riser.x+toM(d.dx)),y:r2(D.riser.y+toM(d.dy))}});
   else if(d.k==='t'){const ts=D.terms[d.f].filter(t=>t.key===d.key),i=[...d.g.parentNode.querySelectorAll('.drag[data-key="'+CSS.escape(d.key)+'"]')].indexOf(d.g),pts=ts.map((t,j)=>j===i?[r2(t.x+toM(d.dx)),r2(t.y+toM(d.dy))]:[t.x,t.y]);saveD({terms:{...(project.mvhrDesign?.terms||{}),[d.key]:pts}})}});
@@ -192,7 +197,7 @@ function render(){
   M.innerHTML=h;bindDucts();
 }
 const rec=HouserStore.load();project=rec?rec.project:null;render();
-HouserStore.subscribe(r=>{project=r.project;render()});
+HouserStore.subscribe(r=>{project=r.project;if(dDrag)return;const a=document.activeElement;if(a&&a.tagName==="SELECT")return;render()});
 </script>
 <script src="../../shared/nav.js"></script>
 </body>

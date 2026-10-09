@@ -19,6 +19,9 @@
     const defs={};for(const f of [lo,up])defs[f]=Object.fromEntries((project.definitionSnapshot?.floors?.[f]?.rooms||[]).map(r=>[r.id,r]));
     const idAt=(f,x,y)=>x<0||y<0||x>=W||y>=Hh?null:(st[f][y*W+x]||null),isVoid=(f,v)=>!v||defs[f][v]?.kind==='exteriorVoid',isHole=(f,v)=>f===up&&(v==='pustka'||v==='schody');
     const inside=(f,x,y)=>{const v=idAt(f,x,y);return !isVoid(f,v)&&!isHole(f,v)},underHole=(x,y)=>hasUp&&isHole(up,idAt(up,x,y));
+    // punkt ustawiony ręcznie: zostaje tam, gdzie go upuszczono; poza dozwolonymi kratkami – przesunięty do najbliższej dozwolonej
+    const nearPt=(x,y,okC)=>{const cx=Math.floor(x/c),cy=Math.floor(y/c);if(okC(cx,cy))return [x,y];let best=null,bd=Infinity;
+      for(let j=0;j<Hh;j++)for(let i=0;i<W;i++){if(!okC(i,j))continue;const px=Math.min(Math.max(x,i*c+c*.15),(i+1)*c-c*.15),py=Math.min(Math.max(y,j*c+c*.15),(j+1)*c-c*.15),d=Math.hypot(px-x,py-y);if(d<bd){bd=d;best=[px,py]}}return best};
     const floors=hasUp?[lo,up]:[lo],issues=[],good=[],add=(p,text,tip,type)=>issues.push({p:Math.round(p*100)/100,text,tip:tip||'',type:type||'duct'});
     const layer={};for(const f of floors){const opts=layersFor(f,q,hasUp),L=set.layers?.[f];layer[f]=opts.includes(L)?L:opts[0]}
     // pomieszczenia i kratki: nawiew do pokoi, wywiew z kuchni / łazienek; salon z aneksem – także nawiew
@@ -31,7 +34,7 @@
       const furn=(project.furniture?.[r.f]||[]).filter(it=>/^(k_plyta|l_prysznic|l_walkin|l_wanna|l_wc|t_pralka)/.test(it.item||'')).map(it=>[Math.floor((+it.x+ +it.w/2)/c),Math.floor((+it.y+ +it.h/2)/c)]).filter(([x,y])=>r.cells.some(cc=>cc[0]===x&&cc[1]===y));
       const ok=r.cells.filter(([x,y])=>!(r.f===lo&&layer[lo]!=='floor'&&underHole(x,y)));const cand=ok.length?ok:r.cells;
       const own=set.terms?.[key];let pts;
-      if(Array.isArray(own)&&own.length)pts=own.map(([x,y])=>[x,y]);
+      if(Array.isArray(own)&&own.length){const inR=new Set(r.cells.map(([x,y])=>x+','+y));pts=own.map(([x,y])=>nearPt(+x,+y,(i,j)=>inR.has(i+','+j))||[+x,+y])}
       else{const dist=([x,y])=>doorCells.length?Math.min(...doorCells.map(([a,b])=>Math.abs(a-x)+Math.abs(b-y))):0,score=p=>r.kind==='ex'&&furn.length?-Math.min(...furn.map(([a,b])=>Math.abs(a-p[0])+Math.abs(b-p[1]))):dist(p);
         const srt=[...cand].sort((a,b)=>score(b)-score(a)),inner=srt.filter(([x,y])=>[[1,0],[-1,0],[0,1],[0,-1]].every(([dx,dy])=>r.cells.some(cc=>cc[0]===x+dx&&cc[1]===y+dy)));
         const base=inner.length?inner:srt;pts=[base[0]];if(nT>1){const far=[...base].sort((a,b)=>(Math.abs(b[0]-pts[0][0])+Math.abs(b[1]-pts[0][1]))-(Math.abs(a[0]-pts[0][0])+Math.abs(a[1]-pts[0][1])))[0];if(far)pts.push(far)}
@@ -41,7 +44,8 @@
     // centrala
     const cellsOf=key=>H.rooms.find(r=>r.key===key)?.cells||[];
     let unit;const isExt=(f,x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>isVoid(f,idAt(f,x+dx,y+dy)));
-    if(set.unit&&floors.includes(set.unit.f)&&inside(set.unit.f,Math.floor(set.unit.x/c),Math.floor(set.unit.y/c)))unit={f:set.unit.f,x:+set.unit.x,y:+set.unit.y,loft:false,name:defs[set.unit.f][idAt(set.unit.f,Math.floor(set.unit.x/c),Math.floor(set.unit.y/c))]?.name||''};
+    const uOwn=set.unit&&floors.includes(set.unit.f)&&Number.isFinite(+set.unit.x)?nearPt(+set.unit.x,+set.unit.y,(i,j)=>inside(set.unit.f,i,j)):null;
+    if(uOwn)unit={f:set.unit.f,x:uOwn[0],y:uOwn[1],loft:false,name:defs[set.unit.f][idAt(set.unit.f,Math.floor(uOwn[0]/c),Math.floor(uOwn[1]/c))]?.name||''};
     else if(H.unitLoft){const top=hasUp?up:lo,all=[];for(let y=0;y<Hh;y++)for(let x=0;x<W;x++)if(inside(top,x,y))all.push([x,y]);const mx=all.reduce((a,p)=>a+p[0],0)/all.length,my=all.reduce((a,p)=>a+p[1],0)/all.length,b=all.sort((a,b)=>Math.hypot(a[0]-mx,a[1]-my)-Math.hypot(b[0]-mx,b[1]-my))[0];unit={f:top,x:(b[0]+.5)*c,y:(b[1]+.5)*c,loft:true,name:'strych'}}
     else{const cs=cellsOf(H.unit.key),e=cs.filter(([x,y])=>isExt(H.unit.f,x,y)),b=(e.length?e:cs)[0];unit={f:H.unit.f,x:(b[0]+.5)*c,y:(b[1]+.5)*c,loft:false,name:H.unit.name}}
     if(unit.loft&&!(q.attic||G.upperType==='none'||!hasUp))add(1.5,'Centrala na strychu, ale nad piętrem nie ma strychu (płaski strop / pełne piętro).','Wybierz miejsce na centralę w pomieszczeniu technicznym (przeciągnij ją na planie).','unit');
@@ -57,8 +61,8 @@
     if(remote.length||throughFloors.length){const pf=throughFloors[0]||remote[0]||unit.f;
       const cand=[];for(let y=0;y<Hh;y++)for(let x=0;x<W;x++){const vp=idAt(pf,x,y);if(!inside(pf,x,y))continue;if(hasUp&&(!inside(lo,x,y)||(up!==pf&&!inside(up,x,y))&&!throughFloors.includes(lo)))continue;
         const nm=defs[pf][vp]?.name||'',hallish=HALL.test(nm),wall=[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>idAt(pf,x+dx,y+dy)!==vp);if(!wall)continue;cand.push({x,y,s:Math.hypot((x+.5)*c-unit.x,(y+.5)*c-unit.y)+(hallish?0:3)})}
-      cand.sort((a,b)=>a.s-b.s);const own=set.riser&&inside(pf,Math.floor(set.riser.x/c),Math.floor(set.riser.y/c))?set.riser:null,b=cand[0];
-      if(own)riser={x:+own.x,y:+own.y};else if(b)riser={x:(b.x+.5)*c,y:(b.y+.5)*c}}
+      cand.sort((a,b)=>a.s-b.s);const own=set.riser&&Number.isFinite(+set.riser.x)?nearPt(+set.riser.x,+set.riser.y,(i,j)=>inside(pf,i,j)&&(!hasUp||inside(lo,i,j))):null,b=cand[0];
+      if(own)riser={x:own[0],y:own[1],own:true};else if(b)riser={x:(b.x+.5)*c,y:(b.y+.5)*c}}
     // szacht: wymiary z liczby kanałów
     let shaft=null;if(riser&&throughFloors.length){const n=viaMains?0:remoteDucts,w=viaMains?.45:Math.max(.25,n*FLEX_W+.06),d=viaMains?.25:.14,h=throughFloors.reduce((a,f)=>a+(f===lo?G.groundHeight:(G.upperHeight||2.6)),0);
       shaft={w,d,h,floors:throughFloors,area:w*d,room:throughFloors.map(f=>defs[f][idAt(f,Math.floor(riser.x/c),Math.floor(riser.y/c))]?.name).filter(Boolean).join(' / ')}}
@@ -79,7 +83,7 @@
           const v=b*W+a;if(d0+w<dist[v]){dist[v]=d0+w;prev[v]=u;Q.push([d0+w,v])}}}
       for(const t of terms[f]){const tx=Math.floor(t.x/c),ty=Math.floor(t.y/c);let v=ty*W+tx;if(!Number.isFinite(dist[v])){t.unreach=true;continue}
         const pts=[];while(v>=0){pts.push([(v%W+.5)*c,(Math.floor(v/W)+.5)*c]);const pv=prev[v];if(pv>=0){const ax=v%W,ay=Math.floor(v/W),bx=pv%W,by=Math.floor(pv/W),k=ax===bx?'h:'+ax+':'+Math.max(ay,by):'v:'+Math.max(ax,bx)+':'+ay;bundle[f][k]=(bundle[f][k]||0)+t.ducts}v=pv}
-        pts.reverse();let len=0;for(let i=1;i<pts.length;i++)len+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);
+        pts.reverse();pts.unshift([src.x,src.y]);pts.push([t.x,t.y]);let len=0;for(let i=1;i<pts.length;i++)len+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);
         const vert=(remote.includes(f)&&riser?(viaMains?0:(shaft?.h||0)+1):0)+(unit.loft&&f===up?.5:0)+.6;len+=vert;t.len=len;flexLen+=len*t.ducts;maxRun=Math.max(maxRun,len);paths[f].push({kind:t.kind,ducts:t.ducts,pts,key:t.key})}}
     const mainLen=(viaMains&&shaft?2*(shaft.h+1):0)+(unit.loft?4:2*Math.max(1,isExt(unit.f,Math.floor(unit.x/c),Math.floor(unit.y/c))?1:4))+2;
     // skutki dla budynku
