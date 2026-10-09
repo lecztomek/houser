@@ -229,10 +229,13 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
 // wyposażenie: rzeczy i ich miejsca
 {const EQ=W.HouserEquip,ld=f=>JSON.parse(fs.readFileSync(path.join(ROOT,'examples',f),'utf8'));
  for(const f of examples){const R=EQ.evaluate(ld(f));ok(fin(R.score)&&R.score>=0&&R.score<=10&&R.total>15&&R.placed<=R.total&&R.places.every(p=>fin(p.used)&&p.used>=0),f+': wyposażenie – liczby skończone ('+R.placed+'/'+R.total+')')}
- const sj=EQ.evaluate(ld('stodola-jasna.json'));ok(sj.items.find(i=>i.id==='fridge').placeName.startsWith('Lodówka')&&sj.items.find(i=>i.id==='dish').place,'wyposażenie: lodówka i zmywarka w zabudowie kuchennej');
- const dp=ld('dom-parterowy.json'),R0=EQ.evaluate(dp);ok(R0.missing.some(m=>m.id==='fridge')&&R0.items.find(i=>i.id==='bikes').placeName==='Garaż','wyposażenie: brak lodówki wykryty, rowery w garażu');
- dp.equipment={items:{vacuum:{place:'R:ground|tech'},bikes:{on:false}}};const R1=EQ.evaluate(dp);ok(R1.items.find(i=>i.id==='vacuum').placeName==='Techniczne'&&!R1.items.find(i=>i.id==='bikes').place&&R1.total===R0.total-1,'wyposażenie: miejsce wybrane ręcznie i rzecz wyłączona');
- const zf=EQ.evaluate(ld('zefir-2.json'));ok(zf.items.find(i=>i.id==='fridge').place&&zf.issues.some(i=>i.type==='virtual'),'wyposażenie: kuchnia bez mebli – zakładana zabudowa z uwagą');}
+ const sj=EQ.evaluate(ld('stodola-jasna.json')),A=(R,id)=>R.appliances.find(a=>a.id===id),I=(R,id)=>R.items.find(i=>i.id===id);
+ ok(A(sj,'fridge').status==='ok'&&A(sj,'dish').status==='ok','wyposażenie: lodówka i zmywarka stoją w meblach kuchennych');
+ ok(sj.clothes.length>0&&sj.clothes.every(c=>fin(c.need)&&c.need>0&&fin(c.got)&&c.n>=1)&&sj.clothes.reduce((a,c)=>a+c.n,0)===sj.P,'wyposażenie: ubrania – wszyscy domownicy rozdzieleni na sypialnie');
+ const dp=ld('dom-parterowy.json'),R0=EQ.evaluate(dp);ok(A(R0,'fridge').status==='missing'&&R0.issues.some(i=>i.type==='appliance')&&I(R0,'bikes').placeName==='Garaż','wyposażenie: brak lodówki wykryty, rowery w garażu');
+ dp.equipment={items:{vacuum:{place:'R:ground|tech'},bikes:{on:false}}};const R1=EQ.evaluate(dp);ok(I(R1,'vacuum').placeName==='Techniczne'&&!I(R1,'bikes').place&&R1.total===R0.total-1,'wyposażenie: miejsce wybrane ręcznie i rzecz wyłączona');
+ const fk=R1.places.find(p=>p.type==='furn');if(fk){dp.equipment.items.iron={place:fk.key};const R2=EQ.evaluate(dp);ok(I(R2,'iron').place===fk.key&&R2.places.find(p=>p.key===fk.key).list.includes(I(R2,'iron').name),'wyposażenie: rzecz schowana w wybranym meblu')}
+ const zf=EQ.evaluate(ld('zefir-2.json'));ok(A(zf,'fridge').status==='assumed'&&zf.issues.some(i=>i.type==='virtual'),'wyposażenie: kuchnia bez mebli – zakładana zabudowa z uwagą');}
 
 // tarasy: wysokość, dach jednospadowy, ściany z boków
 {const ld=f=>JSON.parse(fs.readFileSync(path.join(ROOT,'examples',f),'utf8')),p=ld('dom-parterowy.json'),g=p.grid||p.definitionSnapshot.grid,ct=(p.outdoorStructures||[]).find(o=>o.type==='coveredTerrace');

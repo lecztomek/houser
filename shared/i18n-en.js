@@ -4387,4 +4387,4 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "pełna ściana":"solid wall",
 "lamele / żaluzja":"slats / louvres",
 "screen (roleta tekstylna)":"screen (fabric blind)",
-"Boki tarasów i pergoli (szkło, ściany, lamele, screeny)":"Terrace and pergola sides (glass, walls, slats, screens)"};
+"Boki tarasów i pergoli (szkło, ściany, lamele, screeny)":"Terrace and pergola sides (glass, walls, slats, screens)","Wyposażenie – czy wszystko jest i gdzie leży":"Equipment – is everything there and where is it kept","Sprzęty – czy są w projekcie":"Appliances – are they in the design","Ubrania domowników":"Household clothes","Rzeczy do schowania – gdzie leżą":"Things to store – where they are kept","Co gdzie leży":"What is kept where","Sprzęt":"Appliance","Gdzie stoi":"Where it stands","Osób":"People","Miejsce / potrzeba":"Space / needed","zakładane":"assumed","✓ jest":"✓ present","za mało":"too little","pokój bez mebli":"room without furniture","nie planujemy":"not planned","brak szafy i komody":"no wardrobe or chest of drawers","Inne meble":"Other furniture","Jest i ma miejsce":"Present and stored"};
