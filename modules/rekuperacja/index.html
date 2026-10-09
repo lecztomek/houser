@@ -86,6 +86,9 @@ tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
 <script src="../../shared/heating.js"></script>
 <script src="../../shared/heating-system.js"></script>
 <script src="../../shared/hvac.js"></script>
+<script src="../../shared/balconies.js"></script>
+<script src="../konstrukcja/engine.js"></script>
+<script src="ducts.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 let project=null,res=null;
@@ -119,6 +122,50 @@ function planSVG(f){
     if(r.role==='sup'||r.role==='ex')h+='<text x="'+X+'" y="'+(Y+11)+'" text-anchor="middle" font-size="10.5" fill="#334155">'+(r.role==='sup'?'↓ ':'↑ ')+r.flow+' m³/h'+'</text>'}
   return '<div class="plan"><h4>'+(f===lo?'Parter':'Piętro / poddasze')+'</h4><svg viewBox="'+[xs*S-8,ys*S-8,(xe-xs)*S+16,(ye-ys)*S+16].join(' ')+'">'+h+'</svg></div>'}
 
+// ---------- projekt kanałów (modules/rekuperacja/ducts.js)
+let D=null,dDrag=null;const DS=24;
+function saveD(patch){const d={...(project.mvhrDesign||{}),...patch};project.mvhrDesign=d;HouserStore.update(p=>{p.mvhrDesign=d},'rekuperacja');render()}
+function ductPlan(f){const {W,H2:H,c,lo,up}=D,S=DS,X=m=>m/c*S,st=project.state?.[f]||[],fl=Array.isArray(st[0])?st.flat():st,defs=Object.fromEntries((project.definitionSnapshot?.floors?.[f]?.rooms||[]).map(r=>[r.id,r]));
+  const su=project.state?.[up]||[],stU=Array.isArray(su[0])?su.flat():su,id=(x,y)=>x<0||y<0||x>=W||y>=H?null:(fl[y*W+x]||null),inside=v=>v&&defs[v]?.kind!=='exteriorVoid',hole=v=>f===up&&(v==='pustka'||v==='schody');let h='',xs=W,ys=H,xe=0,ye=0;
+  const role={};for(const r of D.H.rooms)if(r.f===f)role[r.id]=r.role;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const v=id(x,y);if(!inside(v))continue;xs=Math.min(xs,x);ys=Math.min(ys,y);xe=Math.max(xe,x+1);ye=Math.max(ye,y+1);
+    const fill=hole(v)?'#e2e8f0':(f===lo&&D.layer[lo]!=='floor'&&stU[y*W+x]&&(stU[y*W+x]==='pustka'||stU[y*W+x]==='schody'))?'#f1f5f9':role[v]==='sup'?'#eff6ff':role[v]==='ex'?'#fff7ed':'#f8fafc';h+='<rect x="'+x*S+'" y="'+y*S+'" width="'+S+'" height="'+S+'" fill="'+fill+'"/>';if(hole(v))h+='<line x1="'+x*S+'" y1="'+y*S+'" x2="'+(x+1)*S+'" y2="'+(y+1)*S+'" stroke="#94a3b8"/>'}
+  if(xe<=xs)return '';
+  const ln=(x1,y1,x2,y2,col,w,da)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round"'+(da?' stroke-dasharray="'+da+'"':'')+'/>';
+  const O=project.openings?.[f]||{},E=(k,a,b,x1,y1,x2,y2)=>{if(a===b)return '';const ia=inside(a),ib=inside(b);if(!ia&&!ib)return '';const o=O[k];if(ia!==ib)return ln(x1,y1,x2,y2,'#334155',4);return o==='door'||o==='opening'?ln(x1,y1,x2,y2,'#cbd5e1',1.5,'3 3'):ln(x1,y1,x2,y2,'#64748b',2)};
+  for(let y=ys;y<=ye;y++)for(let x=xs;x<xe;x++)h+=E('h:'+x+':'+y,id(x,y-1),id(x,y),x*S,y*S,(x+1)*S,y*S);
+  for(let x=xs;x<=xe;x++)for(let y=ys;y<ye;y++)h+=E('v:'+x+':'+y,id(x-1,y),id(x,y),x*S,y*S,x*S,(y+1)*S);
+  // wiązki kanałów: grubość = liczba kanałów Ø75 na odcinku
+  for(const [k,n] of Object.entries(D.bundle[f]||{})){const [o,a,b]=k.split(':').map((v,i)=>i?+v:v);const p=o==='h'?[(a+.5)*S,(b-.5)*S,(a+.5)*S,(b+.5)*S]:[(a-.5)*S,(b+.5)*S,(a+.5)*S,(b+.5)*S];h+=ln(p[0],p[1],p[2],p[3],'#475569',Math.min(14,2+n*1.1))}
+  for(const P of D.paths[f])for(let i=1;i<P.pts.length;i++)h+=ln(X(P.pts[i-1][0]),X(P.pts[i-1][1]),X(P.pts[i][0]),X(P.pts[i][1]),P.kind==='sup'?'#60a5fa':'#fb923c',1.2);
+  // kratki
+  for(const t of D.terms[f])h+='<g class="drag" data-k="t" data-key="'+esc(t.key)+'" data-f="'+f+'" transform="translate('+X(t.x)+' '+X(t.y)+')"><circle r="9" fill="'+(t.kind==='sup'?'#2563eb':'#ea580c')+'" stroke="'+(t.unreach?'#dc2626':'#fff')+'" stroke-width="2"/><text y="4" text-anchor="middle" font-size="10" font-weight="800" fill="#fff">'+(t.kind==='sup'?'↓':'↑')+'</text><text x="11" y="-7" font-size="9.5" font-weight="700" fill="#334155">'+t.ducts+'×Ø75</text></g>';
+  // pion / szacht, skrzynki, centrala
+  if(D.riser){const sh=D.shaft,w=sh?Math.max(10,X(sh.w)):12,d=sh?Math.max(8,X(sh.d)):12;h+='<g class="drag" data-k="riser" transform="translate('+X(D.riser.x)+' '+X(D.riser.y)+')"><rect x="'+(-w/2)+'" y="'+(-d/2)+'" width="'+w+'" height="'+d+'" fill="#7c3aed" stroke="#fff" stroke-width="1.5"/><text y="'+(d/2+11)+'" text-anchor="middle" font-size="10" font-weight="800" fill="#6d28d9">pion'+(sh&&sh.floors.includes(f)?' – szacht':'')+'</text></g>'}
+  for(const p of D.plenums)if(p.f===f&&p.at==='pion')h+='<rect x="'+(X(p.x)+8)+'" y="'+(X(p.y)-6)+'" width="14" height="12" fill="#0f766e" rx="2"/>';
+  if(D.unit.f===f)h+='<g class="drag" data-k="unit" transform="translate('+X(D.unit.x)+' '+X(D.unit.y)+')"><rect x="-13" y="-13" width="26" height="26" rx="5" fill="#0f766e" stroke="#fff" stroke-width="2"/><text y="4" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">R</text></g>';
+  const svg='<svg class="dsvg" data-f="'+f+'" viewBox="'+[xs*S-14,ys*S-14,(xe-xs)*S+28,(ye-ys)*S+28].join(' ')+'" style="width:100%;height:auto;touch-action:none">'+h+'</svg>';
+  const opts=D.layersFor(f).map(k=>'<option value="'+k+'"'+(k===D.layer[f]?' selected':'')+'>'+esc(HouserDucts.LAYERS[k].name)+'</option>').join('');
+  return '<div class="plan"><h4>'+(f===lo?'Parter':'Piętro / poddasze')+'</h4><div class="field" style="margin:4px 0 8px"><label class="hint">Kanały prowadzone</label><select data-layer="'+f+'">'+opts+'</select></div>'+svg+'</div>'}
+function ductsCard(){try{D=HouserDucts.evaluate(project)}catch(e){console.error(e);return ''}
+  const fl=D.floors.filter(f=>D.terms[f].length||D.unit.f===f);let h='<div class="card"><h3>Projekt kanałów</h3><p class="hint">System rozdzielaczowy: centrala (R) → skrzynki rozdzielcze → osobny kanał Ø75 do każdej kratki (↓ nawiew, ↑ wywiew). Szare pasy – wiązki kanałów (grubsze = więcej kanałów), fioletowy – pion / szacht między kondygnacjami. Przeciągnij centralę, pion albo kratkę, żeby zmienić trasę.</p><div class="plans">'+fl.map(ductPlan).join('')+'</div>';
+  const C=D.cost,eff=[];if(D.shaft)eff.push('<b>Szacht</b> ok. '+fmt(D.shaft.w*100,0)+' × '+fmt(D.shaft.d*100,0)+' cm przez '+D.shaft.floors.map(f=>f===D.lo?'parter':'piętro').join(' i ')+(D.shaft.room?' ('+esc(D.shaft.room)+')':'')+' – w tym miejscu ściana grubsza o ok. '+fmt(D.shaft.d*100,0)+' cm, '+fmt(D.shaft.area,2)+' m² mniej podłogi');
+  for(const [f,a] of Object.entries(D.ceilA))eff.push('<b>Sufit podwieszany</b> ('+(f===D.lo?'parter':'piętro')+'): ok. '+fmt(a,0)+' m², obniżenie ok. 25 cm');
+  for(const [f,a] of Object.entries(D.screedA))eff.push('<b>Wyższa posadzka</b> ('+(f===D.lo?'parter':'piętro')+'): +7 cm na '+fmt(a,0)+' m² (kanały płaskie w wylewce)');
+  if(D.floors.some(f=>D.layer[f]==='attic'))eff.push('<b>Strych</b>: kanały w ociepleniu nad sufitem – izolowane, otwory w suficie pod kratki');
+  if(D.viaMains)eff.push('<b>Pion</b> z dwoma kanałami głównymi Ø160 i skrzynki rozdzielcze na drugiej kondygnacji');else if(D.riser)eff.push('<b>Pion</b> z wiązką kanałów Ø75 (bez drugiej skrzynki)');
+  h+='<div class="grid2" style="margin-top:12px"><div><h4 style="margin:0 0 6px">Co to zmienia w budynku</h4><ul class="why">'+(eff.length?eff.map(e=>'<li>'+e+'</li>').join(''):'<li>Bez zmian w ścianach i stropach.</li>')+'</ul>'+
+    (D.issues.length?'<ul class="iss" style="margin-top:8px">'+D.issues.map(i=>'<li><span class="pen">−'+fmt(i.p)+'</span>'+esc(i.text)+'<span class="tip">'+esc(i.tip)+'</span></li>').join('')+'</ul>':'')+D.good.map(g=>'<p class="hint c-ok" style="margin-top:6px">✓ '+esc(g)+'</p>').join('')+'</div>'+
+    '<div><h4 style="margin:0 0 6px">Kanały i koszt wg projektu</h4><table><tbody>'+[['Kanały Ø75 ('+D.nDucts+' szt., '+fmt(D.flexLen,0)+' m, najdłuższy '+fmt(D.maxRun,0)+' m)',C.flex],['Kanały główne Ø160 izolowane (ok. '+fmt(D.mainLen,0)+' m)',C.main],['Skrzynki rozdzielcze ('+D.plenums.length*2+')',C.plenum],['Kratki / anemostaty ('+D.nTerms+')',C.terms],['Sufity podwieszane',C.ceiling],['Wyższa wylewka',C.screed],['Szacht',C.shaft],['Izolacja kanałów na strychu',C.attic]].filter(r=>r[1]>0).map(r=>'<tr><td>'+esc(r[0])+'</td><td class="n">'+zl(r[1])+'</td></tr>').join('')+'<tr class="sum"><td>Razem (bez centrali i montażu)</td><td class="n">'+zl(C.total)+'</td></tr></tbody></table>'+
+    '<table style="margin-top:8px"><thead><tr><th>Pomieszczenie</th><th class="n">m³/h</th><th class="n">Kanały</th></tr></thead><tbody>'+D.rooms.map(r=>'<tr><td>'+(r.kind==='sup'?'↓ ':'↑ ')+esc(r.name)+'</td><td class="n">'+r.flow+'</td><td class="n">'+r.ducts+'</td></tr>').join('')+'</tbody></table></div></div></div>';
+  return h}
+function bindDucts(){document.querySelectorAll('select[data-layer]').forEach(s=>s.onchange=()=>saveD({layers:{...(project.mvhrDesign?.layers||{}),[s.dataset.layer]:s.value}}))}
+document.addEventListener('pointerdown',e=>{const g=e.target.closest?.('.drag');const svg=e.target.closest?.('.dsvg');if(!g||!svg)return;e.preventDefault();const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());dDrag={g,svg,f:svg.dataset.f,k:g.dataset.k,key:g.dataset.key,p0:p,m:g.getAttribute('transform')}});
+document.addEventListener('pointermove',e=>{if(!dDrag)return;const pt=dDrag.svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(dDrag.svg.getScreenCTM().inverse());dDrag.dx=p.x-dDrag.p0.x;dDrag.dy=p.y-dDrag.p0.y;dDrag.g.setAttribute('transform',dDrag.m+' translate('+dDrag.dx+' '+dDrag.dy+')')});
+document.addEventListener('pointerup',()=>{if(!dDrag)return;const d=dDrag;dDrag=null;if(!d.dx&&!d.dy)return;const toM=v=>v/DS*D.c,r2=v=>Math.round(v*20)/20;
+  if(d.k==='unit')saveD({unit:{f:d.f,x:r2(D.unit.x+toM(d.dx)),y:r2(D.unit.y+toM(d.dy))}});
+  else if(d.k==='riser')saveD({riser:{x:r2(D.riser.x+toM(d.dx)),y:r2(D.riser.y+toM(d.dy))}});
+  else if(d.k==='t'){const ts=D.terms[d.f].filter(t=>t.key===d.key),i=[...d.g.parentNode.querySelectorAll('.drag[data-key="'+CSS.escape(d.key)+'"]')].indexOf(d.g),pts=ts.map((t,j)=>j===i?[r2(t.x+toM(d.dx)),r2(t.y+toM(d.dy))]:[t.x,t.y]);saveD({terms:{...(project.mvhrDesign?.terms||{}),[d.key]:pts}})}});
 function render(){
   const s=settings(),M=$('main');
   if(!project||!(project.grid||project.definitionSnapshot?.grid)){M.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej albo narysuj rzut w <b>Układzie pomieszczeń</b>.</div>';return}
@@ -135,15 +182,14 @@ function render(){
     '<div class="tile"><div class="l">Oszczędność na ogrzewaniu</div><div class="v">'+(R.saving!=null?zl(Math.max(0,R.saving))+' <small>na rok</small>':'–')+'</div><div class="s">'+(R.heatSave!=null?'mniej ciepła o '+Math.round(R.heatSave).toLocaleString('pl-PL')+' kWh/rok, prąd na wentylatory ok. '+zl(R.fanCost)+'/rok':'')+(R.payback?' · zwrot ok. '+Math.round(R.payback)+' lat':'')+'</div></div></div>';
   h+='<div class="grid2"><div class="card"><h3>Dlaczego '+NEED[R.need]+'</h3><ul class="why">'+R.why.map(w=>'<li>'+esc(w)+'</li>').join('')+'</ul>'+(R.payback&&R.payback>15?'<p class="hint" style="margin-top:8px">Zwrot z samej oszczędności energii jest długi '+(R.heatPrice?'(ciepło z instalacji „'+esc(R.heatPrice.from)+'” kosztuje ok. '+fmt(R.heatPrice.p,2)+' zł/kWh)':'')+' – rekuperację robi się głównie dla jakości powietrza i szczelnego domu.</p>':'')+'</div>'+
     '<div class="card"><h3>Trudność montażu</h3>'+(R.dIss.length?'<ul class="iss">'+R.dIss.map(i=>'<li><span class="pen">−'+fmt(i.p)+'</span>'+esc(i.text)+'<span class="tip">'+esc(i.tip)+'</span></li>').join('')+'</ul>':'<p class="hint c-ok">Łatwo: centrala blisko, kanały prowadzone po strychu, bez sufitów podwieszanych.</p>')+'</div></div>';
-  h+='<div class="card"><h3>Schemat</h3><p class="hint">Niebieskie – nawiew świeżego powietrza (↓), pomarańczowe – wywiew zużytego (↑), szare – komunikacja (powietrze przepływa przez podcięcia drzwi). R – centrala; linie to kierunek kanałów, nie ich trasa.</p><div class="plans">'+[R.lo,R.up].map(planSVG).join('')+'</div>'+
-    '<div class="legend"><span><i style="background:#dbeafe"></i>nawiew</span><span><i style="background:#ffedd5"></i>wywiew</span><span><i style="background:#f1f5f9"></i>komunikacja</span><span><i style="background:#0f766e"></i>centrala</span></div></div>';
+  h+=ductsCard();
   const vr=[...R.sup,...R.ex].sort((a,b)=>(a.role>b.role?-1:1)||b.flow-a.flow);
   h+='<div class="card"><h3>Pomieszczenia i kanały</h3><table><thead><tr><th>Pomieszczenie</th><th>Rola</th><th class="n">Strumień</th><th class="n">Kanał</th><th>Prowadzenie</th></tr></thead><tbody>'+
     vr.map(r=>'<tr><td><b>'+esc(r.name)+'</b><br><span class="hint">'+(r.f===R.lo?'Parter':'Piętro')+'</span></td><td><span class="role '+r.role+'">'+(r.role==='sup'?'nawiew':'wywiew')+'</span></td><td class="n">'+r.flow+' m³/h</td><td class="n">'+fmt(r.duct)+' m</td><td class="'+(r.hard?'c-mid':'')+'">'+esc(r.route)+'</td></tr>').join('')+'</tbody></table></div>';
   const C=R.cost,rows=[['Centrala ('+R.flow+' m³/h)',C.unit],['Kanały ('+Math.round(R.ductLen)+' m)',C.ducts],['Skrzynki rozdzielcze',C.plenum],['Anemostaty ('+R.vents+' szt.)',C.vents],['Czerpnia i wyrzutnia',C.intake],['Montaż i uruchomienie',C.labour],['Sufity podwieszane pod kanały',C.ceilings]].filter(r=>r[1]>0);
   h+='<div class="card"><h3>Koszt rekuperacji</h3><table><tbody>'+rows.map(r=>'<tr><td>'+esc(r[0])+'</td><td class="n">'+zl(r[1])+'</td></tr>').join('')+'<tr class="sum"><td>Razem</td><td class="n">'+zl(C.total)+'</td></tr></tbody></table>'+
     '<p class="hint" style="margin-top:8px">Dla porównania wentylacja grawitacyjna: '+R.ex.length+' '+(R.ex.length===1?'kanał':'kanałów')+' wentylacyjnych w kominie (z kuchni, łazienek, WC, pralni) – ok. '+zl(R.ex.length*2500)+', ale większe straty ciepła i słaba praca w szczelnym domu.</p></div>';
-  M.innerHTML=h;
+  M.innerHTML=h;bindDucts();
 }
 const rec=HouserStore.load();project=rec?rec.project:null;render();
 HouserStore.subscribe(r=>{project=r.project;render()});

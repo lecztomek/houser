@@ -217,6 +217,15 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
   const j=st.findIndex((v,k)=>v&&v!=='pustka'&&v!=='schody'&&!(p.definitionSnapshot.floors[q.up].rooms.find(r=>r.id===v)?.kind==='exteriorVoid')),x2=(j%q.W+.5)*q.c,y2=(Math.floor(j/q.W)+.5)*q.c;
   p.lighting={lamps:{[q.up]:[{id:'w',x:x2,y:y2,type:'ceiling',lm:2000}]}};ok(LG.evaluate(p).floors[q.lo].pts.every(P=>P.dir<1e-9),'oświetlenie: lampa na piętrze nad stropem nie świeci na parter');}}
 
+// rekuperacja – projekt kanałów: kratki, trasy, pion / szacht, warstwy i ich skutki
+{const DU=W.HouserDucts,ld=f=>JSON.parse(fs.readFileSync(path.join(ROOT,'examples',f),'utf8'));
+ for(const f of examples){const p=ld(f),R=DU.evaluate(p);ok(R.nTerms>0&&fin(R.flexLen)&&R.flexLen>0&&fin(R.cost.total)&&R.cost.total>0&&R.floors.every(fl=>R.terms[fl].every(t=>t.unreach||fin(t.len)&&t.len>0)),f+': kanały rekuperacji – liczby skończone ('+R.nDucts+' kanałów, '+Math.round(R.flexLen)+' m)');
+   ok(R.rooms.every(r=>r.ducts>=Math.ceil(r.flow/30)),f+': kanały rekuperacji – Ø75 wystarczy na strumień każdego pomieszczenia')}
+ const p=ld('zefir-2.json'),R=DU.evaluate(p);ok(R.riser&&R.shaft&&R.shaft.floors.length>=1&&R.shaft.w>0,'kanały: dom piętrowy – pion i szacht');
+ const lo=R.lo;p.mvhrDesign={layers:{[lo]:'slab'}};const R2=DU.evaluate(p);ok(R2.screedA[R2.up]>0&&!Object.keys(R2.ceilA).length,'kanały: w stropie – wyższa wylewka piętra zamiast sufitu podwieszanego');
+ p.mvhrDesign={layers:{[lo]:'ceiling'}};const R3=DU.evaluate(p);ok(R3.ceilA[lo]>0,'kanały: sufit podwieszany – powierzchnia obniżenia');
+ const b=ld('dom-parterowy.json'),RB=DU.evaluate(b);ok(!RB.shaft&&RB.layer[RB.lo]==='attic','kanały: dom parterowy – kanały na strychu, bez szachtu');}
+
 // ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować
 console.log('• składnia skryptów');
 {const vm=require('vm'),walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?(['node_modules','.git'].includes(e.name)?[]:walk(path.join(d,e.name))):[path.join(d,e.name)]);
