@@ -286,6 +286,7 @@ a{color:var(--accent)}
 window.HouserI18n=window.HouserI18n||{lang:'pl',set(){},t:s=>s};
 // Moduły w kolejności projektowania. group: etap, step: numer kroku na karcie.
 const MODULES=[
+  {id:'generator',group:'Bryła i założenia',name:'Generator układu',src:'modules/generator/',desc:'Odpowiadasz na kilka pytań (ile osób, sypialni, parterowy czy z poddaszem, kuchnia, garaż, antresola, strony świata), z odpowiedzi powstaje lista warunków, a algorytm genetyczny układa pomieszczenia, schody i pustkę tak, żeby spełnić je jak najlepiej i nie marnować miejsca. Wybrany wariant zapisujesz jako nowy projekt.'},
   {id:'obrys',group:'Bryła i założenia',name:'Obrys domu',src:'modules/obrys/',desc:'Tu zaczynasz nowy projekt: kształt budynku rysowany po liniach siatki – dowolny (L, T, wnęki); siatka i warstwy dopasowują się same.'},
   {id:'kondygnacje-dach',group:'Bryła i założenia',name:'Kondygnacje i dach',src:'modules/kondygnacje-dach/',desc:'Widok z boku: parter, pełne piętro albo poddasze ze ścianką kolankową, kąt i kierunek dachu.'},
   {id:'pomieszczenia',group:'Bryła i założenia',name:'Pomieszczenia',src:'modules/pomieszczenia/',desc:'Jakie pomieszczenia ma dom i na której kondygnacji: nazwy, kolory, wnęki.'},
@@ -358,6 +359,7 @@ const ICON_PATH={pomieszczenia:'<rect x="3" y="3" width="7.5" height="7.5" rx="1
   ranking:'<path d="M4 20V13h4v7M10 20V8h4v12M16 20v-9h4v9"/><path d="M12 2.8l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2L9.1 4.9l2-.3z"/>',
   porownanie:'<rect x="3" y="4" width="7.5" height="16" rx="1.8"/><rect x="13.5" y="4" width="7.5" height="16" rx="1.8"/><path d="M5.5 8.5h2.5M5.5 12h2.5M16 8.5h2.5M16 12h2.5"/>',
   notatki:'<path d="M5 3.5h10l4 4v13H5z"/><path d="M15 3.5v4h4"/><path d="M8.5 11.5h7M8.5 15h7M8.5 18.5h4"/>',
+  generator:'<path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M5 16l.9 2.1L8 19l-2.1.9L5 22l-.9-2.1L2 19l2.1-.9zM19 14l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z"/>',
   garaz:'<path d="M3 21V9l9-5 9 5v12"/><path d="M6.5 21v-8h11v8"/><path d="M6.5 16h11"/>',
   dzialka:'<path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/>',
   oswietlenie:'<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',
@@ -613,6 +615,9 @@ async function importFile(f){if(!f||!(await confirmReplace()))return;try{const p
     try{const names=new Set((await HouserLibrary.list()).map(m=>m.name));if(p&&typeof p==='object'&&names.has(projName(p)))setName(p,projName(p)+' (import)')}catch(_){}
     await openProject(p,'file');await libSave();toast('Zaimportowano jako nowy projekt „'+projName(HouserStore.load().project)+'” – poprzedni dom jest na liście projektów');refreshViews()}catch(err){alert('Nie udało się wczytać pliku: '+err.message)}}
 async function newEmpty(){if(isGuest()){if(confirm('Żeby projektować własny dom, zaloguj się (Google). Zalogować teraz?'))doLogin();return}if(!(await confirmReplace()))return;try{await openProject(HouserDefinition.projectFromDefinition(HouserDefinition.emptyDefinition()),'new');libSave();location.hash='obrys'}catch(err){alert(err.message)}}
+// moduły (np. Generator układu) zakładają nowy projekt przez stronę główną – obecny dom zostaje na liście projektów
+window.HouserShell={async createProject(p,go){if(isGuest()){if(confirm('Żeby zapisać wygenerowany dom, zaloguj się (Google). Zalogować teraz?'))doLogin();return false}if(!(await confirmReplace()))return false;
+  try{await openProject(p,'new');await libSave();location.hash=go||'projektowanie';return true}catch(err){alert(err.message);return false}}};
 // ---------- nazwa i duplikaty
 function setName(p,n){if(p.definitionSnapshot)p.definitionSnapshot.name=n;p.definitionName=n;return p}
 function localEdit(fn,src){const before=curJSON;HouserStore.update(fn,src);const r=HouserStore.load();curJSON=JSON.stringify(r.project);pushUndo(before,src);HouserCloud.touch('project');libTouch();renderBar();refreshViews()}

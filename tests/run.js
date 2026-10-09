@@ -261,6 +261,23 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  const n=NO.make({text:'x',cat:'todo'});ok(n.id&&n.at&&n.cat==='todo'&&!n.done,'notatki: nowa notatka');
  ok(NO.toText(L).includes('PYTANIE\n[ ] Zapytać o strop')&&NO.toText(L).includes('[x] Oferta okien'),'notatki: eksport tekstu');}
 
+// generator układu: ankieta -> warunki z reguł -> algorytm genetyczny -> projekt
+{const GN=W.HouserGen,cases=[{a:{},tag:'poddasze'},{a:{storeys:'1',garage:'1',beds:3},tag:'parterowy z garażem'},{a:{storeys:'full',garden:'W',entrance:'E',kitchen:'closed',extras:['office','mezz']},tag:'piętrowy, ogród od zachodu'}];
+ for(const C of cases){const P=GN.program(C.a),tag='generator ('+C.tag+')';
+  ok(P.rooms.filter(r=>r.type==='sypialnia').length===P.A.beds&&P.conditions.length>20&&P.conditions.every(c=>GN.CHECKS[c.type]&&c.label),tag+': program i warunki z reguł ('+P.rooms.length+' pomieszczeń, '+P.conditions.length+' warunków)');
+  const R1=GN.run(P,{seed:7,pop:24,gens:8}),R2=GN.run(P,{seed:7,pop:24,gens:8}),b=R1.best,L=b.lay;
+  ok(fin(b.pen)&&b.pen===R2.best.pen&&b.ev.score>=0&&b.ev.score<=10,tag+': ocena skończona i powtarzalna dla tego samego ziarna ('+b.ev.score+')');
+  ok(L&&L.rooms.every(r=>L.grid[r.f].includes(r.id)),tag+': wszystkie pomieszczenia na rzucie');
+  ok(P.one?!L.stairs:(L.stairs&&L.grid.upper.includes('schody')),tag+': schody i otwór w stropie tylko w domu z piętrem');
+  if(P.has('pustka')){const U=L.grid.upper,D=L.grid.ground;ok(U.some((v,i)=>v==='pustka'&&D[i]==='salon'),tag+': pustka antresoli nad salonem')}
+  const p=GN.toProject(P,L,'Test'),g=p.grid,ex=(f,id)=>p.state[f].includes(id);
+  ok(p.state.ground.length===g.width*g.height&&Object.keys(p.openings.ground).every(k=>/^[vh]:\d+:\d+$/.test(k))&&Object.values(p.openings.ground).includes('door'),tag+': projekt – kratki i otwory w formacie Housera');
+  ok(p.definitionSnapshot.conditions.every(c=>GN.KNOWN.has(c.type)&&['room','a','b','startRoom'].every(k=>c[k]==null||ex(c.floor,c[k]))&&(c.lowerRooms||[]).every(id=>ex(c.lowerFloor,id))),tag+': warunki w projekcie tylko ze znanych typów i istniejących pomieszczeń');
+  // ogród po wybranej stronie świata: salon ma ścianę zewnętrzną od tej strony
+  const side=P.A.garden,W2=g.width,H2=g.height,st=p.state.ground,isIn=(x,y)=>x>=0&&y>=0&&x<W2&&y<H2&&st[y*W2+x]&&st[y*W2+x]!=='poza_obrysem',d={N:[0,-1],S:[0,1],E:[1,0],W:[-1,0]}[side];
+  let touch=false;for(let y=0;y<H2;y++)for(let x=0;x<W2;x++)if(st[y*W2+x]==='salon'&&!isIn(x+d[0],y+d[1]))touch=true;ok(touch,tag+': salon od ogrodu ('+side+')');}
+ const P=GN.program({}),Z=GN.run(P,{seed:3,pop:20,gens:4}),f=GN.run(P,{seed:3,pop:20,gens:4,conditions:P.conditions.map(c=>c.type==='hallShare'?{...c,enabled:false}:c)});ok(f.best.ev.res.every(r=>r.c.type!=='hallShare'),'generator: wyłączony warunek nie jest liczony');}
+
 // ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować
 console.log('• składnia skryptów');
 {const vm=require('vm'),walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?(['node_modules','.git'].includes(e.name)?[]:walk(path.join(d,e.name))):[path.join(d,e.name)]);

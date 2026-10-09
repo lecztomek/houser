@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Generator układu</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:340px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
+h1{font-size:19px;margin:0 0 4px}
+.lead,.hint{font-size:12.5px;color:var(--hs-muted);line-height:1.5;margin:0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.field{display:grid;gap:4px;margin-bottom:9px}.field>label{font-size:12px;color:var(--hs-muted)}
+.field select,.field input[type=number]{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+.multi{display:grid;gap:3px}.multi label{font-size:13px;display:flex;gap:7px;align-items:center;cursor:pointer}
+.btns{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.btn{font:inherit;font-size:13px;font-weight:700;border:1px solid var(--hs-line-strong);background:#fff;color:#1e293b;border-radius:8px;padding:7px 12px;cursor:pointer}
+.btn.pri{background:#0f766e;border-color:#0f766e;color:#fff}.btn:disabled{opacity:.5;cursor:default}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.card h2{font-size:15px;margin:0 0 6px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:10px 12px}
+.tile .l{font-size:12px;color:var(--hs-muted);font-weight:600}.tile .v{font-size:22px;font-weight:800;margin-top:2px}.tile .s{font-size:12px;color:var(--hs-muted)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:5px 8px;border-bottom:1px solid #eef2f6;vertical-align:middle}
+th{font-size:11.5px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.04em}
+td.n{text-align:right;font-variant-numeric:tabular-nums}
+.cg{font-weight:800;padding-top:10px;color:#334155}
+.sev{font:inherit;font-size:12px;border:1px solid var(--hs-line-strong);border-radius:6px;padding:2px 4px}
+.sev.hard{color:#b91c1c}.sev.medium{color:#b45309}.sev.soft{color:#475569}
+tr.off td{opacity:.45}
+.prog{height:10px;background:#e2e8f0;border-radius:99px;overflow:hidden}.prog i{display:block;height:100%;background:#0f766e;width:0;transition:width .15s}
+.vars{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.var{border:2px solid var(--hs-line);border-radius:12px;padding:10px;background:#fff;cursor:pointer}
+.var.on{border-color:#0f766e;box-shadow:0 0 0 3px rgba(15,118,110,.18)}
+.var .mini{display:flex;gap:6px;align-items:flex-start}.var .mini svg{flex:1;min-width:0;height:auto}
+.var .t{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;font-size:12.5px}
+.big{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+.big svg{width:100%;height:auto;max-height:70vh;background:#fff;border:1px solid var(--hs-line);border-radius:10px}
+.big h4{margin:0 0 4px;font-size:12px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.06em}
+.rep li{font-size:12.5px;line-height:1.45;padding:3px 0;list-style:none}.rep{padding:0;margin:6px 0 0}
+.ok{color:#15803d}.bad{color:#b91c1c}.mid{color:#b45309}
+.c-ok{color:#15803d}.c-mid{color:#b45309}.c-bad{color:#b91c1c}
+details.card>summary{cursor:pointer;font-size:14.5px;list-style:revert}details.card[open]>summary{margin-bottom:6px}
+.empty{padding:30px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){html,body{overflow:auto;height:auto}.wrap{height:auto;grid-template-columns:1fr;grid-template-rows:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{overflow:visible}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1>Generator układu</h1>
+  <p class="lead">Odpowiedz na pytania – z odpowiedzi powstanie program domu i lista warunków. Algorytm genetyczny ułoży pomieszczenia, schody i pustkę tak, żeby spełnić warunki jak najlepiej i nie marnować miejsca. Każde uruchomienie daje inne domy. Wybrany wariant zapiszesz jako <b>nowy projekt</b> – obecny dom zostaje na liście projektów.</p>
+  <div class="section"><h3>Ankieta</h3><div id="form"></div></div>
+  <div class="section"><h3>Generowanie</h3>
+    <div class="field"><label>Dokładność</label><select id="acc"><option value="fast">szybko (ok. 5 s)</option><option value="norm" selected>normalnie (ok. 10 s)</option><option value="deep">dokładnie (ok. 25 s)</option></select></div>
+    <div class="btns"><button class="btn pri" id="go">Generuj warianty</button><button class="btn" id="stop" hidden>Zatrzymaj</button></div>
+    <div class="prog" style="margin-top:10px" id="progBox" hidden><i id="prog"></i></div><p class="hint" id="progT" style="margin-top:6px"></p>
+  </div>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/stairs.js"></script>
+<script src="rules.js"></script>
+<script src="engine.js"></script>
+<script>
+const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const G=HouserGen,RU=HouserGenRules,KEY='houser:generator';
+const SEV={hard:'musi',medium:'ważne',soft:'byłoby dobrze'};
+let S={answers:{},over:{}},P=null,run=null,busy=false,stopReq=false,vars=[],sel=0;
+try{const o=JSON.parse(localStorage.getItem(KEY)||'null');if(o)S={answers:o.answers||{},over:o.over||{}}}catch(_){}
+const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}};
+const ckey=c=>c.rule+'|'+c.label;
+// warunki z poprawkami użytkownika (włączony, ważność)
+const active=()=>P.conditions.map(c=>{const o=S.over[ckey(c)];return o?{...c,...o}:c});
+// ---------- ankieta z pytań w rules.js
+function form(){const A=G.answers(S.answers);let h='';
+  for(const q of RU.QUESTIONS){h+='<div class="field"><label>'+esc(q.label)+'</label>';
+    if(q.type==='number')h+='<input type="number" data-q="'+q.id+'" min="'+(q.min??0)+'" max="'+(q.max??999)+'" value="'+(q.id==='area'&&!A.area?'':A[q.id])+'"'+(q.id==='area'?' placeholder="policz z liczby osób"':'')+'>';
+    else if(q.type==='choice')h+='<select data-q="'+q.id+'">'+q.options.map(([v,l])=>'<option value="'+esc(v)+'"'+(String(A[q.id])===String(v)?' selected':'')+'>'+esc(l)+'</option>').join('')+'</select>';
+    else if(q.type==='multi')h+='<div class="multi">'+q.options.map(([v,l])=>'<label><input type="checkbox" data-m="'+q.id+'" value="'+esc(v)+'"'+((A[q.id]||[]).includes(v)?' checked':'')+'> '+esc(l)+'</label>').join('')+'</div>';
+    h+='</div>'}
+  $('form').innerHTML=h;
+  $('form').querySelectorAll('[data-q]').forEach(el=>el.onchange=()=>{S.answers[el.dataset.q]=el.type==='number'?(+el.value||0):el.value;persist();refresh()});
+  $('form').querySelectorAll('[data-m]').forEach(el=>el.onchange=()=>{const id=el.dataset.m;S.answers[id]=[...$('form').querySelectorAll('[data-m="'+id+'"]:checked')].map(x=>x.value);persist();refresh()})}
+function refresh(){P=G.program(S.answers);vars=[];run=null;form();render()}
+// ---------- rzut wariantu (projekt po obrocie – północ u góry)
+function planSVG(p,f,opt){opt=opt||{};const g=p.grid,W=g.width,H=g.height,c=g.cellMeters,S=opt.px||22,st=p.state[f],O=p.openings[f]||{},defs=Object.fromEntries(p.definitionSnapshot.floors[f].rooms.map(r=>[r.id,r]));
+  const id=(x,y)=>x<0||y<0||x>=W||y>=H?null:st[y*W+x],ins=v=>v&&defs[v]?.kind!=='exteriorVoid';let h='';
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const v=id(x,y);if(!ins(v))continue;h+='<rect x="'+x*S+'" y="'+y*S+'" width="'+(S+.5)+'" height="'+(S+.5)+'" fill="'+(v==='schody'?'#cbd5e1':v==='pustka'?'#f1f5f9':defs[v]?.color||'#ccc')+'" fill-opacity="'+(v==='schody'||v==='pustka'?1:.3)+'"/>'}
+  if(f==='ground')for(const s of p.stairs||[])for(const [x,y] of s._cells?.lower||[])h+='<rect x="'+(x*S+2)+'" y="'+(y*S+2)+'" width="'+(S-4)+'" height="'+(S-4)+'" fill="none" stroke="#64748b" stroke-width="1"/>';
+  const ln=(x1,y1,x2,y2,col,w)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="square"/>';
+  const E=(k,a,b,x1,y1,x2,y2)=>{if(a===b)return '';const ia=ins(a),ib=ins(b);if(!ia&&!ib)return '';const o=O[k],ext=ia!==ib;
+    if(o==='opening')return '';if(o==='door')return ext?ln(x1,y1,x2,y2,'#b45309',3):ln(x1,y1,x2,y2,'#fde68a',2);if(o==='window')return ln(x1,y1,x2,y2,'#38bdf8',4);if(o==='hst')return ln(x1,y1,x2,y2,'#0891b2',5);
+    if(a==='pustka'||b==='pustka'||a==='schody'||b==='schody')return ext?ln(x1,y1,x2,y2,'#1e293b',4):ln(x1,y1,x2,y2,'#94a3b8',1);return ext?ln(x1,y1,x2,y2,'#1e293b',4):ln(x1,y1,x2,y2,'#475569',1.6)};
+  for(let y=0;y<=H;y++)for(let x=0;x<W;x++)h+=E('h:'+x+':'+y,id(x,y-1),id(x,y),x*S,y*S,(x+1)*S,y*S);
+  for(let x=0;x<=W;x++)for(let y=0;y<H;y++)h+=E('v:'+x+':'+y,id(x-1,y),id(x,y),x*S,y*S,x*S,(y+1)*S);
+  if(!opt.mini){const cells={};for(let i=0;i<st.length;i++){const v=st[i];if(ins(v)&&v!=='schody')(cells[v]=cells[v]||[]).push([i%W,Math.floor(i/W)])}
+    for(const [v,L] of Object.entries(cells)){if(L.length<6)continue;const cx=L.reduce((a,p)=>a+p[0],0)/L.length,cy=L.reduce((a,p)=>a+p[1],0)/L.length,nm=defs[v]?.name||v,X=(cx+.5)*S,Y=(cy+.5)*S;
+      h+='<text x="'+X+'" y="'+(Y-2)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#0f172a">'+esc(nm.length>18?nm.slice(0,17)+'…':nm)+'</text><text x="'+X+'" y="'+(Y+11)+'" text-anchor="middle" font-size="10" fill="#475569">'+fmt(L.length*c*c)+' m²</text>'}}
+  return '<svg viewBox="-6 -6 '+(W*S+12)+' '+(H*S+12)+'" xmlns="http://www.w3.org/2000/svg">'+h+'</svg>'}
+// ---------- generowanie
+const ACC={fast:{pop:50,gens:30},norm:{pop:70,gens:50},deep:{pop:90,gens:90}};
+async function generate(from){if(busy)return;busy=true;stopReq=false;const a=ACC[$('acc').value]||ACC.norm;
+  render();$('go').disabled=true;$('stop').hidden=false;$('progBox').hidden=false;$('progT').textContent='Pierwsze pokolenie…';
+  await new Promise(r=>setTimeout(r,30));
+  run=G.createRun(P,{pop:a.pop,conditions:active(),from:from||null});
+  for(let i=0;i<a.gens&&!stopReq;i++){run.step();$('prog').style.width=Math.round((i+1)/a.gens*100)+'%';$('progT').textContent='Pokolenie '+(i+1)+' z '+a.gens+' · najlepszy wynik '+fmt(run.best.ev.score)+' / 10';
+    if(i%5===4)preview(run.best);await new Promise(r=>setTimeout(r,0))}
+  vars=run.top(6).map(x=>({x,p:G.toProject(P,x.lay,'Dom z generatora',active())}));sel=0;
+  busy=false;$('go').disabled=false;$('stop').hidden=true;$('progT').textContent='Gotowe – '+vars.length+' różnych wariantów (ziarno '+run.seed+').';render()}
+function preview(b){const el=$('live');if(!el||!b?.lay)return;const p=G.toProject(P,b.lay,'',active());el.innerHTML=P.floors.map(f=>planSVG(p,f,{mini:true,px:10})).join('')}
+$('go').onclick=()=>generate();$('stop').onclick=()=>{stopReq=true};
+// ---------- widok
+function condTable(){const L=active(),groups=[...new Set(L.map(c=>c.group))];
+  return '<table><tr><th style="width:28px"></th><th>Warunek</th><th style="width:130px">Ważność</th></tr>'+groups.map(g=>'<tr><td colspan="3" class="cg">'+esc(g)+'</td></tr>'+L.filter(c=>c.group===g).map(c=>'<tr class="'+(c.enabled===false?'off':'')+'"><td><input type="checkbox" data-ce="'+esc(ckey(c))+'"'+(c.enabled===false?'':' checked')+'></td><td>'+esc(c.label)+'</td><td><select class="sev '+c.severity+'" data-cs="'+esc(ckey(c))+'">'+Object.entries(SEV).map(([k,v])=>'<option value="'+k+'"'+(c.severity===k?' selected':'')+'>'+v+'</option>').join('')+'</select></td></tr>').join('')).join('')+'</table>'}
+function report(v){const ev=v.x.ev,groups=[...new Set(ev.res.map(r=>r.c.group))];
+  return groups.map(g=>'<div class="cg" style="margin-top:8px">'+esc(g)+'</div><ul class="rep">'+ev.res.filter(r=>r.c.group===g).map(r=>'<li class="'+(r.ok?'ok':r.c.severity==='hard'?'bad':'mid')+'">'+(r.ok?'✓ ':'✗ ')+esc(r.c.label)+(r.detail?' <span class="hint">('+esc(r.detail)+')</span>':'')+'</li>').join('')+'</ul>').join('')}
+function area(p,f){const st=p.state[f]||[],defs=Object.fromEntries((p.definitionSnapshot.floors[f]?.rooms||[]).map(r=>[r.id,r]));return st.filter(v=>v&&defs[v]?.kind!=='exteriorVoid'&&v!=='pustka'&&v!=='schody').length*p.grid.cellMeters**2}
+function render(){const M=$('main');if(!P)P=G.program(S.answers);
+  const A=P.A,rooms=P.rooms,sum=rooms.filter(r=>r.type!=='pustka').reduce((a,r)=>a+r.area,0);
+  const op=vars.length?'':' open';
+  let prog='<details class="card"'+op+'><summary><b>Program domu</b> <span class="hint">– '+rooms.length+' pomieszczeń, '+fmt(sum,0)+' m² bez holu</span></summary><p class="hint">Pomieszczenia z ankiety i ich docelowe powierzchnie (bez holu i korytarzy – te wynikną z rzutu). Pomieszczenia oznaczone „parter lub piętro” generator może przenieść tam, gdzie lepiej pasują.</p>'+
+    '<table style="margin-top:6px"><tr><th>Pomieszczenie</th><th>Kondygnacja</th><th class="n">m²</th></tr>'+rooms.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+(r.f==='ground'?'parter':r.f==='upper'?(A.storeys==='attic'?'poddasze':'piętro'):'parter lub '+(A.storeys==='attic'?'poddasze':'piętro'))+'</td><td class="n">'+fmt(r.area)+'</td></tr>').join('')+
+    '<tr><td><b>Razem</b></td><td></td><td class="n"><b>'+fmt(sum)+'</b></td></tr></table></details>';
+  prog+='<details class="card"'+op+'><summary><b>Warunki ('+active().filter(c=>c.enabled!==false).length+')</b> <span class="hint">– co generator stara się spełnić; możesz je zmienić</span></summary><p class="hint">Lista powstała z ankiety według reguł generatora. Możesz wyłączyć warunek albo zmienić jego ważność: „musi” – twardy, „ważne”, „byłoby dobrze”. Reguły z grupy „Oszczędność miejsca” pilnują, żeby dom nie był większy niż trzeba, bez długich korytarzy i niewygodnych kształtów.</p><div style="margin-top:6px">'+condTable()+'</div></details>';
+  let h='';if(!vars.length)h+=prog;
+  if(busy)h+='<div class="card"><h2>Trwa generowanie…</h2><div class="mini" id="live" style="display:flex;gap:8px"></div></div>';
+  if(vars.length){const v=vars[sel],p=v.p,ev=v.x.ev;
+    h+='<div class="card"><h2>Warianty</h2><p class="hint">Najlepsze różne układy z tego uruchomienia. Kliknij, żeby zobaczyć szczegóły. „Generuj warianty” jeszcze raz da inne domy.</p><div class="vars" style="margin-top:8px">'+vars.map((w,i)=>'<div class="var'+(i===sel?' on':'')+'" data-v="'+i+'"><div class="mini">'+P.floors.map(f=>planSVG(w.p,f,{mini:true,px:8})).join('')+'</div><div class="t"><b class="'+(w.x.ev.score>=8?'c-ok':w.x.ev.score>=6?'c-mid':'c-bad')+'">'+fmt(w.x.ev.score)+' / 10</b><span class="hint">'+fmt(area(w.p,'ground')+(P.one?0:area(w.p,'upper')),0)+' m² · '+fmt(w.p.grid.width*w.p.grid.cellMeters,1)+' × '+fmt(w.p.grid.height*w.p.grid.cellMeters,1)+' m</span></div><div class="hint">'+esc(w.x.lay.tpName)+' · twarde '+w.x.ev.hardOk+'/'+w.x.ev.hardN+'</div></div>').join('')+'</div></div>';
+    const fa=area(p,'ground'),ua=P.one?0:area(p,'upper');
+    h+='<div class="card"><h2>Wariant '+(sel+1)+' – '+esc(v.x.lay.tpName)+'</h2><div class="tiles" style="margin:6px 0 10px">'+
+      '<div class="tile"><div class="l">Ocena</div><div class="v '+(ev.score>=8?'c-ok':ev.score>=6?'c-mid':'c-bad')+'">'+fmt(ev.score)+' / 10</div><div class="s">spełnione '+ev.okN+' z '+ev.n+' warunków</div></div>'+
+      '<div class="tile"><div class="l">Twarde warunki</div><div class="v '+(ev.hardOk===ev.hardN?'c-ok':'c-bad')+'">'+ev.hardOk+' / '+ev.hardN+'</div><div class="s">'+(ev.hardOk===ev.hardN?'wszystkie spełnione':'nie wszystkie – sprawdź listę')+'</div></div>'+
+      '<div class="tile"><div class="l">Powierzchnia</div><div class="v">'+fmt(fa+ua,0)+' m²</div><div class="s">parter '+fmt(fa,0)+(P.one?'':' · '+(A.storeys==='attic'?'poddasze':'piętro')+' '+fmt(ua,0))+' m²</div></div>'+
+      '<div class="tile"><div class="l">Obrys</div><div class="v">'+fmt(p.grid.width*p.grid.cellMeters,1)+' × '+fmt(p.grid.height*p.grid.cellMeters,1)+' m</div><div class="s">północ u góry rzutu</div></div></div>'+
+      '<div class="big">'+P.floors.map(f=>'<div><h4>'+(f==='ground'?'Parter':A.storeys==='attic'?'Poddasze':'Piętro')+'</h4>'+planSVG(p,f)+'</div>').join('')+'</div>'+
+      '<div class="btns" style="margin-top:12px"><button class="btn pri" id="save">Zapisz jako nowy projekt</button><button class="btn" id="more">Więcej podobnych do tego</button><button class="btn" id="dl">Pobierz plik projektu</button></div>'+
+      '<h2 style="margin-top:14px">Sprawdzenie warunków</h2>'+report(v)+'</div>'}
+  else if(!busy)h+='<div class="card"><div class="empty">Ustaw ankietę po lewej i kliknij <b>Generuj warianty</b>.</div></div>';
+  if(vars.length)h+=prog;
+  M.innerHTML=h;bind()}
+function bind(){const M=$('main');
+  M.querySelectorAll('[data-ce]').forEach(el=>el.onchange=()=>{const k=el.dataset.ce;S.over[k]={...(S.over[k]||{}),enabled:el.checked};persist();render()});
+  M.querySelectorAll('[data-cs]').forEach(el=>el.onchange=()=>{const k=el.dataset.cs;S.over[k]={...(S.over[k]||{}),severity:el.value};persist();render()});
+  M.querySelectorAll('[data-v]').forEach(el=>el.onclick=()=>{sel=+el.dataset.v;render()});
+  const v=vars[sel];if(!v)return;
+  $('more').onclick=()=>generate(v.x.g);
+  $('dl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(v.p,null,1)],{type:'application/json'}));a.download='dom-z-generatora.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+  $('save').onclick=async()=>{const n=prompt('Nazwa nowego projektu:','Dom z generatora');if(n===null)return;const p=JSON.parse(JSON.stringify(v.p));p.definitionSnapshot.name=n||'Dom z generatora';p.definitionName=p.definitionSnapshot.name;
+    let sh=null;try{sh=window.top!==window?window.top.HouserShell:null}catch(_){}
+    if(sh)await sh.createProject(p,'projektowanie');
+    else{alert('Moduł otwarto osobno – pobierz plik projektu i wczytaj go na stronie głównej (Projekty → Import).');$('dl').click()}}}
+refresh();
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>
