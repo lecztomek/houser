@@ -29,9 +29,17 @@
     const L=norm([.45,.8,.35]);
     let nOpaque=0,nLines=0,trans=[];
 
+    // tryb nocny (opts.light): kolor każdego wierzchołka = kolor × światło w tym punkcie (light(x,y,z,n) -> [r,g,b]);
+    // duże wielokąty dzielone na trójkąty ≤ opts.sub m, żeby było widać plamy światła; p.emit – świecące klosze (bez cieniowania)
+    let LIGHT=null,SUB=.5,lcache=new Map();
+    const lit=(q,n)=>{const k=Math.round(q[0]*50)+','+Math.round(q[1]*50)+','+Math.round(q[2]*50)+','+Math.round(n[0]*4)+','+Math.round(n[1]*4)+','+Math.round(n[2]*4);let v=lcache.get(k);if(!v){v=LIGHT(q[0],q[1],q[2],n);lcache.set(k,v)}return v};
+    function litTri(a,b,c,n,col,al,out,depth){const ab=Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]),bc=Math.hypot(b[0]-c[0],b[1]-c[1],b[2]-c[2]),ca=Math.hypot(c[0]-a[0],c[1]-a[1],c[2]-a[2]),m=Math.max(ab,bc,ca);
+      if(m>SUB&&depth<7){const mid=(u,v)=>[(u[0]+v[0])/2,(u[1]+v[1])/2,(u[2]+v[2])/2];if(m===ab){const d=mid(a,b);litTri(a,d,c,n,col,al,out,depth+1);litTri(d,b,c,n,col,al,out,depth+1)}else if(m===bc){const d=mid(b,c);litTri(a,b,d,n,col,al,out,depth+1);litTri(a,d,c,n,col,al,out,depth+1)}else{const d=mid(c,a);litTri(a,b,d,n,col,al,out,depth+1);litTri(d,b,c,n,col,al,out,depth+1)}return}
+      for(const q of [a,b,c]){const l=lit(q,n);out.push(q[0],q[1],q[2],col[0]*l[0],col[1]*l[1],col[2]*l[2],al)}}
     function tris(p,out){
       const pts=p.points;if(!pts||pts.length<3)return;
       const n=norm(cross(sub(pts[1],pts[0]),sub(pts[2],pts[0]))),s=.8+.2*Math.abs(dot(n,L)),c=rgb(p.color),a=p.alpha??1;
+      if(LIGHT&&!p.emit){if(p._lit&&out!==null){for(const v of p._lit)out.push(v);return}const tmp=[];for(let i=1;i<pts.length-1;i++)litTri(pts[0],pts[i],pts[i+1],n,c,a,tmp,0);if(a<1)p._lit=tmp;for(const v of tmp)out.push(v);return}
       for(let i=1;i<pts.length-1;i++)for(const q of [pts[0],pts[i],pts[i+1]])out.push(q[0],q[1],q[2],c[0]*s,c[1]*s,c[2]*s,a);
     }
     function send(buf,arr){gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.STATIC_DRAW);return arr.length/7;}
@@ -39,12 +47,12 @@
 
     // polys: lista wielokątów; opts.ground: {y,color,size} – płaszczyzna gruntu
     function upload(polys,opts={}){
-      const o=[],l=[];trans=[];
+      const o=[],l=[];trans=[];LIGHT=opts.light||null;SUB=opts.sub||.5;lcache=new Map();
       if(opts.ground){const g=opts.ground,S=g.size||200;tris({points:[[-S,g.y,-S],[-S,g.y,S],[S,g.y,S],[S,g.y,-S]],color:g.color||'#cdc8bd',alpha:1},o);}
       for(const p of polys){
         if((p.alpha??1)<1)trans.push(p);else tris(p,o);
         if((p.line??1)>0&&p.stroke&&p.stroke!==p.color){ // obrys w kolorze wypełnienia = bez linii
-        const c=rgb(p.stroke);for(let i=0;i<p.points.length;i++){const a=p.points[i],b=p.points[(i+1)%p.points.length];l.push(a[0],a[1],a[2],c[0],c[1],c[2],1,b[0],b[1],b[2],c[0],c[1],c[2],1);}}
+        const c=rgb(p.stroke),nn=LIGHT&&!p.emit?norm(cross(sub(p.points[1],p.points[0]),sub(p.points[2],p.points[0]))):null;for(let i=0;i<p.points.length;i++){const a=p.points[i],b=p.points[(i+1)%p.points.length],la=nn?lit(a,nn):[1,1,1],lb=nn?lit(b,nn):[1,1,1];l.push(a[0],a[1],a[2],c[0]*la[0],c[1]*la[1],c[2]*la[2],1,b[0],b[1],b[2],c[0]*lb[0],c[1]*lb[1],c[2]*lb[2],1);}}
       }
       nOpaque=send(bufOpaque,o);nLines=send(bufLines,l);
     }

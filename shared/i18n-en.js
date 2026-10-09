@@ -4346,4 +4346,7 @@ window.HOUSER_I18N_EN={"Pomieszczenia bez okna":"Rooms without a window",
 "Nastrojowo (ciemniej)":"Ambient (dimmer)",
 "Standard (wg zaleceń)":"Standard (as recommended)",
 "Jasno":"Bright",
-"— wybierz albo kliknij na rzucie —":"— choose or click on the plan —"};
+"— wybierz albo kliknij na rzucie —":"— choose or click on the plan —",
+"🌙 noc":"🌙 night",
+"Liczę światło nocne z lamp (moduł Oświetlenie)…":"Calculating night light from the lamps (Lighting module)…",
+"Noc: w domu nie ma jeszcze lamp – rozmieść je w module Oświetlenie (przycisk „Rozmieść automatycznie”).":"Night: the house has no lamps yet – place them in the Lighting module (“Place automatically” button)."};

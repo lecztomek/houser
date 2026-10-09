@@ -73,7 +73,7 @@ const kindOf=n=>{const m=ROOMS.filter(r=>r.re.test(n||''));if(!m.length)return {
     const floors={},rooms={};
     for(const f of [lo,up]){const pts=[];for(let j=0;j<H*c/STEP;j++)for(let i=0;i<W*c/STEP;i++){const x=(i+.5)*STEP,y=(j+.5)*STEP,v=cellOf(f,x,y);if(!v||isHole(f,v))continue;pts.push({x,y,i,j,room:v,E:0,dir:0})}
       floors[f]={pts,NI:Math.round(W*c/STEP),NJ:Math.round(H*c/STEP)}}
-    for(const L of lamps)L.I0=L.lm*(1-L.up)*(L.n+1)/(2*Math.PI);
+    for(const L of lamps){L.I0=L.lm*(1-L.up)*(L.n+1)/(2*Math.PI);L.Imax=Math.max(L.I0,L.lm*L.up/Math.PI)}
     const direct=(L,f,P)=>{const tAbs=(f===up?gh:0)+WP,dz=L.abs-tAbs;if(dz<=.05&&!(L.T.mount==='fixed'&&dz>-.6))return 0;const dzz=Math.max(.15,dz),dx=P.x-L.x,dy=P.y-L.y,d2=dx*dx+dy*dy+dzz*dzz;
       if(L.I0/d2<.5)return 0; // poniżej 0,5 lx – pomijamy (szybciej, bez wpływu na wynik)
       const d=Math.sqrt(d2),ct=dzz/d;
@@ -121,7 +121,30 @@ const kindOf=n=>{const m=ROOMS.filter(r=>r.re.test(n||''));if(!m.length)return {
     if(voidLamps)good.push('Lampy w pustce: '+voidLamps+' – świecą na parter i na antresolę.');
     const power=lamps.reduce((a,L)=>a+L.W,0),price=lamps.reduce((a,L)=>a+(L.T.price||0),0);
     const score=lamps.length?Math.round(Math.max(0,10-issues.reduce((a,i)=>a+i.p,0))*10)/10:null;
-    return {floors,rooms:out,tasks,lamps,power,kwh,costYear:kwh*elP,price,issues,good,score,set:S,lo,up,W,H,c,step:STEP,gh}}
+    // natężenie w dowolnym punkcie sceny 3D (tryb nocny we Wnętrzu 3D): x, y – rzut [m], z – wysokość bezwzględna, n – normalna [nx, nup, ny]
+    // zwraca {E – lx, t – barwa [r,g,b] ważona światłem lamp}; ściany: punkt odsunięty o 6 cm od lica w stronę lampy
+    const indOf={};for(const k of Object.keys(par)){const Z=zone[find(k)];if(Z&&Z.S>0)indOf[k]=Z.flux*S.rho/(Z.S*(1-S.rho))*.7}
+    const TINT={2700:[1,.8,.56],3000:[1,.87,.7],4000:[1,.96,.9]};
+    const pairC={};
+    // dane lamp w tablicach (szybka pętla – setki tysięcy punktów sceny)
+    const NL=lamps.length,LX=new Float64Array(NL),LY=new Float64Array(NL),LA=new Float64Array(NL),LI=new Float64Array(NL),LN=new Float64Array(NL),LU=new Float64Array(NL),LM=new Float64Array(NL),LT=[],AG=[],AU=[],XC=[];
+    lamps.forEach((L,i)=>{LX[i]=L.x;LY[i]=L.y;LA[i]=L.abs;LI[i]=L.I0;LN[i]=L.n;LU[i]=L.lm*L.up/Math.PI;LM[i]=Math.max(L.I0,LU[i]);LT[i]=TINT[L.K]||TINT[3000];AG[i]=null;AU[i]=null;XC[i]={}});
+    const at=(x,y,z,n)=>{const sp=hasUp&&z>gh-.01?up:lo,aboveT=sp===up;let E=0,tr0=0,tg0=0,tb0=0;const n0=n?n[0]:0,n1=n?n[1]:0,n2=n?n[2]:0;
+      for(let i=0;i<NL;i++){const dx=x-LX[i],dy=y-LY[i],dzv=LA[i]-z,d2=dx*dx+dy*dy+dzv*dzv;if(d2<.0004||LM[i]<d2)continue;const d=Math.sqrt(d2);
+        const I=dzv>0?LI[i]*Math.pow(dzv/d,LN[i]):LU[i]*(-dzv/d);if(I<=0||I<.5*d2)continue;
+        const dot=n?n0*(-dx)+n1*dzv+n2*(-dy):d,ci=Math.abs(dot)/d;if(ci<=0)continue;
+        // przesunięcie punktu do środka pomieszczenia od strony lampy (ściana leży na granicy kratek)
+        const sg=(n0*(-dx)+n2*(-dy))>=0?1:-1,px=x+n0*sg*.06,py=y+n2*sg*.06,aboveL=LA[i]>gh+.05;let tr=1;
+        if(aboveL===aboveT){const pa=Math.floor(px/c),pb=Math.floor(py/c);if(pa<0||pb<0||pa>=W||pb>=H)continue;let A=aboveT?AU[i]:AG[i];if(!A){A=new Float32Array(W*H).fill(-1);if(aboveT)AU[i]=A;else AG[i]=A}const ix=pb*W+pa;
+          tr=A[ix]>=0?A[ix]:(A[ix]=seg(aboveT?up:lo,LX[i],LY[i],(pa+.5)*c,(pb+.5)*c))}
+        else if(hasUp&&Math.abs(dzv)>.05){const tt=(LA[i]-gh)/dzv,ix=LX[i]+(px-LX[i])*tt,iy=LY[i]+(py-LY[i])*tt,ia=Math.floor(ix/c),ib=Math.floor(iy/c);if(!isHole(up,idAt(up,ia,ib)))continue;
+          // przez otwór w stropie – oba odcinki z pamięci podręcznej (kratka otworu, kratka celu)
+          const icx=(ia+.5)*c,icy=(ib+.5)*c,pa=Math.floor(px/c),pb=Math.floor(py/c),C=XC[i],k1=ib*W+ia,k2=(aboveL?'g':'u')+k1+'_'+(pb*W+pa);
+          const s1=k1 in C?C[k1]:(C[k1]=seg(aboveL?up:lo,LX[i],LY[i],icx,icy));if(!s1)continue;const s2=k2 in pairC?pairC[k2]:(pairC[k2]=seg(aboveL?lo:up,icx,icy,(pa+.5)*c,(pb+.5)*c));tr=s1*s2}else continue;
+        if(!tr)continue;const e=tr*I*ci/d2,T=LT[i];E+=e;tr0+=e*T[0];tg0+=e*T[1];tb0+=e*T[2]}
+      const v=idAt(sp,Math.floor(x/c),Math.floor(y/c)),ind=indOf[sp+'|'+v]||0;E+=ind;tr0+=ind*.95;tg0+=ind*.85;tb0+=ind*.72;
+      return {E,t:E>0?[tr0/E,tg0/E,tb0/E]:[1,1,1]}};
+    return {at,floors,rooms:out,tasks,lamps,power,kwh,costYear:kwh*elP,price,issues,good,score,set:S,lo,up,W,H,c,step:STEP,gh}}
   // układy oświetlenia pomieszczenia (tryb automatyczny) i poziomy jasności
   const SCHEMES={auto:'Dobrany do pomieszczenia',ceiling:'Plafon(y) na suficie',downlights:'Oczka LED w siatce',pendant:'Lampa wisząca + oczka',track:'Szynoprzewód z reflektorami',mood:'Nastrojowo: kinkiety i lampy stojące'};
   const LEVELS={low:['Nastrojowo (ciemniej)',.7],std:['Standard (wg zaleceń)',1],high:['Jasno',1.4]};

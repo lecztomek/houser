@@ -208,6 +208,8 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  {const p=ld('dom-parterowy.json'),q=W.HouserQuantities.compute(p),hol=q.rooms.find(r=>/hol/i.test(r.name)),cc=hol.cells[Math.floor(hol.cells.length/2)];
   p.lighting={lamps:{[q.lo]:[{id:'a',x:(cc[0]+.5)*q.c,y:(cc[1]+.5)*q.c,type:'ceiling',lm:3000}]}};const sum=R=>R.rooms.filter(r=>r.id!==hol.id).reduce((a,r)=>a+r.avg,0);
   const Rc=LG.evaluate(p);p.lighting.doors='open';const Ro=LG.evaluate(p);ok(sum(Ro)>sum(Rc)*1.2,'oświetlenie: otwarte drzwi wpuszczają światło z holu do pokoi');
+  {const L=Rc.lamps[0],A=Rc.at(L.x,L.y,0,[0,1,0]),B=Rc.at(L.x+2,L.y,0,[0,1,0]);ok(fin(A.E)&&A.E>B.E&&A.t.every(v=>v>0&&v<=1),'oświetlenie 3D (noc): pod lampą jaśniej niż obok, barwa w zakresie')}
+  {const far=q.rooms.find(r=>/syp/i.test(r.name)),cf=far.cells[Math.floor(far.cells.length/2)],X=(cf[0]+.5)*q.c,Y=(cf[1]+.5)*q.c,pc={...p,lighting:{lamps:p.lighting.lamps}};ok(LG.evaluate(pc).at(X,Y,0,[0,1,0]).E<5,'oświetlenie 3D (noc): w sypialni za zamkniętymi drzwiami ciemno')}
   const h0=Rc.power;p.lighting.lamps[q.lo][0].bulb='halogen';ok(LG.evaluate(p).power>h0*5,'oświetlenie: halogen zużywa kilka razy więcej prądu niż LED');}
  {const p=ld('stodola-jasna.json'),q=W.HouserQuantities.compute(p),st=p.state[q.up].flat?p.state[q.up].flat():p.state[q.up],i=st.indexOf('pustka'),x=(i%q.W+.5)*q.c,y=(Math.floor(i/q.W)+.5)*q.c;
   p.lighting={lamps:{[q.lo]:[{id:'v',x,y,type:'pendant',lm:2000,h:q.G.groundHeight+1.4}]}};const R=LG.evaluate(p);ok(R.lamps[0].void&&R.floors[q.up].pts.some(P=>P.dir>5)&&R.floors[q.lo].pts.some(P=>P.dir>20),'oświetlenie: lampa wisząca w pustce świeci na parter i na antresolę');
