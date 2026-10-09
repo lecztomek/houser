@@ -70,6 +70,19 @@ tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
     <div class="seg" id="floors"></div>
   </div>
   <div class="section">
+    <h3>Pomieszczenie</h3>
+    <div class="field"><select id="room"></select></div>
+    <div class="seg" id="rMode"><button class="hs-btn" data-m="auto">Automatycznie</button><button class="hs-btn" data-m="manual">Ręcznie</button></div>
+    <div id="rAuto" style="margin-top:9px">
+      <div class="field"><label>Układ lamp</label><select id="rScheme"></select></div>
+      <div class="row2">
+        <div class="field"><label>Jasność</label><select id="rLevel"></select></div>
+        <div class="field"><label>Barwa</label><select id="rK"><option value="">wg pomieszczenia</option><option value="2700">2700 K</option><option value="3000">3000 K</option><option value="4000">4000 K</option></select></div>
+      </div>
+    </div>
+    <p class="hint" id="rInfo"></p>
+  </div>
+  <div class="section">
     <h3>Wstaw lampę</h3>
     <div class="tools" id="tools"></div>
     <p class="hint" id="toolHint" style="margin-top:8px"></p>
@@ -123,16 +136,43 @@ function rel(r){return r<.3?'#7f1d1d':r<.6?'#dc2626':r<.85?'#f59e0b':r<=2?'#16a3
 const lampsOf=f=>(project.lighting?.lamps?.[f])||[];
 function save(lamps,patch){const L={...(project.lighting||{}),...(patch||{})};if(lamps)L.lamps=lamps;project.lighting=L;HouserStore.update(p=>{p.lighting=L},'oswietlenie');render()}
 const allLamps=()=>({...(project.lighting?.lamps||{})});
-function setLamps(f,list){const all=allLamps();all[f]=list;save(all)}
+function setLamps(f,list,touch){const all=allLamps();all[f]=list;const rs=touch?touchManual(f,touch[0],touch[1]):null;save(all,rs?{rooms:rs}:null)}
 $('doors').onchange=()=>save(null,{doors:$('doors').value});$('rho').onchange=()=>save(null,{rho:+$('rho').value});$('mode').onchange=()=>{try{localStorage.setItem('houser:light:mode',$('mode').value)}catch(e){}renderPlan()};
 try{const m=localStorage.getItem('houser:light:mode');if(m)$('mode').value=m}catch(e){}
-$('auto').onclick=()=>{const n=Object.values(project.lighting?.lamps||{}).flat().length;if(n&&!confirm('Zastąpić wszystkie lampy ('+n+') propozycją?'))return;selId=null;save(HouserLight.suggest(project))};
+$('auto').onclick=()=>{const rs=project.lighting?.rooms||{},man=Object.keys(rs).filter(k=>rs[k].mode==='manual'),n=Object.values(project.lighting?.lamps||{}).flat().filter(L=>!man.some(k=>inRoomKey(L,k.split('|')[0],k))).length;
+  if(n&&!confirm('Rozmieścić automatycznie lampy w '+(man.length?'pomieszczeniach w trybie automatycznym (ręczne zostają bez zmian)':'całym domu')+'? Zastąpi to '+n+' lamp.'))return;selId=null;
+  const sug=HouserLight.suggest(project),all=allLamps();for(const f of Object.keys(sug))sug[f]=sug[f].concat((all[f]||[]).filter(L=>man.some(k=>k.startsWith(f+'|')&&inRoomKey(L,f,k))));save(sug)};
 $('clear').onclick=()=>{if(!confirm('Usunąć wszystkie lampy na tej kondygnacji?'))return;selId=null;setLamps(floor,[])};
 $('eType').innerHTML=Object.entries(T).map(([k,t])=>'<option value="'+k+'">'+t.name+'</option>').join('');
 $('eBulb').innerHTML=Object.entries(HouserLight.BULBS).map(([k,b])=>'<option value="'+k+'">'+b.name+'</option>').join('');
-const upd=patch=>{setLamps(floor,lampsOf(floor).map(L=>L.id===selId?{...L,...patch}:L))};
+const upd=patch=>{const L0=lampsOf(floor).find(L=>L.id===selId);setLamps(floor,lampsOf(floor).map(L=>L.id===selId?{...L,...patch}:L),L0?[+L0.x,+L0.y]:null)};
 $('eType').onchange=()=>upd({type:$('eType').value,lm:T[$('eType').value].lm,h:null});$('eLm').onchange=()=>{const v=+$('eLm').value;if(v>0)upd({lm:v})};$('eK').onchange=()=>upd({K:+$('eK').value});
-$('eBulb').onchange=()=>upd({bulb:$('eBulb').value});$('eH').onchange=()=>{const v=+$('eH').value;upd({h:v>0?v:null})};$('eDel').onclick=()=>{setLamps(floor,lampsOf(floor).filter(L=>L.id!==selId));selId=null};
+$('eBulb').onchange=()=>upd({bulb:$('eBulb').value});$('eH').onchange=()=>{const v=+$('eH').value;upd({h:v>0?v:null})};$('eDel').onclick=()=>{const L0=lampsOf(floor).find(L=>L.id===selId);setLamps(floor,lampsOf(floor).filter(L=>L.id!==selId),L0?[+L0.x,+L0.y]:null);selId=null};
+// ---------- pomieszczenie: tryb automatyczny (układ, jasność, barwa) albo ręczny
+let selRoom=null;
+const roomsSet=()=>({...(project.lighting?.rooms||{})});
+function qRooms(){return HouserQuantities.compute(project).rooms.filter(r=>r.area>=1.5)}
+function roomAtPt(f,x,y){const g=project.grid||project.definitionSnapshot.grid,c=g.cellMeters,st=project.state?.[f]||[],fl=Array.isArray(st[0])?st.flat():st,i=Math.floor(y/c)*g.width+Math.floor(x/c);return fl[i]?f+'|'+fl[i]:null}
+function inRoomKey(L,f,key){return roomAtPt(f,+L.x,+L.y)===key}
+// zmiana lamp z ręki – pomieszczenie przechodzi w tryb ręczny (automat go nie nadpisze)
+function touchManual(f,x,y){const k=roomAtPt(f,x,y);if(!k)return null;const rs=roomsSet();if(rs[k]?.mode!=='manual'){rs[k]={...(rs[k]||{}),mode:'manual'};return rs}return null}
+function applyRoom(key,patch){const rs=roomsSet();rs[key]={mode:'auto',...(rs[key]||{}),...patch};const [f,rid]=key.split('|'),r=qRooms().find(z=>z.f===f&&z.id===rid);if(!r)return;
+  const all=allLamps();let list=(all[f]||[]).filter(L=>!inRoomKey(L,f,key));if(rs[key].mode==='auto')list=list.concat(HouserLight.roomLamps(project,r,rs[key]));all[f]=list;selId=null;save(all,{rooms:rs})}
+$('rScheme').innerHTML=Object.entries(HouserLight.SCHEMES).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('');
+$('rLevel').innerHTML=Object.entries(HouserLight.LEVELS).map(([k,v])=>'<option value="'+k+'">'+v[0]+'</option>').join('');
+$('room').onchange=()=>{selRoom=$('room').value||null;renderSide();renderPlan()};
+$('rMode').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(!selRoom)return;if(b.dataset.m==='manual'){const rs=roomsSet();rs[selRoom]={...(rs[selRoom]||{}),mode:'manual'};save(null,{rooms:rs})}else applyRoom(selRoom,{mode:'auto'})});
+$('rScheme').onchange=()=>selRoom&&applyRoom(selRoom,{mode:'auto',scheme:$('rScheme').value});
+$('rLevel').onchange=()=>selRoom&&applyRoom(selRoom,{mode:'auto',level:$('rLevel').value});
+$('rK').onchange=()=>selRoom&&applyRoom(selRoom,{mode:'auto',K:$('rK').value?+$('rK').value:null});
+function renderRoom(){const rooms=qRooms().filter(r=>r.f===floor);if(selRoom&&!rooms.some(r=>r.f+'|'+r.id===selRoom))selRoom=null;
+  $('room').innerHTML='<option value="">— wybierz albo kliknij na rzucie —</option>'+rooms.map(r=>'<option value="'+r.f+'|'+r.id+'">'+esc(r.name)+' ('+fmt(r.area,1)+' m²)</option>').join('');$('room').value=selRoom||'';
+  const o=selRoom?(project.lighting?.rooms||{})[selRoom]||{}:null,mode=o?.mode==='manual'?'manual':'auto';$('rMode').hidden=$('rAuto').hidden=!selRoom;
+  $('rMode').querySelectorAll('button').forEach(b=>b.classList.toggle('on',!!selRoom&&b.dataset.m===mode));$('rAuto').hidden=!selRoom||mode!=='auto';
+  if(o){$('rScheme').value=o.scheme||'auto';$('rLevel').value=o.level||'std';$('rK').value=o.K||''}
+  const rr=selRoom&&R?R.rooms.find(z=>z.key===selRoom):null;
+  $('rInfo').innerHTML=!selRoom?'Wybierz pomieszczenie: w trybie automatycznym lampy rozmieszczą się same (zmiana układu, jasności albo barwy od razu je przelicza); w ręcznym wstawiasz je sam narzędziami poniżej.':
+    (rr?'<b>'+fmt(rr.avg)+' / '+rr.target+' lx</b> · '+rr.lamps+' lamp · '+fmt(rr.W)+' W<br>':'')+(mode==='manual'?'Tryb ręczny – „Rozmieść automatycznie” nie zmieni lamp w tym pomieszczeniu. Przesunięcie albo dodanie lampy z ręki przełącza pomieszczenie w ten tryb.':'Tryb automatyczny – lampy dobrane do układu i jasności. Gdy przesuniesz lampę z ręki, pomieszczenie przejdzie w tryb ręczny.')}
 function renderTools(){$('tools').innerHTML=[['select',{name:'Zaznacz / przesuń',icon:'↖'}],...Object.entries(T),['erase',{name:'Usuń (kliknij lampę)',icon:'✕'}]].map(([k,t])=>'<button class="tool'+(k===tool?' on':'')+'" data-t="'+k+'"><span style="width:18px;text-align:center;font-weight:800">'+t.icon+'</span>'+esc(t.name)+'</button>').join('');
   $('tools').querySelectorAll('.tool').forEach(b=>b.onclick=()=>{tool=b.dataset.t;try{localStorage.setItem('houser:light:tool',tool)}catch(e){}renderTools()});
   $('toolHint').textContent=tool==='select'?'Kliknij lampę, żeby ją edytować; przeciągnij, żeby przesunąć.':tool==='erase'?'Kliknij lampę, żeby ją usunąć.':'Kliknij na rzucie, żeby wstawić: '+T[tool].name.toLowerCase()+' ('+T[tool].lm+' lm).'}
@@ -155,6 +195,8 @@ function planSVG(){const f=floor,W=R.W,H=R.H,c=R.c,m=v=>v*S,pad=.6,svg=document.
     if(o==='opening')return L('#94a3b8',1.5,'2 4');if(o==='glass')return L('#7dd3fc',3);if(o==='door')return L('#b45309',4,R.set.doors==='open'?'3 3':'');if(o==='window'||o==='hst')return L('#60a5fa',5);L('#e2e8f0',5)};
   for(let y=0;y<=H;y++)for(let x=0;x<W;x++)edge('h:'+x+':'+y,id(x,y-1),id(x,y),x*c,y*c,(x+1)*c,y*c);
   for(let y=0;y<H;y++)for(let x=0;x<=W;x++)edge('v:'+x+':'+y,id(x-1,y),id(x,y),x*c,y*c,x*c,(y+1)*c);
+  // wybrane pomieszczenie – obrys
+  if(selRoom&&selRoom.startsWith(f+'|')){const rid=selRoom.slice(f.length+1);for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(id(x,y)!==rid)continue;for(const [dx,dy,x1,y1,x2,y2] of [[0,-1,x,y,x+1,y],[0,1,x,y+1,x+1,y+1],[-1,0,x,y,x,y+1],[1,0,x+1,y,x+1,y+1]])if(id(x+dx,y+dy)!==rid)el('line',{x1:m(x1*c),y1:m(y1*c),x2:m(x2*c),y2:m(y2*c),stroke:'#22d3ee','stroke-width':4},svg)}}
   // nazwy i średnie
   const QR=HouserQuantities.compute(project).rooms;for(const r of R.rooms.filter(r=>r.f===f)){const q=QR.find(z=>z.f===f&&z.id===r.id);if(!q)continue;const cx=q.cells.reduce((a,p)=>a+p[0]+.5,0)/q.cells.length*c,cy=q.cells.reduce((a,p)=>a+p[1]+.5,0)/q.cells.length*c;
     const t=el('text',{x:m(cx),y:m(cy),'text-anchor':'middle','font-size':12,'font-weight':800,fill:'#0f172a',stroke:'#fff','stroke-width':3,'paint-order':'stroke'},svg);t.textContent=r.name;
@@ -168,12 +210,12 @@ function planSVG(){const f=floor,W=R.W,H=R.H,c=R.c,m=v=>v*S,pad=.6,svg=document.
   return svg}
 function pt(e){const svg=$('plan'),p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const q=p.matrixTransform(svg.getScreenCTM().inverse());return {x:q.x/S,y:q.y/S}}
 document.addEventListener('pointerdown',e=>{const svg=$('plan');if(!project||!svg||!svg.contains(e.target))return;const g=e.target.closest('[data-id]'),lid=g?.dataset.id,p=pt(e);
-  if(tool==='erase'){if(lid){setLamps(floor,lampsOf(floor).filter(L=>L.id!==lid));if(selId===lid)selId=null}return}
-  if(tool==='select'){if(lid){selId=lid;drag={id:lid,p,g,moved:false};renderSide()}else{selId=null;renderSide();renderPlan()}return}
-  if(p.x<0||p.y<0||p.x>R.W*R.c||p.y>R.H*R.c)return;const L={id:'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),x:Math.round(p.x*20)/20,y:Math.round(p.y*20)/20,type:tool,lm:T[tool].lm};selId=L.id;setLamps(floor,[...lampsOf(floor),L])});
+  if(tool==='erase'){if(lid){const L0=lampsOf(floor).find(L=>L.id===lid);setLamps(floor,lampsOf(floor).filter(L=>L.id!==lid),L0?[+L0.x,+L0.y]:null);if(selId===lid)selId=null}return}
+  if(tool==='select'){if(lid){selId=lid;drag={id:lid,p,g,moved:false};renderSide()}else{selId=null;selRoom=roomAtPt(floor,p.x,p.y);renderSide();renderPlan()}return}
+  if(p.x<0||p.y<0||p.x>R.W*R.c||p.y>R.H*R.c)return;const L={id:'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),x:Math.round(p.x*20)/20,y:Math.round(p.y*20)/20,type:tool,lm:T[tool].lm};selId=L.id;selRoom=roomAtPt(floor,L.x,L.y)||selRoom;setLamps(floor,[...lampsOf(floor),L],[L.x,L.y])});
 document.addEventListener('pointermove',e=>{if(!drag)return;const p=pt(e),dx=p.x-drag.p.x,dy=p.y-drag.p.y;if(Math.hypot(dx,dy)>.05)drag.moved=true;drag.dx=dx;drag.dy=dy;const L=R.lamps.find(l=>l.id===drag.id);if(L)drag.g.setAttribute('transform','translate('+(L.x+dx)*S+' '+(L.y+dy)*S+')')});
-document.addEventListener('pointerup',()=>{if(!drag)return;const d=drag;drag=null;if(!d.moved){renderPlan();return}setLamps(floor,lampsOf(floor).map(L=>L.id===d.id?{...L,x:Math.round((L.x+d.dx)*20)/20,y:Math.round((L.y+d.dy)*20)/20}:L))});
-function renderSide(){renderTools();const L=lampsOf(floor).find(l=>l.id===selId),RL=R?.lamps.find(l=>l.id===selId);$('edit').hidden=!L;
+document.addEventListener('pointerup',()=>{if(!drag)return;const d=drag;drag=null;if(!d.moved){renderPlan();return}const L0=lampsOf(floor).find(L=>L.id===d.id);setLamps(floor,lampsOf(floor).map(L=>L.id===d.id?{...L,x:Math.round((L.x+d.dx)*20)/20,y:Math.round((L.y+d.dy)*20)/20}:L),L0?[+L0.x,+L0.y]:null)});
+function renderSide(){renderTools();renderRoom();const L=lampsOf(floor).find(l=>l.id===selId),RL=R?.lamps.find(l=>l.id===selId);$('edit').hidden=!L;
   if(L){$('eType').value=L.type;$('eLm').value=L.lm||T[L.type].lm;$('eK').value=RL?.K||3000;$('eBulb').value=L.bulb||'led';$('eH').value=L.h||'';$('eH').placeholder='auto ('+fmt(RL?.h||0,1)+')';
     $('eInfo').textContent=RL?fmt(RL.W,1)+' W · zawieszona '+fmt(RL.h,1)+' m nad podłogą'+(RL.abs>R.gh+.05&&RL.f===R.lo?' – w pustce, świeci też na antresolę':''):''}
   $('floors').innerHTML=[R.lo,R.up].filter(f=>f===R.lo||(project.state?.[f]||[]).flat().some(v=>v)).map(f=>'<button class="hs-btn'+(f===floor?' on':'')+'" data-f="'+f+'">'+(f===R.lo?'Parter':'Piętro')+' ('+lampsOf(f).length+')</button>').join('');

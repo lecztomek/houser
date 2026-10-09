@@ -99,14 +99,14 @@ const kindOf=n=>{const m=ROOMS.filter(r=>r.re.test(n||''));if(!m.length)return {
     for(const r of q.rooms){if(r.area<1.5)continue;const K=kindOf(r.name),P=floors[r.f].pts.filter(p=>p.room===r.id);if(!P.length)continue;
       const avg=P.reduce((a,p)=>a+p.E,0)/P.length,min=Math.min(...P.map(p=>p.E)),RL=lamps.filter(L=>L.f===r.f&&L.room===r.id),Wr=RL.reduce((a,L)=>a+L.W,0);kwh+=Wr*K.h*365/1000;
       const dark=P.filter(p=>p.E<K.lx*.3).length/P.length,ratio=avg/K.lx,stt=!RL.length&&avg<K.lx*.5?'none':ratio<.6?'dark':ratio>3?'bright':dark>.25?'uneven':'ok';
-      const Kok=!RL.length||RL.every(L=>K.K.includes(L.K));
+      const Kok=!RL.length||RL.filter(L=>L.type!=='table').every(L=>K.K.includes(L.K));
       out.push({key:r.f+'|'+r.id,f:r.f,id:r.id,name:r.name,area:r.area,kind:K.name,target:K.lx,avg,min,dark,lamps:RL.length,W:Wr,status:stt,Kok,K:[...new Set(RL.map(L=>L.K))]});
       const nm='„'+r.name+'”';
       if(stt==='none')add(1,'W pomieszczeniu '+nm+' nie ma żadnej lampy – nocą jest ciemno (ok. '+fmt(avg)+' lx).','Dodaj lampę sufitową albo oczka – zalecane ok. '+K.lx+' lx.','none',r.name);
       else if(stt==='dark')add(Math.min(1.2,.4+(1-ratio)),nm+': średnio '+fmt(avg)+' lx – za ciemno (zalecane ok. '+K.lx+' lx dla: '+K.name+').','Mocniejsze źródła (więcej lumenów) albo dodatkowa lampa.','dark',r.name);
       else if(stt==='bright')add(.3,nm+': średnio '+fmt(avg)+' lx – dużo jaśniej niż potrzeba ('+K.lx+' lx), więcej prądu i olśnienie.','Słabsze źródła albo ściemniacz.','bright',r.name);
       else if(stt==='uneven')add(.4,nm+': '+fmt(dark*100)+'% podłogi w cieniu (poniżej '+fmt(K.lx*.3)+' lx) – ciemne kąty.','Dodaj lampę w ciemnej części albo kinkiet.','uneven',r.name);
-      if(!Kok)add(.2,nm+': barwa światła '+[...new Set(RL.map(L=>L.K))].join(' / ')+' K – do tego pomieszczenia lepiej '+K.K.join(' / ')+' K.',K.K[0]<3000?'Ciepła barwa (2700 K) sprzyja odpoczynkowi.':'Neutralna barwa (3000–4000 K) lepsza do pracy.','temp',r.name)}
+      if(!Kok)add(.2,nm+': barwa światła '+[...new Set(RL.filter(L=>L.type!=='table').map(L=>L.K))].join(' / ')+' K – do tego pomieszczenia lepiej '+K.K.join(' / ')+' K.',K.K[0]<3000?'Ciepła barwa (2700 K) sprzyja odpoczynkowi.':'Neutralna barwa (3000–4000 K) lepsza do pracy.','temp',r.name)}
     // miejsca pracy (meble)
     const tasks=[];for(const f of [lo,up])for(const it of project.furniture?.[f]||[]){const T=TASKS.find(t=>t.re.test(it.item||''));if(!T)continue;const x0=+it.x,y0=+it.y,x1=x0+ +it.w,y1=y0+ +it.h;
       const P=floors[f].pts.filter(p=>p.x>=x0&&p.x<=x1&&p.y>=y0&&p.y<=y1);if(!P.length)continue;const avg=P.reduce((a,p)=>a+p.E,0)/P.length;tasks.push({f,name:T.name,lx:T.lx,avg,ok:avg>=T.lx*.6});
@@ -122,11 +122,15 @@ const kindOf=n=>{const m=ROOMS.filter(r=>r.re.test(n||''));if(!m.length)return {
     const power=lamps.reduce((a,L)=>a+L.W,0),price=lamps.reduce((a,L)=>a+(L.T.price||0),0);
     const score=lamps.length?Math.round(Math.max(0,10-issues.reduce((a,i)=>a+i.p,0))*10)/10:null;
     return {floors,rooms:out,tasks,lamps,power,kwh,costYear:kwh*elP,price,issues,good,score,set:S,lo,up,W,H,c,step:STEP,gh}}
-  // propozycja rozmieszczenia: zależnie od pomieszczenia (sufitowa / wisząca nad stołem / oczka nad blatem / taśma pod szafkami / kinkiety przy schodach / lampy nocne)
-  function suggest(project){const q=HouserQuantities.compute(project),c=q.c,out={[q.lo]:[],[q.up]:[]},id=()=>'l'+Math.random().toString(36).slice(2,8);
+  // układy oświetlenia pomieszczenia (tryb automatyczny) i poziomy jasności
+  const SCHEMES={auto:'Dobrany do pomieszczenia',ceiling:'Plafon(y) na suficie',downlights:'Oczka LED w siatce',pendant:'Lampa wisząca + oczka',track:'Szynoprzewód z reflektorami',mood:'Nastrojowo: kinkiety i lampy stojące'};
+  const LEVELS={low:['Nastrojowo (ciemniej)',.7],std:['Standard (wg zaleceń)',1],high:['Jasno',1.4]};
+  // lampy dla jednego pomieszczenia: opt = {scheme, level, K}; auto + standard = propozycja domyślna
+  function roomLamps(project,r,opt,q){q=q||HouserQuantities.compute(project);const c=q.c,id=()=>'l'+Math.random().toString(36).slice(2,8),o=opt||{},scheme=SCHEMES[o.scheme]?o.scheme:'auto',mult=(LEVELS[o.level]||LEVELS.std)[1];
     const flat=f=>{const st=project.state?.[f]||[];return Array.isArray(st[0])?st.flat():st},stU=flat(q.up);
     const F=f=>project.furniture?.[f]||[],inR=(r,x,y)=>r.cells.some(([cx,cy])=>x>=cx*c&&x<(cx+1)*c&&y>=cy*c&&y<(cy+1)*c);
-    for(const r of q.rooms){if(r.area<1.5)continue;const K=kindOf(r.name),xs=r.cells.map(a=>a[0]),ys=r.cells.map(a=>a[1]),x0=Math.min(...xs)*c,x1=(Math.max(...xs)+1)*c,y0=Math.min(...ys)*c,y1=(Math.max(...ys)+1)*c,L=out[r.f];
+    let out=[];
+    if(scheme==='auto'){const K=kindOf(r.name),L=[],xs=r.cells.map(a=>a[0]),ys=r.cells.map(a=>a[1]),x0=Math.min(...xs)*c,x1=(Math.max(...xs)+1)*c,y0=Math.min(...ys)*c,y1=(Math.max(...ys)+1)*c;
       const cx=r.cells.reduce((a,p)=>a+p[0]+.5,0)/r.cells.length*c,cy=r.cells.reduce((a,p)=>a+p[1]+.5,0)/r.cells.length*c;
       const Kd=K.K.includes(3000)?3000:K.K[0],underHole=(x,y)=>r.f===q.lo&&/^pustka$/.test(stU[Math.floor(y/c)*q.W+Math.floor(x/c)]||'');
       const grid=(type,sp,lm)=>{const nx=Math.max(1,Math.round((x1-x0)/sp)),ny=Math.max(1,Math.round((y1-y0)/sp));for(let a=0;a<nx;a++)for(let b=0;b<ny;b++){const x=x0+(a+.5)*(x1-x0)/nx,y=y0+(b+.5)*(y1-y0)/ny;if(inR(r,x,y)&&!underHole(x,y))L.push({id:id(),x,y,type,lm,K:Kd})}};
@@ -146,11 +150,33 @@ const kindOf=n=>{const m=ROOMS.filter(r=>r.re.test(n||''));if(!m.length)return {
         if(K.k==='living')for(const it of furn.filter(i=>/^s_(fotel|naroznik|sofa3)/.test(i.item||'')).slice(0,1))L.push({id:id(),x:+it.x+.3,y:+it.y+.3,type:'floor',lm:700,K:2700});
 }
       for(const it of furn.filter(i=>/^g_biurko/.test(i.item||'')))L.push({id:id(),x:+it.x+ +it.w/2,y:+it.y+ +it.h/2,type:'table',lm:600,K:4000});
-      for(const it of furn.filter(i=>/^k_stol/.test(i.item||'')))L.push({id:id(),x:+it.x+ +it.w/2,y:+it.y+ +it.h/2,type:'pendant',lm:1200,K:2700});}
-    // pustka: lampa wisząca z połaci nad środkiem pustki (wisi na wysokości antresoli)
-    const W=q.W,holes=[];for(let i=0;i<stU.length;i++)if(stU[i]==='pustka')holes.push([(i%W+.5)*c,(Math.floor(i/W)+.5)*c]);
-    if(holes.length){const hx=holes.reduce((a,p)=>a+p[0],0)/holes.length,hy=holes.reduce((a,p)=>a+p[1],0)/holes.length;out[q.lo]=out[q.lo].filter(L=>!(L.type==='ceiling'&&Math.hypot(L.x-hx,L.y-hy)<1.5));out[q.lo].push({id:id(),x:hx,y:hy,type:'pendant',lm:2000,K:2700,h:q.G.groundHeight+1.4})}
-    for(const f of Object.keys(out))for(const L of out[f]){L.x=Math.round(L.x*100)/100;L.y=Math.round(L.y*100)/100}
+      for(const it of furn.filter(i=>/^k_stol/.test(i.item||'')))L.push({id:id(),x:+it.x+ +it.w/2,y:+it.y+ +it.h/2,type:'pendant',lm:1200,K:2700});
+      out=L;
+    }else{const K=kindOf(r.name),xs=r.cells.map(a=>a[0]),ys=r.cells.map(a=>a[1]),x0=Math.min(...xs)*c,x1=(Math.max(...xs)+1)*c,y0=Math.min(...ys)*c,y1=(Math.max(...ys)+1)*c,L=[];
+      const Kd=K.K.includes(3000)?3000:K.K[0],underHole=(x,y)=>r.f===q.lo&&stU[Math.floor(y/c)*q.W+Math.floor(x/c)]==='pustka',furn=F(r.f).filter(it=>inR(r,+it.x+ +it.w/2,+it.y+ +it.h/2));
+      const total=K.lx*r.area/.7,r50=v=>Math.max(100,Math.round(v/50)*50),cx=r.cells.reduce((a,p)=>a+p[0]+.5,0)/r.cells.length*c,cy=r.cells.reduce((a,p)=>a+p[1]+.5,0)/r.cells.length*c,long=(x1-x0)>=(y1-y0);
+      const spots=(n,type,lm,frac)=>{const ar=(x1-x0)/(y1-y0),nx=Math.max(1,Math.round(Math.sqrt(n*ar))),ny=Math.max(1,Math.round(n/nx)),pts=[];for(let a=0;a<nx;a++)for(let b=0;b<ny;b++){const x=x0+(a+.5)*(x1-x0)/nx,y=y0+(b+.5)*(y1-y0)/ny;if(inR(r,x,y)&&!underHole(x,y))pts.push([x,y])}
+        if(!pts.length&&inR(r,cx,cy))pts.push([cx,cy]);for(const [x,y] of pts)L.push({id:id(),x,y,type,lm:lm||r50(total*(frac||1)/pts.length),K:Kd})};
+      // miejsca przy ścianach (kinkiety): środki krawędzi kratek, za którymi nie ma tego pomieszczenia i nie ma otworu
+      const walls=()=>{const set=new Set(r.cells.map(p=>p[0]+','+p[1])),ops=project.openings?.[r.f]||{},w=[];
+        for(const [x,y] of r.cells)for(const [dx,dy,key,px,py,nx,ny] of [[0,-1,'h:'+x+':'+y,x+.5,y,0,1],[0,1,'h:'+x+':'+(y+1),x+.5,y+1,0,-1],[-1,0,'v:'+x+':'+y,x,y+.5,1,0],[1,0,'v:'+(x+1)+':'+y,x+1,y+.5,-1,0]])
+          if(!set.has((x+dx)+','+(y+dy))&&!ops[key])w.push([px*c+nx*.08,py*c+ny*.08]);return w};
+      if(scheme==='ceiling'){const n=Math.max(1,Math.round(r.area/18));spots(n,'ceiling')}
+      else if(scheme==='downlights')spots(Math.max(2,Math.ceil(total/450)),'downlight',450);
+      else if(scheme==='pendant'){const t=furn.find(i=>/^k_stol|^k_wyspa|^s_stolik/.test(i.item||''));const px=t?+t.x+ +t.w/2:cx,py=t?+t.y+ +t.h/2:cy;L.push({id:id(),x:px,y:py,type:'pendant',lm:r50(total*.4),K:2700});spots(Math.max(2,Math.ceil(total*.6/450)),'downlight',450)}
+      else if(scheme==='track'){const n=Math.max(1,Math.ceil(total/2400));for(let i=0;i<n;i++){const t=(i+.5)/n,x=long?x0+(x1-x0)*t:cx,y=long?cy:y0+(y1-y0)*t;if(inR(r,x,y))L.push({id:id(),x,y,type:'track',lm:r50(total/n),K:Kd})}}
+      else if(scheme==='mood'){const w=walls(),n=Math.max(2,Math.min(w.length,Math.round(Math.sqrt(r.area)*4/3)));for(let i=0;i<n;i++){const [x,y]=w[Math.floor((i+.5)*w.length/n)];L.push({id:id(),x,y,type:'wall',lm:Math.min(1500,r50(total*1.1/n)),K:2700})}
+        const seat=furn.find(i=>/^s_(fotel|naroznik|sofa3)/.test(i.item||''));L.push({id:id(),x:seat?+seat.x+.3:x0+.4,y:seat?+seat.y+.3:y0+.4,type:'floor',lm:700,K:2700});
+        for(const it of furn.filter(i=>/^b_nocna/.test(i.item||'')))L.push({id:id(),x:+it.x+ +it.w/2,y:+it.y+ +it.h/2,type:'table',lm:300,K:2700})}
+      out=L}
+    // pustka nad tym pomieszczeniem: lampa wisząca z połaci nad środkiem pustki (wisi wyżej niż antresola)
+    if(scheme==='auto'){const hc=r.f===q.lo?r.cells.filter(([x,y])=>stU[y*q.W+x]==='pustka'):[];
+      if(hc.length){const hx=(hc.reduce((a,p)=>a+p[0],0)/hc.length+.5)*c,hy=(hc.reduce((a,p)=>a+p[1],0)/hc.length+.5)*c;out=out.filter(L=>!(L.type==='ceiling'&&Math.hypot(L.x-hx,L.y-hy)<1.5));out.push({id:id(),x:hx,y:hy,type:'pendant',lm:2000,K:2700,h:q.G.groundHeight+1.4})}}
+    for(const L of out){L.x=Math.round(L.x*100)/100;L.y=Math.round(L.y*100)/100;if(mult!==1)L.lm=Math.max(100,Math.round(L.lm*mult/50)*50);if(KS.includes(+o.K)&&!['table','floor'].includes(L.type))L.K=+o.K}
     return out}
-  global.HouserLight={TYPES,BULBS,KS,ROOMS,TASKS,WP,kindOf,settings,evaluate,suggest};
+  // propozycja dla całego domu: każde pomieszczenie wg swoich ustawień (project.lighting.rooms), domyślnie układ dobrany do pomieszczenia
+  function suggest(project){const q=HouserQuantities.compute(project),out={[q.lo]:[],[q.up]:[]},RS=project.lighting?.rooms||{};
+    for(const r of q.rooms){if(r.area<1.5)continue;const o=RS[r.f+'|'+r.id];if(o?.mode==='manual')continue;out[r.f].push(...roomLamps(project,r,o,q))}
+    return out}
+  global.HouserLight={TYPES,BULBS,KS,ROOMS,TASKS,WP,SCHEMES,LEVELS,kindOf,settings,evaluate,suggest,roomLamps};
 })(typeof window!=='undefined'?window:globalThis);

@@ -200,6 +200,11 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
    ok(R.rooms.filter(r=>r.status==='ok').length>=R.rooms.length*.8,f+': propozycja oświetlenia – większość pomieszczeń zgodna z zaleceniami');
    const E=W.HouserElectric.evaluate(p),n=R.lamps.filter(L=>!['floor','table'].includes(L.type)&&L.room).length,eL=E.rooms.reduce((a,r)=>a+r.lights,0);ok(Math.abs(eL-n)<=2,f+': Elektryka liczy punkty światła z rozmieszczonych lamp ('+eL+' / '+n+')');
    ok(W.HouserCost.compute(p).rows.some(r=>r.id==='luminaires'&&r.value>0)&&!W.HouserCost.compute(ld(f)).rows.some(r=>r.id==='luminaires'),f+': oprawy w Wycenie tylko z lampami')}
+ {const p=ld('dom-parterowy.json'),q=W.HouserQuantities.compute(p),r=q.rooms.find(z=>/salon/i.test(z.name)),key=r.f+'|'+r.id,inR=L=>r.cells.some(([x,y])=>L.x>=x*q.c&&L.x<(x+1)*q.c&&L.y>=y*q.c&&L.y<(y+1)*q.c);
+  for(const sc of Object.keys(LG.SCHEMES)){const L=LG.roomLamps(p,r,{scheme:sc});ok(L.length>0&&L.every(inR),'oświetlenie: układ „'+LG.SCHEMES[sc]+'” – lampy w pomieszczeniu ('+L.length+')')}
+  const sum=lv=>LG.roomLamps(p,r,{scheme:'ceiling',level:lv}).reduce((a,L)=>a+L.lm,0);ok(sum('low')<sum('std')&&sum('std')<sum('high'),'oświetlenie: jasność zmienia strumień lamp');
+  ok(LG.roomLamps(p,r,{scheme:'downlights',K:4000}).every(L=>L.K===4000),'oświetlenie: barwa ustawiona dla pomieszczenia');
+  p.lighting={rooms:{[key]:{mode:'manual'}}};const S=LG.suggest(p);ok(!S[q.lo].some(inR)&&S[q.lo].length>5,'oświetlenie: rozmieszczanie całego domu pomija pomieszczenia w trybie ręcznym')}
  {const p=ld('dom-parterowy.json'),q=W.HouserQuantities.compute(p),hol=q.rooms.find(r=>/hol/i.test(r.name)),cc=hol.cells[Math.floor(hol.cells.length/2)];
   p.lighting={lamps:{[q.lo]:[{id:'a',x:(cc[0]+.5)*q.c,y:(cc[1]+.5)*q.c,type:'ceiling',lm:3000}]}};const sum=R=>R.rooms.filter(r=>r.id!==hol.id).reduce((a,r)=>a+r.avg,0);
   const Rc=LG.evaluate(p);p.lighting.doors='open';const Ro=LG.evaluate(p);ok(sum(Ro)>sum(Rc)*1.2,'oświetlenie: otwarte drzwi wpuszczają światło z holu do pokoi');
