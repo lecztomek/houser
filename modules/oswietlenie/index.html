@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oświetlenie</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:330px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
+h1{font-size:19px;margin:0 0 4px}
+.lead,.hint{font-size:12.5px;color:var(--hs-muted);line-height:1.5;margin:0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field{display:grid;gap:4px;margin-bottom:9px}.field label{font-size:12px;color:var(--hs-muted)}
+.field select,.field input{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tool{display:flex;gap:7px;align-items:center;font:inherit;font-size:12.5px;text-align:left;border:1px solid var(--hs-line-strong);background:#fff;border-radius:var(--hs-radius);padding:6px 8px;cursor:pointer;color:var(--hs-text)}
+.tool.on{border-color:#1d4ed8;box-shadow:0 0 0 2px rgba(29,78,216,.25);font-weight:700}
+.tool .sw{width:16px;height:16px;border-radius:4px;border:1px solid rgba(15,23,42,.2);flex:none}
+.btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.tile .l{font-size:12px;color:var(--hs-muted);font-weight:600}
+.tile .v{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-top:4px}
+.tile .v small{font-size:14px;color:var(--hs-muted);font-weight:600}
+.tile .s{font-size:12.5px;color:var(--hs-muted);margin-top:4px;line-height:1.4}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.card h2{font-size:15px;margin:0 0 3px}
+#plan{width:100%;height:auto;display:block;touch-action:none;user-select:none;max-height:78vh}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:#475569;margin-top:8px;align-items:center}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:5px}
+.iss{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:7px}
+.iss li{font-size:12.5px;line-height:1.45;border-top:1px solid #eef2f6;padding-top:7px}
+.iss .pen{float:right;font-weight:700;color:#b91c1c;font-size:12px;margin-left:8px}
+.iss .tip{display:block;color:#475569;margin-top:2px}
+.iss .tip:before{content:'→ ';color:#2563eb;font-weight:700}
+.good{font-size:12.5px;color:#15803d;margin-top:8px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #eef2f6;vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+th{font-size:11.5px;color:var(--hs-muted);text-transform:uppercase;letter-spacing:.04em}
+tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
+.c-ok{color:#15803d}.c-mid{color:#b45309}.c-bad{color:#b91c1c}
+.empty{padding:40px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){html,body{overflow:auto;height:auto}.wrap{height:auto;grid-template-rows:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{overflow:visible}}
+.seg{display:flex;gap:4px;flex-wrap:wrap}.seg .hs-btn.on{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+.scale{display:flex;align-items:center;gap:8px;font-size:12px;color:#475569;margin-top:8px;flex-wrap:wrap}.scale .bar{height:12px;width:260px;border-radius:6px;border:1px solid #cbd5e1}
+.pill{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap}.pill.ok{background:#dcfce7;color:#166534}.pill.mid{background:#fef3c7;color:#92400e}.pill.bad{background:#fee2e2;color:#991b1b}.pill.info{background:#e0e7ff;color:#3730a3}
+#plan text{pointer-events:none}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1>Oświetlenie</h1>
+  <p class="lead">Lampy na rzucie i jak będzie nocą: mapa natężenia światła (luksy) na wysokości stołu, cienie od ścian i zamkniętych drzwi, światło przez pustkę na parter i antresolę, odbicia od ścian. Porównanie z zaleceniami dla każdego pomieszczenia, prąd i koszt.</p>
+  <div class="section">
+    <h3>Kondygnacja</h3>
+    <div class="seg" id="floors"></div>
+  </div>
+  <div class="section">
+    <h3>Wstaw lampę</h3>
+    <div class="tools" id="tools"></div>
+    <p class="hint" id="toolHint" style="margin-top:8px"></p>
+    <div class="btns"><button class="hs-btn" id="auto">Rozmieść automatycznie</button><button class="hs-btn" id="clear">Usuń wszystkie</button></div>
+  </div>
+  <div class="section" id="edit" hidden>
+    <h3>Wybrana lampa</h3>
+    <div class="field"><label>Rodzaj</label><select id="eType"></select></div>
+    <div class="row2">
+      <div class="field"><label>Strumień (lm)</label><input id="eLm" type="number" min="50" max="10000" step="50"></div>
+      <div class="field"><label>Barwa</label><select id="eK"><option value="2700">2700 K – ciepła</option><option value="3000">3000 K – ciepła biel</option><option value="4000">4000 K – neutralna</option></select></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Żarówka</label><select id="eBulb"></select></div>
+      <div class="field"><label>Wysokość (m)</label><input id="eH" type="number" min="0.2" max="12" step="0.1" placeholder="auto"></div>
+    </div>
+    <p class="hint" id="eInfo"></p>
+    <div class="btns"><button class="hs-btn" id="eDel">Usuń lampę</button></div>
+  </div>
+  <div class="section">
+    <h3>Założenia</h3>
+    <div class="field"><label>Drzwi nocą</label><select id="doors"><option value="closed">zamknięte (światło nie przechodzi)</option><option value="open">otwarte</option></select></div>
+    <div class="field"><label>Wnętrza (odbicia światła)</label><select id="rho"><option value="0.65">jasne (białe ściany, jasna podłoga)</option><option value="0.5">średnie</option><option value="0.35">ciemne (ciemne ściany / podłoga)</option></select></div>
+    <div class="field"><label>Mapa</label><select id="mode"><option value="lux">natężenie światła (lx)</option><option value="rel">względem zaleceń dla pomieszczenia</option></select></div>
+  </div>
+  <div class="section">
+    <h3>Jak liczymy</h3>
+    <p class="hint">Każda lampa ma strumień (lm) i rozsył: oczka i reflektory świecą wąsko w dół, plafony i lampy wiszące szeroko, kinkiety i lampy stojące część światła oddają w górę. Natężenie na płaszczyźnie 0,75 m nad podłogą = światło bezpośrednie (z cieniami od ścian; otwarte przejścia i szkło przepuszczają, drzwi wg ustawienia) + odbite (zależne od jasności wnętrza, wspólne dla pomieszczeń połączonych otwarcie).</p>
+    <p class="hint" style="margin-top:8px">Pustka: lampa na piętrze nad pustką świeci przez otwór w stropie na parter; lampa wisząca w pustce (wyżej niż strop) świeci na parter i na antresolę. Zalecenia (lx): salon 150, kuchnia 200 (blat 500), łazienka 200, sypialnia 100, gabinet 300 (biurko 500), komunikacja 100, schody 150.</p>
+  </div>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/balconies.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="../../shared/energy.js"></script>
+<script src="engine.js"></script>
+<script>
+const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=0)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d}),zl=v=>(Math.round(v/10)*10).toLocaleString('pl-PL')+' zł';
+const NS='http://www.w3.org/2000/svg',S=46,T=HouserLight.TYPES;
+let project=null,R=null,floor=null,tool='select',selId=null,drag=null;
+try{tool=localStorage.getItem('houser:light:tool')||'select'}catch(e){}
+// skala „nocna”: brak światła – granat, potem fiolet, czerwień, pomarańcz, żółć, biel (lx w skali zbliżonej do logarytmicznej)
+const STOPS=[[0,[11,16,38]],[10,[36,28,84]],[30,[86,41,128]],[60,[150,58,118]],[100,[205,86,90]],[150,[238,128,62]],[250,[248,190,72]],[400,[255,236,150]],[700,[255,255,240]]];
+function heat(v){if(v<=0)return 'rgb(11,16,38)';for(let i=1;i<STOPS.length;i++){if(v<=STOPS[i][0]){const [a,ca]=STOPS[i-1],[b,cb]=STOPS[i],t=(v-a)/(b-a);return 'rgb('+ca.map((x,k)=>Math.round(x+(cb[k]-x)*t)).join(',')+')'}}return 'rgb(255,255,240)'}
+function rel(r){return r<.3?'#7f1d1d':r<.6?'#dc2626':r<.85?'#f59e0b':r<=2?'#16a34a':r<=3?'#22d3ee':'#6366f1'}
+const lampsOf=f=>(project.lighting?.lamps?.[f])||[];
+function save(lamps,patch){const L={...(project.lighting||{}),...(patch||{})};if(lamps)L.lamps=lamps;project.lighting=L;HouserStore.update(p=>{p.lighting=L},'oswietlenie');render()}
+const allLamps=()=>({...(project.lighting?.lamps||{})});
+function setLamps(f,list){const all=allLamps();all[f]=list;save(all)}
+$('doors').onchange=()=>save(null,{doors:$('doors').value});$('rho').onchange=()=>save(null,{rho:+$('rho').value});$('mode').onchange=()=>{try{localStorage.setItem('houser:light:mode',$('mode').value)}catch(e){}renderPlan()};
+try{const m=localStorage.getItem('houser:light:mode');if(m)$('mode').value=m}catch(e){}
+$('auto').onclick=()=>{const n=Object.values(project.lighting?.lamps||{}).flat().length;if(n&&!confirm('Zastąpić wszystkie lampy ('+n+') propozycją?'))return;selId=null;save(HouserLight.suggest(project))};
+$('clear').onclick=()=>{if(!confirm('Usunąć wszystkie lampy na tej kondygnacji?'))return;selId=null;setLamps(floor,[])};
+$('eType').innerHTML=Object.entries(T).map(([k,t])=>'<option value="'+k+'">'+t.name+'</option>').join('');
+$('eBulb').innerHTML=Object.entries(HouserLight.BULBS).map(([k,b])=>'<option value="'+k+'">'+b.name+'</option>').join('');
+const upd=patch=>{setLamps(floor,lampsOf(floor).map(L=>L.id===selId?{...L,...patch}:L))};
+$('eType').onchange=()=>upd({type:$('eType').value,lm:T[$('eType').value].lm,h:null});$('eLm').onchange=()=>{const v=+$('eLm').value;if(v>0)upd({lm:v})};$('eK').onchange=()=>upd({K:+$('eK').value});
+$('eBulb').onchange=()=>upd({bulb:$('eBulb').value});$('eH').onchange=()=>{const v=+$('eH').value;upd({h:v>0?v:null})};$('eDel').onclick=()=>{setLamps(floor,lampsOf(floor).filter(L=>L.id!==selId));selId=null};
+function renderTools(){$('tools').innerHTML=[['select',{name:'Zaznacz / przesuń',icon:'↖'}],...Object.entries(T),['erase',{name:'Usuń (kliknij lampę)',icon:'✕'}]].map(([k,t])=>'<button class="tool'+(k===tool?' on':'')+'" data-t="'+k+'"><span style="width:18px;text-align:center;font-weight:800">'+t.icon+'</span>'+esc(t.name)+'</button>').join('');
+  $('tools').querySelectorAll('.tool').forEach(b=>b.onclick=()=>{tool=b.dataset.t;try{localStorage.setItem('houser:light:tool',tool)}catch(e){}renderTools()});
+  $('toolHint').textContent=tool==='select'?'Kliknij lampę, żeby ją edytować; przeciągnij, żeby przesunąć.':tool==='erase'?'Kliknij lampę, żeby ją usunąć.':'Kliknij na rzucie, żeby wstawić: '+T[tool].name.toLowerCase()+' ('+T[tool].lm+' lm).'}
+// ---------- rzut z mapą światła
+function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
+function planSVG(){const f=floor,W=R.W,H=R.H,c=R.c,m=v=>v*S,pad=.6,svg=document.createElementNS(NS,'svg');svg.id='plan';svg.setAttribute('viewBox',[-pad*S,-pad*S,(W*c+2*pad)*S,(H*c+2*pad)*S].join(' '));
+  el('rect',{x:-pad*S,y:-pad*S,width:(W*c+2*pad)*S,height:(H*c+2*pad)*S,fill:'#0b1026'},svg);
+  const st=project.state?.[f]||[],fl=Array.isArray(st[0])?st.flat():st,defs=Object.fromEntries((project.definitionSnapshot?.floors?.[f]?.rooms||[]).map(r=>[r.id,r]));
+  const id=(x,y)=>x<0||y<0||x>=W||y>=H?null:(fl[y*W+x]||null),inside=v=>v&&defs[v]?.kind!=='exteriorVoid',hole=v=>f===R.up&&(v==='pustka'||v==='schody');
+  // mapa
+  const mode=$('mode').value,tg={};for(const r of R.rooms)if(r.f===f)tg[r.id]=r.target;const g=el('g',{},svg),st2=R.step;
+  for(const P of R.floors[f].pts)el('rect',{x:m(P.x-st2/2),y:m(P.y-st2/2),width:m(st2)+.6,height:m(st2)+.6,fill:mode==='rel'?rel(P.E/(tg[P.room]||150)):heat(P.E)},g);
+  // otwory w stropie (pustka, schody) – na piętrze zakreskowane
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const v=id(x,y);if(hole(v)){el('rect',{x:m(x*c),y:m(y*c),width:m(c),height:m(c),fill:'#1e293b'},svg);el('line',{x1:m(x*c),y1:m(y*c),x2:m((x+1)*c),y2:m((y+1)*c),stroke:'#475569','stroke-width':1},svg)}}
+  // meble (obrys)
+  for(const it of project.furniture?.[f]||[])el('rect',{x:m(+it.x),y:m(+it.y),width:m(+it.w),height:m(+it.h),fill:'none',stroke:'rgba(226,232,240,.55)','stroke-width':1.2,'stroke-dasharray':'4 3'},svg);
+  // ściany i otwory
+  const O=project.openings?.[f]||{},edge=(key,a,b,x1,y1,x2,y2)=>{if(a===b)return;const ia=inside(a),ib=inside(b);if(!ia&&!ib)return;if((hole(a)&&ib)||(hole(b)&&ia)){el('line',{x1:m(x1),y1:m(y1),x2:m(x2),y2:m(y2),stroke:'#94a3b8','stroke-width':2,'stroke-dasharray':'3 3'},svg);return}
+    const o=O[key],L=(col,w,da)=>el('line',{x1:m(x1),y1:m(y1),x2:m(x2),y2:m(y2),stroke:col,'stroke-width':w,'stroke-linecap':'square',...(da?{'stroke-dasharray':da}:{})},svg);
+    if(o==='opening')return L('#94a3b8',1.5,'2 4');if(o==='glass')return L('#7dd3fc',3);if(o==='door')return L('#b45309',4,R.set.doors==='open'?'3 3':'');if(o==='window'||o==='hst')return L('#60a5fa',5);L('#e2e8f0',5)};
+  for(let y=0;y<=H;y++)for(let x=0;x<W;x++)edge('h:'+x+':'+y,id(x,y-1),id(x,y),x*c,y*c,(x+1)*c,y*c);
+  for(let y=0;y<H;y++)for(let x=0;x<=W;x++)edge('v:'+x+':'+y,id(x-1,y),id(x,y),x*c,y*c,x*c,(y+1)*c);
+  // nazwy i średnie
+  const QR=HouserQuantities.compute(project).rooms;for(const r of R.rooms.filter(r=>r.f===f)){const q=QR.find(z=>z.f===f&&z.id===r.id);if(!q)continue;const cx=q.cells.reduce((a,p)=>a+p[0]+.5,0)/q.cells.length*c,cy=q.cells.reduce((a,p)=>a+p[1]+.5,0)/q.cells.length*c;
+    const t=el('text',{x:m(cx),y:m(cy),'text-anchor':'middle','font-size':12,'font-weight':800,fill:'#0f172a',stroke:'#fff','stroke-width':3,'paint-order':'stroke'},svg);t.textContent=r.name;
+    const t2=el('text',{x:m(cx),y:m(cy)+15,'text-anchor':'middle','font-size':12,'font-weight':700,fill:r.status==='ok'?'#166534':r.status==='bright'?'#3730a3':'#991b1b',stroke:'#fff','stroke-width':3,'paint-order':'stroke'},svg);t2.textContent=fmt(r.avg)+' / '+r.target+' lx'}
+  // lampy (także z drugiej kondygnacji, jeśli świecą przez pustkę – półprzezroczyste)
+  const lg=el('g',{id:'lamps'},svg);
+  for(const L of R.lamps){const own=L.f===f;if(!own&&!L.void)continue;
+    const gr=el('g',{transform:'translate('+m(L.x)+' '+m(L.y)+')','data-id':own?L.id:'',opacity:own?1:.45,style:own?'cursor:pointer':''},lg),sel=own&&L.id===selId,rr=6+Math.sqrt(L.lm)/6;
+    el('circle',{r:rr+4,fill:'none',stroke:sel?'#22d3ee':'rgba(0,0,0,0)','stroke-width':3},gr);el('circle',{r:rr,fill:L.K<=2700?'#fbbf24':L.K<=3000?'#fde68a':'#f8fafc',stroke:'#0f172a','stroke-width':2},gr);
+    el('text',{y:4,'text-anchor':'middle','font-size':11,'font-weight':900,fill:'#0f172a'},gr,L.T.icon)}
+  return svg}
+function pt(e){const svg=$('plan'),p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const q=p.matrixTransform(svg.getScreenCTM().inverse());return {x:q.x/S,y:q.y/S}}
+document.addEventListener('pointerdown',e=>{const svg=$('plan');if(!project||!svg||!svg.contains(e.target))return;const g=e.target.closest('[data-id]'),lid=g?.dataset.id,p=pt(e);
+  if(tool==='erase'){if(lid){setLamps(floor,lampsOf(floor).filter(L=>L.id!==lid));if(selId===lid)selId=null}return}
+  if(tool==='select'){if(lid){selId=lid;drag={id:lid,p,g,moved:false};renderSide()}else{selId=null;renderSide();renderPlan()}return}
+  if(p.x<0||p.y<0||p.x>R.W*R.c||p.y>R.H*R.c)return;const L={id:'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),x:Math.round(p.x*20)/20,y:Math.round(p.y*20)/20,type:tool,lm:T[tool].lm};selId=L.id;setLamps(floor,[...lampsOf(floor),L])});
+document.addEventListener('pointermove',e=>{if(!drag)return;const p=pt(e),dx=p.x-drag.p.x,dy=p.y-drag.p.y;if(Math.hypot(dx,dy)>.05)drag.moved=true;drag.dx=dx;drag.dy=dy;const L=R.lamps.find(l=>l.id===drag.id);if(L)drag.g.setAttribute('transform','translate('+(L.x+dx)*S+' '+(L.y+dy)*S+')')});
+document.addEventListener('pointerup',()=>{if(!drag)return;const d=drag;drag=null;if(!d.moved){renderPlan();return}setLamps(floor,lampsOf(floor).map(L=>L.id===d.id?{...L,x:Math.round((L.x+d.dx)*20)/20,y:Math.round((L.y+d.dy)*20)/20}:L))});
+function renderSide(){renderTools();const L=lampsOf(floor).find(l=>l.id===selId),RL=R?.lamps.find(l=>l.id===selId);$('edit').hidden=!L;
+  if(L){$('eType').value=L.type;$('eLm').value=L.lm||T[L.type].lm;$('eK').value=RL?.K||3000;$('eBulb').value=L.bulb||'led';$('eH').value=L.h||'';$('eH').placeholder='auto ('+fmt(RL?.h||0,1)+')';
+    $('eInfo').textContent=RL?fmt(RL.W,1)+' W · zawieszona '+fmt(RL.h,1)+' m nad podłogą'+(RL.abs>R.gh+.05&&RL.f===R.lo?' – w pustce, świeci też na antresolę':''):''}
+  $('floors').innerHTML=[R.lo,R.up].filter(f=>f===R.lo||(project.state?.[f]||[]).flat().some(v=>v)).map(f=>'<button class="hs-btn'+(f===floor?' on':'')+'" data-f="'+f+'">'+(f===R.lo?'Parter':'Piętro')+' ('+lampsOf(f).length+')</button>').join('');
+  $('floors').querySelectorAll('button').forEach(b=>b.onclick=()=>{floor=b.dataset.f;selId=null;try{localStorage.setItem('houser:light:floor',floor)}catch(e){}render()});
+  $('doors').value=R.set.doors;$('rho').value=String(R.set.rho>=.6?.65:R.set.rho<=.4?.35:.5)}
+function renderPlan(){const box=$('planBox');if(!box)return;box.innerHTML='';box.appendChild(planSVG())}
+function render(){const M=$('main');
+  if(!project){M.innerHTML='<div class="empty">Brak projektu.</div>';return}
+  try{R=HouserLight.evaluate(project)}catch(e){console.error(e);M.innerHTML='<div class="empty">Nie udało się policzyć oświetlenia.</div>';return}
+  if(floor!==R.lo&&floor!==R.up){try{floor=localStorage.getItem('houser:light:floor')}catch(e){}if(floor!==R.lo&&floor!==R.up)floor=R.lo}
+  renderSide();const pc=v=>v>=8?'c-ok':v>=6?'c-mid':'c-bad',n=R.lamps.length;
+  let h='<div class="tiles"><div class="tile"><div class="l">Ocena oświetlenia</div><div class="v '+(R.score==null?'':pc(R.score))+'">'+(R.score==null?'–':fmt(R.score,1)+'<small> / 10</small>')+'</div><div class="s">'+(n?R.issues.length+' uwag':'brak lamp – „Rozmieść automatycznie” albo wstaw z lewej')+'</div></div>'+
+    '<div class="tile"><div class="l">Lampy</div><div class="v">'+n+'</div><div class="s">razem '+fmt(R.lamps.reduce((a,L)=>a+L.lm,0))+' lm</div></div>'+
+    '<div class="tile"><div class="l">Moc</div><div class="v">'+fmt(R.power)+'<small> W</small></div><div class="s">'+fmt(R.kwh)+' kWh rocznie · ok. '+zl(R.costYear)+'</div></div>'+
+    '<div class="tile"><div class="l">Oprawy</div><div class="v" style="font-size:22px">'+zl(R.price)+'</div><div class="s">orientacyjnie, bez montażu (punkty świetlne – w Elektryce)</div></div></div>';
+  h+='<div class="card"><h2>Rzut nocą – '+(floor===R.lo?'parter':'piętro')+'</h2><p class="hint">Kolor = natężenie światła na wysokości 0,75 m przy wszystkich lampach włączonych. Linie: białe – ściany, brązowe – drzwi, niebieskie – okna, jasnoniebieskie – szkło, kropkowane – otwarte przejścia, przerywane szare – krawędź pustki. Półprzezroczyste lampy świecą tu z drugiej kondygnacji przez pustkę.</p><div id="planBox"></div>'+
+    '<div class="scale">'+($('mode').value==='rel'?'<span><i class="pill bad">&lt; 60%</i></span><span class="pill mid">60–85%</span><span class="pill ok">85–200%</span><span class="pill info">&gt; 200%</span> zaleceń dla pomieszczenia':'0<span class="bar" style="background:linear-gradient(90deg,'+[0,10,30,60,100,150,250,400,700].map(v=>heat(v)).join(',')+')"></span>700+ lx · 50 lx – ledwo widać, 100–150 lx – pokój, 300–500 lx – praca, czytanie')+'</div></div>';
+  h+='<div class="cols"><div class="card"><h2>Pomieszczenia</h2><table><thead><tr><th>Pomieszczenie</th><th class="n">Średnio</th><th class="n">Min.</th><th class="n">Lampy</th><th></th></tr></thead><tbody>'+
+    R.rooms.map(r=>'<tr><td>'+esc(r.name)+'<br><span class="hint">'+(r.f===R.lo?'parter':'piętro')+' · '+esc(r.kind)+' · zalecane '+r.target+' lx</span></td><td class="n">'+fmt(r.avg)+' lx</td><td class="n">'+fmt(r.min)+'</td><td class="n">'+r.lamps+(r.W?'<br><span class="hint">'+fmt(r.W)+' W</span>':'')+'</td><td><span class="pill '+({ok:'ok',bright:'info',uneven:'mid',dark:'bad',none:'bad'}[r.status])+'">'+({ok:'dobrze',bright:'za jasno',uneven:'ciemne kąty',dark:'za ciemno',none:'brak lamp'}[r.status])+'</span></td></tr>').join('')+'</tbody></table>'+
+    (R.tasks.length?'<h2 style="margin-top:14px">Miejsca pracy</h2><table><tbody>'+R.tasks.map(t=>'<tr><td>'+esc(t.name)+' <span class="hint">('+(t.f===R.lo?'parter':'piętro')+')</span></td><td class="n">'+fmt(t.avg)+' / '+t.lx+' lx</td><td><span class="pill '+(t.ok?'ok':'bad')+'">'+(t.ok?'dobrze':'za ciemno')+'</span></td></tr>').join('')+'</tbody></table>':'')+'</div>'+
+    '<div class="card"><h2>Uwagi</h2>'+(R.issues.length?'<ul class="iss">'+[...R.issues].sort((a,b)=>b.p-a.p).map(i=>'<li><span class="pen">−'+fmt(i.p,1)+'</span>'+esc(i.text)+(i.tip?'<span class="tip">'+esc(i.tip)+'</span>':'')+'</li>').join('')+'</ul>':'<p class="hint">'+(n?'Bez uwag.':'Wstaw lampy, żeby zobaczyć ocenę.')+'</p>')+R.good.map(t=>'<div class="good">✓ '+esc(t)+'</div>').join('')+'</div></div>';
+  M.innerHTML=h;renderPlan()}
+const rec=HouserStore.load();project=rec?rec.project:null;render();
+HouserStore.subscribe(r=>{if(drag)return;project=r.project;render()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

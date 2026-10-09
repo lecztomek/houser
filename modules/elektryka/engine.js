@@ -32,7 +32,9 @@
     const LIV=KINDS.find(k=>k.k==='living');
     const rooms=q.rooms.filter(r=>r.area>=.8).map(r=>{const K=kindOf(r.name),both=K.k==='kitchen'&&LIV.re.test(r.name||''); // pokój dzienny z kuchnią: gniazda kuchni + salonu
       const sockets=Math.max(1,Math.round((K.sock[0]+(K.sock[1]?r.area/K.sock[1]:0)+(both?LIV.sock[0]:0))*lvl));
-      const lights=Math.max(K.minL,Math.round(r.area/(both?LIV.lightM2:K.lightM2)));const doors=(r.doors||[]).length;const switches=Math.max(1,doors>=2?2:1)+(lights>2?1:0);
+      // punkty światła: z rozmieszczonych lamp (moduł Oświetlenie), inaczej wg powierzchni
+      const LL=project.lighting?.lamps?.[r.f],placed=Array.isArray(LL)&&Object.values(project.lighting.lamps).some(a=>a?.length)?LL.filter(L=>r.cells.some(([x,y])=>+L.x>=x*c&&+L.x<(x+1)*c&&+L.y>=y*c&&+L.y<(y+1)*c)&&!['floor','table'].includes(L.type)).length:null;
+      const lights=placed!=null?placed:Math.max(K.minL,Math.round(r.area/(both?LIV.lightM2:K.lightM2)));const doors=(r.doors||[]).length;const switches=Math.max(1,doors>=2?2:1)+(lights>2?1:0);
       const cx=r.cells.reduce((a,p)=>a+p[0],0)/r.cells.length,cy=r.cells.reduce((a,p)=>a+p[1],0)/r.cells.length;
       return {key:r.f+'|'+r.id,f:r.f,name:r.name,area:r.area,K,sockets,lights,switches,cx,cy,cells:r.cells,ded:[...K.ded],noWin:!(r.wins+r.roofWins)&&r.hstA<=0}});
     // urządzenia z innych modułów: ogrzewanie, wentylacja, klimatyzacja, fotowoltaika, auto

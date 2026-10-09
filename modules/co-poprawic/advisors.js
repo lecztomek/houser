@@ -47,6 +47,8 @@
       return {score:G.score,items:G.issues.map(i=>({p:Math.min(3,i.p),text:i.text,tip:i.tip})),good:G.good.slice(0,1)}}},
     {id:'dzialka',name:'Działka',w:.4,need:'HouserSite',run:p=>{if(!p.site)return {score:null,items:[],good:[]};const R=HouserSite.evaluate(p);
       return {score:R.score,items:R.issues.map(i=>({p:Math.min(3,i.p),text:i.text,tip:i.tip})),good:R.good.slice(0,1)}}},
+    {id:'oswietlenie',name:'Oświetlenie',w:.3,need:'HouserLight',run:p=>{if(!Object.values(p.lighting?.lamps||{}).some(a=>a?.length))return {score:null,items:[],good:[]};const R=HouserLight.evaluate(p);
+      return {score:R.score,items:R.issues.map(i=>({p:Math.min(3,i.p),text:i.text,tip:i.tip})),good:R.good.slice(0,1)}}},
     {id:'elektryka',name:'Elektryka',w:.4,need:'HouserElectric',run:p=>{const L=HouserElectric.evaluate(p);
       return {score:L.score,items:L.issues.map(i=>({p:Math.min(3,i.p),text:i.text,tip:i.tip})),good:L.good.slice(0,1)}}},
     {id:'fotowoltaika',name:'Fotowoltaika',w:.4,need:'HouserPV',run:p=>{const R=HouserPV.compute(p);

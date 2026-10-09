@@ -193,6 +193,23 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  ok(W.HouserCost.compute(p).rows.some(r=>r.id==='glassdoors'&&r.value>0)&&!W.HouserCost.compute(ld('dom-parterowy.json')).rows.some(r=>r.id==='glassdoors'),'drzwi szklane: dopłata w Wycenie tylko gdy są');
  ok(W.HouserOpenings.resolve(p,d.f,d.keys[0],'door').glass,'drzwi szklane: wariant zapisany');}
 
+// oświetlenie: lampy, natężenie, cienie, pustka, prąd, Elektryka i Wycena
+{const LG=W.HouserLight,ld=f=>JSON.parse(fs.readFileSync(path.join(ROOT,'examples',f),'utf8'));
+ for(const f of ['dom-parterowy.json','stodola-jasna.json','zefir-2.json']){const p=ld(f);ok(LG.evaluate(p).score===null,f+': oświetlenie bez lamp – brak oceny');p.lighting={lamps:LG.suggest(p)};const R=LG.evaluate(p);
+   ok(R.lamps.length>5&&fin(R.score)&&R.score>=7&&R.rooms.every(r=>fin(r.avg)&&r.avg>=0&&r.min<=r.avg+1e-9)&&fin(R.power)&&R.power>50&&R.power<2000,f+': propozycja oświetlenia – liczby skończone, ocena '+R.score);
+   ok(R.rooms.filter(r=>r.status==='ok').length>=R.rooms.length*.8,f+': propozycja oświetlenia – większość pomieszczeń zgodna z zaleceniami');
+   const E=W.HouserElectric.evaluate(p),n=R.lamps.filter(L=>!['floor','table'].includes(L.type)&&L.room).length,eL=E.rooms.reduce((a,r)=>a+r.lights,0);ok(Math.abs(eL-n)<=2,f+': Elektryka liczy punkty światła z rozmieszczonych lamp ('+eL+' / '+n+')');
+   ok(W.HouserCost.compute(p).rows.some(r=>r.id==='luminaires'&&r.value>0)&&!W.HouserCost.compute(ld(f)).rows.some(r=>r.id==='luminaires'),f+': oprawy w Wycenie tylko z lampami')}
+ {const p=ld('dom-parterowy.json'),q=W.HouserQuantities.compute(p),hol=q.rooms.find(r=>/hol/i.test(r.name)),cc=hol.cells[Math.floor(hol.cells.length/2)];
+  p.lighting={lamps:{[q.lo]:[{id:'a',x:(cc[0]+.5)*q.c,y:(cc[1]+.5)*q.c,type:'ceiling',lm:3000}]}};const sum=R=>R.rooms.filter(r=>r.id!==hol.id).reduce((a,r)=>a+r.avg,0);
+  const Rc=LG.evaluate(p);p.lighting.doors='open';const Ro=LG.evaluate(p);ok(sum(Ro)>sum(Rc)*1.2,'oświetlenie: otwarte drzwi wpuszczają światło z holu do pokoi');
+  const h0=Rc.power;p.lighting.lamps[q.lo][0].bulb='halogen';ok(LG.evaluate(p).power>h0*5,'oświetlenie: halogen zużywa kilka razy więcej prądu niż LED');}
+ {const p=ld('stodola-jasna.json'),q=W.HouserQuantities.compute(p),st=p.state[q.up].flat?p.state[q.up].flat():p.state[q.up],i=st.indexOf('pustka'),x=(i%q.W+.5)*q.c,y=(Math.floor(i/q.W)+.5)*q.c;
+  p.lighting={lamps:{[q.lo]:[{id:'v',x,y,type:'pendant',lm:2000,h:q.G.groundHeight+1.4}]}};const R=LG.evaluate(p);ok(R.lamps[0].void&&R.floors[q.up].pts.some(P=>P.dir>5)&&R.floors[q.lo].pts.some(P=>P.dir>20),'oświetlenie: lampa wisząca w pustce świeci na parter i na antresolę');
+  p.lighting={lamps:{[q.up]:[{id:'u',x,y,type:'ceiling',lm:2000}]}};const R2=LG.evaluate(p);ok(R2.floors[q.lo].pts.some(P=>P.dir>5),'oświetlenie: lampa na piętrze nad pustką świeci na parter');
+  const j=st.findIndex((v,k)=>v&&v!=='pustka'&&v!=='schody'&&!(p.definitionSnapshot.floors[q.up].rooms.find(r=>r.id===v)?.kind==='exteriorVoid')),x2=(j%q.W+.5)*q.c,y2=(Math.floor(j/q.W)+.5)*q.c;
+  p.lighting={lamps:{[q.up]:[{id:'w',x:x2,y:y2,type:'ceiling',lm:2000}]}};ok(LG.evaluate(p).floors[q.lo].pts.every(P=>P.dir<1e-9),'oświetlenie: lampa na piętrze nad stropem nie świeci na parter');}}
+
 // ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować
 console.log('• składnia skryptów');
 {const vm=require('vm'),walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?(['node_modules','.git'].includes(e.name)?[]:walk(path.join(d,e.name))):[path.join(d,e.name)]);
