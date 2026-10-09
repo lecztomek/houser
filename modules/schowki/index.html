@@ -5,7 +5,7 @@
 <script src="../../shared/i18n-en.js"></script>
 <script src="../../shared/i18n.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Schowki i szafy</title>
+<title>Wyposażenie i schowki</title>
 <link rel="stylesheet" href="../../shared/theme.css">
 <style>
 *{box-sizing:border-box}
@@ -57,13 +57,16 @@ table.t td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowr
 #plan{display:block;max-width:100%;height:auto}
 .empty{padding:40px;text-align:center;color:var(--hs-muted)}
 @media(max-width:900px){html,body{overflow:auto;height:auto}.wrap{height:auto;grid-template-columns:1fr;grid-template-rows:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{overflow:visible;padding:10px}.cat{grid-template-columns:1fr 110px}.cat .track{grid-column:1/-1;grid-row:2}}
+.pill{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap}.pill.ok{background:#dcfce7;color:#166534}.pill.mid{background:#fef3c7;color:#92400e}.pill.bad{background:#fee2e2;color:#991b1b}
+.eq select{max-width:280px;font:inherit;font-size:12.5px;padding:3px 6px;border:1px solid var(--hs-line-strong);border-radius:6px}.eq td{vertical-align:middle}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
 </style>
 </head>
 <body>
 <div class="wrap">
 <aside class="side">
-  <h1>Schowki i szafy</h1>
-  <p class="lead">Ile miejsca na rzeczy daje ten dom: szafy i szafki z Meblowania, garderoby, spiżarnia, schowki, garaż, skosy, miejsce pod schodami i strych – i czy to wystarczy dla Twojej rodziny.</p>
+  <h1>Wyposażenie i schowki</h1>
+  <p class="lead">Czy wszystko ma swoje miejsce: lodówka, zamrażarka, pralka, odkurzacz, rowery, walizki… – każdą rzecz przypisujesz do szafy, zabudowy albo pomieszczenia. Do tego ile miejsca na rzeczy daje ten dom: szafy i szafki z Meblowania, garderoby, spiżarnia, schowki, garaż, skosy, miejsce pod schodami i strych – i czy to wystarczy dla Twojej rodziny.</p>
   <div class="section">
     <h3>Domownicy</h3>
     <div class="field"><label>Liczba osób</label><select id="persons"><option value="">jak w module Energia</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option></select></div>
@@ -83,6 +86,7 @@ table.t td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowr
 <script src="../../shared/furniture.js"></script>
 <script src="../../shared/quantities.js"></script>
 <script src="engine.js"></script>
+<script src="equipment.js"></script>
 <script>
 const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',PX=40;
 const FLOOR_PL={ground:'Parter',upper:'Piętro / poddasze'};
@@ -122,6 +126,26 @@ function plan(R){
     if(v>0&&r.area>=2)el('text',{x:X((sx+.5)*c),y:X((sy+.5)*c)+9*k,'text-anchor':'middle','font-size':10.5*k,fill:'#334155'},svg,fmt(v)+' m³')}
   return svg;
 }
+// ---------- wyposażenie: rzeczy i ich miejsca (equipment.js)
+let EQ=null;
+function saveEq(id,patch){const e={...(project.equipment||{})},items={...(e.items||{})};items[id]={...(items[id]||{}),...patch};e.items=items;project.equipment=e;HouserStore.update(p=>{p.equipment=e},'schowki');render()}
+function equipCard(){try{EQ=HouserEquip.evaluate(project)}catch(e){console.error(e);return ''}
+  const pn=p=>esc(p.name+(p.room&&p.room!==p.name?' – '+p.room:''));
+  let h='<div class="card"><h2>Wyposażenie – czy wszystko ma swoje miejsce</h2><p class="hint">Zaznacz, co macie albo planujecie; miejsce dobiera się samo (najpierw zabudowa i meble z Meblowania, potem schowek, garderoba, techniczne, garaż, strych) – możesz wybrać inne. Liczone dla '+EQ.P+' os.</p>'+
+    '<div class="tiles" style="margin:8px 0 10px"><div class="tile"><div class="l">Ma swoje miejsce</div><div class="v '+(EQ.missing.length?'c-bad':'c-ok')+'">'+EQ.placed+' / '+EQ.total+'</div><div class="s">'+(EQ.missing.length?'brakuje: '+esc(EQ.missing.map(m=>m.name.toLowerCase()).join(', ')):'niczego nie brakuje')+'</div></div><div class="tile"><div class="l">Ocena wyposażenia</div><div class="v '+cls(EQ.score)+'">'+fmt(EQ.score)+' / 10</div><div class="s">'+EQ.issues.length+' uwag</div></div></div>';
+  h+='<table class="t eq"><tr><th></th><th>Rzecz</th><th>Miejsce</th><th></th></tr>';
+  for(const g of EQ.GROUPS){h+='<tr><td colspan="4" style="font-weight:800;padding-top:10px">'+esc(g)+'</td></tr>';
+    for(const R of EQ.items.filter(i=>i.g===g)){const I=R.I,cand=EQ.places.filter(p=>p.type==='furn'?(p.virtual?[...(I.slot||[]),...(I.furn||[])].some(x=>/^k_/.test(x)):([...(I.slot||[]),...(I.furn||[])].includes(p.item))):(I.rooms||[]).includes(p.kind)),others=EQ.places.filter(p=>!cand.includes(p)&&p.type==='room');
+      const opt='<option value="auto">automatycznie'+(R.on&&R.auto&&R.placeName?' – '+esc(R.placeName):'')+'</option>'+(cand.length?'<optgroup label="Pasuje">'+cand.map(p=>'<option value="'+esc(p.key)+'">'+pn(p)+'</option>').join('')+'</optgroup>':'')+(others.length?'<optgroup label="Inne pomieszczenia">'+others.map(p=>'<option value="'+esc(p.key)+'">'+pn(p)+'</option>').join('')+'</optgroup>':'');
+      const st=!R.on?'<span class="hint">—</span>':R.place?(R.forced?'<span class="pill mid">nietypowo</span>':'<span class="pill ok">✓</span>'):'<span class="pill bad">brak miejsca</span>';
+      h+='<tr'+(R.on?'':' style="opacity:.55"')+'><td><input type="checkbox" data-eon="'+R.id+'"'+(R.on?' checked':'')+'></td><td>'+esc(R.name)+(R.v?'<br><span class="hint">ok. '+fmt(R.v,2)+' m³</span>':'')+'</td><td><select data-eplace="'+R.id+'"'+(R.on?'':' disabled')+'>'+opt+'</select></td><td>'+st+'</td></tr>'}}
+  h+='</table>';
+  const used=EQ.places.filter(p=>p.list.length);
+  if(used.length)h+='<h2 style="margin-top:14px">Miejsca</h2><table class="t"><tr><th>Miejsce</th><th>Co tam jest</th><th style="text-align:right">Zajęte</th></tr>'+used.map(p=>'<tr><td>'+pn(p)+'</td><td>'+esc(p.list.join(', '))+'</td><td style="text-align:right">'+(p.cap>0?Math.round(p.used/p.cap*100)+'%':(p.slots?p.usedSlots+'/'+p.slots+' miejsc':'–'))+'</td></tr>').join('')+'</table>';
+  if(EQ.issues.length)h+='<ul class="iss" style="margin-top:10px">'+EQ.issues.map(i=>'<li class="'+(i.p>=1?'hi':'')+'">'+esc(i.text)+(i.tip?'<small>'+esc(i.tip)+'</small>':'')+'</li>').join('')+'</ul>';
+  return h+'</div>'}
+function bindEquip(){document.querySelectorAll('[data-eon]').forEach(c=>c.onchange=()=>saveEq(c.dataset.eon,{on:c.checked}));
+  document.querySelectorAll('[data-eplace]').forEach(s=>{const R=EQ.items.find(i=>i.id===s.dataset.eplace);s.value=R&&R.want!=='auto'?R.want:'auto';s.onchange=()=>saveEq(s.dataset.eplace,{place:s.value==='auto'?null:s.value})})}
 function render(){
   const s=settings(),M=$('main');$('persons').value=s.persons?String(s.persons):'';$('stuff').value=s.stuff;
   if(!project||!(project.grid||project.definitionSnapshot?.grid)){M.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej albo narysuj rzut w <b>Układzie pomieszczeń</b>.</div>';return}
@@ -139,7 +163,8 @@ function render(){
   const bad=R.issues.filter(i=>i.p>0),info=R.issues.filter(i=>!(i.p>0));
   h+='<div class="card"><h2>Uwagi</h2>'+(R.issues.length||R.good.length?'<ul class="iss">'+bad.map(i=>'<li class="'+(i.p>=1.5?'hi':'')+'">'+esc(i.text)+(i.tip?'<small>'+esc(i.tip)+'</small>':'')+'</li>').join('')+info.map(i=>'<li class="info">'+esc(i.text)+(i.tip?'<small>'+esc(i.tip)+'</small>':'')+'</li>').join('')+R.good.map(g=>'<li class="ok">'+esc(g)+'</li>').join('')+'</ul>':'<p class="hint">Bez uwag.</p>')+'</div>';
   h+='<div class="grid2">'+R.cats.map(x=>'<div class="card"><h2>'+esc(x.name)+'</h2><table class="t"><tr><th>Co</th><th>Gdzie</th><th style="text-align:right">m³</th></tr>'+(x.items.length?x.items.map(i=>'<tr><td>'+esc(i.label)+' <span class="src '+i.src+'">'+esc(SRC[i.src])+'</span>'+(i.note?'<br><span class="hint">'+esc(i.note)+'</span>':'')+'</td><td>'+esc(i.room)+'</td><td class="n">'+fmt(i.v)+'</td></tr>').join(''):'<tr><td colspan="3" class="hint">nic</td></tr>')+'<tr><td colspan="2"><b>Razem</b> <span class="hint">(potrzeba '+fmt(x.need)+')</span></td><td class="n"><b>'+fmt(x.cap)+'</b></td></tr></table></div>').join('')+'</div>';
-  M.innerHTML=h;
+  h=equipCard()+h;
+  M.innerHTML=h;bindEquip();
   for(const f of fl){const b=document.createElement('button');b.className='btn'+(f===floor?' active':'');b.textContent=FLOOR_PL[f]||f;b.onclick=()=>{floor=f;render()};$('tabs').appendChild(b)}
   $('planBox').appendChild(plan(R));
 }
