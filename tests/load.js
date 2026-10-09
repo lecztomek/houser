@@ -2,7 +2,7 @@
 const fs=require('fs'),path=require('path'),vm=require('vm');
 const ROOT=path.join(__dirname,'..');
 const FILES=['shared/house-model.js','shared/openings.js','shared/stairs.js','shared/project-store.js','shared/balconies.js','shared/quantities.js','shared/completeness.js','shared/furniture.js',
-  'modules/naslonecznienie/sun.js','modules/naslonecznienie/calc.js','shared/energy.js','shared/cost.js','modules/przepisy/engine.js','modules/codziennosc/engine.js','modules/codziennosc/house.js','modules/konstrukcja/engine.js','modules/konstrukcja-dachu/engine.js','modules/garaz/engine.js','modules/dzialka/engine.js','modules/oswietlenie/engine.js','modules/rekuperacja/ducts.js','modules/schowki/equipment.js','modules/elektryka/engine.js',
+  'modules/naslonecznienie/sun.js','modules/naslonecznienie/calc.js','shared/energy.js','shared/cost.js','modules/przepisy/engine.js','modules/codziennosc/engine.js','modules/codziennosc/house.js','modules/konstrukcja/engine.js','modules/konstrukcja-dachu/engine.js','modules/garaz/engine.js','modules/dzialka/engine.js','modules/oswietlenie/engine.js','modules/rekuperacja/ducts.js','modules/schowki/equipment.js','modules/notatki/engine.js','modules/elektryka/engine.js',
   'modules/akustyka/engine.js','modules/hydraulika/engine.js','modules/schowki/engine.js','shared/hvac.js','shared/heating.js','shared/heating-system.js','shared/pv.js',
   'modules/ocieplenie/engine.js','modules/wyglad/engine.js','modules/co-poprawic/advisors.js','modules/oszczednosci/engine.js'];
 function load(){

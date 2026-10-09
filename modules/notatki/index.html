@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Notatki</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:340px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
+h1{font-size:19px;margin:0 0 4px}
+.lead,.hint{font-size:12.5px;color:var(--hs-muted);line-height:1.5;margin:0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.field{display:grid;gap:4px;margin-bottom:9px}.field label{font-size:12px;color:var(--hs-muted)}
+.field select,.field input,textarea{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+textarea{resize:vertical;min-height:84px;line-height:1.45}
+.chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px}
+.chip{--c:#64748b;font:inherit;font-size:12px;font-weight:700;border:1px solid var(--hs-line-strong);background:#fff;color:#334155;border-radius:999px;padding:4px 10px;cursor:pointer;display:inline-flex;gap:5px;align-items:center}
+.chip i{width:9px;height:9px;border-radius:50%;background:var(--c);display:inline-block}
+.chip.on{background:var(--c);border-color:var(--c);color:#fff}.chip.on i{background:#fff}
+.btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;align-items:center}
+.btn{font:inherit;font-size:12.5px;font-weight:700;border:1px solid var(--hs-line-strong);background:#fff;color:#1e293b;border-radius:8px;padding:6px 11px;cursor:pointer}
+.btn.pri{background:#0f766e;border-color:#0f766e;color:#fff}.btn.on{background:#fef3c7;border-color:#f59e0b}
+.btn:disabled{opacity:.5;cursor:default}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px 14px;box-shadow:var(--hs-shadow)}
+.tile .l{font-size:12px;color:var(--hs-muted);font-weight:600}
+.tile .v{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-top:2px}
+.tile .s{font-size:12px;color:var(--hs-muted);margin-top:2px}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.card h2{font-size:15px;margin:0 0 6px}
+.notes{display:flex;flex-direction:column;gap:8px}
+.note{--c:#64748b;border:1px solid var(--hs-line);border-left:5px solid var(--c);border-radius:10px;padding:10px 12px;background:#fff;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start}
+.note.done{opacity:.6}.note.done .tx{text-decoration:line-through}
+.note.hl{box-shadow:0 0 0 3px rgba(245,158,11,.55)}
+.note .tx{font-size:14px;line-height:1.5;white-space:pre-wrap;word-break:break-word;cursor:text}
+.note .meta{font-size:12px;color:var(--hs-muted);margin-top:4px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.note .cat{font-weight:800;color:var(--c)}
+.note .acts{display:flex;gap:2px}
+.ib{font:inherit;font-size:15px;border:0;background:transparent;cursor:pointer;padding:3px 6px;border-radius:6px;color:#64748b}
+.ib:hover{background:#f1f5f9;color:#0f172a}.ib.star{color:#f59e0b}
+.note textarea{min-height:70px}
+.empty{padding:40px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){html,body{overflow:auto;height:auto}.wrap{height:auto;grid-template-columns:1fr;grid-template-rows:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{overflow:visible}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1>Notatki</h1>
+  <p class="lead">Pomysły, pytania do architekta i wykonawców, rzeczy do zrobienia, decyzje, problemy i oferty – zapisane razem z projektem domu.</p>
+  <div class="section">
+    <h3>Nowa notatka</h3>
+    <div class="field"><textarea id="nText" placeholder="Np. Zapytać architekta, czy da się przesunąć ścianę nośną w salonie…"></textarea></div>
+    <div class="chips" id="nCat"></div>
+    <div class="btns" style="margin-top:10px"><button class="btn pri" id="nAdd">Dodaj notatkę</button><span class="hint">Ctrl+Enter</span></div>
+  </div>
+  <div class="section">
+    <h3>Pokaż</h3>
+    <div class="field"><input id="fQ" type="search" placeholder="Szukaj w notatkach…"></div>
+    <div class="chips" id="fCat"></div>
+    <div class="field"><label>Stan</label><select id="fSt"><option value="open">do zrobienia / otwarte</option><option value="all">wszystkie</option><option value="done">zamknięte</option></select></div>
+  </div>
+  <div class="section">
+    <h3>Eksport</h3>
+    <p class="hint">Lista widocznych notatek jako zwykły tekst – np. pytania do wysłania architektowi.</p>
+    <div class="btns" style="margin-top:8px"><button class="btn" id="copy">Kopiuj tekst</button><button class="btn" id="dl">Pobierz .txt</button></div>
+  </div>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<script src="../../shared/project-store.js"></script>
+<script src="engine.js"></script>
+<script>
+const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const N=HouserNotes,CATS=N.CATS;
+let project=null,F={cat:'',status:'open',q:''},draftCat='idea',edit=null,hl=null;
+try{const s=JSON.parse(localStorage.getItem('houser:notes-filter')||'null');if(s)F={...F,...s,q:''}}catch(_){}
+const saveF=()=>{try{localStorage.setItem('houser:notes-filter',JSON.stringify(F))}catch(_){}};
+function saveNotes(fn){const L=N.all(project);fn(L);project.notes=L;HouserStore.update(p=>{p.notes=L},'notatki');render()}
+const now=()=>new Date().toISOString();
+const catChips=(sel,all)=>(all?'<button class="chip'+(!sel?' on':'')+'" data-c="" style="--c:#475569">wszystkie</button>':'')+Object.entries(CATS).map(([k,C])=>'<button class="chip'+(sel===k?' on':'')+'" data-c="'+k+'" style="--c:'+C.col+'"><i></i>'+esc(C.name)+'</button>').join('');
+function side(){
+  $('nCat').innerHTML=catChips(draftCat,false);$('nCat').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{draftCat=b.dataset.c;side()});
+  $('fCat').innerHTML=catChips(F.cat,true);$('fCat').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{F.cat=b.dataset.c;saveF();render()});
+  $('fSt').value=F.status}
+$('fSt').onchange=()=>{F.status=$('fSt').value;saveF();render()};
+$('fQ').oninput=()=>{F.q=$('fQ').value;render()};
+function addNote(){const t=$('nText').value.trim();if(!t||!project)return;const n=N.make({text:t,cat:draftCat});saveNotes(L=>L.push(n));$('nText').value='';hl=n.id;render()}
+$('nAdd').onclick=addNote;$('nText').onkeydown=e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();addNote()}};
+const visible=()=>N.list(project,F);
+$('copy').onclick=async()=>{const t=N.toText(visible());try{await navigator.clipboard.writeText(t);$('copy').textContent='Skopiowano ✓';setTimeout(()=>$('copy').textContent='Kopiuj tekst',1500)}catch(_){prompt('Skopiuj:',t)}};
+$('dl').onclick=()=>{const t=N.toText(visible()),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain;charset=utf-8'}));a.download='notatki.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+function rel(iso){if(!iso)return '';const d=new Date(iso);if(isNaN(d))return '';return d.toLocaleDateString('pl-PL',{day:'numeric',month:'short',year:d.getFullYear()!==new Date().getFullYear()?'numeric':undefined})}
+function render(){side();const M=$('main');
+  if(!project){M.innerHTML='<div class="empty">Brak projektu. Wczytaj dom na stronie głównej.</div>';return}
+  const S=N.stats(project),L=visible(),allN=N.all(project);
+  let h='<div class="tiles"><div class="tile"><div class="l">Otwarte</div><div class="v">'+S.open+'</div><div class="s">'+S.done+' zamkniętych · razem '+S.total+'</div></div>'+
+    Object.entries(CATS).filter(([k])=>S.byCat[k]).map(([k,C])=>'<div class="tile" style="border-top:3px solid '+C.col+'"><div class="l">'+esc(C.name)+'</div><div class="v" style="color:'+C.col+'">'+S.byCat[k]+'</div><div class="s">otwarte</div></div>').join('')+'</div>';
+  h+='<div class="card"><h2>Notatki'+(L.length!==allN.length?' <span class="hint">('+L.length+' z '+allN.length+')</span>':'')+'</h2>';
+  if(!L.length)h+='<p class="hint">'+(allN.length?'Żadna notatka nie pasuje do filtrów.':'Nie ma jeszcze notatek – dodaj pierwszą po lewej.')+'</p>';
+  h+='<div class="notes">'+L.map(n=>{const C=CATS[n.cat];
+    return '<div class="note'+(n.done?' done':'')+(hl===n.id?' hl':'')+'" data-id="'+esc(n.id)+'" style="--c:'+C.col+'"><input type="checkbox" data-done title="Zamknięte / zrobione"'+(n.done?' checked':'')+'>'+
+      '<div>'+(edit===n.id?'<textarea data-edit>'+esc(n.text)+'</textarea><div class="chips" style="margin:6px 0 0">'+Object.entries(CATS).map(([k,c2])=>'<button class="chip'+(n.cat===k?' on':'')+'" data-ec="'+k+'" style="--c:'+c2.col+'"><i></i>'+esc(c2.name)+'</button>').join('')+'</div><div class="btns" style="margin-top:6px"><button class="btn pri" data-esave>Zapisz</button><button class="btn" data-ecancel>Anuluj</button></div>':'<div class="tx" data-tx title="Kliknij, żeby edytować">'+esc(n.text)+'</div>')+
+      '<div class="meta"><span class="cat">'+esc(C.name)+'</span><span>'+esc(rel(n.upd||n.at))+'</span></div></div>'+
+      '<div class="acts"><button class="ib'+(n.star?' star':'')+'" data-star title="Ważne">'+(n.star?'★':'☆')+'</button><button class="ib" data-del title="Usuń">🗑</button></div></div>'}).join('')+'</div></div>';
+  M.innerHTML=h;bind()}
+function bind(){const M=$('main'),noteOf=el=>el.closest('.note')?.dataset.id,upd=(id,patch)=>saveNotes(L=>{const n=L.find(x=>x.id===id);if(n)Object.assign(n,patch,{upd:now()})});
+  M.querySelectorAll('[data-done]').forEach(c=>c.onchange=()=>upd(noteOf(c),{done:c.checked}));
+  M.querySelectorAll('[data-star]').forEach(b=>b.onclick=()=>{const id=noteOf(b),n=N.all(project).find(x=>x.id===id);upd(id,{star:!n.star})});
+  M.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{const id=noteOf(b),n=N.all(project).find(x=>x.id===id);if(confirm('Usunąć notatkę?\n\n'+(n?.text||'').slice(0,200)))saveNotes(L=>{const i=L.findIndex(x=>x.id===id);if(i>=0)L.splice(i,1)})});
+  M.querySelectorAll('[data-tx]').forEach(t=>t.onclick=()=>{if(getSelection().toString())return;edit=noteOf(t);render();const ta=M.querySelector('[data-edit]');if(ta){ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length)}});
+  const ta=M.querySelector('[data-edit]');if(ta){const id=edit,n=N.all(project).find(x=>x.id===id);let cat=n.cat;
+    M.querySelectorAll('[data-ec]').forEach(b=>b.onclick=()=>{cat=b.dataset.ec;M.querySelectorAll('[data-ec]').forEach(x=>x.classList.toggle('on',x===b))});
+    const done=()=>{const t=ta.value.trim();edit=null;if(t)upd(id,{text:t,cat});else render()};
+    M.querySelector('[data-esave]').onclick=done;M.querySelector('[data-ecancel]').onclick=()=>{edit=null;render()};
+    ta.onkeydown=e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();done()}else if(e.key==='Escape'){edit=null;render()}}}}
+const rec=HouserStore.load();project=rec?rec.project:null;render();
+HouserStore.subscribe(r=>{project=r.project;const a=document.activeElement;if(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT'&&a.type!=='checkbox'||a.tagName==='SELECT'))return;render()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

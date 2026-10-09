@@ -253,6 +253,14 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
   const m=new Map(W.HouserModel.outdoorMap(p.outdoorStructures,g.cellMeters)),re=W.HouserModel.outdoorFromMap(m,g.cellMeters,p.outdoorStructures).find(o=>o.type==='coveredTerrace');ok(re.roof==='mono'&&re.height===2.4&&re.sides,'tarasy: ustawienia zostają po przemalowaniu kratek')}
  else ok(false,'tarasy: brak zadaszonego tarasu w przykładzie');}
 
+// notatki: prosta lista w projekcie
+{const NO=W.HouserNotes,p={notes:[{id:'a',text:'Zapytać o strop',cat:'question',upd:'2026-01-01'},{id:'b',text:'Kominek',cat:'xxx',star:true,upd:'2025-01-01'},{id:'c',text:'Oferta okien',cat:'cost',done:true,upd:'2026-02-01'}]};
+ const L=NO.list(p,{status:'all'});ok(L.map(n=>n.id).join()==='b,a,c'&&NO.all(p)[1].cat==='idea','notatki: kolejność (ważne, nowsze, zamknięte na końcu) i nieznany rodzaj → pomysł');
+ const S=NO.stats(p);ok(S.total===3&&S.open===2&&S.done===1&&S.byCat.question===1&&!S.byCat.cost,'notatki: liczniki');
+ ok(NO.list(p,{status:'open',q:'STROP'}).length===1&&NO.list(p,{cat:'cost',status:'done'}).length===1&&NO.list({},{}).length===0,'notatki: filtry i projekt bez notatek');
+ const n=NO.make({text:'x',cat:'todo'});ok(n.id&&n.at&&n.cat==='todo'&&!n.done,'notatki: nowa notatka');
+ ok(NO.toText(L).includes('PYTANIE\n[ ] Zapytać o strop')&&NO.toText(L).includes('[x] Oferta okien'),'notatki: eksport tekstu');}
+
 // ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować
 console.log('• składnia skryptów');
 {const vm=require('vm'),walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?(['node_modules','.git'].includes(e.name)?[]:walk(path.join(d,e.name))):[path.join(d,e.name)]);
