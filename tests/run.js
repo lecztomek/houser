@@ -234,6 +234,8 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
   p.mvhrDesign={routes:{[R0.lo]:{[P0.rk]:[[src[0],dst[1]]]}}};const R1=DU.evaluate(p),P1=R1.paths[R1.lo].find(x=>x.rk===P0.rk);
   ok(P1&&P1.manual&&P1.pts.length===3&&Math.abs(P1.pts[1][0]-src[0])<1e-9&&fin(R1.flexLen),'kanały: trasa poprowadzona ręcznie przez wskazane załamanie');
   p.mvhrDesign={routes:{[R0.lo]:{[P0.rk]:[[-3,-3]]}}};const R2=DU.evaluate(p);ok(R2.paths[R2.lo].find(x=>x.rk===P0.rk).outside&&R2.issues.some(i=>i.type==='route'),'kanały: trasa wyprowadzona poza dom – uwaga');}
+ {const p=ld('zefir-2.json'),R0=DU.evaluate(p),t=R0.terms[R0.lo][0];p.mvhrDesign={terms:{[t.key]:[]}};const R1=DU.evaluate(p);
+  ok(!R1.terms[R1.lo].some(x=>x.key===t.key)&&R1.rooms.find(r=>r.key===t.key).off&&R1.issues.some(i=>i.type==='off')&&R1.nTerms<R0.nTerms&&R1.cost.total<R0.cost.total,'kanały: kratka usunięta – mniej kanałów i uwaga o pomieszczeniu bez wentylacji');}
  const b=ld('dom-parterowy.json'),RB=DU.evaluate(b);ok(!RB.shaft&&RB.layer[RB.lo]==='attic','kanały: dom parterowy – kanały na strychu, bez szachtu');}
 
 // wyposażenie: rzeczy i ich miejsca

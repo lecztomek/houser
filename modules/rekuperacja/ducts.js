@@ -37,13 +37,15 @@
       const furn=(project.furniture?.[r.f]||[]).filter(it=>/^(k_plyta|l_prysznic|l_walkin|l_wanna|l_wc|t_pralka)/.test(it.item||'')).map(it=>[Math.floor((+it.x+ +it.w/2)/c),Math.floor((+it.y+ +it.h/2)/c)]).filter(([x,y])=>r.cells.some(cc=>cc[0]===x&&cc[1]===y));
       const ok=r.cells.filter(([x,y])=>!(r.f===lo&&layer[lo]!=='floor'&&underHole(x,y)));const cand=ok.length?ok:r.cells;
       const own=set.terms?.[key];let pts;
-      if(Array.isArray(own)&&own.length){const inR=new Set(r.cells.map(([x,y])=>x+','+y));pts=own.map(([x,y])=>nearPt(+x,+y,(i,j)=>inR.has(i+','+j))||[+x,+y])}
+      // pusta lista = kratki usunięte przez użytkownika (pomieszczenie bez wentylacji mechanicznej)
+      if(Array.isArray(own)&&!own.length)pts=[];
+      else if(Array.isArray(own)&&own.length){const inR=new Set(r.cells.map(([x,y])=>x+','+y));pts=own.map(([x,y])=>nearPt(+x,+y,(i,j)=>inR.has(i+','+j))||[+x,+y])}
       else{const dist=([x,y])=>doorCells.length?Math.min(...doorCells.map(([a,b])=>Math.abs(a-x)+Math.abs(b-y))):0,score=p=>r.kind==='ex'&&furn.length?-Math.min(...furn.map(([a,b])=>Math.abs(a-p[0])+Math.abs(b-p[1]))):dist(p);
         const srt=[...cand].sort((a,b)=>score(b)-score(a)),inner=srt.filter(([x,y])=>[[1,0],[-1,0],[0,1],[0,-1]].every(([dx,dy])=>r.cells.some(cc=>cc[0]===x+dx&&cc[1]===y+dy)));
         const base=inner.length?inner:srt;pts=[base[0]];if(nT>1){const far=[...base].sort((a,b)=>(Math.abs(b[0]-pts[0][0])+Math.abs(b[1]-pts[0][1]))-(Math.abs(a[0]-pts[0][0])+Math.abs(a[1]-pts[0][1])))[0];if(far)pts.push(far)}
         pts=pts.map(([x,y])=>[(x+.5)*c,(y+.5)*c])}
       const per=Math.max(1,Math.ceil(n/pts.length));pts.forEach((p,i)=>terms[r.f].push({key,room:r.name,roomKey:r.key,kind:r.kind,x:p[0],y:p[1],flow:Math.round(r.flow/pts.length),ducts:i<pts.length-1?per:Math.max(1,n-per*(pts.length-1))}));
-      rooms.push({key,name:r.name,f:r.f,kind:r.kind,flow:r.flow,ducts:n,terms:pts.length})}
+      rooms.push({key,name:r.name,f:r.f,kind:r.kind,flow:r.flow,ducts:pts.length?n:0,terms:pts.length,off:!pts.length})}
     // centrala
     const cellsOf=key=>H.rooms.find(r=>r.key===key)?.cells||[];
     let unit;const isExt=(f,x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>isVoid(f,idAt(f,x+dx,y+dy)));
@@ -103,6 +105,7 @@
       if(L.screed){const tf=L.screedOn==='up'?up:f,A=q.net?.[tf]||0;screedA[tf]=A;add(.3,'Kanały w wylewce: posadzka '+(tf===lo?'parteru':'piętra')+' wyżej o ok. '+fmt(L.screed*100,0)+' cm na całej powierzchni ('+fmt(A,0)+' m²).','Uwzględnij to w wysokości kondygnacji, drzwiach i schodach (wyższy pierwszy stopień).','screed')}}
     if(shaft)add(.5,'Szacht na kanały: ok. '+fmt(shaft.w*100,0)+' × '+fmt(shaft.d*100,0)+' cm przez '+shaft.floors.map(f=>f===lo?'parter':'piętro').join(' i ')+(shaft.room?' ('+shaft.room+')':'')+' – grubsza ściana w tym miejscu.','Najlepiej w ścianie holu, garderoby albo pomieszczenia technicznego, nie w pokoju.','shaft');
     if(maxRun>15)add(Math.min(1.5,(maxRun-15)*.1),'Najdłuższy kanał Ø75 ma ok. '+fmt(maxRun,0)+' m – zalecane do ok. 15 m (opory, hałas, regulacja).','Centrala bliżej środka domu albo druga skrzynka rozdzielcza.','long');
+    const offR=rooms.filter(r=>r.off);if(offR.length)add(Math.min(2,.6*offR.length),'Bez kratki: '+offR.map(r=>r.name+(r.kind==='ex'?' (wywiew)':' (nawiew)')).join(', ')+' – to pomieszczenie nie jest wentylowane mechanicznie.','Dodaj kratkę w tym pomieszczeniu albo zapewnij inną wentylację (np. przez podcięcie drzwi i kratkę w sąsiednim pokoju).','off');
     const outR=Object.values(terms).flat().filter(t=>t.outside);if(outR.length)add(.8,'Trasa poprowadzona ręcznie wychodzi poza dom albo nad otwór w stropie: '+[...new Set(outR.map(t=>t.room))].join(', ')+'.','Przesuń załamania trasy tak, żeby biegła wewnątrz domu.','route');
     const un=Object.values(terms).flat().filter(t=>t.unreach);if(un.length)add(1.5,'Nie da się doprowadzić kanału do: '+[...new Set(un.map(t=>t.room))].join(', ')+' w wybranej warstwie.','Zmień warstwę (np. w stropie zamiast sufitu) albo przesuń kratkę / centralę.','reach');
     if(!unit.loft&&!isExt(unit.f,Math.floor(unit.x/c),Math.floor(unit.y/c)))add(.5,'Centrala nie stoi przy ścianie zewnętrznej – czerpnia i wyrzutnia wymagają dłuższych izolowanych kanałów Ø160.','Przesuń centralę do ściany zewnętrznej pomieszczenia technicznego.','unit');
