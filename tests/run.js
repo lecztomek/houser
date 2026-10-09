@@ -230,6 +230,10 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
   p.mvhrDesign={terms:{[t.key]:L.map((x,i)=>i?[x.x,x.y]:[x.x+.12,x.y+.08])}};const R3=DU.evaluate(p),t3=R3.terms[R3.lo].find(x=>x.key===t.key),P3=R3.paths[R3.lo].find(x=>x.key===t.key);
   ok(Math.abs(t3.x-(t.x+.12))<1e-6&&Math.abs(t3.y-(t.y+.08))<1e-6&&P3&&P3.pts.at(-1)[0]===t3.x&&P3.pts.at(-1)[1]===t3.y,'kanały: kratka w dowolnym miejscu pokoju, kanał dochodzi do niej');
   p.mvhrDesign={terms:{[t.key]:L.map(x=>[x.x+99,x.y])}};const R4=DU.evaluate(p),hr=R4.H.rooms.find(r=>r.key===R4.terms[R4.lo].find(x=>x.key===t.key).roomKey);ok(R4.terms[R4.lo].filter(x=>x.key===t.key).every(x=>hr.cells.some(([i,j])=>i===Math.floor(x.x/R4.c)&&j===Math.floor(x.y/R4.c))),'kanały: kratka wyciągnięta poza pokój zostaje na jego skraju');}
+ {const p=ld('zefir-2.json'),R0=DU.evaluate(p),P0=R0.paths[R0.lo][0],src=P0.pts[0],dst=P0.pts[P0.pts.length-1];
+  p.mvhrDesign={routes:{[R0.lo]:{[P0.rk]:[[src[0],dst[1]]]}}};const R1=DU.evaluate(p),P1=R1.paths[R1.lo].find(x=>x.rk===P0.rk);
+  ok(P1&&P1.manual&&P1.pts.length===3&&Math.abs(P1.pts[1][0]-src[0])<1e-9&&fin(R1.flexLen),'kanały: trasa poprowadzona ręcznie przez wskazane załamanie');
+  p.mvhrDesign={routes:{[R0.lo]:{[P0.rk]:[[-3,-3]]}}};const R2=DU.evaluate(p);ok(R2.paths[R2.lo].find(x=>x.rk===P0.rk).outside&&R2.issues.some(i=>i.type==='route'),'kanały: trasa wyprowadzona poza dom – uwaga');}
  const b=ld('dom-parterowy.json'),RB=DU.evaluate(b);ok(!RB.shaft&&RB.layer[RB.lo]==='attic','kanały: dom parterowy – kanały na strychu, bez szachtu');}
 
 // wyposażenie: rzeczy i ich miejsca

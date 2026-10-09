@@ -2,7 +2,8 @@
 // warstwa prowadzenia na każdej kondygnacji (sufit podwieszany / w stropie / w posadzce / strych) i jej skutki: obniżenie sufitu,
 // wyższa wylewka, szacht (pogrubienie ściany), długości i koszt.
 // HouserDucts.evaluate(project) -> {floors:{[f]:{layer,terms,paths,bundle}}, unit, riser, shaft, plenums, rooms, totals, issues, good, score, cost}
-// Ustawienia: project.mvhrDesign = {layers:{[f]:'ceiling'|'slab'|'floor'|'attic'|'screed'}, unit:{f,x,y}, riser:{x,y}, terms:{[roomKey]:[[x,y],…]}}
+// Ustawienia: project.mvhrDesign = {layers:{[f]:'ceiling'|'slab'|'floor'|'attic'|'screed'}, unit:{f,x,y}, riser:{x,y}, terms:{[roomKey]:[[x,y],…]},
+//   routes:{[f]:{[roomKey#nr]:[[x,y],…]}} – trasy poprowadzone ręcznie (załamania między źródłem a kratką)}
 // Wymaga shared/quantities.js, shared/hvac.js; opcjonalnie modules/konstrukcja/engine.js (ściany nośne – trudniej przewiercić).
 (function(global){
   const LAYERS={ceiling:{name:'Sufit podwieszany (obniżenie ok. 25 cm)',lvl:'top',drop:.25},slab:{name:'W stropie – w wylewce piętra (+7 cm), kratki w suficie parteru',lvl:'top',screed:.07,screedOn:'up'},
@@ -12,6 +13,8 @@
   const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
   const HALL=/hol|korytarz|komunikac|wiatrołap|wiatrolap|przedpok|garderob|techn|schowek|spiżar|spizar|antresol/i;
   // warstwy dostępne na kondygnacji
+  // załamania trasy (bez punktów pośrednich na prostej) – do edycji ręcznej
+  function corners(pts){const out=[];for(let i=1;i<pts.length-1;i++){const [ax,ay]=pts[i-1],[bx,by]=pts[i],[cx,cy]=pts[i+1];if(Math.abs((bx-ax)*(cy-by)-(by-ay)*(cx-bx))>1e-9)out.push([bx,by])}return out}
   function layersFor(f,q,hasUp){if(f===q.lo)return hasUp?['ceiling','slab','floor']:['attic','floor','ceiling'];return q.attic||q.G.upperType!=='none'?['attic','screed','ceiling']:['attic']}
   function evaluate(project){
     const H=HouserHVAC.evaluate(project,project.hvacSettings),q=H.q,c=q.c,W=q.W,Hh=q.H,lo=q.lo,up=q.up,hasUp=H.hasUp,G=q.G,set=project.mvhrDesign||{};
@@ -81,19 +84,26 @@
         for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const a=x+dx,b=y+dy;if(!ok(a,b))continue;let w=cost(a,b)*c;const va=idAt(f,x,y),vb=idAt(f,a,b);
           if(va!==vb){const key=dx?'v:'+Math.max(x,a)+':'+y:'h:'+x+':'+Math.max(y,b),o=project.openings?.[f]?.[key];w+=o==='door'||o==='opening'?.05:o==='glass'?9:(bearing(f,key)?2:.6)}
           const v=b*W+a;if(d0+w<dist[v]){dist[v]=d0+w;prev[v]=u;Q.push([d0+w,v])}}}
-      for(const t of terms[f]){const tx=Math.floor(t.x/c),ty=Math.floor(t.y/c);let v=ty*W+tx;if(!Number.isFinite(dist[v])){t.unreach=true;continue}
+      const seenK={};
+      for(const t of terms[f]){const rk=t.key+'#'+(seenK[t.key]=(seenK[t.key]??-1)+1),own=set.routes?.[f]?.[rk];
+        // trasa poprowadzona ręcznie: źródło -> załamania -> kratka (odcinki proste, dowolne)
+        if(Array.isArray(own)){const pts=[[src.x,src.y],...own.filter(p=>Array.isArray(p)&&p.length===2).map(([x,y])=>[+x,+y]),[t.x,t.y]];let len=0,out=false;
+          for(let i=1;i<pts.length;i++){const [ax,ay]=pts[i-1],[bx,by]=pts[i],d=Math.hypot(bx-ax,by-ay);len+=d;for(let k=1,n=Math.ceil(d/(c/2));k<n;k++){const x=ax+(bx-ax)*k/n,y=ay+(by-ay)*k/n;if(!inside(f,Math.floor(x/c),Math.floor(y/c)))out=true}}
+          const vert=(remote.includes(f)&&riser?(viaMains?0:(shaft?.h||0)+1):0)+(unit.loft&&f===up?.5:0)+.6;len+=vert;t.len=len;t.outside=out;flexLen+=len*t.ducts;maxRun=Math.max(maxRun,len);paths[f].push({kind:t.kind,ducts:t.ducts,pts,key:t.key,rk,manual:true,outside:out});continue}
+        const tx=Math.floor(t.x/c),ty=Math.floor(t.y/c);let v=ty*W+tx;if(!Number.isFinite(dist[v])){t.unreach=true;continue}
         const pts=[];while(v>=0){pts.push([(v%W+.5)*c,(Math.floor(v/W)+.5)*c]);const pv=prev[v];if(pv>=0){const ax=v%W,ay=Math.floor(v/W),bx=pv%W,by=Math.floor(pv/W),k=ax===bx?'h:'+ax+':'+Math.max(ay,by):'v:'+Math.max(ax,bx)+':'+ay;bundle[f][k]=(bundle[f][k]||0)+t.ducts}v=pv}
         pts.reverse();pts.unshift([src.x,src.y]);pts.push([t.x,t.y]);let len=0;for(let i=1;i<pts.length;i++)len+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);
-        const vert=(remote.includes(f)&&riser?(viaMains?0:(shaft?.h||0)+1):0)+(unit.loft&&f===up?.5:0)+.6;len+=vert;t.len=len;flexLen+=len*t.ducts;maxRun=Math.max(maxRun,len);paths[f].push({kind:t.kind,ducts:t.ducts,pts,key:t.key})}}
+        const vert=(remote.includes(f)&&riser?(viaMains?0:(shaft?.h||0)+1):0)+(unit.loft&&f===up?.5:0)+.6;len+=vert;t.len=len;flexLen+=len*t.ducts;maxRun=Math.max(maxRun,len);paths[f].push({kind:t.kind,ducts:t.ducts,pts,key:t.key,rk,corners:corners(pts)})}}
     const mainLen=(viaMains&&shaft?2*(shaft.h+1):0)+(unit.loft?4:2*Math.max(1,isExt(unit.f,Math.floor(unit.x/c),Math.floor(unit.y/c))?1:4))+2;
     // skutki dla budynku
-    const ceilA={},screedA={};for(const f of floors){const L=LAYERS[layer[f]];if(!paths[f].length)continue;const cells=new Set();for(const p of paths[f])for(const [x,y] of p.pts)cells.add(Math.floor(x/c)+','+Math.floor(y/c));
+    const ceilA={},screedA={};for(const f of floors){const L=LAYERS[layer[f]];if(!paths[f].length)continue;const cells=new Set();for(const p of paths[f])for(let i=0;i<p.pts.length;i++){const [x,y]=p.pts[i];cells.add(Math.floor(x/c)+','+Math.floor(y/c));if(i){const [ax,ay]=p.pts[i-1],n=Math.ceil(Math.hypot(x-ax,y-ay)/(c/2));for(let k=1;k<n;k++)cells.add(Math.floor((ax+(x-ax)*k/n)/c)+','+Math.floor((ay+(y-ay)*k/n)/c))}}
       if(L.drop){ceilA[f]=cells.size*c*c;const low=[];for(const k of cells){const [x,y]=k.split(',').map(Number),nm=defs[f][idAt(f,x,y)]?.name||'';if(!HALL.test(nm)&&!low.includes(nm))low.push(nm)}
         const hh=f===lo?G.groundHeight:(G.upperHeight||2.6);if(hh-L.drop<2.5&&low.length)add(Math.min(2,.4*low.length),'Sufit podwieszany ('+(f===lo?'parter':'piętro')+') obniża pokoje: '+low.join(', ')+' do '+fmt(hh-L.drop,2)+' m.','Poprowadź kanały przez hol (przesuń centralę albo kratki) albo w stropie / posadzce.','ceiling');
         else good.push('Sufit podwieszany tylko tam, gdzie biegną kanały ('+fmt(ceilA[f],0)+' m²) – pokoje zostają wysokie.')}
       if(L.screed){const tf=L.screedOn==='up'?up:f,A=q.net?.[tf]||0;screedA[tf]=A;add(.3,'Kanały w wylewce: posadzka '+(tf===lo?'parteru':'piętra')+' wyżej o ok. '+fmt(L.screed*100,0)+' cm na całej powierzchni ('+fmt(A,0)+' m²).','Uwzględnij to w wysokości kondygnacji, drzwiach i schodach (wyższy pierwszy stopień).','screed')}}
     if(shaft)add(.5,'Szacht na kanały: ok. '+fmt(shaft.w*100,0)+' × '+fmt(shaft.d*100,0)+' cm przez '+shaft.floors.map(f=>f===lo?'parter':'piętro').join(' i ')+(shaft.room?' ('+shaft.room+')':'')+' – grubsza ściana w tym miejscu.','Najlepiej w ścianie holu, garderoby albo pomieszczenia technicznego, nie w pokoju.','shaft');
     if(maxRun>15)add(Math.min(1.5,(maxRun-15)*.1),'Najdłuższy kanał Ø75 ma ok. '+fmt(maxRun,0)+' m – zalecane do ok. 15 m (opory, hałas, regulacja).','Centrala bliżej środka domu albo druga skrzynka rozdzielcza.','long');
+    const outR=Object.values(terms).flat().filter(t=>t.outside);if(outR.length)add(.8,'Trasa poprowadzona ręcznie wychodzi poza dom albo nad otwór w stropie: '+[...new Set(outR.map(t=>t.room))].join(', ')+'.','Przesuń załamania trasy tak, żeby biegła wewnątrz domu.','route');
     const un=Object.values(terms).flat().filter(t=>t.unreach);if(un.length)add(1.5,'Nie da się doprowadzić kanału do: '+[...new Set(un.map(t=>t.room))].join(', ')+' w wybranej warstwie.','Zmień warstwę (np. w stropie zamiast sufitu) albo przesuń kratkę / centralę.','reach');
     if(!unit.loft&&!isExt(unit.f,Math.floor(unit.x/c),Math.floor(unit.y/c)))add(.5,'Centrala nie stoi przy ścianie zewnętrznej – czerpnia i wyrzutnia wymagają dłuższych izolowanych kanałów Ø160.','Przesuń centralę do ściany zewnętrznej pomieszczenia technicznego.','unit');
     const nTerms=Object.values(terms).flat().length,nDucts=Object.values(terms).flat().reduce((a,t)=>a+t.ducts,0);
