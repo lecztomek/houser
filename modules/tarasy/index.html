@@ -41,6 +41,7 @@ html,body{height:100%;margin:0}
 #plan{display:block;touch-action:none;user-select:none}
 .empty{padding:40px 24px;text-align:center;color:var(--hs-muted);max-width:420px}
 @media(max-width:900px){.wrap{grid-template-columns:1fr;height:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}}
+.oset{border:1px solid var(--hs-line);border-radius:8px;padding:8px;margin:-2px 0 8px;font-size:12px;background:#f8fafc}.oset .grid4{display:grid;grid-template-columns:1fr 1fr;gap:6px}.oset label{display:grid;gap:2px;color:#475569}.oset input,.oset select{font:inherit;font-size:12px;padding:3px 5px;border:1px solid var(--hs-line-strong);border-radius:6px;min-width:0}.oset small{color:#64748b}
 </style>
 </head>
 <body>
@@ -113,10 +114,23 @@ function renderSide(){
     row.innerHTML='<span class="sw" style="background:'+t.fill+'"></span><div><input value="'+esc(it.label||'')+'" placeholder="'+t.name+'"><small>'+t.name+' · '+(n*cellM()*cellM()).toFixed(1)+' m² · '+it.w.toFixed(1)+' × '+it.h.toFixed(1)+' m</small></div><button class="btn danger">Usuń</button>';
     row.querySelector('input').addEventListener('change',e=>{it.label=e.target.value.trim();renderPlan();save()});
     row.querySelector('button').onclick=()=>{project.outdoorStructures=list().filter(x=>x!==it);renderAll();save()};
-    L.appendChild(row)}
+    L.appendChild(row);
+    if(it.type!=='terrace')L.appendChild(settingsRow(it))}
 }
 $('clearAll').onclick=()=>{if(!list().length||!confirm('Usunąć wszystkie tarasy i pergole?'))return;project.outdoorStructures=[];renderAll();save()};
 
+// ustawienia zadaszenia / pergoli: wysokość, dach, spadek, niższa strona, ściany z boków
+const SIDE_PL={top:'góra rzutu',right:'prawa',bottom:'dół rzutu',left:'lewa'};
+function settingsRow(it){const g=HouserModel.outdoorGeom(it,cellM(),(x,y)=>{const id=cellAt(groundFloor(),x,y);return !!id&&rooms(groundFloor()).find(q=>q.id===id)?.kind!=='exteriorVoid'}),d=document.createElement('div');d.className='oset';
+  const opt=(o,v)=>Object.entries(o).map(([k,t])=>'<option value="'+k+'"'+(k===v?' selected':'')+'>'+t+'</option>').join('');
+  d.innerHTML='<div class="grid4"><label>Wysokość (m)<input type="number" step="0.1" min="2" max="4.5" data-k="height" value="'+g.height.toFixed(1)+'"></label>'+
+    '<label>Dach<select data-k="roof">'+opt({flat:'płaski',mono:'jednospadowy'},g.roof)+'</select></label>'+
+    (g.roof==='mono'?'<label>Spadek (°)<input type="number" step="1" min="1" max="30" data-k="pitch" value="'+g.pitch+'"></label><label>Niższa strona<select data-k="fall">'+opt({auto:'od domu (auto)',top:'góra rzutu',right:'prawa',bottom:'dół rzutu',left:'lewa'},it.fall||'auto')+'</select></label>':'')+'</div>'+
+    (g.roof==='mono'?'<small>Najwyżej '+g.maxH.toFixed(2).replace('.',',')+' m, najniżej '+g.height.toFixed(2).replace('.',',')+' m.</small>':'')+
+    '<div class="grid4" style="margin-top:6px">'+['top','right','bottom','left'].map(sd=>'<label>Bok: '+SIDE_PL[sd]+(g.adj[sd]&&!g.edges.some(e=>e.side===sd)?'<select disabled><option>ściana domu</option></select>':'<select data-side="'+sd+'">'+opt(HouserModel.SIDE_KINDS,g.sides[sd])+'</select>')+'</label>').join('')+'</div>';
+  d.querySelectorAll('[data-k]').forEach(el=>el.addEventListener('change',()=>{const k=el.dataset.k,v=el.type==='number'?+el.value:el.value;it[k]=k==='fall'&&v==='auto'?null:v;renderAll();save()}));
+  d.querySelectorAll('[data-side]').forEach(el=>el.addEventListener('change',()=>{it.sides={...(it.sides||{}),[el.dataset.side]:el.value};renderAll();save()}));
+  return d}
 // ---------- rzut
 function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
 function renderPlan(){
@@ -132,6 +146,7 @@ function renderPlan(){
   const P=v=>v*PX;
   // tło: trawa + siatka
   el('rect',{x:-MARGIN*PX,y:-MARGIN*PX,width:TW,height:TH,fill:'#eef5e9'},svg);
+  {const df=el('defs',{},svg),mk=el('marker',{id:'arr',viewBox:'0 0 10 10',refX:'8',refY:'5',markerWidth:'5',markerHeight:'5',orient:'auto-start-reverse'},df);el('path',{d:'M0 0L10 5L0 10z',fill:'#1e3a8a'},mk)}
   for(let x=-MARGIN;x<=W+MARGIN;x++)el('line',{x1:P(x),y1:P(-MARGIN),x2:P(x),y2:P(H+MARGIN),stroke:'rgba(15,23,42,.08)','stroke-width':1},svg);
   for(let y=-MARGIN;y<=H+MARGIN;y++)el('line',{x1:P(-MARGIN),y1:P(y),x2:P(W+MARGIN),y2:P(y),stroke:'rgba(15,23,42,.08)','stroke-width':1},svg);
   // dom (parter) – tylko podgląd
@@ -152,6 +167,10 @@ function renderPlan(){
     for(const [cx,cy] of cells){const ln=(x1,y1,x2,y2)=>el('line',{x1:P(x1),y1:P(y1),x2:P(x2),y2:P(y2),stroke:t.stroke,'stroke-width':2.5,'stroke-dasharray':it.type==='pergola'?'7 5':''},svg);
       if(!set.has(cx+','+(cy-1)))ln(cx,cy,cx+1,cy);if(!set.has(cx+','+(cy+1)))ln(cx,cy+1,cx+1,cy+1);if(!set.has((cx-1)+','+cy))ln(cx,cy,cx,cy+1);if(!set.has((cx+1)+','+cy))ln(cx+1,cy,cx+1,cy+1)}
     if(it.type!=='terrace')for(const [vx,vy] of HouserModel.outdoorCorners(cells))el('rect',{x:P(vx)-4,y:P(vy)-4,width:8,height:8,fill:'#374151'},svg);
+    if(it.type!=='terrace'){const g=HouserModel.outdoorGeom(it,cellM(),isHouse),cm=cellM(),SC={glass:['#38bdf8',6,''],wall:['#475569',7,''],slats:['#92400e',6,'3 3'],screen:['#a8a29e',6,'8 3']};
+      for(const e of g.edges)if(SC[e.kind])el('line',{x1:P(e.x1/cm),y1:P(e.y1/cm),x2:P(e.x2/cm),y2:P(e.y2/cm),stroke:SC[e.kind][0],'stroke-width':SC[e.kind][1],'stroke-dasharray':SC[e.kind][2]},svg);
+      if(g.roof==='mono'){const bx=(g.bbox.x0+g.bbox.x1)/2/cm,by=(g.bbox.y0+g.bbox.y1)/2/cm,dv={top:[0,-1],bottom:[0,1],left:[-1,0],right:[1,0]}[g.fall],L=Math.min(g.bbox.x1-g.bbox.x0,g.bbox.y1-g.bbox.y0)/cm*.3;
+        el('line',{x1:P(bx-dv[0]*L),y1:P(by-dv[1]*L+.6),x2:P(bx+dv[0]*L),y2:P(by+dv[1]*L+.6),stroke:'#1e3a8a','stroke-width':3,'marker-end':'url(#arr)'},svg)}}
     const cxm=cells.reduce((a,c)=>a+c[0]+.5,0)/cells.length,cym=cells.reduce((a,c)=>a+c[1]+.5,0)/cells.length;
     el('text',{x:P(cxm),y:P(cym),'text-anchor':'middle','dominant-baseline':'middle','font-size':11*k,'font-weight':700,fill:'#1f2937','pointer-events':'none'},svg,(it.label||t.name)+' · '+(cells.length*cellM()*cellM()).toFixed(1)+' m²')}
 }

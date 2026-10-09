@@ -234,6 +234,16 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  dp.equipment={items:{vacuum:{place:'R:ground|tech'},bikes:{on:false}}};const R1=EQ.evaluate(dp);ok(R1.items.find(i=>i.id==='vacuum').placeName==='Techniczne'&&!R1.items.find(i=>i.id==='bikes').place&&R1.total===R0.total-1,'wyposażenie: miejsce wybrane ręcznie i rzecz wyłączona');
  const zf=EQ.evaluate(ld('zefir-2.json'));ok(zf.items.find(i=>i.id==='fridge').place&&zf.issues.some(i=>i.type==='virtual'),'wyposażenie: kuchnia bez mebli – zakładana zabudowa z uwagą');}
 
+// tarasy: wysokość, dach jednospadowy, ściany z boków
+{const ld=f=>JSON.parse(fs.readFileSync(path.join(ROOT,'examples',f),'utf8')),p=ld('dom-parterowy.json'),g=p.grid||p.definitionSnapshot.grid,ct=(p.outdoorStructures||[]).find(o=>o.type==='coveredTerrace');
+ if(ct){const st=p.state.ground,fl=Array.isArray(st[0])?st.flat():st,isH=(x,y)=>x>=0&&y>=0&&x<g.width&&y<g.height&&!!fl[y*g.width+x];
+  const G0=W.HouserModel.outdoorGeom(ct,g.cellMeters,isH);ok(G0.roof==='flat'&&G0.height===2.5&&G0.edges.length>0&&Object.values(G0.adj).some(v=>v>0),'tarasy: zadaszenie domyślne – płaskie 2,5 m, bok przy domu rozpoznany');
+  Object.assign(ct,{height:2.4,roof:'mono',pitch:10,sides:{[G0.edges[0].side]:'glass'}});const G1=W.HouserModel.outdoorGeom(ct,g.cellMeters,isH),hi=Object.entries(G1.adj).sort((a,b)=>b[1]-a[1])[0][0];
+  ok(G1.maxH>G1.height+.2&&G1.fall==={top:'bottom',bottom:'top',left:'right',right:'left'}[hi],'tarasy: dach jednospadowy – wyżej przy domu, spadek od domu');
+  const C1=W.HouserCost.compute(p).rows.find(r=>r.id==='terraceSides');ok(C1&&C1.qty>1&&C1.value>C1.qty*1000,'tarasy: przeszklenie boku w Wycenie');
+  const m=new Map(W.HouserModel.outdoorMap(p.outdoorStructures,g.cellMeters)),re=W.HouserModel.outdoorFromMap(m,g.cellMeters,p.outdoorStructures).find(o=>o.type==='coveredTerrace');ok(re.roof==='mono'&&re.height===2.4&&re.sides,'tarasy: ustawienia zostają po przemalowaniu kratek')}
+ else ok(false,'tarasy: brak zadaszonego tarasu w przykładzie');}
+
 // ---------- składnia: każdy skrypt strony (pliki .js i <script> w .html) musi się dać sparsować
 console.log('• składnia skryptów');
 {const vm=require('vm'),walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?(['node_modules','.git'].includes(e.name)?[]:walk(path.join(d,e.name))):[path.join(d,e.name)]);

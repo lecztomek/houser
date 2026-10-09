@@ -176,7 +176,7 @@ function buildPV(){ if(!opts.roof||!window.HouserPV||!project.pvSettings?.enable
     for(const p of sl.rects.slice(0,sl.panels)) addQuad(pt(p.x0+.02,p.y0+.02),pt(p.x1-.02,p.y0+.02),pt(p.x1-.02,p.y1-.02),pt(p.x0+.02,p.y1-.02),'#1e3a8a',{stroke:'#cbd5e1',line:.7}); } }
 function buildChimney(){ if(!opts.chimney) return; const c=C(); for(const n of project.structure?.chimney||[]){ const x=n%W(),z=Math.floor(n/W()),cx=(x+.5)*c,cz=(z+.5)*c,Hh=roofY(cx,cz)+.75; addBox(x*c+.08,0,z*c+.08,(x+1)*c-.08,Hh,(z+1)*c-.08,'#565b62',{stroke:'#2f3338'}); } }
 function outdoorRect(it){ if([it?.x,it?.y,it?.w,it?.h].every(v=>Number.isFinite(+v))) return {x:+it.x,z:+it.y,w:Math.max(C(),+it.w),d:Math.max(C(),+it.h)}; const wm=W()*C(),hm=H()*C(),side=screenSideForCardinal(it.side),start=+it.start||0,len=+it.length||C(),dep=+it.depth||C(); if(side==='top') return {x:start,z:-dep,w:len,d:dep}; if(side==='bottom') return {x:wm-start-len,z:hm,w:len,d:dep}; if(side==='right') return {x:wm,z:start,w:dep,d:len}; return {x:-dep,z:hm-start-len,w:dep,d:len}; }
-function outdoorCellsOf(it){ const c=C(); if(Array.isArray(it.cells)&&it.cells.length) return HouserModel.outdoorCells(it,c); return HouserModel.outdoorCells(outdoorRect(it),c); }
+function outdoorCellsOf(it){ const c=C(); if(Array.isArray(it.cells)&&it.cells.length) return HouserModel.outdoorCells(it,c); const r=outdoorRect(it); return HouserModel.outdoorCells({x:r.x,y:r.z,w:r.w,h:r.d},c); } // prostokąt (x, z, w, d) -> kratki
 // balkony z modułu Balkony: płyta (wystające) i balustrada po krawędziach, które nie stykają się ze ścianą piętra
 function buildBalconies(){ const list=project.balconies||[]; if(!list.length) return; const c=C(),gh=elev().groundHeight,h=1.1,set=new Set();for(const b of list)for(const [x,y] of b.cells||[])set.add(x+','+y);
   for(const b of list){ const RC={glass:['#9cc3dd',.35],bars:['#374151',.55],wall:['#ece7df',1]}[b.rail]||['#9cc3dd',.35];
@@ -189,20 +189,26 @@ function buildOutdoor(){ if(!opts.outdoor) return; const c=C(); for(const it of 
   const plate=it.type==='terrace'?'#d1d5db':(it.type==='pergola'?'#fde68a':'#93c5fd');
   for(const [cx,cy] of cells) addBox(cx*c,-.08,cy*c,(cx+1)*c,.04,(cy+1)*c,plate,{stroke:'#8a847b'});
   if(it.type==='terrace') continue;
-  const post=.10,h=2.5,beam=.12;
-  for(const [vx,vy] of HouserModel.outdoorCorners(cells)){ const x=vx*c,z=vy*c; addBox(x-post/2,0,z-post/2,x+post/2,h,z+post/2,'#5f5143',{stroke:'#40372f'}); }
-  // belki obwodowe po krawędziach obszaru
+  // zadaszony taras / pergola: wysokość, dach płaski albo jednospadowy, ściany z boków (wspólny model: HouserModel.outdoorGeom)
+  const G=HouserModel.outdoorGeom(it,c,(x,y)=>floorCellOccupied('ground',x,y)),post=.10,beam=.12,H=(x,z)=>G.roofAt(x,z);
+  for(const [vx,vy] of HouserModel.outdoorCorners(cells)){ const x=vx*c,z=vy*c; addBox(x-post/2,0,z-post/2,x+post/2,H(x,z),z+post/2,'#5f5143',{stroke:'#40372f'}); }
+  // belki obwodowe po krawędziach obszaru (na wysokości dachu w danym miejscu)
   for(const [cx,cy] of cells){ const x0=cx*c,z0=cy*c,x1=x0+c,z1=z0+c,t=.06;
-    if(!has(cx,cy-1)) addBox(x0,h-beam,z0-t,x1,h,z0+t,'#6b5846',{stroke:'#40372f'});
-    if(!has(cx,cy+1)) addBox(x0,h-beam,z1-t,x1,h,z1+t,'#6b5846',{stroke:'#40372f'});
-    if(!has(cx-1,cy)) addBox(x0-t,h-beam,z0,x0+t,h,z1,'#6b5846',{stroke:'#40372f'});
-    if(!has(cx+1,cy)) addBox(x1-t,h-beam,z0,x1+t,h,z1,'#6b5846',{stroke:'#40372f'}); }
+    if(!has(cx,cy-1)){const h=H(x0+c/2,z0);addBox(x0,h-beam,z0-t,x1,h,z0+t,'#6b5846',{stroke:'#40372f'});}
+    if(!has(cx,cy+1)){const h=H(x0+c/2,z1);addBox(x0,h-beam,z1-t,x1,h,z1+t,'#6b5846',{stroke:'#40372f'});}
+    if(!has(cx-1,cy)){const h=H(x0,z0+c/2);addBox(x0-t,h-beam,z0,x0+t,h,z1,'#6b5846',{stroke:'#40372f'});}
+    if(!has(cx+1,cy)){const h=H(x1,z0+c/2);addBox(x1-t,h-beam,z0,x1+t,h,z1,'#6b5846',{stroke:'#40372f'});} }
   const xs=cells.map(q=>q[0]),ys=cells.map(q=>q[1]),alongX=(Math.max(...xs)-Math.min(...xs))>=(Math.max(...ys)-Math.min(...ys));
-  for(const [cx,cy] of cells){ const x0=cx*c,z0=cy*c;
-    if(it.type==='coveredTerrace') addBox(x0,h,z0,x0+c,h+.08,z0+c,'#9aa3aa',{stroke:'#9aa3aa'});
-    else if(alongX) addBox(x0+c/2-.035,h,z0,x0+c/2+.035,h+.07,z0+c,'#8a735d',{stroke:'#5f5143'});
-    else addBox(x0,h,z0+c/2-.035,x0+c,h+.07,z0+c/2+.035,'#8a735d',{stroke:'#5f5143'}); }
- }}
+  for(const [cx,cy] of cells){ const x0=cx*c,z0=cy*c,x1=x0+c,z1=z0+c;
+    if(it.type==='coveredTerrace'){ const d=.08; addQuad([x0,H(x0,z0)+d,z0],[x1,H(x1,z0)+d,z0],[x1,H(x1,z1)+d,z1],[x0,H(x0,z1)+d,z1],'#9aa3aa',{stroke:'#9aa3aa'}); addQuad([x0,H(x0,z0),z0],[x1,H(x1,z0),z0],[x1,H(x1,z1),z1],[x0,H(x0,z1),z1],'#c9ccc9',{stroke:'#c9ccc9'}); }
+    else if(alongX){const h=H(x0+c/2,z0+c/2);addBox(x0+c/2-.035,h,z0,x0+c/2+.035,h+.07,z1,'#8a735d',{stroke:'#5f5143'});}
+    else {const h=H(x0+c/2,z0+c/2);addBox(x0,h,z0+c/2-.035,x1,h+.07,z0+c/2+.035,'#8a735d',{stroke:'#5f5143'});} }
+  // ściany z boków: szkło, pełna ściana, lamele, screen
+  for(const e of G.edges){ if(e.kind==='open') continue; const L=Math.hypot(e.x2-e.x1,e.y2-e.y1),ux=(e.x2-e.x1)/L,uz=(e.y2-e.y1)/L,top=a=>H(e.x1+ux*a,e.y1+uz*a)-beam,P=(a,y)=>[e.x1+ux*a,y,e.y1+uz*a];
+    if(e.kind==='glass'){ addQuad(P(0,.04),P(L,.04),P(L,top(L)),P(0,top(0)),'#bfe3f5',{stroke:'#475569',alpha:.32}); }
+    else if(e.kind==='screen'){ addQuad(P(0,.04),P(L,.04),P(L,top(L)),P(0,top(0)),'#d6d3cc',{stroke:'#a8a29e',alpha:.82}); }
+    else if(e.kind==='wall'){ const t=.06,nx=-uz*t,nz=ux*t; addQuad([e.x1+nx,0,e.y1+nz],[e.x2+nx,0,e.y2+nz],[e.x2+nx,top(L),e.y2+nz],[e.x1+nx,top(0),e.y1+nz],'#e7e2d8',{stroke:'#a8a29e'}); addQuad([e.x1-nx,0,e.y1-nz],[e.x2-nx,0,e.y2-nz],[e.x2-nx,top(L),e.y2-nz],[e.x1-nx,top(0),e.y1-nz],'#e7e2d8',{stroke:'#a8a29e'}); }
+    else if(e.kind==='slats'){ for(let a=.06;a<L;a+=.12){ const p=P(a,0); addBox(p[0]-.025,.04,p[2]-.025,p[0]+.025,top(a),p[2]+.025,'#8a735d',{stroke:'#5f5143'}); } } } }}
 // działka z modułu Działka: trawa, nawierzchnie, ogrodzenie z bramą, ulica, drzewa, garaż wolnostojący / wiata (układ: dom w 0,0; działka od (-hx,-hy))
 function siteModel(){ if(!window.HouserSite||!(project.site||['detached','carport'].includes(project.garage?.type))) return null; try{ return HouserSite.evaluate(project); }catch(e){ console.warn(e); return null; } }
 function siteMap(R){ const s=R.set,h=R.house,Wm=h.W*h.c,Hm=h.H*h.c,r=h.rot||0;

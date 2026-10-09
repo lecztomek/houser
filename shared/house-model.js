@@ -74,7 +74,8 @@
       cells.sort((a,b)=>a[1]-b[1]||a[0]-b[0]);
       const old=cells.map(c=>prevByCell.get(OUTDOOR_KEY(c[0],c[1]))).find(o=>o&&o.type===type);
       const xs=cells.map(c=>c[0]),ys=cells.map(c=>c[1]),x0=Math.min(...xs),y0=Math.min(...ys);
-      out.push({id:old?.id||('o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)),type,label:old?.label||'',cells,
+      const keep=old?Object.fromEntries(Object.entries(old).filter(([k])=>!['id','type','label','cells','x','y','w','h'].includes(k))):{}; // wysokość, dach, ściany
+      out.push({...keep,id:old?.id||('o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)),type,label:old?.label||'',cells,
         x:x0*cellM,y:y0*cellM,w:(Math.max(...xs)-x0+1)*cellM,h:(Math.max(...ys)-y0+1)*cellM});
     }
     return out;
@@ -89,6 +90,23 @@
     return out;
   }
 
+  // zadaszony taras / pergola: wysokość, dach (płaski / jednospadowy – spadek i strona niższa), ściany z każdej strony
+  // it.height – wysokość dolnej krawędzi dachu [m], it.roof 'flat'|'mono', it.pitch [°], it.fall 'auto'|'top'|'right'|'bottom'|'left' (strona niższa na rzucie),
+  // it.sides {top,right,bottom,left: 'open'|'glass'|'wall'|'slats'|'screen'}; isHouse(x,y) – kratka domu (ściana domu zamiast boku)
+  const SIDE_KINDS={open:'otwarta',glass:'szkło (przesuwne)',wall:'pełna ściana',slats:'lamele / żaluzja',screen:'screen (roleta tekstylna)'};
+  function outdoorGeom(it,cellM,isHouse){const cells=outdoorCells(it,cellM);if(!cells.length)return null;const set=new Set(cells.map(c=>OUTDOOR_KEY(c[0],c[1]))),has=(x,y)=>set.has(OUTDOOR_KEY(x,y));
+    const xs=cells.map(c=>c[0]),ys=cells.map(c=>c[1]),x0=Math.min(...xs),x1=Math.max(...xs)+1,y0=Math.min(...ys),y1=Math.max(...ys)+1;
+    const edges=[],adj={top:0,right:0,bottom:0,left:0};
+    for(const [x,y] of cells)for(const [dx,dy,side,ax,ay,bx,by] of [[0,-1,'top',x,y,x+1,y],[1,0,'right',x+1,y,x+1,y+1],[0,1,'bottom',x,y+1,x+1,y+1],[-1,0,'left',x,y,x,y+1]]){
+      if(has(x+dx,y+dy))continue;const house=isHouse?!!isHouse(x+dx,y+dy):false;if(house){adj[side]++;continue}edges.push({side,x1:ax*cellM,y1:ay*cellM,x2:bx*cellM,y2:by*cellM})}
+    const opp={top:'bottom',bottom:'top',left:'right',right:'left'},hi=Object.entries(adj).sort((a,b)=>b[1]-a[1])[0];
+    const roof=it.roof==='mono'?'mono':'flat',pitch=roof==='mono'?Math.max(1,Math.min(30,+it.pitch||8)):0,fall=['top','right','bottom','left'].includes(it.fall)?it.fall:(hi[1]>0?opp[hi[0]]:'bottom');
+    const height=Math.max(2,Math.min(4.5,+it.height||(it.type==='pergola'?2.6:2.5))),tan=Math.tan(pitch*Math.PI/180),X0=x0*cellM,X1=x1*cellM,Y0=y0*cellM,Y1=y1*cellM;
+    // wysokość dachu w punkcie (m od terenu): najniżej przy stronie „fall”
+    const roofAt=(x,y)=>height+tan*(fall==='bottom'?Y1-y:fall==='top'?y-Y0:fall==='right'?X1-x:x-X0);
+    const sides={};for(const sd of ['top','right','bottom','left'])sides[sd]=SIDE_KINDS[it.sides?.[sd]]?it.sides[sd]:'open';
+    for(const e of edges)e.kind=sides[e.side];
+    return {cells,bbox:{x0:X0,x1:X1,y0:Y0,y1:Y1},edges,adj,roof,pitch,fall,height,roofAt,sides,maxH:Math.max(roofAt(X0,Y0),roofAt(X1,Y1),roofAt(X0,Y1),roofAt(X1,Y0))}}
   // zakres dachu wzdłuż kalenicy [m] (l0..l1). Bez balkonów – cała siatka (jak dotąd). Kratki parteru pod balkonem
   // na końcu domu (piętro krótsze) wypadają spod dachu – tam jest stropodach z tarasem / balkonem.
   function roofRange(project){const g=project.grid||project.definitionSnapshot?.grid,c=g.cellMeters,e=project.elevationSettings||{},across=slopesAcrossX(e.ridge==='north-south'?'north-south':'east-west',project.orientation?.top);
@@ -99,5 +117,5 @@
     const B=new Set();for(const b of bal)for(const [x,y] of b.cells||[])B.add(x+','+y);
     let a0=1e9,a1=-1e9;for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){if(occ(up,x,y)||(occ(lo,x,y)&&!B.has(x+','+y))){const a=across?y:x;a0=Math.min(a0,a);a1=Math.max(a1,a)}}
     if(a0>a1)return full;return {l0:a0*c,l1:(a1+1)*c,full:a0===0&&a1===n-1,across}}
-  global.HouserModel={roofRange,DEF,SOFFITS,normalize,geometry,toSaved,slopesAcrossX,outdoorCells,outdoorFromMap,outdoorMap,outdoorCorners};
+  global.HouserModel={roofRange,DEF,SOFFITS,normalize,geometry,toSaved,slopesAcrossX,outdoorCells,outdoorFromMap,outdoorMap,outdoorCorners,outdoorGeom,SIDE_KINDS};
 })(window);

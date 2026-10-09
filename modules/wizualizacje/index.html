@@ -196,8 +196,11 @@ function projectFacts(s){
     if((p.balconies||[]).length){const rails={glass:'glass balustrade',bars:'slim steel bar railing',wall:'solid parapet wall'};const r=[...new Set(p.balconies.map(b=>rails[b.rail]||'glass balustrade'))].join(' or ');out.push('Upper-floor balcony'+(p.balconies.length>1?'s':'')+' with '+r+' – keep '+(p.balconies.length>1?'them':'it')+' as in the render.')}
     try{const rr=HouserModel.roofRange(p);if(rr&&!rr.full)out.push('The pitched roof covers only part of the house; the rest has a flat roof or terrace – keep it so.')}catch(_){}
     const od=p.outdoorStructures||[];const kinds=[...new Set(od.map(o=>o.type))];
-    if(kinds.includes('coveredTerrace'))out.push('Covered terrace with a flat roof on slim posts.');
-    if(kinds.includes('pergola'))out.push('Wooden pergola with slats.');
+    {const g=p.grid||p.definitionSnapshot?.grid,lo=(p.definitionSnapshot?.floorOrder||['ground'])[0],stg=p.state?.[lo]||[],fl=Array.isArray(stg[0])?stg.flat():stg,RK=Object.fromEntries((p.definitionSnapshot?.floors?.[lo]?.rooms||[]).map(r=>[r.id,r.kind])),isH=(x,y)=>x>=0&&y>=0&&x<g.width&&y<g.height&&!!fl[y*g.width+x]&&RK[fl[y*g.width+x]]!=='exteriorVoid';
+      const SEN={glass:'frameless sliding glass walls',wall:'a solid rendered side wall',slats:'vertical wooden slat screens',screen:'fabric screen roller blinds (lowered)'};
+      for(const it of od){if(it.type==='terrace')continue;const G=HouserModel.outdoorGeom(it,g.cellMeters,isH);if(!G)continue;const sides=[...new Set(G.edges.map(e=>e.kind).filter(k=>k!=='open'))];
+        out.push((it.type==='pergola'?'Pergola':'Covered terrace')+' about '+G.height.toFixed(1)+' m high'+(G.roof==='mono'?' with a mono-pitch roof sloping '+G.pitch+' degrees away from the house':' with a flat roof')+' on slim posts'+(sides.length?', enclosed on some sides with '+sides.map(k=>SEN[k]).join(' and '):', open on all sides')+'.')}}
+    if(kinds.includes('pergola'))out.push('The pergola has a roof of wooden slats (open to the sky).');
     if(kinds.includes('terrace'))out.push('Open terrace with stone or wood decking.');
     if((p.structure?.chimney||[]).length)out.push('Brick or plastered chimney above the roof.');
   }else{
