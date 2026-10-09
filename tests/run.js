@@ -261,6 +261,16 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  const n=NO.make({text:'x',cat:'todo'});ok(n.id&&n.at&&n.cat==='todo'&&!n.done,'notatki: nowa notatka');
  ok(NO.toText(L).includes('PYTANIE\n[ ] Zapytać o strop')&&NO.toText(L).includes('[x] Oferta okien'),'notatki: eksport tekstu');}
 
+// dach ze skrzydeł (obrys L): przykłady bez zmian, wycięty narożnik -> dwa skrzydła, mniejszy dach, przełącznik 'rect'
+{const ld=f=>JSON.parse(fs.readFileSync(path.join(ROOT,'examples',f),'utf8'));
+ for(const f of examples){const w=W.HouserModel.roofWings(ld(f));ok(w.length===1&&w[0].legacy,f+': prostokątny obrys – jeden dach jak dotąd')}
+ const p=ld('dom-parterowy.json'),g=p.grid,st=p.state.ground,fl=Array.isArray(st[0])?st.flat():st.slice();p.definitionSnapshot.floors.ground.rooms.push({id:'poza_obrysem',name:'Poza obrysem',color:'#eee',kind:'exteriorVoid'});
+ for(let y=0;y<8;y++)for(let x=g.width-12;x<g.width;x++)fl[y*g.width+x]='poza_obrysem';p.state.ground=fl;
+ const w=W.HouserModel.roofWings(p),q=W.HouserQuantities.compute(p);ok(w.length===2&&!w[0].legacy&&w.every(x=>fin(x.top)&&x.top>x.eave)&&w.some(x=>!x.free0||!x.free1),'dach L: dwa skrzydła ze styku ('+w.map(x=>(x.x1-x.x0)+'×'+(x.z1-x.z0)).join(', ')+')');
+ const p2=JSON.parse(JSON.stringify(p));p2.elevationSettings={...p2.elevationSettings,roofShape:'rect'};const q2=W.HouserQuantities.compute(p2);
+ ok(W.HouserModel.roofWings(p2)[0].legacy&&q.roofA>20&&q.roofA<q2.roofA-5&&fin(q.gutter),'dach L: mniejsza połać niż jeden dach nad prostokątem ('+Math.round(q.roofA)+' < '+Math.round(q2.roofA)+' m²)');
+ ok(W.HouserModel.roofYAt(w,w[0].x0+.1,w[0].z0+.1)!=null&&W.HouserModel.roofYAt(w,(g.width-.5)*g.cellMeters,.25)==null,'dach L: nad wyciętym narożnikiem nie ma dachu');}
+
 // generator układu: ankieta -> warunki z reguł -> algorytm genetyczny -> projekt
 {const GN=W.HouserGen,cases=[{a:{},tag:'poddasze'},{a:{storeys:'1',garage:'1',beds:3},tag:'parterowy z garażem'},{a:{storeys:'full',garden:'W',entrance:'E',kitchen:'closed',extras:['office','mezz']},tag:'piętrowy, ogród od zachodu'}];
  for(const C of cases){const P=GN.program(C.a),tag='generator ('+C.tag+')';

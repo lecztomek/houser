@@ -190,8 +190,10 @@ function roofSpec(){
   return {W,D,upperBase,eaveY,rise,ridge,ridgeY:eaveY+rise};
 }
 function roofEnabled(){return !!settings.showRoof && roofSpec().rise>0}
+function roofWingsMulti(){const w=HouserModel.roofWings?HouserModel.roofWings(project):[];return w.length&&!w[0].legacy?w:null}
 function roofAbsYAt(x,z){
   const r=roofSpec(); if(!roofEnabled())return r.eaveY;
+  const mw=roofWingsMulti();if(mw){const y=HouserModel.roofYAt(mw,x,z);return y==null?r.eaveY:y}
   if(r.ridge==='north-south'){
     const half=Math.max(.001,r.W/2),t=1-Math.min(1,Math.abs(x-r.W/2)/half); return r.eaveY+r.rise*t;
   }
@@ -204,6 +206,8 @@ function upperEdgeHeight(orient,x,y,c){
 }
 function addRoof3D(){
   if(!roofEnabled())return; const r=roofSpec(),col='#ece9e3',stroke='#c8c2b8';
+  const mw=roofWingsMulti();if(mw){for(const w of mw){const S=w.span,h=S/2,A0=w.slopeX?w.x0:w.z0,P=(a,l,y)=>w.slopeX?[A0+a,y,l]:[l,y,A0+a];
+    addQuad(P(0,w.l0,w.eave),P(h,w.l0,w.top),P(h,w.l1,w.top),P(0,w.l1,w.eave),col,{stroke,line:.55});addQuad(P(h,w.l0,w.top),P(S,w.l0,w.eave),P(S,w.l1,w.eave),P(h,w.l1,w.top),col,{stroke,line:.55})}return}
   if(r.ridge==='north-south'){
     addQuad([0,r.eaveY,0],[r.W/2,r.ridgeY,0],[r.W/2,r.ridgeY,r.D],[0,r.eaveY,r.D],col,{stroke,line:.55});
     addQuad([r.W/2,r.ridgeY,0],[r.W,r.eaveY,0],[r.W,r.eaveY,r.D],[r.W/2,r.ridgeY,r.D],col,{stroke,line:.55});

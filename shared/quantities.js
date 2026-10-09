@@ -16,7 +16,9 @@
     const e=project.elevationSettings||{},across=HouserModel.slopesAcrossX(e.ridge==='north-south'?'north-south':'east-west',project.orientation?.top);
     const span=across?W*c:H*c,length=across?H*c:W*c,G=HouserModel.geometry(e,span),tan=Math.tan(G.roofPitch*Math.PI/180),attic=G.upperType==='attic';
     // wysokość w świetle w danej kratce (poddasze: od ścianki kolankowej rośnie ze skosem, ograniczona stropem / jętkami)
-    const clearH=(f,x,y)=>{if(f===lo)return G.groundHeight;if(!attic)return G.upperHeight;const a=across?(x+.5)*c:(y+.5)*c;return Math.min(G.kneeWall+Math.min(a,span-a)*tan,G.upperHeight)};
+    // dach ze skrzydeł (obrys L, T…) – wysokość pod połacią z modelu skrzydeł
+    const wings=HouserModel.roofWings?HouserModel.roofWings(project):[],multi=wings.length>0&&!wings[0].legacy;
+    const clearH=(f,x,y)=>{if(f===lo)return G.groundHeight;if(!attic)return G.upperHeight;if(multi){const ry=HouserModel.roofYAt(wings,(x+.5)*c,(y+.5)*c);return ry==null?G.upperHeight:Math.max(0,Math.min(ry-G.groundHeight,G.upperHeight))}const a=across?(x+.5)*c:(y+.5)*c;return Math.min(G.kneeWall+Math.min(a,span-a)*tan,G.upperHeight)};
     const q={c,W,H,lo,up,span,length,G,attic,across};
 
     // pomieszczenia i powierzchnie
@@ -65,6 +67,10 @@
     const eo=G.eaveOverhang,go=G.gableOverhang,cos=Math.cos(G.roofPitch*Math.PI/180),slope=(span/2+eo)/cos,roofA=2*slope*(roofL+2*go);
     let flatA=0;if(!rr.full)for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(!occ(lo,x,y))continue;const a=(across?y+.5:x+.5)*c;if(a<rr.l0||a>rr.l1)flatA+=c2}
     Object.assign(q,{roofA,roofL,flatA,roofInnerA:2*(span/2)/cos*roofL,soffitA:G.soffit==='none'?0:2*eo*(roofL+2*go)+2*go*2*slope,gutter:2*(roofL+2*go)});
+    // dach ze skrzydeł: suma połaci skrzydeł (bez części schowanej w dachu głównym), stropodach tam, gdzie nie ma żadnego skrzydła
+    if(multi){let rA=0,iA=0,sA=0,gut=0,L=0;for(const w of wings){const own=w.slopeX?w.z1-w.z0:w.x1-w.x0,g2=go*((w.free0?1:0)+(w.free1?1:0)),sl=(w.span/2+eo)/cos,len=own+g2;rA+=2*sl*len;iA+=2*(w.span/2)/cos*own;sA+=2*eo*len+g2*2*sl;gut+=2*len;L+=own}
+      let fA=0;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(occ(lo,x,y)&&HouserModel.roofYAt(wings,(x+.5)*c,(y+.5)*c)==null)fA+=c2;
+      Object.assign(q,{roofA:rA,roofL:L,flatA:fA,roofInnerA:iA,soffitA:G.soffit==='none'?0:sA,gutter:gut,wings})}
     // balkony: powierzchnia, wystające / nad parterem, styk płyty ze ścianą (mostek cieplny)
     const bal={area:0,cantA:0,overA:0,contact:0,psiL:0,rail:0,n:0},bset=new Set();for(const b of project.balconies||[])for(const [x,y] of b.cells||[])bset.add(x+','+y);
     for(const b of project.balconies||[]){bal.n++;for(const [x,y] of b.cells||[]){const over=occ(lo,x,y);bal.area+=c2;if(over)bal.overA+=c2;else bal.cantA+=c2;
