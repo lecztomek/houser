@@ -20,14 +20,21 @@ button,input,select{font:inherit} button{cursor:pointer}
 .section{border:1px solid var(--line);border-radius:var(--hs-radius-lg);padding:11px;margin-bottom:10px;background:var(--hs-panel);box-shadow:var(--hs-shadow)}.section h3{font-size:13px;margin:0 0 9px;color:var(--text)}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}.row.one{grid-template-columns:1fr}.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}.field input,.field select{width:100%;background:#fff;color:var(--text);border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px}.hint{font-size:12px;color:var(--muted);line-height:1.45}.status{font-size:12px;padding:8px;border-radius:var(--hs-radius);background:var(--hs-panel-2);border:1px solid var(--line)}
 #planWrap{height:100%;display:flex;align-items:center;justify-content:center;padding:14px;overflow:auto;background:#e2e8f0}.planCard{background:#fff;padding:12px;border-radius:12px;box-shadow:0 8px 25px #0002}.planTitle{color:#111827;font-weight:700;font-size:14px;margin-bottom:8px}.canvasWrap{position:relative}.planHelp{color:#475569;font-size:12px;margin-top:8px;max-width:760px}
 #planCanvas{display:block;max-width:80vw;max-height:78vh;cursor:crosshair;background:white}
-#view3d{height:100%;width:100%;display:none;position:relative;background:#a8b3c3}#threeHost{position:absolute;top:0;right:0;bottom:0;left:0}#threeHost canvas{display:block;width:100%;height:100%}
+#view3d{height:100%;width:100%;display:none;position:relative;background:#a8b3c3}
+.pad3d{position:absolute;left:14px;bottom:14px;display:grid;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(3,54px);gap:6px;padding:8px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.55) 0,rgba(255,255,255,.25) 70%,rgba(255,255,255,0) 72%);user-select:none;-webkit-user-select:none;touch-action:none;z-index:5}
+.pad3d button,.look3d button{width:54px;height:54px;border-radius:50%;border:1px solid rgba(15,23,42,.25);background:rgba(255,255,255,.88);font-size:22px;line-height:1;color:#0f172a;box-shadow:0 2px 6px rgba(0,0,0,.18);cursor:pointer;touch-action:none;-webkit-tap-highlight-color:transparent}
+.pad3d button.main{background:#1d4ed8;color:#fff;border-color:#1d4ed8}.pad3d button.mid{font-size:14px;color:#64748b}
+.pad3d button.on,.look3d button.on{transform:scale(.92);filter:brightness(.85)}
+.look3d{position:absolute;right:14px;bottom:14px;display:flex;flex-direction:column;gap:8px;z-index:5;touch-action:none}.look3d #padHide{width:36px;height:36px;font-size:14px;align-self:center}
+#view3d.nopad .pad3d,#view3d.nopad .look3d button:not(#padHide){display:none}
+@media(max-width:700px){.pad3d{grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,48px)}.pad3d button,.look3d button{width:48px;height:48px;font-size:20px}}#threeHost{position:absolute;top:0;right:0;bottom:0;left:0}#threeHost canvas{display:block;width:100%;height:100%}
 .overlay3d{position:absolute;left:12px;top:12px;z-index:5;background:rgba(255,255,255,.92);color:var(--hs-text);border:1px solid var(--hs-line-strong);border-radius:10px;padding:9px;font-size:12px;pointer-events:none;max-width:360px}
 .crosshair{position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%);z-index:5;pointer-events:none}.crosshair:before,.crosshair:after{content:"";position:absolute;background:#111827aa}.crosshair:before{left:8px;top:0;width:2px;height:18px}.crosshair:after{left:0;top:8px;width:18px;height:2px}
 #settingsPane{display:none;height:100%;overflow:auto;padding:22px;background:#e2e8f0;color:#111827}.settingsBox{max-width:850px;margin:auto;background:white;border-radius:12px;padding:18px;box-shadow:0 8px 25px #0002}.settingsBox h2{margin-top:0}.settingsGrid{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:12px}.settingsGrid .field input{background:#fff;color:#111827;border-color:#94a3b8}.checkline{display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 0}
 .viewpoint{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}.viewpoint:last-child{border-bottom:0}.viewpoint span{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .legend{display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:11px}.lg{display:flex;align-items:center;gap:6px}.sw{width:12px;height:12px;border-radius:3px;border:1px solid #64748b}
 .hidden{display:none!important}.banner{position:absolute;top:12px;right:12px;bottom:auto;left:12px;background:#7f1d1d;color:#fff;padding:10px;border-radius:9px;z-index:20;display:none}
-@media(max-width:850px){.main{grid-template-columns:1fr}.side{max-height:44vh;border-right:0;border-bottom:1px solid var(--line)}.content{min-height:56vh}.tabs{margin-left:0}.settingsGrid{grid-template-columns:1fr 1fr}}
+@media(max-width:850px){body.v3d .side{display:none}body.v3d .content{min-height:calc(100vh - 150px)}.pad3d{bottom:64px}.look3d{bottom:64px}.overlay3d{max-width:56%;font-size:11px;padding:6px}#codeLegend{max-width:40%!important;font-size:10.5px!important}.main{grid-template-columns:1fr}.side{max-height:44vh;border-right:0;border-bottom:1px solid var(--line)}.content{min-height:56vh}.tabs{margin-left:0}.settingsGrid{grid-template-columns:1fr 1fr}}
 .hsToast{position:fixed;right:16px;bottom:16px;z-index:9999;background:#0f172a;color:#fff;border-radius:10px;padding:10px 14px;font:600 13px system-ui;box-shadow:0 8px 24px rgba(0,0,0,.25);display:flex;gap:10px;align-items:center}.hsToast button{background:#2563eb;color:#fff;border:0;border-radius:6px;padding:5px 9px;font:600 12px system-ui;cursor:pointer}
 </style>
 </head>
@@ -114,8 +121,15 @@ button,input,select{font:inherit} button{cursor:pointer}
       </div>
       <div id="view3d">
         <div id="threeHost"></div>
-        <div class="overlay3d" id="overlay3d">Strzałki / WASD = chodzenie · ←/→ lub Q/E = obrót · mysz = rozglądanie · rolka = FOV · podwójny klik = wyprostuj widok.</div>
+        <div class="overlay3d" id="overlay3d">Strzałki / WASD albo przyciski na dole = chodzenie · ⟲ ⟳ / Q E = obrót · mysz albo przeciąganie palcem = rozglądanie · rolka = FOV · podwójny klik = wyprostuj widok.</div>
         <div class="crosshair"></div>
+        <!-- sterowanie dotykiem: róża kierunków (przytrzymaj = idziesz / obracasz się) -->
+        <div id="pad3d" class="pad3d" aria-label="Sterowanie">
+          <button data-k="KeyQ" title="Obróć w lewo">⟲</button><button data-k="KeyW" class="main" title="Naprzód">▲</button><button data-k="KeyE" title="Obróć w prawo">⟳</button>
+          <button data-k="KeyA" title="Krok w lewo">◀</button><button data-k="center" class="mid" title="Patrz prosto">●</button><button data-k="KeyD" title="Krok w prawo">▶</button>
+          <span></span><button data-k="KeyS" class="main" title="Wstecz">▼</button><span></span>
+        </div>
+        <div id="look3d" class="look3d"><button data-k="LookUp" title="Patrz w górę">⤒</button><button data-k="LookDown" title="Patrz w dół">⤓</button><button id="padHide" title="Ukryj / pokaż przyciski">✕</button></div>
         <div id="codeLegend" hidden style="position:absolute;right:10px;top:10px;background:rgba(255,255,255,.92);border:1px solid #cbd5e1;border-radius:8px;padding:6px 9px;font:12px system-ui;color:#1f2937;max-width:240px;box-shadow:0 2px 8px #0002"></div>
       </div>
       <div id="settingsPane">
@@ -173,6 +187,7 @@ let observer = {floor:'ground', x:4.5, z:8.0, angle:0, eye:1.65, fov:75};
 const planCanvas=document.getElementById('planCanvas'), pctx=planCanvas.getContext('2d');
 const els=id=>document.getElementById(id);
 const ui={floor:els('floorSel'),eye:els('eyeHeight'),angle:els('angle'),fov:els('fov'),status:els('status'),name:els('projectName'),planTitle:els('planTitle'),furnitureInfo:els('furnitureInfo')};
+const TOUCH=!!(window.matchMedia&&matchMedia('(pointer:coarse)').matches);
 let three={ready:false,canvas:null,ctx:null,keys:new Set(),lastT:0,drag:false,lastX:0,lastY:0,pitch:0,scenePolys:[],loopStarted:false};
 const settings={wallT:.12,doorH:2.10,hstH:2.40,sillH:.90,windowH:1.20,railH:1.05,stairRisers:17,showFloor:true,showGlass:true,showRail:true,showStairs:true,showChimney:true,showRoof:true,doorMode:'open'};
 try{const m=localStorage.getItem('houser:door-mode');if(['open','closed','none'].includes(m))settings.doorMode=m}catch(_){}
@@ -828,7 +843,7 @@ function render3D(){
   update3dOverlay();
 }
 function update3dOverlay(){
-  const cell=currentCell(),id=roomAt(observer.floor,cell.x,cell.y),name=roomMap(observer.floor)[id]?.name||id||'poza domem';els('overlay3d').innerHTML=`<b>${escapeHtml(name)}</b> · ${observer.floor==='ground'?'parter':'piętro'} · kierunek ${Math.round(observer.angle)}°<br>Przeciągnij myszą = rozglądanie · WASD = ruch · rolka = FOV`;
+  const cell=currentCell(),id=roomAt(observer.floor,cell.x,cell.y),name=roomMap(observer.floor)[id]?.name||id||'poza domem';els('overlay3d').innerHTML=`<b>${escapeHtml(name)}</b> · ${observer.floor==='ground'?'parter':'piętro'} · kierunek ${Math.round(observer.angle)}°<br>${TOUCH?'Przeciągnij palcem = rozglądanie · przyciski = ruch':'Przeciągnij myszą = rozglądanie · WASD = ruch · rolka = FOV'}`;
 }
 function initThree(){
   const host=els('threeHost');host.innerHTML='';const cv=document.createElement('canvas');cv.id='offline3dCanvas';cv.style.width='100%';cv.style.height='100%';cv.style.display='block';cv.style.cursor='grab';host.appendChild(cv);three.canvas=cv;three.gl=window.HouserGL?HouserGL.create(cv):null;if(three.gl)cv.style.background='linear-gradient(#a9c5dd,#e7edf1)';else three.ctx=cv.getContext('2d');three.ready=true;
@@ -836,6 +851,14 @@ function initThree(){
   window.addEventListener('mouseup',()=>{three.drag=false;if(three.canvas)three.canvas.style.cursor='grab'});
   window.addEventListener('mousemove',e=>{if(!three.drag)return;const dx=e.clientX-three.lastX,dy=e.clientY-three.lastY;three.lastX=e.clientX;three.lastY=e.clientY;observer.angle=normAngle(observer.angle+dx*.28);three.pitch=clamp(three.pitch-dy*.0035,-1.05,1.05);ui.angle.value=Math.round(observer.angle);drawPlan();render3D()});
   cv.addEventListener('dblclick',()=>{three.pitch=0;render3D()});
+  // dotyk: przeciąganie palcem = rozglądanie się (mysz działa jak dotąd)
+  let tp=null;cv.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;tp={id:e.pointerId,x:e.clientX,y:e.clientY};cv.setPointerCapture?.(e.pointerId)});
+  cv.addEventListener('pointermove',e=>{if(!tp||e.pointerId!==tp.id)return;const dx=e.clientX-tp.x,dy=e.clientY-tp.y;tp.x=e.clientX;tp.y=e.clientY;observer.angle=normAngle(observer.angle-dx*.35);three.pitch=clamp(three.pitch+dy*.004,-1.05,1.05);ui.angle.value=Math.round(observer.angle);drawPlan();render3D()});
+  for(const ev of ['pointerup','pointercancel'])cv.addEventListener(ev,()=>{tp=null});cv.style.touchAction='none';
+  // róża kierunków: przytrzymanie przycisku = wciśnięty klawisz
+  const hold=(b,on)=>{const k=b.dataset.k;if(k==='center'){if(on){three.pitch=0;render3D()}return}if(on){three.keys.add(k);b.classList.add('on')}else{three.keys.delete(k);b.classList.remove('on')}};
+  document.querySelectorAll('#pad3d button,#look3d button[data-k]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture?.(e.pointerId);hold(b,true)});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>hold(b,false));b.addEventListener('contextmenu',e=>e.preventDefault())});
+  {const v=els('view3d'),h=els('padHide');try{if(localStorage.getItem('houser:pad3d')==='0')v.classList.add('nopad')}catch(_){}h.onclick=()=>{v.classList.toggle('nopad');try{localStorage.setItem('houser:pad3d',v.classList.contains('nopad')?'0':'1')}catch(_){}}}
   cv.addEventListener('wheel',e=>{e.preventDefault();observer.fov=clamp(observer.fov+Math.sign(e.deltaY)*3,35,110);ui.fov.value=Math.round(observer.fov);render3D()},{passive:false});
   window.addEventListener('keydown',e=>{if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))return;const arrows=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];if(['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE',...arrows].includes(e.code)){three.keys.add(e.code);if(arrows.includes(e.code)&&els('view3d').style.display==='block')e.preventDefault()}});
 window.addEventListener('blur',()=>three.keys.clear());
@@ -872,12 +895,13 @@ function loop3d(t){
   if(!three.ready){requestAnimationFrame(loop3d);return}const dt=Math.min(.05,(t-three.lastT)/1000||0);three.lastT=t;let fw=0,rt=0;if(three.keys.has('KeyW'))fw+=1;if(three.keys.has('KeyS'))fw-=1;if(three.keys.has('KeyD'))rt+=1;if(three.keys.has('KeyA'))rt-=1;
   // strzałki: góra/dół = przód/tył, lewo/prawo = obrót (Q/E też obracają)
   if(three.keys.has('ArrowUp'))fw+=1;if(three.keys.has('ArrowDown'))fw-=1;let turn=0;if(three.keys.has('ArrowLeft')||three.keys.has('KeyQ'))turn-=1;if(three.keys.has('ArrowRight')||three.keys.has('KeyE'))turn+=1;
+  if(three.keys.has('LookUp'))three.pitch=clamp(three.pitch+dt*.9,-1.05,1.05);if(three.keys.has('LookDown'))three.pitch=clamp(three.pitch-dt*.9,-1.05,1.05);
   if(turn){observer.angle=normAngle(observer.angle+turn*90*dt);ui.angle.value=Math.round(observer.angle);if(!fw&&!rt)drawPlan()}
   if(fw||rt){const L=Math.hypot(fw,rt)||1,y=observer.angle*Math.PI/180,s=Math.sin(y),c=Math.cos(y),speed=1.7;const dx=(s*fw+c*rt)/L*speed*dt,dz=(-c*fw+s*rt)/L*speed*dt;const nx=observer.x+dx,nz=observer.z+dz;if(canStepTo(nx,observer.z))observer.x=nx;if(canStepTo(observer.x,nz))observer.z=nz;drawPlan()}
   render3D();requestAnimationFrame(loop3d)
 }
 
-function showTab(tab){for(const b of document.querySelectorAll('.tabbtn'))b.classList.toggle('active',b.dataset.tab===tab);els('planWrap').style.display=tab==='plan'?'flex':'none';els('view3d').style.display=tab==='three'?'block':'none';els('settingsPane').style.display=tab==='settings'?'block':'none';if(tab==='three'){if(!three.ready)initThree();resize3d();syncCameraFromObserver()} }
+function showTab(tab){document.body.classList.toggle('v3d',tab==='three');for(const b of document.querySelectorAll('.tabbtn'))b.classList.toggle('active',b.dataset.tab===tab);els('planWrap').style.display=tab==='plan'?'flex':'none';els('view3d').style.display=tab==='three'?'block':'none';els('settingsPane').style.display=tab==='settings'?'block':'none';if(tab==='three'){if(!three.ready)initThree();resize3d();syncCameraFromObserver()} }
 for(const b of document.querySelectorAll('.tabbtn'))b.addEventListener('click',()=>showTab(b.dataset.tab));
 els('go3d').addEventListener('click',()=>showTab('three'));els('rebuild').addEventListener('click',()=>{if(!three.ready)initThree();build3D();syncCameraFromObserver()});
 ui.floor.addEventListener('change',()=>{readObserverUi();roomLegend();refreshFurnitureInfo()});ui.eye.addEventListener('change',readObserverUi);ui.angle.addEventListener('change',readObserverUi);ui.fov.addEventListener('change',readObserverUi);

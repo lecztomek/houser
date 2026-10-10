@@ -20,6 +20,9 @@ canvas#cv{width:100%;height:100%;display:block;cursor:grab} .overlay{position:ab
 .planWrap{border:1px solid var(--line);border-radius:10px;background:#fff;padding:8px} .planCanvas{width:100%;aspect-ratio:1/1;display:block;border-radius:8px;background:#f8fafc;border:1px solid #d7dde5;cursor:crosshair} .legend{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px} .legend span{font-size:11px;padding:3px 6px;border:1px solid var(--line);border-radius:999px;background:#fff}
 @media(max-width:900px){.wrap{grid-template-columns:1fr;grid-template-rows:auto 68vh} .side{border-right:0;border-bottom:1px solid var(--line);max-height:45vh}}
 .hsToast{position:fixed;right:16px;bottom:16px;z-index:9999;background:#0f172a;color:#fff;border-radius:10px;padding:10px 14px;font:600 13px system-ui;box-shadow:0 8px 24px rgba(0,0,0,.25);display:flex;gap:10px;align-items:center}.hsToast button{background:#2563eb;color:#fff;border:0;border-radius:6px;padding:5px 9px;font:600 12px system-ui;cursor:pointer}
+#host{position:relative}.pad3x{position:absolute;right:14px;bottom:14px;display:grid;grid-template-columns:repeat(3,48px);gap:6px;z-index:5;touch-action:none;user-select:none;-webkit-user-select:none}
+.pad3x button{width:48px;height:48px;border-radius:50%;border:1px solid rgba(15,23,42,.25);background:rgba(255,255,255,.88);font-size:20px;color:#0f172a;box-shadow:0 2px 6px rgba(0,0,0,.18);touch-action:none;-webkit-tap-highlight-color:transparent;cursor:pointer}.pad3x button.on{transform:scale(.92);filter:brightness(.85)}
+@media(max-width:850px){.pad3x{bottom:64px}}
 </style>
 </head><body>
 <div class="wrap">
@@ -33,7 +36,8 @@ canvas#cv{width:100%;height:100%;display:block;cursor:grab} .overlay{position:ab
 <div class="section"><h3>Warstwy</h3><label class="check"><input id="showRoof" type="checkbox" checked> Dach i okna dachowe</label><label class="check"><input id="showOpenings" type="checkbox" checked> Okna / drzwi / HST</label><label class="check"><input id="showOutdoor" type="checkbox" checked> Taras / pergola</label><label class="check"><input id="showLandscape" type="checkbox" checked> Krajobraz (ogród, drzewa)</label><label class="check"><input id="showChimney" type="checkbox" checked> Komin</label></div>
 <div class="section"><h3>Sterowanie</h3><div class="hint">Przeciągnij myszą, aby obracać dom. Rolka zmienia odległość. Dwuklik przywraca widok 3/4. Klik w mini-planie ustawia ludzika i punkt widzenia z zewnątrz.</div></div>
 </aside>
-<main class="main" id="host"><canvas id="cv"></canvas><div class="overlay" id="overlay"></div></main>
+<main class="main" id="host"><canvas id="cv"></canvas><div class="overlay" id="overlay"></div>
+<div class="pad3x" id="pad3x"><button data-a="L" title="Obróć w lewo">⟲</button><button data-a="U" title="Wyżej">▲</button><button data-a="R" title="Obróć w prawo">⟳</button><button data-a="in" title="Bliżej">＋</button><button data-a="D" title="Niżej">▼</button><button data-a="out" title="Dalej">－</button></div></main>
 </div>
 <script src="../../shared/gl-renderer.js"></script>
 <script src="../../shared/landscape.js"></script>
@@ -290,6 +294,18 @@ planCv.addEventListener('click',e=>{ const m=planCv._meta; if(!m) return; const 
 cv.addEventListener('mousedown',e=>{drag=true;lastX=e.clientX;lastY=e.clientY;cv.style.cursor='grabbing'});
 window.addEventListener('mouseup',()=>{drag=false;cv.style.cursor='grab'});
 window.addEventListener('mousemove',e=>{ if(!drag) return; cam.az+=(e.clientX-lastX)*.008; cam.elev=clamp(cam.elev+(e.clientY-lastY)*.004,-10*Math.PI/180,1.25); lastX=e.clientX; lastY=e.clientY; document.getElementById('elev').value=Math.round(cam.elev*180/Math.PI); document.getElementById('elevVal').textContent=Math.round(cam.elev*180/Math.PI)+'°'; render(); });
+// dotyk: jeden palec – obrót kamery, dwa palce – przybliżenie
+{const P=new Map();let pinch=null;const syncUi=()=>{document.getElementById('elev').value=Math.round(cam.elev*180/Math.PI);document.getElementById('elevVal').textContent=Math.round(cam.elev*180/Math.PI)+'°';document.getElementById('dist').value=cam.dist;document.getElementById('distVal').textContent=cam.dist.toFixed(1)+' m'};
+  cv.style.touchAction='none';
+  cv.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;cv.setPointerCapture?.(e.pointerId);P.set(e.pointerId,{x:e.clientX,y:e.clientY});if(P.size===2){const [a,b]=[...P.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),dist:cam.dist}}});
+  cv.addEventListener('pointermove',e=>{const q=P.get(e.pointerId);if(!q)return;const dx=e.clientX-q.x,dy=e.clientY-q.y;q.x=e.clientX;q.y=e.clientY;
+    if(P.size>=2&&pinch){const [a,b]=[...P.values()],d=Math.hypot(a.x-b.x,a.y-b.y);cam.dist=clamp(pinch.dist*pinch.d/Math.max(20,d),6,40)}else{cam.az+=dx*.008;cam.elev=clamp(cam.elev+dy*.004,-10*Math.PI/180,1.25)}syncUi();render()});
+  for(const ev of ['pointerup','pointercancel'])cv.addEventListener(ev,e=>{P.delete(e.pointerId);if(P.size<2)pinch=null});
+  // przyciski: przytrzymanie = ciągły obrót / zmiana wysokości / przybliżenie
+  const act={L:dt=>cam.az-=1.2*dt,R:dt=>cam.az+=1.2*dt,U:dt=>cam.elev=clamp(cam.elev+.7*dt,-10*Math.PI/180,1.25),D:dt=>cam.elev=clamp(cam.elev-.7*dt,-10*Math.PI/180,1.25),in:dt=>cam.dist=clamp(cam.dist-8*dt,6,40),out:dt=>cam.dist=clamp(cam.dist+8*dt,6,40)};
+  let held=null,lt=0;const tick=t=>{if(!held)return;const dt=Math.min(.05,(t-lt)/1000||0);lt=t;act[held.dataset.a](dt);syncUi();render();requestAnimationFrame(tick)};
+  document.querySelectorAll('#pad3x button').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture?.(e.pointerId);held=b;b.classList.add('on');lt=performance.now();requestAnimationFrame(tick)});
+    for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>{if(held===b)held=null;b.classList.remove('on')});b.addEventListener('contextmenu',e=>e.preventDefault())})}
 cv.addEventListener('wheel',e=>{ e.preventDefault(); cam.dist=clamp(cam.dist+Math.sign(e.deltaY)*.8,6,40); document.getElementById('dist').value=cam.dist; document.getElementById('distVal').textContent=cam.dist.toFixed(1)+' m'; render(); },{passive:false});
 cv.addEventListener('dblclick',()=>{ cam.az=225*Math.PI/180; cam.elev=24*Math.PI/180; fit(); });
 document.querySelectorAll('.dir').forEach(b=>b.onclick=()=>setDir(b.dataset.dir));
