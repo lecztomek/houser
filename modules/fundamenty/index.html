@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<script src="../../shared/i18n-en.js"></script>
+<script src="../../shared/i18n.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fundamenty</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden}
+.wrap{height:100vh;display:grid;grid-template-columns:330px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.side{min-height:0;padding:14px;background:var(--hs-panel-2);border-right:1px solid var(--hs-line);overflow:auto}
+.main{min-height:0;padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.main>*{flex-shrink:0}
+h1{font-size:19px;margin:0 0 4px}
+.lead,.hint{font-size:12.5px;color:var(--hs-muted);line-height:1.5;margin:0}
+.section{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:12px;margin-top:10px;box-shadow:var(--hs-shadow)}
+.section h3{font-size:13px;margin:0 0 10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field{display:grid;gap:4px;margin-bottom:9px}.field label{font-size:12px;color:var(--hs-muted)}
+.field select,.field input{width:100%;border:1px solid var(--hs-line-strong);border-radius:var(--hs-radius);padding:6px 8px;min-height:32px;font:inherit;background:#fff;color:var(--hs-text)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:9px}.seg button{font:inherit;font-size:12.5px;font-weight:700;border:1px solid var(--hs-line-strong);background:#fff;border-radius:8px;padding:7px 4px;cursor:pointer}.seg button.on{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.tile{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.tile .l{font-size:12px;color:var(--hs-muted);font-weight:600}
+.tile .v{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-top:4px}
+.tile .v small{font-size:14px;color:var(--hs-muted);font-weight:600}
+.tile .s{font-size:12.5px;color:var(--hs-muted);margin-top:4px;line-height:1.4}
+.card{background:var(--hs-panel);border:1px solid var(--hs-line);border-radius:var(--hs-radius-lg);padding:14px 16px;box-shadow:var(--hs-shadow)}
+.card h2{font-size:15px;margin:0 0 3px}
+#plan,#sec{width:100%;height:auto;display:block;touch-action:none;user-select:none;max-height:70vh}
+#plan.paint{cursor:crosshair}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:#475569;margin-top:8px;align-items:center}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:5px}
+.iss{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:7px}
+.iss li{font-size:12.5px;line-height:1.45;border-top:1px solid #eef2f6;padding-top:7px}
+.iss .pen{float:right;font-weight:700;color:#b91c1c;font-size:12px;margin-left:8px}
+.iss .tip{display:block;color:#475569;margin-top:2px}.iss .tip:before{content:'→ ';color:#2563eb;font-weight:700}
+.good{font-size:12.5px;color:#15803d;margin-top:6px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #eef2f6;vertical-align:top}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
+.c-ok{color:#15803d}.c-mid{color:#b45309}.c-bad{color:#b91c1c}
+.empty{padding:40px;text-align:center;color:var(--hs-muted)}
+@media(max-width:900px){html,body{overflow:auto;height:auto}.wrap{height:auto;grid-template-columns:1fr;grid-template-rows:auto}.side{border-right:0;border-bottom:1px solid var(--hs-line)}.main{overflow:visible}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="side">
+  <h1>Fundamenty</h1>
+  <p class="lead">Na czym stoi dom: ławy i ściany fundamentowe albo płyta, głębokość przemarzania, grunt i woda gruntowa. Teren ze spadkiem (moduł Działka) zmienia wysokość ścian fundamentowych. Piwnica – pod całym domem albo pod wybranym fragmentem (malujesz na rzucie).</p>
+  <div class="section">
+    <h3>Posadowienie</h3>
+    <div class="field"><label>Rodzaj</label><select id="type"><option value="strip">ławy i ściany fundamentowe</option><option value="slab">płyta fundamentowa</option></select></div>
+    <div class="field"><label>Strefa przemarzania</label><select id="zone"></select></div>
+    <div class="field"><label>Grunt (wspólny z Konstrukcją)</label><select id="soil"></select></div>
+    <div class="row2">
+      <div class="field"><label>Woda gruntowa</label><select id="water"><option value="low">nisko (poniżej 3 m)</option><option value="high">wysoko</option></select></div>
+      <div class="field"><label>Posadzka nad terenem (m)</label><input id="plinth" type="number" min="0.15" max="1.2" step="0.05"></div>
+    </div>
+    <p class="hint">Posadzka parteru (±0) – tyle nad najwyższym punktem terenu pod domem.</p>
+  </div>
+  <div class="section">
+    <h3>Piwnica</h3>
+    <div class="seg" id="bmode"><button data-m="none">brak</button><button data-m="full">pod całym domem</button><button data-m="part">pod częścią</button></div>
+    <div class="field"><label>Wysokość piwnicy (m)</label><input id="bh" type="number" min="2.2" max="3.2" step="0.05"></div>
+    <p class="hint" id="bhint"></p>
+    <div class="btns" id="partBtns" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button class="hs-btn" id="bclear">Wyczyść</button><button class="hs-btn" id="bslope" title="Pas domu od strony spadku terenu">Od strony spadku</button></div>
+  </div>
+  <div class="section">
+    <h3>Jak liczymy</h3>
+    <p class="hint">Spód ławy co najmniej na głębokości przemarzania pod terenem (I 0,8 m … IV 1,4 m), a pod piwnicą – pod jej posadzką. Wysokość ściany fundamentowej = od ławy do posadzki parteru, więc na stoku rośnie od strony spadku. Szerokość ław z obciążeń (moduł Konstrukcja). Piwnica: wykop, ściany betonowe, posadzka, izolacja (przy wysokiej wodzie – biała wanna), drenaż, schody; od strony spadku ściana nad terenem – okna albo wyjście do ogrodu. Ceny orientacyjne z robocizną.</p>
+  </div>
+</aside>
+<main class="main" id="main"></main>
+</div>
+<script src="../../shared/house-model.js"></script>
+<script src="../../shared/openings.js"></script>
+<script src="../../shared/project-store.js"></script>
+<script src="../../shared/balconies.js"></script>
+<script src="../../shared/quantities.js"></script>
+<script src="../ocieplenie/engine.js"></script>
+<script src="../konstrukcja/engine.js"></script>
+<script src="../garaz/engine.js"></script>
+<script src="../dzialka/engine.js"></script>
+<script src="engine.js"></script>
+<script>
+const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d}),zl=v=>(Math.round(v/100)*100).toLocaleString('pl-PL')+' zł';
+const NS='http://www.w3.org/2000/svg',el=(t,a,p,txt)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e};
+const F=HouserFoundation;let project=null,R=null,paint=null;
+$('zone').innerHTML=Object.entries(F.ZONES).map(([k,z])=>'<option value="'+k+'">'+esc(z.name)+'</option>').join('');
+$('soil').innerHTML=Object.entries(F.SOIL).map(([k,z])=>'<option value="'+k+'">'+esc(z.name)+'</option>').join('');
+function save(patch,bpatch){const f={...(project.foundation||{}),...patch};if(bpatch)f.basement={...(f.basement||{}),...bpatch};project.foundation=f;HouserStore.update(p=>{p.foundation=f},'fundamenty');render()}
+$('type').onchange=()=>save({type:$('type').value});$('zone').onchange=()=>save({zone:+$('zone').value});$('water').onchange=()=>save({water:$('water').value});
+$('plinth').onchange=()=>save({plinth:Math.max(.15,Math.min(1.2,+$('plinth').value||.3))});$('bh').onchange=()=>save({},{h:Math.max(2.2,Math.min(3.2,+$('bh').value||2.5))});
+$('soil').onchange=()=>{const s={...(project.structure||{}),soil:$('soil').value};project.structure=s;HouserStore.update(p=>{p.structure={...(p.structure||{}),soil:s.soil}},'fundamenty');save({})};
+$('bmode').querySelectorAll('button').forEach(b=>b.onclick=()=>save({},{mode:b.dataset.m}));
+$('bclear').onclick=()=>save({},{cells:[]});
+// pas od strony spadku: kratki, gdzie teren jest najniżej (ok. 40% obrysu)
+$('bslope').onclick=()=>{if(!R)return;const z=([x,y])=>R.T.z((x+.5)*R.c,(y+.5)*R.c),srt=[...R.cells].sort((a,b)=>z(a)-z(b)),n=Math.round(srt.length*.4);save({},{mode:'part',cells:srt.slice(0,n).map(p=>p.join(','))})};
+// ---------- rzut: piwnica, ściany fundamentowe (kolor = wysokość), warstwice terenu
+const wallCol=h=>h<1.1?'#16a34a':h<1.6?'#84cc16':h<2.1?'#f59e0b':h<2.6?'#ea580c':'#dc2626';
+function plan(){const {W,H,c}=R,S=26,X=m=>m/c*S,st=project.state?.[R.lo]||[],fl=Array.isArray(st[0])?st.flat():st,defs=Object.fromEntries((project.definitionSnapshot?.floors?.[R.lo]?.rooms||[]).map(r=>[r.id,r]));
+  const svg=el('svg',{id:'plan',viewBox:[-20,-20,W*S+40,H*S+40].join(' ')});if(R.set.basement.mode==='part')svg.classList.add('paint');
+  for(const [x,y] of R.cells){const v=fl[y*W+x],b=R.bset.has(x+','+y);el('rect',{x:x*S,y:y*S,width:S+.5,height:S+.5,fill:b?'#93c5fd':(defs[v]?.color||'#e2e8f0'),'fill-opacity':b?.85:.25,'data-c':x+','+y},svg)}
+  // warstwice co 0,25 m przez obrys
+  if(!R.T.flat){const {a,b}=R.T,g=Math.hypot(a,b),zs=[[0,0],[W*c,0],[0,H*c],[W*c,H*c]].map(([x,y])=>R.T.z(x,y)),lo=Math.ceil(Math.min(...zs)/.25)*.25,hi=Math.floor(Math.max(...zs)/.25)*.25,ux=-b/g,uy=a/g,cx=W*c/2,cy=H*c/2,z0=R.T.z(cx,cy);
+    for(let L=lo;L<=hi+1e-9;L+=.25){const t=(L-z0)/g,px=cx+a/g*t,py=cy+b/g*t;let t0=-1e9,t1=1e9;for(const [p0,u,mx] of [[px,ux,W*c],[py,uy,H*c]]){if(Math.abs(u)<1e-9){if(p0<0||p0>mx){t0=1;t1=0}continue}const A=(0-p0)/u,B=(mx-p0)/u;t0=Math.max(t0,Math.min(A,B));t1=Math.min(t1,Math.max(A,B))}
+      if(t1>t0)el('line',{x1:X(px+ux*t0),y1:X(py+uy*t0),x2:X(px+ux*t1),y2:X(py+uy*t1),stroke:'#92400e','stroke-opacity':.45,'stroke-width':1,'stroke-dasharray':'5 4','pointer-events':'none'},svg)}}
+  for(const e of R.edges){const [x1,y1,x2,y2]=e.o==='v'?[e.x,e.y,e.x,e.y+1]:[e.x,e.y,e.x+1,e.y];el('line',{x1:x1*S,y1:y1*S,x2:x2*S,y2:y2*S,stroke:e.inner?'#1d4ed8':wallCol(e.wallH),'stroke-width':e.inner?3:6,'stroke-linecap':'square','pointer-events':'none'},svg)}
+  // wysokość ściany fundamentowej w narożnikach obrysu
+  const corners=new Map();for(const e of R.edges.filter(e=>e.ext)){const pts=e.o==='v'?[[e.x,e.y],[e.x,e.y+1]]:[[e.x,e.y],[e.x+1,e.y]];for(const p of pts){const k=p.join(',');(corners.get(k)||corners.set(k,[]).get(k)).push(e)}}
+  for(const [k,L] of corners){const [x,y]=k.split(',').map(Number),hs=L.map(e=>e.o);if(!(hs.includes('v')&&hs.includes('h')))continue;const h=Math.max(...L.map(e=>e.wallH));
+    el('rect',{x:x*S-22,y:y*S-9,width:44,height:18,rx:5,fill:'#fff','fill-opacity':.92,stroke:wallCol(h),'pointer-events':'none'},svg);el('text',{x:x*S,y:y*S+4,'text-anchor':'middle','font-size':11,'font-weight':700,fill:'#0f172a','pointer-events':'none'},svg,fmt(h,2)+' m')}
+  return svg}
+// ---------- przekrój wzdłuż spadku przez środek domu
+function section(){const {W,H,c,T}=R,occ=new Set(R.cells.map(p=>p.join(','))),g=Math.hypot(T.a||0,T.b||0),d=g>1e-9?[-T.a/g,-T.b/g]:[1,0],cx=R.cells.reduce((a,p)=>a+p[0]+.5,0)/R.cells.length*c,cy=R.cells.reduce((a,p)=>a+p[1]+.5,0)/R.cells.length*c;
+  const L=Math.hypot(W,H)*c/2+3,step=.05,pts=[];for(let s=-L;s<=L+1e-9;s+=step){const x=cx+d[0]*s,y=cy+d[1]*s,cxI=Math.floor(x/c),cyI=Math.floor(y/c),k=cxI+','+cyI;pts.push({s,z:T.z(x,y),in:occ.has(k),b:R.bset.has(k)})}
+  const ins=pts.filter(p=>p.in);if(!ins.length)return null;const s0=ins[0].s-3,s1=ins[ins.length-1].s+3,P=pts.filter(p=>p.s>=s0&&p.s<=s1);
+  const zMin=Math.min(...P.map(p=>p.z),R.baseFloor-.6,...R.edges.map(e=>e.bottom))-.3,zMax=R.zero+3.2,K=46,Wp=(s1-s0)*K,Hp=(zMax-zMin)*K,X=s=>(s-s0)*K,Y=z=>(zMax-z)*K;
+  const svg=el('svg',{id:'sec',viewBox:[-50,-10,Wp+70,Hp+30].join(' ')});
+  // grunt
+  el('path',{d:'M'+X(s0)+' '+Y(zMin)+' '+P.map(p=>'L'+X(p.s)+' '+Y(p.z)).join(' ')+' L'+X(s1)+' '+Y(zMin)+'Z',fill:'#e7dcc5'},svg);
+  // odcinki domu i piwnicy
+  const runs=(f)=>{const out=[];let cur=null;for(const p of P){if(f(p)){if(!cur)cur={a:p.s,b:p.s};cur.b=p.s}else if(cur){out.push(cur);cur=null}}if(cur)out.push(cur);return out};
+  for(const r of runs(p=>p.b))el('rect',{x:X(r.a),y:Y(R.zero-.25),width:X(r.b+step)-X(r.a),height:Y(R.baseFloor)-Y(R.zero-.25),fill:'#bfdbfe',stroke:'#1d4ed8','stroke-width':2},svg);
+  for(const r of runs(p=>p.in)){el('rect',{x:X(r.a),y:Y(R.zero+2.8),width:X(r.b+step)-X(r.a),height:Y(R.zero)-Y(R.zero+2.8),fill:'#f8fafc',stroke:'#94a3b8'},svg);el('line',{x1:X(r.a),y1:Y(R.zero),x2:X(r.b+step),y2:Y(R.zero),stroke:'#0f172a','stroke-width':4},svg);
+    for(const s of [r.a,r.b+step]){const p=P.reduce((a,q)=>Math.abs(q.s-s)<Math.abs(a.s-s)?q:a,P[0]),base=P.some(q=>q.b&&Math.abs(q.s-s)<step*1.5),bot=Math.min(p.z-R.frost,base?R.baseFloor-.35:Infinity);
+      el('rect',{x:X(s)-.15*K,y:Y(R.zero),width:.3*K,height:Y(bot+.35)-Y(R.zero),fill:wallCol(R.zero-bot-.35),stroke:'#334155'},svg);el('rect',{x:X(s)-.3*K,y:Y(bot+.35),width:.6*K,height:.35*K,fill:'#94a3b8',stroke:'#334155'},svg);
+      el('text',{x:X(s),y:Y(bot)+14,'text-anchor':'middle','font-size':11,fill:'#334155'},svg,fmt(R.zero-bot-.35,2)+' m')}}
+  el('polyline',{points:P.map(p=>X(p.s)+','+Y(p.z)).join(' '),fill:'none',stroke:'#92400e','stroke-width':2.5},svg);
+  el('text',{x:X(s1)-4,y:Y(R.zero)-6,'text-anchor':'end','font-size':12,'font-weight':700,fill:'#0f172a'},svg,'±0 posadzka parteru');
+  if(R.bset.size)el('text',{x:X((runs(p=>p.b)[0]||{a:0}).a)+6,y:Y(R.baseFloor)-8,'font-size':12,'font-weight':700,fill:'#1d4ed8'},svg,'piwnica');
+  el('text',{x:X(s0)+4,y:Y(zMin)-6,'font-size':11,fill:'#92400e'},svg,T.flat?'teren płaski':'teren – spadek '+fmt(T.pct,1)+'% →');
+  return svg}
+function render(){const M=$('main');
+  if(!project||!(project.grid||project.definitionSnapshot?.grid)){M.innerHTML='<div class="empty">Brak projektu. Najpierw narysuj dom w module <b>Układ pomieszczeń</b>.</div>';return}
+  try{R=F.evaluate(project)}catch(e){console.error(e);M.innerHTML='<div class="empty">Nie udało się policzyć fundamentów.</div>';return}
+  const s=R.set;$('type').value=s.type;$('zone').value=s.zone;$('soil').value=s.soil;$('water').value=s.water;$('plinth').value=s.plinth;$('bh').value=s.basement.h;
+  $('bmode').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.m===s.basement.mode));$('partBtns').style.display=s.basement.mode==='part'?'flex':'none';
+  $('bhint').textContent=s.basement.mode==='part'?'Maluj piwnicę na rzucie (kliknij i przeciągnij) – drugi raz po tej samej kratce wymazuje.':s.basement.mode==='full'?'Piwnica pod całym parterem.':'Bez piwnicy.';
+  const pc=v=>v>=8?'c-ok':v>=6?'c-mid':'c-bad',Q=R.Q,T=R.T;
+  let h='<div class="tiles"><div class="tile"><div class="l">Fundamenty</div><div class="v" style="font-size:20px">'+zl(R.cost.house)+'</div><div class="s">'+esc(F.TYPES[s.type])+' · posadowienie '+fmt(R.frost,1)+' m</div></div>'+
+    '<div class="tile"><div class="l">Ściany fundamentowe</div><div class="v" style="font-size:20px">'+fmt(Q.minWall,2)+(Q.maxWall-Q.minWall>.05?' – '+fmt(Q.maxWall,2):'')+' m</div><div class="s">od ławy do posadzki parteru</div></div>'+
+    '<div class="tile"><div class="l">Teren pod domem</div><div class="v" style="font-size:20px">'+(T.flat?'płaski':fmt(T.diff,2)+' m')+'</div><div class="s">'+(T.flat?'spadek ustawisz w module Działka':'spadek '+fmt(T.pct,1)+'% · '+esc(HouserSite.DIR8_PL[T.dir]||''))+'</div></div>'+
+    '<div class="tile"><div class="l">Piwnica</div><div class="v" style="font-size:20px">'+(Q.bArea?fmt(Q.bArea,1)+' m²':'brak')+'</div><div class="s">'+(Q.bArea?zl(R.cost.basement)+(R.walkL>=1?' · wyjście do ogrodu':''):'')+'</div></div>'+
+    '<div class="tile"><div class="l">Ocena</div><div class="v '+pc(R.score)+'">'+fmt(R.score)+'<small> / 10</small></div><div class="s">'+R.issues.length+' uwag</div></div></div>';
+  h+='<div class="card"><h2>Rzut parteru</h2><p class="hint">Kolor obrysu – wysokość ściany fundamentowej (zielony niska, czerwony wysoka); niebieskie – piwnica; przerywane linie – warstwice terenu co 25 cm.</p><div id="planBox"></div>'+
+    '<div class="legend"><span><i style="background:#16a34a"></i>do 1,1 m</span><span><i style="background:#84cc16"></i>1,1–1,6 m</span><span><i style="background:#f59e0b"></i>1,6–2,1 m</span><span><i style="background:#ea580c"></i>2,1–2,6 m</span><span><i style="background:#dc2626"></i>ponad 2,6 m</span><span><i style="background:#93c5fd"></i>piwnica</span></div></div>';
+  h+='<div class="card"><h2>Przekrój '+(T.flat?'przez dom':'wzdłuż spadku terenu')+'</h2><div id="secBox"></div></div>';
+  const tbl=(L,title)=>L.length?'<div class="card"><h2>'+title+'</h2><table><tbody>'+L.map(i=>'<tr><td>'+esc(i.name)+(i.note?'<br><span class="hint">'+esc(i.note)+'</span>':'')+'</td><td class="n">'+zl(i.v)+'</td></tr>').join('')+'<tr class="sum"><td>Razem</td><td class="n">'+zl(L.reduce((a,i)=>a+i.v,0))+'</td></tr></tbody></table></div>':'';
+  h+='<div class="cols">'+tbl(R.cost.items,'Koszt fundamentów')+tbl(R.cost.baseItems,'Koszt piwnicy')+'</div>';
+  h+='<div class="card"><h2>Uwagi</h2>'+(R.issues.length?'<ul class="iss">'+R.issues.map(i=>'<li><span class="pen">−'+fmt(i.p)+'</span>'+esc(i.text)+(i.tip?'<span class="tip">'+esc(i.tip)+'</span>':'')+'</li>').join('')+'</ul>':'<p class="hint">Bez uwag.</p>')+R.good.map(g=>'<div class="good">✓ '+esc(g)+'</div>').join('')+
+    (s.configured?'<p class="hint" style="margin-top:8px">Wycena liczy fundamenty i piwnicę z tego modułu.</p>':'<p class="hint" style="margin-top:8px">Zmień dowolne ustawienie, a Wycena zacznie liczyć fundamenty z tego modułu (teraz – stawka za m² zabudowy).</p>')+'</div>';
+  M.innerHTML=h;$('planBox').appendChild(plan());const sv=section();if(sv)$('secBox').appendChild(sv)}
+// malowanie piwnicy (tryb „pod częścią”)
+document.addEventListener('pointerdown',e=>{const r=e.target.closest?.('#plan rect[data-c]');if(!r||R?.set.basement.mode!=='part')return;e.preventDefault();const k=r.dataset.c,set=new Set(R.set.basement.cells);paint={on:!set.has(k),set};apply(k,r)});
+document.addEventListener('pointermove',e=>{if(!paint)return;const t=document.elementFromPoint(e.clientX,e.clientY),r=t?.closest?.('#plan rect[data-c]');if(r)apply(r.dataset.c,r)});
+document.addEventListener('pointerup',()=>{if(!paint)return;const cells=[...paint.set];paint=null;save({},{mode:'part',cells})});
+function apply(k,r){if(paint.on)paint.set.add(k);else paint.set.delete(k);r.setAttribute('fill',paint.on?'#93c5fd':'#e2e8f0');r.setAttribute('fill-opacity',paint.on?.85:.25)}
+const rec=HouserStore.load();project=rec?rec.project:null;render();
+HouserStore.subscribe(r=>{if(paint)return;project=r.project;const a=document.activeElement;if(a&&(a.tagName==='SELECT'||a.tagName==='INPUT'))return;render()});
+</script>
+<script src="../../shared/nav.js"></script>
+</body>
+</html>

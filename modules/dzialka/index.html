@@ -73,6 +73,11 @@ tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
       <div class="field"><label>Zabudowa maks. (%)</label><input id="coverMax" type="number" min="5" max="100" step="5"></div>
     </div>
     <p class="hint">Wymagania z miejscowego planu albo warunków zabudowy (zwykle 40–70% biologicznie czynnej, 20–30% zabudowy).</p>
+    <div class="row2" style="margin-top:9px">
+      <div class="field"><label>Teren opada w kierunku</label><select id="slopeDir"><option value="none">płaski</option><option value="N">N – północ</option><option value="NE">NE – płn.-wsch.</option><option value="E">E – wschód</option><option value="SE">SE – płd.-wsch.</option><option value="S">S – południe</option><option value="SW">SW – płd.-zach.</option><option value="W">W – zachód</option><option value="NW">NW – płn.-zach.</option></select></div>
+      <div class="field"><label>Spadek (%)</label><input id="slopePct" type="number" min="0" max="40" step="0.5"></div>
+    </div>
+    <p class="hint" id="slopeInfo"></p>
     <div class="field" style="margin-top:9px"><label>Góra planu działki to</label><select id="top"><option value="north">północ</option><option value="east">wschód</option><option value="south">południe</option><option value="west">zachód</option></select></div>
     <div class="btns"><button class="hs-btn" id="center">Dom na środek</button><button class="hs-btn" id="rotH" title="Obróć dom na działce o 90° w prawo">⟳ Obróć dom</button></div>
     <p class="hint" id="rotInfo" style="margin-top:6px"></p>
@@ -125,6 +130,7 @@ $('road').onchange=()=>{const r=$('road').value,ax=v=>v==='left'||v==='right',tu
 $('fence').onchange=()=>saveSite({fence:$('fence').value});
 $('center').onclick=()=>saveSite({hx:null,hy:null});
 $('top').onchange=()=>saveSite({top:$('top').value});
+const saveSlope=()=>saveSite({slope:{dir:$('slopeDir').value,pct:Math.max(0,Math.min(40,+$('slopePct').value||0))}});$('slopeDir').onchange=()=>{if($('slopeDir').value!=='none'&&!(+$('slopePct').value>0))$('slopePct').value=5;saveSlope()};$('slopePct').onchange=saveSlope;
 // obrót domu o 90° wokół środka obrysu (bez tarasów nie trzeba – siatka obraca się cała)
 $('rotH').onclick=()=>{const h=R.house,c=h.c,cx=R.set.hx+h.W2*c/2,cy=R.set.hy+h.H2*c/2,r=(h.rot+90)%360,W2=r%180?h.H:h.W,H2=r%180?h.W:h.H,r05=v=>Math.round(v/C)*C;saveSite({rot:r,hx:r05(cx-W2*c/2),hy:r05(cy-H2*c/2)})};
 $('rotG').onclick=()=>{const g=R.garage;if(!g)return;const cx=g.x+g.w/2,cy=g.y+g.d/2,r05=v=>Math.round(v/C)*C;saveGarage({rot:((g.rot||0)+90)%360,x:r05(cx-g.d/2),y:r05(cy-g.w/2)})};
@@ -193,6 +199,15 @@ function planSVG(){const s=R.set,P=R.plot,h=R.house,M=1.5,RB=4,road=s.road;
   for(const sb of R.setbacks){const bad=sb.d<sb.need-1e-6,col=bad?'#dc2626':'#475569',a=sb.side==='left'?[0,mid.y,hb.l,mid.y]:sb.side==='right'?[hb.r,mid.y,s.w,mid.y]:sb.side==='top'?[mid.x,0,mid.x,hb.t]:[mid.x,hb.b,mid.x,s.d];
     if(sb.d<=0)continue;el('line',{x1:m(a[0]),y1:m(a[1]),x2:m(a[2]),y2:m(a[3]),stroke:col,'stroke-width':1.5,'stroke-dasharray':'5 4','pointer-events':'none'},svg);
     const tx=m((a[0]+a[2])/2),ty=m((a[1]+a[3])/2);el('rect',{x:tx-24,y:ty-10,width:48,height:20,rx:5,fill:'#fff','fill-opacity':.9,'pointer-events':'none'},svg);el('text',{x:tx,y:ty,'text-anchor':'middle','dominant-baseline':'middle','font-size':12,'font-weight':700,fill:col,'pointer-events':'none'},svg,fmt(sb.d)+' m')}
+  // teren: warstwice co 0,5 m (co 1 m pogrubione) i strzałka spadku
+  {const T=HouserSite.terrainFn(s);if(!T.flat){const zs=[[0,0],[s.w,0],[0,s.d],[s.w,s.d]].map(([x,y])=>T.z(x,y)),lo=Math.ceil(Math.min(...zs)/.5)*.5,hi=Math.floor(Math.max(...zs)/.5)*.5,cx=s.w/2,cy=s.d/2,[vx,vy]=T.v,ux=-vy,uy=vx;
+    for(let L=lo;L<=hi+1e-9;L+=.5){const px=cx-vx*L/T.g,py=cy-vy*L/T.g;let t0=-1e9,t1=1e9;
+      for(const [p0,u,mn,mx] of [[px,ux,0,s.w],[py,uy,0,s.d]]){if(Math.abs(u)<1e-9){if(p0<mn||p0>mx){t0=1;t1=0}continue}const a=(mn-p0)/u,b=(mx-p0)/u;t0=Math.max(t0,Math.min(a,b));t1=Math.min(t1,Math.max(a,b))}
+      if(t1<=t0)continue;const major=Math.abs(L-Math.round(L))<1e-6;el('line',{x1:m(px+ux*t0),y1:m(py+uy*t0),x2:m(px+ux*t1),y2:m(py+uy*t1),stroke:'#92400e','stroke-opacity':major?.55:.3,'stroke-width':major?1.6:1,'stroke-dasharray':major?'':'4 4','pointer-events':'none'},svg);
+      if(major)el('text',{x:m(px+ux*(t0+(t1-t0)*.08)),y:m(py+uy*(t0+(t1-t0)*.08))-3,'font-size':10,fill:'#92400e','pointer-events':'none'},svg,(L>0?'+':'')+fmt(L,1)+' m')}
+    const ax=s.w*.82,ay=s.d*.18,Lr=Math.min(s.w,s.d)*.12;const g2=el('g',{'pointer-events':'none'},svg);el('line',{x1:m(ax-vx*Lr/2),y1:m(ay-vy*Lr/2),x2:m(ax+vx*Lr/2),y2:m(ay+vy*Lr/2),stroke:'#92400e','stroke-width':3,'marker-end':'url(#slArr)'},g2);
+    const d=el('defs',{},svg),mk=el('marker',{id:'slArr',viewBox:'0 0 10 10',refX:6,refY:5,markerWidth:5,markerHeight:5,orient:'auto'},d);el('path',{d:'M0 0L10 5L0 10z',fill:'#92400e'},mk);
+    el('text',{x:m(ax),y:m(ay+Lr/2)+16,'text-anchor':'middle','font-size':11,'font-weight':700,fill:'#92400e'},g2,'spadek '+fmt(T.sl.pct,1)+'%')}}
   // wymiary działki i kierunki świata
   el('text',{x:m(s.w/2),y:m(road==='top'?s.d+.9:-.6),'text-anchor':'middle','font-size':13,'font-weight':700,fill:'#334155'},svg,fmt(s.w)+' m');
   el('text',{x:m(road==='left'?s.w+.9:-.6),y:m(s.d/2),'text-anchor':'middle','font-size':13,'font-weight':700,fill:'#334155',transform:'rotate(-90 '+m(road==='left'?s.w+.9:-.6)+' '+m(s.d/2)+')'},svg,fmt(s.d)+' m');
@@ -227,7 +242,7 @@ function render(){const M=$('main');renderTools();
   if(!project){M.innerHTML='<div class="empty">Brak projektu. Najpierw narysuj dom w module <b>Obrys domu</b> i <b>Układ pomieszczeń</b>.</div>';return}
   try{R=HouserSite.evaluate(project)}catch(e){console.error(e);M.innerHTML='<div class="empty">Nie udało się policzyć działki.</div>';return}
   const s=R.set,G=R.garageEval;
-  $('top').value=s.top;$('rotG').disabled=!R.garage;
+  $('top').value=s.top;{const sl=HouserSite.slopeOf(s);$('slopeDir').value=sl.dir;$('slopePct').value=sl.dir==='none'?'':sl.pct;$('slopePct').disabled=sl.dir==='none';const t=R.terrain;$('slopeInfo').textContent=t.flat?'Teren płaski.':'Na działce różnica ok. '+fmt(t.plotDiff,2)+' m, pod domem ok. '+fmt(t.houseDiff,2)+' m – fundamenty liczą się z tego w module Fundamenty.'}$('rotG').disabled=!R.garage;
   const PLS={north:'północ',east:'wschód',south:'południe',west:'zachód'},O=R.orient;
   $('rotInfo').innerHTML='Obrót domu: '+s.rot+'° · góra rzutu domu wypada na '+PLS[O.actual]+(O.ok?' – tak jak w projekcie.':' – <b style="color:#b91c1c">⚠ w projekcie: '+PLS[O.designed]+'</b>');
   $('w').value=s.w;$('d').value=s.d;$('road').value=s.road;$('fence').value=s.fence;$('pbcMin').value=s.pbcMin;$('coverMax').value=s.coverMax;

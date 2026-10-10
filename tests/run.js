@@ -277,6 +277,19 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  ok(W.HouserModel.roofWings(p2)[0].legacy&&q.roofA>20&&q.roofA<q2.roofA-5&&fin(q.gutter),'dach L: mniejsza połać niż jeden dach nad prostokątem ('+Math.round(q.roofA)+' < '+Math.round(q2.roofA)+' m²)');
  ok(W.HouserModel.roofYAt(w,w[0].x0+.1,w[0].z0+.1)!=null&&W.HouserModel.roofYAt(w,(g.width-.5)*g.cellMeters,.25)==null,'dach L: nad wyciętym narożnikiem nie ma dachu');}
 
+// teren ze spadkiem (Działka) i fundamenty z piwnicą
+{const ld=f=>JSON.parse(fs.readFileSync(path.join(ROOT,'examples',f),'utf8')),SI=W.HouserSite,FD=W.HouserFoundation;
+ for(const f of examples){const p=ld(f);ok(SI.evaluate(p).terrain.flat&&FD.evaluate(p).Q.maxWall-FD.evaluate(p).Q.minWall<1e-9,f+': teren płaski – równe ściany fundamentowe')}
+ const p0=ld('zefir-2.json'),F0=FD.evaluate(p0),p1=ld('zefir-2.json');p1.site={slope:{dir:'SE',pct:8}};const S1=SI.evaluate(p1),T=SI.terrainFn(S1.set),F1=FD.evaluate(p1);
+ ok(S1.terrain.houseDiff>.5&&S1.issues.some(i=>i.type==='slope')&&T.z(0,0)>T.z(S1.set.w,S1.set.d),'działka: spadek SE – teren niżej na płd.-wsch., uwaga o domu na stoku ('+S1.terrain.houseDiff.toFixed(2)+' m)');
+ ok(F1.Q.maxWall>F1.Q.minWall+.5&&F1.cost.house>F0.cost.house&&F1.zero>F0.zero-1e-9,'fundamenty: na stoku wyższe ściany od strony spadku i droższe ('+Math.round(F0.cost.house)+' -> '+Math.round(F1.cost.house)+' zł)');
+ for(const d of ['N','NE','E','SE','S','SW','W','NW']){const p=ld('zefir-2.json');p.site={slope:{dir:d,pct:6}};const t=SI.evaluate(p).terrain;ok(!t.flat&&fin(t.houseDiff)&&t.houseDiff>0,'działka: spadek '+d+' – różnica pod domem '+t.houseDiff.toFixed(2)+' m')}
+ const p2=ld('zefir-2.json');p2.site={slope:{dir:'SE',pct:10}};const cells=[];for(let y=9;y<17;y++)for(let x=12;x<22;x++)cells.push(x+','+y);p2.foundation={basement:{mode:'part',cells}};const F2=FD.evaluate(p2);
+ ok(F2.Q.bArea>10&&F2.cost.basement>20000&&F2.expoA>0,'fundamenty: piwnica pod częścią od strony spadku – częściowo nad terenem ('+F2.Q.bArea+' m²)');
+ const C2=W.HouserCost.compute(p2),fr=C2.rows.find(r=>r.id==='found'),br=C2.rows.find(r=>r.id==='basement');ok(fr&&br&&Math.abs(fr.value-F2.cost.house)<1&&Math.abs(br.value-F2.cost.basement)<1,'fundamenty: Wycena liczy fundamenty i piwnicę z modułu');
+ const p3=ld('zefir-2.json');p3.foundation={water:'high',basement:{mode:'full'}};const F3=FD.evaluate(p3);ok(F3.Q.bArea>80&&F3.cost.baseItems.some(i=>/Biała wanna/.test(i.name))&&F3.issues.some(i=>i.type==='water'),'fundamenty: pełna piwnica przy wysokiej wodzie – biała wanna i uwaga');
+ ok(!W.HouserCost.compute(ld('zefir-2.json')).rows.some(r=>r.id==='basement'),'fundamenty: bez ustawień – Wycena bez zmian (stawka za m²)');}
+
 // generator układu: ankieta -> warunki z reguł -> algorytm genetyczny -> projekt
 {const GN=W.HouserGen,cases=[{a:{},tag:'poddasze'},{a:{storeys:'1',garage:'1',beds:3},tag:'parterowy z garażem'},{a:{storeys:'full',garden:'W',entrance:'E',kitchen:'closed',extras:['office','mezz']},tag:'piętrowy, ogród od zachodu'}];
  for(const C of cases){const P=GN.program(C.a),tag='generator ('+C.tag+')';

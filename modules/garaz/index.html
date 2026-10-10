@@ -90,6 +90,7 @@ tr.sum td{font-weight:800;border-top:2px solid var(--hs-line)}
 <script src="../../shared/quantities.js"></script>
 <script src="engine.js"></script>
 <script src="../dzialka/engine.js"></script>
+<script src="../fundamenty/engine.js"></script>
 <script>
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d}),zl=v=>(Math.round(v/100)*100).toLocaleString('pl-PL')+' zł';

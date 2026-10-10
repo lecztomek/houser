@@ -49,6 +49,7 @@ const ITEMS=[
   ['covterrace','Na zewnątrz','Taras zadaszony','m²',q=>q.out.coveredTerrace,1100,1,'z modułu Tarasy'],
   ['pergola','Na zewnątrz','Pergola','m²',q=>q.out.pergola,700,1,'z modułu Tarasy'],
   ['terraceSides','Na zewnątrz','Boki tarasów i pergoli (szkło, ściany, lamele, screeny)','m²',q=>sidesOf().area,null,1,()=>sidesOf().how],
+  ['basement','Stan zerowy','Piwnica (wykop, ściany, posadzka, izolacje, schody)','kpl',()=>0,0,0,'moduł Fundamenty'],
   ['garage','Na zewnątrz','Garaż wolnostojący / wiata','kpl',()=>0,0,0,'moduł Garaż'],
   ['site','Na zewnątrz','Zagospodarowanie działki (podjazd, chodniki, trawnik, ogrodzenie)','kpl',()=>0,0,0,'moduł Działka – włącz, jeśli liczysz z budową',false],
   ['design','Inne','Projekt, adaptacja, formalności','kpl',()=>1,18000,0,'ryczałt'],
@@ -74,6 +75,8 @@ function fromModules(){const D={};const T=f=>{try{return f()}catch(e){console.wa
   if(global.HouserHeatSys){const R=T(()=>HouserHeatSys.evaluate(project));if(R){const src=R.designed?'z modułu Instalacja grzewcza':'domyślna instalacja (nie zaprojektowano w module Instalacja grzewcza)';D.heatsrc={name:'Źródło ciepła: '+R.name.toLowerCase(),total:R.investSrc,how:src+' – źródła, bufor, komin'};D.floorheat={name:'Instalacja grzewcza w pokojach',total:R.invest-R.investSrc,how:src+' – podłogówka, grzejniki, rozdzielacze, rury'}}}
   // wod-kan: stawka za m² + dopłata za układ z Hydrauliki (dalekie łazienki, przesunięte piony, cyrkulacja)
   if(global.HouserPlumbing){const P=T(()=>HouserPlumbing.evaluate(project,project.plumbingSettings));if(P&&P.extra>0)D.plumbExtra={name:'Dopłata za układ instalacji wod-kan',total:P.extra,how:'z modułu Hydraulika – dłuższe rury i piony niż w układzie zwartym'}}
+  // fundamenty i piwnica: gdy ustawione w module Fundamenty (inaczej stawka za m² zabudowy)
+  if(global.HouserFoundation&&project.foundation){const F=T(()=>HouserFoundation.evaluate(project));if(F){if(F.cost.house>0)D.found={name:'Fundamenty: '+HouserFoundation.TYPES[F.set.type].toLowerCase(),total:F.cost.house,how:'z modułu Fundamenty – teren, przemarzanie, grunt'};if(F.cost.basement>0)D.basement={name:'Piwnica ('+(Math.round(F.Q.bArea*10)/10).toLocaleString('pl-PL')+' m²)',total:F.cost.basement,how:'z modułu Fundamenty'}}}
   // instalacja elektryczna: punkty, obwody, rozdzielnica (moduł Elektryka i oświetlenie)
   if(global.HouserElectric){const L=T(()=>HouserElectric.evaluate(project));if(L&&L.cost.total>0)D.elec={name:'Instalacja elektryczna ('+L.points+' gniazd i łączników, '+L.lights+' punktów światła, '+L.circuits+' obwodów)',total:L.cost.total,how:'z modułu Elektryka i oświetlenie – bez opraw oświetleniowych'}}
   // konstrukcja: podciągi, belki nad szerokimi otworami, wsporniki, słupy (moduł Konstrukcja)
@@ -89,7 +92,7 @@ function compute(){
   const q=quantities(),s=cs(),rows=[],DYN=fromModules();
   for(let [id,stage,name,unit,qf,defPrice,fin,how,defOn] of ITEMS){
     const dy=DYN[id];if(dy){unit='kpl';name=dy.name;how=dy.how;qf=()=>1;defPrice=dy.total;fin=0}
-    const qty=Math.max(0,qf(q)||0);if((id==='terraceSides'||id==='glasswalls'||id==='glassdoors'||id==='luminaires'||id==='garage'||id==='site')&&!qty)continue; // pozycje tylko gdy są ścianki szklane / garaż / działka
+    const qty=Math.max(0,qf(q)||0);if((id==='terraceSides'||id==='glasswalls'||id==='glassdoors'||id==='luminaires'||id==='garage'||id==='site'||id==='basement')&&!qty)continue; // pozycje tylko gdy są ścianki szklane / garaż / działka
     let base=defPrice;if(id==='windows'&&q.ops.winA>0&&q.ops.winCost)base=q.ops.winCost/q.ops.winA;if(id==='hst'&&q.ops.hstA>0&&q.ops.hstCost)base=q.ops.hstCost/q.ops.hstA;if(id==='roofwin'&&q.ops.roofWin>0&&q.ops.roofWinCost)base=q.ops.roofWinCost/q.ops.roofWin;if(id==='blinds'&&q.ops.blinds>0)base=q.ops.blindCost/q.ops.blinds; // średnia z cen okien wg typu (moduł Okna i drzwi)
     if(id==='terraceSides')base=qty>0?sidesOf().cost/qty:0;
     if(id==='stairs')base=q.stairs.length?q.stairs.reduce((a,t)=>a+(STAIR_PRICE[t]||18000),0)/q.stairs.length:18000;const ek=+project.envelopePriceK?.[id];if(ek>0)base*=ek; // mur, elewacja, okna wg modułu Ocieplenie i elewacja

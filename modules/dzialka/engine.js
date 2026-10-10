@@ -28,6 +28,17 @@
     const out=new Map();if(global.HouserModel)for(const it of project.outdoorStructures||[])for(const [x,y] of HouserModel.outdoorCells(it,g.cellMeters))out.set(x+','+y,it.type);
     return {W,H,c:g.cellMeters,house,out}}
   // ustawienia z domyślnymi: działka ok. 6 m przed domem od ulicy, ogród z tyłu, po bokach min. 4 m
+  // ---------- teren: spadek w jednym z 8 kierunków (w dół), pct – % (1 m na 100 m = 1%); wysokość względem środka działki
+  const DIR8={N:0,NE:45,E:90,SE:135,S:180,SW:225,W:270,NW:315},DIR8_PL={N:'północ',NE:'północny wschód',E:'wschód',SE:'południowy wschód',S:'południe',SW:'południowy zachód',W:'zachód',NW:'północny zachód'},TOPA={north:0,east:90,south:180,west:270};
+  function slopeOf(s){const d=s.slope||{};return {dir:DIR8[d.dir]!=null?d.dir:'none',pct:Math.max(0,Math.min(40,+d.pct||0))}}
+  // wysokość terenu w punkcie działki (m, plan działki); v – kierunek spadku na planie
+  function terrainFn(s){const sl=slopeOf(s);if(sl.dir==='none'||!sl.pct)return {sl,flat:true,v:[0,0],z:()=>0};const rel=(DIR8[sl.dir]-(TOPA[s.top]||0))*Math.PI/180,v=[Math.sin(rel),-Math.cos(rel)],g=sl.pct/100,cx=s.w/2,cy=s.d/2;
+    return {sl,flat:false,v,g,z:(x,y)=>-g*((x-cx)*v[0]+(y-cy)*v[1])}}
+  // teren pod domem w układzie siatki domu (m od lewego górnego rogu siatki): z = a·x + b·y + c0
+  function houseTerrain(project){const {s,F}=settings(project),T=terrainFn(s),c=F.c,pt=(x,y)=>{const [X,Y]=rotCell(F,s.rot,x,y);return T.z(s.hx+(X+.5)*c,s.hy+(Y+.5)*c)};
+    const z00=pt(0,0),a=(pt(1,0)-z00)/c,b=(pt(0,1)-z00)/c,c0=z00-a*c/2-b*c/2,z=(x,y)=>a*x+b*y+c0;let mn=Infinity,mx=-Infinity;
+    for(const t of F.house){const [x,y]=t.split(',').map(Number);for(const [dx,dy] of [[0,0],[1,0],[0,1],[1,1]]){const v=z((x+dx)*c,(y+dy)*c);if(v<mn)mn=v;if(v>mx)mx=v}}
+    if(!Number.isFinite(mn)){mn=mx=0}return {...T.sl,flat:T.flat,z,a,b,min:mn,max:mx,diff:mx-mn}}
   function settings(project){const s={...(project.site||{})},F=footprint(project);s.rot=normRot(s.rot);s.top=ORD.includes(s.top)?s.top:(ORD.includes(project.orientation?.top)?project.orientation.top:'north');
     const P=placed(F,s.rot),all=[...P.house,...P.out.keys()].map(t=>t.split(',').map(Number));
     const minX=Math.min(...all.map(a=>a[0])),maxX=Math.max(...all.map(a=>a[0]))+1,minY=Math.min(...all.map(a=>a[1])),maxY=Math.max(...all.map(a=>a[1]))+1;
@@ -117,8 +128,13 @@
     if(s.fence!=='none'){items.push({name:FENCE[s.fence].name,v:Math.round((per-5.5)*FENCE[s.fence].m),note:fmt(per-5.5,0)+' m'});items.push({name:'Brama wjazdowa i furtka',v:PRICE.gate+PRICE.wicket})}
     if(s.trees.length)items.push({name:'Drzewa i krzewy (sadzonki)',v:s.trees.length*PRICE.tree,note:s.trees.length+' szt.'});
     if(Gg)for(const it of Gg.cost.items)items.push({...it,garage:true});
+    // teren pochyły: różnica pod domem i na działce, nachylenie podjazdu
+    const T=terrainFn(s),HT=houseTerrain(project),plotZ=[[0,0],[s.w,0],[0,s.d],[s.w,s.d]].map(([x,y])=>T.z(x,y)),terrain={...T.sl,flat:T.flat,v:T.v,plotDiff:Math.max(...plotZ)-Math.min(...plotZ),houseDiff:HT.diff,houseMin:HT.min,houseMax:HT.max};
+    if(!T.flat){if(HT.diff>=.5)add(Math.min(1,.2+HT.diff*.25),'Dom na stoku: teren pod domem opada o ok. '+fmt(HT.diff,2)+' m (spadek '+fmt(T.sl.pct,0)+'% w kierunku: '+DIR8_PL[T.sl.dir]+').','Wyższe ściany fundamentowe od strony spadku albo częściowa piwnica z wyjściem na ogród – moduł Fundamenty.','slope');
+      else good.push('Teren pod domem prawie płaski (różnica ok. '+fmt(HT.diff,2)+' m).');
+      if(T.sl.pct>12)add(T.sl.pct>20?1.2:.5,'Stromy teren ('+fmt(T.sl.pct,0)+'%) – podjazd może mieć za duże nachylenie (wygodnie do ok. 12%, maks. ok. 15%).','Poprowadź podjazd w poprzek spadku albo zaplanuj mur oporowy / skarpę.','slope')}
     const score=Math.round(Math.max(0,10-issues.reduce((a,i)=>a+i.p,0))*10)/10;
-    return {set:s,plot:{w:s.w,d:s.d,area:plotA,NI,NJ,road:s.road,roadLen},house:{ox,oy,k,W:F.W,H:F.H,W2:P.W2,H2:P.H2,rot:s.rot,c:F.c,box:hb},fp:F,orient,occ,garage,garageEval:Gg,area,pbc,cover,built,setbacks,links,spots,issues,good,score,
+    return {terrain,set:s,plot:{w:s.w,d:s.d,area:plotA,NI,NJ,road:s.road,roadLen},house:{ox,oy,k,W:F.W,H:F.H,W2:P.W2,H2:P.H2,rot:s.rot,c:F.c,box:hb},fp:F,orient,occ,garage,garageEval:Gg,area,pbc,cover,built,setbacks,links,spots,issues,good,score,
       cost:{items,total:items.reduce((a,i)=>a+i.v,0),site:items.filter(i=>!i.garage).reduce((a,i)=>a+i.v,0),garage:items.filter(i=>i.garage).reduce((a,i)=>a+i.v,0)}}}
   // kratki działki tuż za krawędzią (otworem) domu: kratka siatki domu po zewnętrznej stronie, po obrocie
   function outsideCells(F,r,ox,oy,k,key){const [o,aS,bS]=key.split(':'),a=+aS,b=+bS,A=o==='h'?[a,b-1]:[a-1,b],B=[a,b],inA=F.house.has(A.join(',')),inB=F.house.has(B.join(','));
@@ -168,5 +184,5 @@
   function gates(R){const s=R.set,P=R.plot,along=s.road==='bottom'||s.road==='top',n=along?P.NI:P.NJ,out=[];let cur=null;
     for(let t=0;t<n;t++){const key=s.road==='bottom'?t+','+(P.NJ-1):s.road==='top'?t+',0':s.road==='left'?'0,'+t:(P.NI-1)+','+t,v=s.cells[key],ok=!!SURF[v]&&v!=='bed'&&!R.occ.has(key);
       if(ok){if(cur&&cur.b===t*C)cur.b=(t+1)*C;else{cur={a:t*C,b:(t+1)*C};out.push(cur)}}}return out}
-  global.HouserSite={C,SURF,FENCE,PRICE,ROAD,ORD,settings,evaluate,autoPaths,footprint,gates,entrances,rotCell,rotSide};
+  global.HouserSite={DIR8,DIR8_PL,slopeOf,terrainFn,houseTerrain,C,SURF,FENCE,PRICE,ROAD,ORD,settings,evaluate,autoPaths,footprint,gates,entrances,rotCell,rotSide};
 })(typeof window!=='undefined'?window:globalThis);
