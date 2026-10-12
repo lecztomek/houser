@@ -21,7 +21,7 @@
 
   // Nowa, pusta definicja (gdy ktoś zaczyna od zera)
   function emptyDefinition(){
-    return {version:7,name:'Nowy dom',grid:{width:18,height:18,cellMeters:.5},floorOrder:['ground','upper'],
+    return {version:7,name:'Nowy dom',grid:{width:36,height:36,cellMeters:.25},floorOrder:['ground','upper'],
       floors:{ground:{name:'Parter',rooms:[{id:'salon',name:'Salon',color:'#fb7185',kind:'room'}]},upper:{name:'Piętro / poddasze',rooms:[{id:'sypialnia',name:'Sypialnia',color:'#60a5fa',kind:'room'}]}},
       conditions:[],validationLevels:DEFAULT_LEVELS,openingTypes:DEFAULT_OPENING_TYPES};
   }

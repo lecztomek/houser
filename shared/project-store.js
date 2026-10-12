@@ -7,8 +7,13 @@
   const listeners=[];
   const selfId=Math.random().toString(36).slice(2);
 
+  // wszystkie domy są na siatce 0,25 m (shared/grid.js) – starszy dom (0,5 m) zagęszczamy raz, przy zapisie lub odczycie
+  const fine=p=>{try{return global.HouserGrid&&p&&HouserGrid.needs(p)?HouserGrid.normalize(p):p}catch(e){console.error(e);return p}};
+  let fixRaw=null,fixRec=null;
   function load(){
-    try{const raw=localStorage.getItem(KEY);if(!raw)return null;const rec=JSON.parse(raw);return rec&&rec.project?rec:null;}catch(_){return null;}
+    try{const raw=localStorage.getItem(KEY);if(!raw)return null;if(raw===fixRaw)return JSON.parse(JSON.stringify(fixRec));const rec=JSON.parse(raw);if(!rec||!rec.project)return null;
+      if(global.HouserGrid&&HouserGrid.needs(rec.project)){rec.project=fine(rec.project);rec.writer=selfId;const out=JSON.stringify(rec);try{localStorage.setItem(KEY,out)}catch(_){fixRaw=raw;fixRec=rec}}
+      return rec;}catch(_){return null;}
   }
   // tylko podgląd: cudzy dom (project.readOnly) albo brak konta (flaga 'houser:guest' ustawiana przez stronę główną).
   // Moduły nie mogą wtedy nic zapisać; strona główna (HOUSER_SHELL) zapisuje zawsze (otwieranie domu, kopia do siebie).
@@ -24,6 +29,7 @@
     if(Array.isArray(o))return n.length===o.length&&o.every((v,i)=>onlyTidied(n[i],v));return Object.keys(o).every(k=>onlyTidied(n[k],o[k]))}
   function sameHouse(project){const cur=load()?.project;if(!cur||!project)return false;const strip=p=>{const c={...p};delete c.savedAt;delete c.definitionFingerprint;return c};return onlyTidied(strip(project),strip(cur))}
   function save(project,source){
+    project=fine(project);
     // podgląd: zapis bez prawdziwej zmiany (moduł tylko uporządkował projekt, np. po przełączeniu piętra) – pomijamy po cichu, bez cofania
     if(!global.HOUSER_SHELL&&lockReason()){if(!sameHouse(project))blocked();return false}
     const rec={project,source:source||'',writer:selfId,updatedAt:new Date().toISOString()};
@@ -44,7 +50,7 @@
   global.addEventListener('storage',e=>{
     if(e.key!==KEY||!e.newValue)return;
     let rec;try{rec=JSON.parse(e.newValue);}catch(_){return;}
-    if(!rec||!rec.project||rec.writer===selfId)return;
+    if(!rec||!rec.project||rec.writer===selfId)return;rec.project=fine(rec.project);
     if(hiddenFrame()){pendingRec=rec;return}
     pendingRec=null;notify(rec);
   });

@@ -296,7 +296,9 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
   ok(r.grid.cellMeters===p.grid.cellMeters/2&&r.grid.width===p.grid.width*2&&same(qa.foot,qb.foot)&&same(qa.net[qa.lo],qb.net[qb.lo])&&same(qa.extLen[qa.lo],qb.extLen[qb.lo])&&same(qa.ops.winA,qb.ops.winA)&&qa.ops.intDoor===qb.ops.intDoor&&qa.ops.extDoor===qb.ops.extDoor,f+': siatka 0,25 m – te same ilości (zabudowa, powierzchnie, obwód, okna, drzwi)');
   const ca=W.HouserCost.compute(p).total,cb=W.HouserCost.compute(r).total;ok(Math.abs(cb/ca-1)<.02,f+': siatka 0,25 m – koszt prawie bez zmian ('+Math.round(ca)+' / '+Math.round(cb)+')');
   const sa=W.HouserSite.evaluate(p),sb=W.HouserSite.evaluate(r),ha=[...sa.occ.values()].filter(v=>v==='house').length,hb=[...sb.occ.values()].filter(v=>v==='house').length;ok(ha===hb,f+': siatka 0,25 m – dom na działce tej samej wielkości')}
- ok(!GR.canRefine(GR.refine(ld('zefir-2.json'),2),2),'siatka: nie gęściej niż 0,2 m');}
+ ok(!GR.canRefine(GR.refine(ld('zefir-2.json'),2),2),'siatka: nie gęściej niż 0,2 m');
+ {const z=ld('zefir-2.json'),n=GR.normalize(z),n2=GR.normalize(n);ok(n.grid.cellMeters===.25&&n.definitionSnapshot.grid.cellMeters===.25&&n2===n&&!GR.needs(n),'siatka: każdy dom sprowadzany do 0,25 m (raz)');
+  const d=GR.normalizeDef({grid:{width:18,height:18,cellMeters:.5}});ok(d.grid.width===36&&d.grid.cellMeters===.25&&GR.normalizeDef(d)===d,'siatka: definicja 0,5 m -> 0,25 m')}}
 
 // generator układu: ankieta -> warunki z reguł -> algorytm genetyczny -> projekt
 {const GN=W.HouserGen,cases=[{a:{},tag:'poddasze'},{a:{storeys:'1',garage:'1',beds:3},tag:'parterowy z garażem'},{a:{storeys:'full',garden:'W',entrance:'E',kitchen:'closed',extras:['office','mezz']},tag:'piętrowy, ogród od zachodu'}];

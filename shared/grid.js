@@ -3,8 +3,10 @@
 // belki / słupy / rodzaje ścian (Konstrukcja), urządzenia grzewcze, piwnica. Dane w metrach (meble, lampy,
 // kanały, działka, punkty widoku) zostają bez zmian. Dom po zagęszczeniu ma te same wymiary i te same wyniki.
 // HouserGrid.refine(project, k=2) -> nowy projekt; HouserGrid.canRefine(project, k) -> bool
+// HouserGrid.normalize(project) -> projekt na siatce FINE (0,25 m); starsze domy (0,5 m / 1 m) są zagęszczane, reszta bez zmian
+// HouserGrid.normalizeDef(definition) -> definicja z siatką FINE (pusty rzut tej samej wielkości)
 (function(global){
-  const MIN=.2;
+  const MIN=.2,FINE=.25;
   function canRefine(project,k){const g=project?.grid||project?.definitionSnapshot?.grid;return !!g&&Number.isInteger(k)&&k>=2&&(+g.cellMeters)/k>=MIN-1e-9}
   function refine(project,k){k=k||2;if(!canRefine(project,k))throw new Error('Siatki nie da się bardziej zagęścić.');
     const p=JSON.parse(JSON.stringify(project)),g=p.grid||p.definitionSnapshot.grid,W=g.width,H=g.height,W2=W*k,H2=H*k;
@@ -28,5 +30,9 @@
     if(p.outline?.edges)p.outline.edges=p.outline.edges.flatMap(edge);
     const ng={...g,width:W2,height:H2,cellMeters:Math.round(g.cellMeters/k*1e6)/1e6};p.grid=ng;if(p.definitionSnapshot)p.definitionSnapshot.grid={...ng};
     return p}
-  global.HouserGrid={refine,canRefine,MIN};
+  const factor=g=>{const c=+g?.cellMeters;if(!(c>FINE+1e-9))return 1;const k=Math.round(c/FINE);return k>=2&&Math.abs(k*FINE-c)<1e-6?k:1};
+  function needs(project){return factor(project?.grid||project?.definitionSnapshot?.grid)>1}
+  function normalize(project){if(!needs(project))return project;const g=project.grid||project.definitionSnapshot.grid;return refine(project,factor(g))}
+  function normalizeDef(def){const k=factor(def?.grid);if(k<2)return def;return {...def,grid:{...def.grid,width:def.grid.width*k,height:def.grid.height*k,cellMeters:FINE}}}
+  global.HouserGrid={refine,canRefine,normalize,normalizeDef,needs,MIN,FINE};
 })(typeof window!=='undefined'?window:globalThis);
