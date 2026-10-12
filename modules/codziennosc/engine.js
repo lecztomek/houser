@@ -341,8 +341,9 @@ function evaluate(project,settings){
     }
     else if(def.id==='kominek'){
       let fire=null,fr=null;for(const r of list){const f=r.furn.find(x=>/kominek|koza|fireplace/.test(x.item));if(f){fire=f.node;fr=r;break}}
-      if(fire==null){const ch=M.project.structure?.chimney||[];for(const k of ch){const r=M.cellRoom[k];if(r&&(has(r,'living')||has(r,'dining'))){fire=k;fr=r;break}}}
-      if(fire==null){na(s,'Brak kominka (mebel „Kominek / koza” albo komin w salonie).');continue}
+      const hs=M.project.heatingSystem,fireSel=!!hs&&(/^fireplace/.test(hs.main||'')||['fireplace','fireplace_water','stove'].includes(hs.extra)); // sam komin to nie kominek
+      if(fire==null&&fireSel){const ch=M.project.structure?.chimney||[];for(const k of ch){const r=M.cellRoom[k];if(r&&(has(r,'living')||has(r,'dining'))){fire=k;fr=r;break}}}
+      if(fire==null){na(s,'Brak kominka (mebel „Kominek / koza” albo kominek wybrany w Ogrzewaniu, przy kominie w salonie).');continue}
       if(!exits.length){na(s,noExit);continue}
       const r=route(M,exitSrc(exits),[fire],{avoid:AV({priv:15,living:0,except:new Set([fr.key])})});
       if(!r){na(s,'Nie da się dojść do kominka.');continue}

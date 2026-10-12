@@ -454,7 +454,9 @@ function updateCodeLegend(){const el=els('codeLegend');if(!el)return;const L=sna
 // Kominek: przy kominie od strony salonu/pokoju dziennego/jadalni rysujemy wkład kominkowy (czarny, z pomarańczowym ogniem),
 // półkę i podest – wyraźna podpowiedź dla wizualizacji AI.
 const LIVING_RE=/salon|dzienn|jadal|kominek|living/i;let fireplacePts=[];
-function addFireplaces(){fireplacePts=[];const g=grid(),c=g.cellMeters,f='ground',set=new Set(project.structure?.chimney||[]),rm=roomMap(f),cand=[];
+// sam komin to nie kominek: kominek dorysowujemy tylko, gdy wybrano go w Ogrzewaniu (źródło lub dodatkowe: kominek / koza)
+const hasFireplace=p=>{const h=p?.heatingSystem;return !!h&&(/^fireplace/.test(h.main||'')||['fireplace','fireplace_water','stove'].includes(h.extra))};
+function addFireplaces(){fireplacePts=[];if(!hasFireplace(project))return;const g=grid(),c=g.cellMeters,f='ground',set=new Set(project.structure?.chimney||[]),rm=roomMap(f),cand=[];
   for(const n of set){const x=n%g.width,y=Math.floor(n/g.width);for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(set.has(ny*g.width+nx))continue;
     const id=roomAt(f,nx,ny);if(!id||cellClass(f,id)!=='room'||!LIVING_RE.test(rm[id]?.name||id))continue;cand.push({x,y,dx,dy})}}
   if(!cand.length)return;const cnt={};for(const k of cand){const key=k.dx+','+k.dy;cnt[key]=(cnt[key]||0)+1}
