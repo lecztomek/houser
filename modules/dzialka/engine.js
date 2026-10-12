@@ -63,12 +63,12 @@
     const c=ext.find(r=>!/gara[zż]/i.test(names(r)));return c?[c]:[]}
   function evaluate(project){
     const {s,F,P,bbox}=settings(project),q=global.HouserQuantities?HouserQuantities.compute(project):null,Gg=global.HouserGarage?HouserGarage.evaluate(project):null;
-    const NI=Math.round(s.w/C),NJ=Math.round(s.d/C),k=Math.round(F.c/C),ox=Math.round(s.hx/C),oy=Math.round(s.hy/C);
+    const NI=Math.round(s.w/C),NJ=Math.round(s.d/C),k=F.c/C,ox=Math.round(s.hx/C),oy=Math.round(s.hy/C);
     const issues=[],good=[];const add=(p,text,tip,type)=>issues.push({p:Math.round(p*100)/100,text,tip:tip||'',type:type||'site'});
     // zajętość kratek działki: dom, tarasy, garaż wolnostojący / wiata
     const occ=new Map(),inPlot=(i,j)=>i>=0&&j>=0&&i<NI&&j<NJ;let houseOut=0;
-    for(const t of P.house){const [x,y]=t.split(',').map(Number);for(let a=0;a<k;a++)for(let b=0;b<k;b++){const i=ox+x*k+a,j=oy+y*k+b;if(inPlot(i,j))occ.set(i+','+j,'house');else houseOut++}}
-    for(const [t,ty] of P.out){const [x,y]=t.split(',').map(Number);for(let a=0;a<k;a++)for(let b=0;b<k;b++){const i=ox+x*k+a,j=oy+y*k+b;if(inPlot(i,j)&&!occ.has(i+','+j))occ.set(i+','+j,'out:'+ty)}}
+    for(const t of P.house){const [x,y]=t.split(',').map(Number);for(const [i,j] of cellsUnder(ox,oy,k,x,y)){if(inPlot(i,j))occ.set(i+','+j,'house');else houseOut++}}
+    for(const [t,ty] of P.out){const [x,y]=t.split(',').map(Number);for(const [i,j] of cellsUnder(ox,oy,k,x,y)){if(inPlot(i,j)&&!occ.has(i+','+j))occ.set(i+','+j,'out:'+ty)}}
     let garage=null;if(Gg&&(Gg.type==='detached'||Gg.type==='carport')){let gx=+Gg.x,gy=+Gg.y;const grot=normRot(project.garage?.rot),gs=rotSide(s.road,grot),across=gs==='left'||gs==='right',ex=across?Gg.d:Gg.w,ey=across?Gg.w:Gg.d;
       if(!Number.isFinite(gx)||!Number.isFinite(gy)||Gg.x===null||Gg.y===null){ // domyślnie: obok domu (od strony ulicy równo z frontem)
         const b=bbox,X0=s.hx+b.minX*F.c,X1=s.hx+b.maxX*F.c,Y0=s.hy+b.minY*F.c,Y1=s.hy+b.maxY*F.c;
@@ -137,8 +137,10 @@
     return {terrain,set:s,plot:{w:s.w,d:s.d,area:plotA,NI,NJ,road:s.road,roadLen},house:{ox,oy,k,W:F.W,H:F.H,W2:P.W2,H2:P.H2,rot:s.rot,c:F.c,box:hb},fp:F,orient,occ,garage,garageEval:Gg,area,pbc,cover,built,setbacks,links,spots,issues,good,score,
       cost:{items,total:items.reduce((a,i)=>a+i.v,0),site:items.filter(i=>!i.garage).reduce((a,i)=>a+i.v,0),garage:items.filter(i=>i.garage).reduce((a,i)=>a+i.v,0)}}}
   // kratki działki tuż za krawędzią (otworem) domu: kratka siatki domu po zewnętrznej stronie, po obrocie
+  // kratki działki (0,5 m) pod kratką domu: siatka domu 1 m / 0,5 m / 0,25 m – k = rozmiar kratki domu / kratki działki
+  function cellsUnder(ox,oy,k,x,y){const out=[],i0=Math.floor(ox+x*k+1e-9),i1=Math.max(i0,Math.ceil(ox+(x+1)*k-1e-9)-1),j0=Math.floor(oy+y*k+1e-9),j1=Math.max(j0,Math.ceil(oy+(y+1)*k-1e-9)-1);for(let i=i0;i<=i1;i++)for(let j=j0;j<=j1;j++)out.push([i,j]);return out}
   function outsideCells(F,r,ox,oy,k,key){const [o,aS,bS]=key.split(':'),a=+aS,b=+bS,A=o==='h'?[a,b-1]:[a-1,b],B=[a,b],inA=F.house.has(A.join(',')),inB=F.house.has(B.join(','));
-    const cells=[];for(const c of (inA&&!inB?[B]:inB&&!inA?[A]:[A,B])){const [x,y]=rotCell(F,r,c[0],c[1]);for(let u=0;u<k;u++)for(let v=0;v<k;v++)cells.push([ox+x*k+u,oy+y*k+v])}return cells}
+    const cells=[];for(const c of (inA&&!inB?[B]:inB&&!inA?[A]:[A,B])){const [x,y]=rotCell(F,r,c[0],c[1]);cells.push(...cellsUnder(ox,oy,k,x,y))}return cells}
   // bok domu (na planie działki), na który wychodzi krawędź
   function edgeSide(F,r,key){const [o,aS,bS]=key.split(':'),a=+aS,b=+bS,inA=F.house.has((o==='h'?[a,b-1]:[a-1,b]).join(','));return rotSide(o==='h'?(inA?'bottom':'top'):(inA?'right':'left'),r)}
   function settingsBox(F){const all=[...F.house].map(t=>t.split(',').map(Number));return {minX:Math.min(...all.map(a=>a[0])),maxX:Math.max(...all.map(a=>a[0]))+1,minY:Math.min(...all.map(a=>a[1])),maxY:Math.max(...all.map(a=>a[1]))+1}}

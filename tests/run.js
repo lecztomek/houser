@@ -290,6 +290,14 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  const p3=ld('zefir-2.json');p3.foundation={water:'high',basement:{mode:'full'}};const F3=FD.evaluate(p3);ok(F3.Q.bArea>80&&F3.cost.baseItems.some(i=>/Biała wanna/.test(i.name))&&F3.issues.some(i=>i.type==='water'),'fundamenty: pełna piwnica przy wysokiej wodzie – biała wanna i uwaga');
  ok(!W.HouserCost.compute(ld('zefir-2.json')).rows.some(r=>r.id==='basement'),'fundamenty: bez ustawień – Wycena bez zmian (stawka za m²)');}
 
+// siatka 0,25 m: zagęszczenie projektu (pędzel 0,25 m) – ten sam dom, te same ilości
+{const ld=f=>JSON.parse(fs.readFileSync(path.join(ROOT,'examples',f),'utf8')),GR=W.HouserGrid;
+ for(const f of examples){const p=ld(f),r=GR.refine(p,2),qa=W.HouserQuantities.compute(p),qb=W.HouserQuantities.compute(r),same=(a,b)=>Math.abs(a-b)<1e-6;
+  ok(r.grid.cellMeters===p.grid.cellMeters/2&&r.grid.width===p.grid.width*2&&same(qa.foot,qb.foot)&&same(qa.net[qa.lo],qb.net[qb.lo])&&same(qa.extLen[qa.lo],qb.extLen[qb.lo])&&same(qa.ops.winA,qb.ops.winA)&&qa.ops.intDoor===qb.ops.intDoor&&qa.ops.extDoor===qb.ops.extDoor,f+': siatka 0,25 m – te same ilości (zabudowa, powierzchnie, obwód, okna, drzwi)');
+  const ca=W.HouserCost.compute(p).total,cb=W.HouserCost.compute(r).total;ok(Math.abs(cb/ca-1)<.02,f+': siatka 0,25 m – koszt prawie bez zmian ('+Math.round(ca)+' / '+Math.round(cb)+')');
+  const sa=W.HouserSite.evaluate(p),sb=W.HouserSite.evaluate(r),ha=[...sa.occ.values()].filter(v=>v==='house').length,hb=[...sb.occ.values()].filter(v=>v==='house').length;ok(ha===hb,f+': siatka 0,25 m – dom na działce tej samej wielkości')}
+ ok(!GR.canRefine(GR.refine(ld('zefir-2.json'),2),2),'siatka: nie gęściej niż 0,2 m');}
+
 // generator układu: ankieta -> warunki z reguł -> algorytm genetyczny -> projekt
 {const GN=W.HouserGen,cases=[{a:{},tag:'poddasze'},{a:{storeys:'1',garage:'1',beds:3},tag:'parterowy z garażem'},{a:{storeys:'full',garden:'W',entrance:'E',kitchen:'closed',extras:['office','mezz']},tag:'piętrowy, ogród od zachodu'}];
  for(const C of cases){const P=GN.program(C.a),tag='generator ('+C.tag+')';
