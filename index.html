@@ -471,10 +471,9 @@ async function openProject(obj,label){
   if(label==='preview'&&project.readOnly?.src==='base'&&project.projectId){} // dom autora „Houser” ma stałe id (z pliku) – ten sam dom za każdym razem
   else if(label==='sample'||label==='preview'||label==='new'||label==='file'||!project.projectId)project.projectId=HouserStore.newId();
   if(label==='file'){delete project.readOnly;delete project.sharedEdit}
-  const before=curJSON;
   if(!HouserStore.save(project,'plik'))throw new Error('Nie udało się zapisać projektu w przeglądarce (za mało miejsca?).');
   lsSet(LAST_SAVE,label==='file'?new Date().toISOString():'');
-  pushUndo(before,'plik');curJSON=JSON.stringify(project);lastPush={t:0,src:''};echoUntil=Date.now()+3000;
+  resetUndo();curJSON=JSON.stringify(project);lastPush={t:0,src:''};echoUntil=Date.now()+3000;
   reloadModules();if(label!=='cloud'&&label!=='sample'&&label!=='preview')HouserCloud.touch('project');roWarned=false;renderBar();toast('Wczytano projekt „'+projName(project)+'”')}
 // język strony (PL / EN) – zmiana przeładowuje całą aplikację razem z modułami
 for(const b of document.querySelectorAll('#lang button,.navlang button')){b.classList.toggle('on',b.dataset.l===HouserI18n.lang);b.onclick=()=>{if(b.dataset.l!==HouserI18n.lang)HouserI18n.set(b.dataset.l)}}
@@ -522,7 +521,10 @@ function pushUndo(prevJSON,src){if(prevJSON==null)return;const now=Date.now();
   if(!(src&&src===lastPush.src&&now-lastPush.t<900&&undoStack.length)){undoStack.push({json:prevJSON,src});if(undoStack.length>HIST_MAX)undoStack.shift()}
   lastPush={t:now,src};redoStack.length=0;renderUndo()}
 let echoUntil=0; // po cofnięciu moduły mogą zapisać przywrócony projekt ponownie (normalizacja) – to nie jest nowa zmiana
-function onStoreChange(rec){const j=JSON.stringify(rec.project);if(j===curJSON)return;if(Date.now()<echoUntil){curJSON=j;return}
+// historia dotyczy tylko wczytanego domu: inny dom (inny identyfikator) = czysta historia, bez cofania do poprzedniego domu
+function resetUndo(){undoStack.length=0;redoStack.length=0;lastPush={t:0,src:''};renderUndo()}
+const pidOf=j=>{try{return j?JSON.parse(j).projectId||null:null}catch(_){return null}};
+function onStoreChange(rec){const j=JSON.stringify(rec.project);if(j===curJSON)return;if(curJSON&&pidOf(curJSON)!==(rec.project?.projectId||null)){curJSON=j;resetUndo();return}if(Date.now()<echoUntil){curJSON=j;return}
   if(!canSave(rec.project)){if(!roWarned){roWarned=true;toast(rec.project?.readOnly?'To podgląd cudzego domu – zmiany nie zapisują się. Kliknij „Zrób kopię do siebie”, żeby nad nim pracować.':'Bez konta możesz tylko przeglądać – zmiany nie zapisują się. Zaloguj się, żeby projektować.')}pushUndo(curJSON,rec.source);curJSON=j;return}
   HouserCloud.touch('project');libTouch();pushUndo(curJSON,rec.source);curJSON=j}
 function applyHist(from,to){if(!from.length)return;const cur=HouserStore.load(),step=from.pop();
