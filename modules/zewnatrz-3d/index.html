@@ -144,7 +144,8 @@ function buildRoofWings(){ const e=elev(),eo=e.eaveOverhang,go=e.gableOverhang,t
     for(const [l,free] of [[w.l0,w.free0],[w.l1,w.free1]])if(free)addPoly([P(0,l,w.eave),P(S,l,w.eave),P(half,l,top)],'#ddd7ce','#a79f93',1,1);
     // szczyt skrzydła niższego przy ścianie wyższego – ściana pod dachem do styku
     if(w.level==='low')for(const [l,free] of [[w.l0,w.free0],[w.l1,w.free1]])if(!free)addPoly([P(0,l,w.eave),P(S,l,w.eave),P(half,l,top)],'#ddd7ce','#a79f93',1,1); } }
-function isRoofWindow(q){ if(multiRoof()){ if(!opts.roof||q.type!=='window'||q.f!=='upper')return false; const c=C(),x=q.o==='v'?q.a*c:(q.a+.5)*c,z=q.o==='v'?(q.b+.5)*c:q.b*c,d=.25,
+function isRoofWindow(q){ if(elev().upperType==='full') return false; // pełne piętro: ściany aż do okapu, okna piętra są zwykłymi oknami w ścianie
+ if(multiRoof()){ if(!opts.roof||q.type!=='window'||q.f!=='upper')return false; const c=C(),x=q.o==='v'?q.a*c:(q.a+.5)*c,z=q.o==='v'?(q.b+.5)*c:q.b*c,d=.25,
     inX=q.o==='v'?(q.screenSide==='left'?x+d:x-d):x,inZ=q.o==='h'?(q.screenSide==='top'?z+d:z-d):z,w=HouserModel.wingAt(wings(),inX,inZ); return !!w&&w.level==='top'&&(q.o==='v'?w.slopeX:!w.slopeX); }
  if(!opts.roof || q.type!=='window' || q.f!=='upper') return false; const r=roofSpec(); return r.ridge==='north-south' ? (q.screenSide==='left'||q.screenSide==='right') : (q.screenSide==='top'||q.screenSide==='bottom'); }
 function buildOpenings(){ if(!opts.openings) return; const c=C(), e=elev(); for(const f of floors().slice(0,2)){ const base=f==='ground'?0:e.groundHeight,runs={};
@@ -203,7 +204,7 @@ function buildPV(){ if(!opts.roof||!window.HouserPV||!project.pvSettings?.enable
   for(const sl of R.slopes){ if(!sl.rects||!sl.panels) continue; const sg=sl.side==='left'||sl.side==='top'?-1:1;
     const pt=(x,y)=>{const d=y*cos;return P(half+sg*d,base+x,top-d*r.rise/half+.07)};
     for(const p of sl.rects.slice(0,sl.panels)) addQuad(pt(p.x0+.02,p.y0+.02),pt(p.x1-.02,p.y0+.02),pt(p.x1-.02,p.y1-.02),pt(p.x0+.02,p.y1-.02),'#1e3a8a',{stroke:'#cbd5e1',line:.7}); } }
-function buildChimney(){ if(!opts.chimney) return; const c=C(); for(const n of project.structure?.chimney||[]){ const x=n%W(),z=Math.floor(n/W()),cx=(x+.5)*c,cz=(z+.5)*c,Hh=roofY(cx,cz)+.75; addBox(x*c+.08,0,z*c+.08,(x+1)*c-.08,Hh,(z+1)*c-.08,'#565b62',{stroke:'#2f3338'}); } }
+function buildChimney(){ if(!opts.chimney) return; for(const b of HouserModel.chimneyBlocks(project)){ const d=Math.min(.08,(b.x1-b.x0)/6,(b.z1-b.z0)/6),Hh=Math.max(roofY(b.x0,b.z0),roofY(b.x1,b.z0),roofY(b.x0,b.z1),roofY(b.x1,b.z1),roofY((b.x0+b.x1)/2,(b.z0+b.z1)/2))+.75; addBox(b.x0+d,0,b.z0+d,b.x1-d,Hh,b.z1-d,'#565b62',{stroke:'#2f3338'}); } }
 function outdoorRect(it){ if([it?.x,it?.y,it?.w,it?.h].every(v=>Number.isFinite(+v))) return {x:+it.x,z:+it.y,w:Math.max(C(),+it.w),d:Math.max(C(),+it.h)}; const wm=W()*C(),hm=H()*C(),side=screenSideForCardinal(it.side),start=+it.start||0,len=+it.length||C(),dep=+it.depth||C(); if(side==='top') return {x:start,z:-dep,w:len,d:dep}; if(side==='bottom') return {x:wm-start-len,z:hm,w:len,d:dep}; if(side==='right') return {x:wm,z:start,w:dep,d:len}; return {x:-dep,z:hm-start-len,w:dep,d:len}; }
 function outdoorCellsOf(it){ const c=C(); if(Array.isArray(it.cells)&&it.cells.length) return HouserModel.outdoorCells(it,c); const r=outdoorRect(it); return HouserModel.outdoorCells({x:r.x,y:r.z,w:r.w,h:r.d},c); } // prostokąt (x, z, w, d) -> kratki
 // balkony z modułu Balkony: płyta (wystające) i balustrada po krawędziach, które nie stykają się ze ścianą piętra

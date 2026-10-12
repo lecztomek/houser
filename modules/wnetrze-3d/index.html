@@ -487,7 +487,7 @@ function addStructure3D(){const st=project.structure||{},c=grid().cellMeters,H=f
     if(b.o==='h')addBoxFaces(a0,H-.3,L-.125,a1,H-.01,L+.125,col,str);else addBoxFaces(L-.125,H-.3,a0,L+.125,H-.01,a1,col,str)}
   // więźba z modułu Konstrukcja dachu: słupy (nad pustką – od podłogi parteru) i płatwie / belka kalenicowa
   if(!window.HouserRoof)return;let R=null;try{R=HouserRoof.evaluate(project)}catch(e){console.warn(e)}if(!R?.ok)return;
-  const g=R.geom,ub=floorBase('upper'),wood=cd?SCENE_CODE.structure[0]:'#b9895a',ws={stroke:cd?'#111827':'#7c5a36'},P=(a,l)=>g.across?[a,l]:[l,a];
+  const g=R.geom,EG=HouserModel.geometry(project.elevationSettings||{},9),ub=floorBase('upper')+(g.attic?0:EG.upperWall),wood=cd?SCENE_CODE.structure[0]:'#b9895a',ws={stroke:cd?'#111827':'#7c5a36'},P=(a,l)=>g.across?[a,l]:[l,a];
   // jętki (więźba jętkowa) i kleszcze (płatwiowa): poziome belki w poprzek dachu co rozstaw krokwi, na wysokości jętek
   if(R.system==='collar'||R.system==='purlin'){const sp=Math.max(.6,+R.set.spacing||.9),y=ub+g.zc,n=Math.max(1,Math.round(g.Lr/sp));
     for(let i=0;i<=n;i++){const l=g.L0+Math.min(g.Lr-.05,Math.max(.05,i*g.Lr/n)),[x0,z0]=P(g.xp,l),[x1,z1]=P(g.S-g.xp,l);
@@ -808,7 +808,7 @@ function build3D(){
   if(modelStairs().length)addStairsFromModel();else addStraightStairs();
   if(settings.showChimney&&Array.isArray(project.structure?.chimney)){
     const c=grid().cellMeters;
-    for(const n of project.structure.chimney){const x=n%grid().width,y=Math.floor(n/grid().width);let H=floorHeight('ground')+floorHeight('upper')+.45;if(roofEnabled())H=Math.max(H,roofAbsYAt((x+.5)*c,(y+.5)*c)+.55);addBoxFaces(x*c+.03,0,y*c+.03,(x+1)*c-.03,H,(y+1)*c-.03,codedOn()?CHIMNEY_CODE[0]:'#77716c',{stroke:'#5e5955'})}
+    for(const b of HouserModel.chimneyBlocks(project)){let H=floorHeight('ground')+floorHeight('upper')+.45;if(roofEnabled())H=Math.max(H,...[[b.x0,b.z0],[b.x1,b.z0],[b.x0,b.z1],[b.x1,b.z1],[(b.x0+b.x1)/2,(b.z0+b.z1)/2]].map(([x,z])=>roofAbsYAt(x,z)+.55));addBoxFaces(b.x0+.03,0,b.z0+.03,b.x1-.03,H,b.z1-.03,codedOn()?CHIMNEY_CODE[0]:'#77716c',{stroke:'#5e5955'})}
     addFireplaces();
   }
   addStructure3D();

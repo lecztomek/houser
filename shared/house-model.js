@@ -175,5 +175,12 @@
       const y=w.eave+Math.min(a-a0,a0+w.span-a)*Math.tan(Math.atan(w.rise/(w.span/2)));if(best==null||y>best)best=y}return best}
   // skrzydło, pod którym leży punkt (bez przedłużeń)
   function wingAt(wings,x,z){let best=null;for(const w of wings)if(x>=w.x0-1e-6&&x<=w.x1+1e-6&&z>=w.z0-1e-6&&z<=w.z1+1e-6&&(!best||w.top>best.top))best=w;return best}
-  global.HouserModel={roofRange,roofWings,roofYAt,wingAt,DEF,SOFFITS,normalize,geometry,toSaved,slopesAcrossX,outdoorCells,outdoorFromMap,outdoorMap,outdoorCorners,outdoorGeom,SIDE_KINDS};
+  // komin: sąsiadujące kratki komina = jeden blok (przy siatce 0,25 m komin 0,5 × 0,5 m to 4 kratki, a nie 4 osobne słupki)
+  // chimneyBlocks(project) -> [{x0,z0,x1,z1} w metrach]
+  function chimneyBlocks(project){const g=project?.grid||project?.definitionSnapshot?.grid||{},W=g.width||0,c=+g.cellMeters||.5,set=new Set((project?.structure?.chimney||[]).filter(n=>Number.isInteger(n))),seen=new Set(),out=[];
+    for(const n of set){if(seen.has(n))continue;let x0=1e9,y0=1e9,x1=-1,y1=-1;const st=[n];seen.add(n);
+      while(st.length){const m=st.pop(),x=m%W,y=Math.floor(m/W);x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);
+        for(const k of [x>0?m-1:-1,x<W-1?m+1:-1,m-W,m+W])if(k>=0&&set.has(k)&&!seen.has(k)){seen.add(k);st.push(k)}}
+      out.push({x0:x0*c,z0:y0*c,x1:(x1+1)*c,z1:(y1+1)*c})}return out}
+  global.HouserModel={chimneyBlocks,roofRange,roofWings,roofYAt,wingAt,DEF,SOFFITS,normalize,geometry,toSaved,slopesAcrossX,outdoorCells,outdoorFromMap,outdoorMap,outdoorCorners,outdoorGeom,SIDE_KINDS};
 })(window);
