@@ -205,7 +205,8 @@ function roofSpec(){
   const ridge=acrossX?'north-south':'east-west'; // wewnętrznie: 'north-south' = połacie opadają w poprzek osi X
   return {W,D,upperBase,eaveY,rise,ridge,ridgeY:eaveY+rise};
 }
-function roofEnabled(){return !!settings.showRoof && roofSpec().rise>0}
+// skosy dachu we wnętrzu tylko przy poddaszu użytkowym; pełne piętro ma płaski sufit (nad nim strych / poddasze nieużytkowe)
+function roofEnabled(){return !!settings.showRoof && roofSpec().rise>0 && HouserModel.normalize(project.elevationSettings||{}).upperType==='attic'}
 function roofWingsMulti(){const w=HouserModel.roofWings?HouserModel.roofWings(project):[];return w.length&&!w[0].legacy?w:null}
 function roofAbsYAt(x,z){
   const r=roofSpec(); if(!roofEnabled())return r.eaveY;
