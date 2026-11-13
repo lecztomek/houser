@@ -175,12 +175,22 @@ function renderPlan(){if(grid())scaleGrid();
   el('rect',{x:P(b.x0),y:P(b.y0),width:Wc*PX,height:Hc*PX,fill:'#f8fafc'},svg);
   if(A.ok)for(const [x,y] of A.ins)el('rect',{x:P(x),y:P(y),width:PX+.5,height:PX+.5,fill:'#dbeafe'},svg);
   // obecny rzut parteru (podgląd)
-  for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){const id=cellAt(f,x,y);if(!id||id===OUT_ID)continue;const r=rooms(f).find(q=>q.id===id);el('rect',{x:P(x)+3,y:P(y)+3,width:PX-6,height:PX-6,rx:3,fill:r?.color||'#cbd5e1','fill-opacity':r?.kind==='exteriorVoid'?.25:.45},svg)}
+  for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){const id=cellAt(f,x,y);if(!id||id===OUT_ID)continue;const r=rooms(f).find(q=>q.id===id);el('rect',{x:P(x),y:P(y),width:PX+.5,height:PX+.5,fill:r?.color||'#cbd5e1','fill-opacity':r?.kind==='exteriorVoid'?.2:.38},svg)}
   {const st=STEP(),s0=v=>Math.ceil(v/st)*st; // linie siatki co 0,5 m – po nich rysujesz obrys
   for(let x=s0(b.x0);x<=b.x1;x+=st)el('line',{x1:P(x),y1:P(b.y0),x2:P(x),y2:P(b.y1),stroke:'rgba(15,23,42,.13)','stroke-width':1},svg);
   for(let y=s0(b.y0);y<=b.y1;y+=st)el('line',{x1:P(b.x0),y1:P(y),x2:P(b.x1),y2:P(y),stroke:'rgba(15,23,42,.13)','stroke-width':1},svg);}
   el('rect',{x:0,y:0,width:g.width*PX,height:g.height*PX,fill:'none',stroke:'#94a3b8','stroke-dasharray':'6 5','stroke-width':1.5},svg);
   for(const key of edges){const [o,xs,ys]=key.split(':'),x=+xs,y=+ys;el('line',o==='h'?{x1:P(x),y1:P(y),x2:P(x+1),y2:P(y)}:{x1:P(x),y1:P(y),x2:P(x),y2:P(y+1)},svg).setAttribute('style','stroke:#0f172a;stroke-width:'+(6)+';stroke-linecap:square')}
+  // wymiary: długość każdego prostego odcinka obrysu (po stronie zewnętrznej) i wymiary całkowite
+  {const c=g.cellMeters,inS=A.ok?A.set:new Set(),fs=11*k,lab=(x,y,t,anchor,rot)=>{const T=el('text',{x,y,'text-anchor':anchor||'middle','dominant-baseline':'middle','font-size':fs,'font-weight':700,fill:'#1d4ed8','paint-order':'stroke',stroke:'#fff','stroke-width':3*k,'pointer-events':'none'},svg,t);if(rot)T.setAttribute('transform','rotate(-90 '+x+' '+y+')')},fm=v=>(Math.round(v*100)/100).toString().replace('.',',')+' m';
+    const H={},V={};for(const key of edges){const [o,xs,ys]=key.split(':'),x=+xs,y=+ys;if(o==='h')(H[y]=H[y]||[]).push(x);else(V[x]=V[x]||[]).push(y)}
+    const runs=(arr,f)=>{arr.sort((a,b)=>a-b);let s0=arr[0],pr=arr[0];for(let i=1;i<=arr.length;i++){if(i<arr.length&&arr[i]===pr+1){pr=arr[i];continue}f(s0,pr+1);if(i<arr.length)s0=pr=arr[i]}};
+    const off=.9*STEP();
+    for(const [ys,xs] of Object.entries(H))runs(xs,(a0,a1)=>{const y=+ys,mid=Math.floor((a0+a1)/2),outUp=inS.has(mid+','+y);lab(P((a0+a1)/2),P(outUp?y-off:y+off),fm((a1-a0)*c))});
+    for(const [xs,ys] of Object.entries(V))runs(ys,(a0,a1)=>{const x=+xs,mid=Math.floor((a0+a1)/2),outL=inS.has(x+','+mid);lab(P(outL?x-off:x+off),P((a0+a1)/2),fm((a1-a0)*c),'middle',true)});
+    if(A.ok){const d=2.2*STEP();lab(P((A.bx0+A.bx1)/2),P(A.by0-d),'całość '+fm(A.w));lab(P(A.bx0-d),P((A.by0+A.by1)/2),'całość '+fm(A.h),'middle',true);
+      el('line',{x1:P(A.bx0),y1:P(A.by0-d+.5*STEP()),x2:P(A.bx1),y2:P(A.by0-d+.5*STEP()),stroke:'#93c5fd','stroke-width':1.5*k,'pointer-events':'none'},svg);
+      el('line',{x1:P(A.bx0-d+.5*STEP()),y1:P(A.by0),x2:P(A.bx0-d+.5*STEP()),y2:P(A.by1),stroke:'#93c5fd','stroke-width':1.5*k,'pointer-events':'none'},svg)}}
   el('text',{x:P(g.width/2),y:P(-M+.8),'text-anchor':'middle','font-size':12*k,fill:'#64748b'},svg,'przerywana ramka = obecna siatka projektu');
 }
 // najbliższa krawędź siatki pod kursorem
