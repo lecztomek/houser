@@ -144,10 +144,13 @@ function buildRoofWings(){ const e=elev(),eo=e.eaveOverhang,go=e.gableOverhang,t
       if(fin==='wood'){ for(let a=l0+.12;a<l1-.02;a+=.12) addQuad(P(r+dn,a-.008,y0),P(r+dn,a+.008,y0),P(r+dn,a+.008,y1),P(r+dn,a-.008,y1),'#6b4423',{stroke:'#6b4423',line:.3}); } // drewniane deski pionowe
       // obróbki: czapa na górnej krawędzi wyższej połaci (wysunięta przed ściankę, na całej długości z okapami szczytowymi)
       // i obróbka blacharska u dołu ścianki, gdzie niższa połać styka się z uskokiem
-      const o=tA>tB?1:-1,cap='#30353c',cst={stroke:'#1f2328'},[ca,cb]=[r-o*.08,r+o*.1],[pa,pb]=[P(Math.min(ca,cb),L0,y1-.07),P(Math.max(ca,cb),L1,y1+.05)];
+      const o=tA>tB?1:-1,cap=col,cst={stroke:edge},[ca,cb]=[r-o*.08,r+o*.1],[pa,pb]=[P(Math.min(ca,cb),L0,y1-.07),P(Math.max(ca,cb),L1,y1+.05)];
       addBox(Math.min(pa[0],pb[0]),y1-.07,Math.min(pa[2],pb[2]),Math.max(pa[0],pb[0]),y1+.05,Math.max(pa[2],pb[2]),cap,cst);
       const fl=.3; addQuad(P(r+o*.01,L0,y0+.02),P(r+o*.01,L1,y0+.02),P(r+o*fl,L1,y0-fl*tan+.02),P(r+o*fl,L0,y0-fl*tan+.02),cap,cst);
       addQuad(P(r+o*.02,l0,y0),P(r+o*.02,l1,y0),P(r+o*.02,l1,y0+.15),P(r+o*.02,l0,y0+.15),cap,cst);
+      // pionowo przy szczytach: ścianka nad wysunięciem dachu w kolorze dachu i pionowa obróbka na końcach (łączy deski czołowe obu połaci)
+      for(const [la,lb] of [[L0,l0],[l1,L1]]) if(lb-la>.01) addQuad(P(r,la,y0-t),P(r,lb,y0-t),P(r,lb,y1),P(r,la,y1),cap,cst);
+      for(const [l,sg] of [[L0,-1],[L1,1]]){ const [qa,qb]=[P(Math.min(ca,cb),l,y0-t),P(Math.max(ca,cb),l+sg*.04,y1)]; addBox(Math.min(qa[0],qb[0]),y0-t,Math.min(qa[2],qb[2]),Math.max(qa[0],qb[0]),y1+.05,Math.max(qa[2],qb[2]),cap,cst); }
     }
     for(const a of [-eo,S+eo])Q(P(a,L0,lo-t),P(a,L1,lo-t),P(a,L1,lo),P(a,L0,lo),fas);
     for(const [l,free] of [[L0,w.free0],[L1,w.free1]]){if(!free)continue;Q(P(-eo,l,lo-t),P(r,l,tA-t),P(r,l,tA),P(-eo,l,lo),fas);Q(P(r,l,tB-t),P(S+eo,l,lo-t),P(S+eo,l,lo),P(r,l,tB),fas)}
