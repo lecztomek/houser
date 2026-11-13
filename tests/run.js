@@ -280,7 +280,9 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  {const c=.25,Wd=48,Hd=40,gr=Array(Wd*Hd).fill('salon'),up=Array(Wd*Hd).fill(null);for(let y=0;y<Hd;y++)for(let x=0;x<Wd;x++){const xm=x*c,ym=y*c;up[y*Wd+x]=xm<2||(xm<4&&ym>=7)?'poza_obrysem':xm<4?'pokoj2':'sypialnia'}
   const def={version:7,name:'T',grid:{width:Wd,height:Hd,cellMeters:c},floorOrder:['ground','upper'],floors:{ground:{name:'P',rooms:[{id:'salon',name:'Salon',kind:'room'}]},upper:{name:'U',rooms:[{id:'sypialnia',name:'S',kind:'room'},{id:'pokoj2',name:'P2',kind:'room'},{id:'poza_obrysem',name:'Poza',kind:'exteriorVoid'}]}}};
   const pw={version:7,definitionSnapshot:def,grid:{...def.grid},state:{ground:gr,upper:up},openings:{ground:{},upper:{}},orientation:{top:'north'},elevationSettings:{upperType:'full',ridge:'north-south'}},ww=W.HouserModel.roofWings(pw);
-  ok(ww.length===1&&ww[0].x0===2&&ww[0].x1===12&&W.HouserModel.roofYAt(ww,3,3)!=null&&W.HouserModel.roofYAt(ww,1,3)==null,'dach: wąski pas piętra pod przedłużonym dachem głównym, balkon obok bez dachu ('+ww.map(x=>x.x0+'–'+x.x1+' × '+x.z0+'–'+x.z1).join(', ')+')')}}
+  ok(ww.length===1&&ww[0].x0===2&&ww[0].x1===12&&W.HouserModel.roofYAt(ww,3,3)!=null&&W.HouserModel.roofYAt(ww,1,3)==null,'dach: wąski pas piętra pod przedłużonym dachem głównym, balkon obok bez dachu ('+ww.map(x=>x.x0+'–'+x.x1+' × '+x.z0+'–'+x.z1).join(', ')+')');
+  pw.pvSettings={enabled:true,size:'max',slopes:'all'};const PR=W.HouserPV.compute(pw),ps=PR.slopes.filter(x=>x.geo);
+  ok(ps.length===2&&ps.every(x=>x.panels>0&&Math.abs(x.L-(10+2*(pw.elevationSettings.gableOverhang??.4)))<.01&&x.rects.every(r=>r.x0>=0&&r.x1<=x.L&&r.y1<=x.Hs)),'fotowoltaika: panele na połaciach skrzydła dachu, nie poza nim ('+ps.map(x=>x.side+' '+x.panels).join(', ')+')')}}
 
 // teren ze spadkiem (Działka) i fundamenty z piwnicą
 {const ld=f=>JSON.parse(fs.readFileSync(path.join(ROOT,'examples',f),'utf8')),SI=W.HouserSite,FD=W.HouserFoundation;

@@ -203,7 +203,10 @@ function drawWallOpening(q,base,t0,t1,info){ info=info||HouserOpenings.resolve(p
 // panele fotowoltaiczne (moduł Fotowoltaika włączony): te same miejsca co na rozkładzie połaci – x wzdłuż kalenicy od szczytu, y w dół połaci od kalenicy
 function buildPV(){ if(!opts.roof||!window.HouserPV||!project.pvSettings?.enabled) return; let R; try{R=HouserPV.compute(project)}catch(e){console.error(e);return}
   const r=roofSpec(),ns=r.ridge==='north-south',half=(ns?r.w:r.d)/2,cos=Math.cos(Math.atan2(r.rise,half)),base=(r.l0||0)-(elev().gableOverhang||0),top=r.eave+r.rise,P=(a,l,y)=>ns?[a,y,l]:[l,y,a];
-  for(const sl of R.slopes){ if(!sl.rects||!sl.panels) continue; const sg=sl.side==='left'||sl.side==='top'?-1:1;
+  for(const sl of R.slopes){ if(!sl.rects||!sl.panels) continue; const G=sl.geo;
+    if(G){ const Pg=(a,l,y)=>G.ns?[a,y,l]:[l,y,a],cs=Math.cos(Math.atan(G.tan)),ptg=(x,y)=>{const d=y*cs;return Pg(G.A0+G.half+G.sg*d,G.base+x,G.top-d*G.tan+.07)}; // połać skrzydła
+      for(const p of sl.rects.slice(0,sl.panels)) addQuad(ptg(p.x0+.02,p.y0+.02),ptg(p.x1-.02,p.y0+.02),ptg(p.x1-.02,p.y1-.02),ptg(p.x0+.02,p.y1-.02),'#1e3a8a',{stroke:'#cbd5e1',line:.7}); continue; }
+    const sg=sl.side==='left'||sl.side==='top'?-1:1;
     const pt=(x,y)=>{const d=y*cos;return P(half+sg*d,base+x,top-d*r.rise/half+.07)};
     for(const p of sl.rects.slice(0,sl.panels)) addQuad(pt(p.x0+.02,p.y0+.02),pt(p.x1-.02,p.y0+.02),pt(p.x1-.02,p.y1-.02),pt(p.x0+.02,p.y1-.02),'#1e3a8a',{stroke:'#cbd5e1',line:.7}); } }
 function buildChimney(){ if(!opts.chimney) return; for(const b of HouserModel.chimneyBlocks(project)){ const d=Math.min(.08,(b.x1-b.x0)/6,(b.z1-b.z0)/6),Hh=Math.max(roofY(b.x0,b.z0),roofY(b.x1,b.z0),roofY(b.x0,b.z1),roofY(b.x1,b.z1),roofY((b.x0+b.x1)/2,(b.z0+b.z1)/2))+.75; addBox(b.x0+d,0,b.z0+d,b.x1-d,Hh,b.z1-d,'#565b62',{stroke:'#2f3338'}); } }
