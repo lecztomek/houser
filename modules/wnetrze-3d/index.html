@@ -223,8 +223,10 @@ function upperEdgeHeight(orient,x,y,c){
 }
 function addRoof3D(){
   if(!roofEnabled())return; const r=roofSpec(),col='#ece9e3',stroke='#c8c2b8';
-  const mw=roofWingsMulti();if(mw){for(const w of mw){const S=w.span,h=S/2,A0=w.slopeX?w.x0:w.z0,P=(a,l,y)=>w.slopeX?[A0+a,y,l]:[l,y,A0+a];
-    addQuad(P(0,w.l0,w.eave),P(h,w.l0,w.top),P(h,w.l1,w.top),P(0,w.l1,w.eave),col,{stroke,line:.55});addQuad(P(h,w.l0,w.top),P(S,w.l0,w.eave),P(S,w.l1,w.eave),P(h,w.l1,w.top),col,{stroke,line:.55})}return}
+  const mw=roofWingsMulti();if(mw){for(const w of mw){const S=w.span,h=w.r??S/2,tA=w.topA??w.top,tB=w.topB??w.top,A0=w.slopeX?w.x0:w.z0,P=(a,l,y)=>w.slopeX?[A0+a,y,l]:[l,y,A0+a];
+    addQuad(P(0,w.l0,w.eave),P(h,w.l0,tA),P(h,w.l1,tA),P(0,w.l1,w.eave),col,{stroke,line:.55});addQuad(P(h,w.l0,tB),P(S,w.l0,w.eave),P(S,w.l1,w.eave),P(h,w.l1,tB),col,{stroke,line:.55});
+    if(Math.abs(tA-tB)>.01){const y0=Math.min(tA,tB),y1=Math.max(tA,tB);addQuad(P(h,w.l0,y0),P(h,w.l1,y0),P(h,w.l1,y1),P(h,w.l0,y1),col,{stroke,line:.55}); // uskok przy kalenicy: pionowa ścianka (od środka – płyta)
+      }}return}
   if(r.ridge==='north-south'){
     addQuad([0,r.eaveY,0],[r.W/2,r.ridgeY,0],[r.W/2,r.ridgeY,r.D],[0,r.eaveY,r.D],col,{stroke,line:.55});
     addQuad([r.W/2,r.ridgeY,0],[r.W,r.eaveY,0],[r.W,r.eaveY,r.D],[r.W/2,r.ridgeY,r.D],col,{stroke,line:.55});

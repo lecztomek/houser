@@ -282,7 +282,14 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
   const pw={version:7,definitionSnapshot:def,grid:{...def.grid},state:{ground:gr,upper:up},openings:{ground:{},upper:{}},orientation:{top:'north'},elevationSettings:{upperType:'full',ridge:'north-south'}},ww=W.HouserModel.roofWings(pw);
   ok(ww.length===1&&ww[0].x0===2&&ww[0].x1===12&&W.HouserModel.roofYAt(ww,3,3)!=null&&W.HouserModel.roofYAt(ww,1,3)==null,'dach: wąski pas piętra pod przedłużonym dachem głównym, balkon obok bez dachu ('+ww.map(x=>x.x0+'–'+x.x1+' × '+x.z0+'–'+x.z1).join(', ')+')');
   pw.pvSettings={enabled:true,size:'max',slopes:'all'};const PR=W.HouserPV.compute(pw),ps=PR.slopes.filter(x=>x.geo);
-  ok(ps.length===2&&ps.every(x=>x.panels>0&&Math.abs(x.L-(10+2*(pw.elevationSettings.gableOverhang??.4)))<.01&&x.rects.every(r=>r.x0>=0&&r.x1<=x.L&&r.y1<=x.Hs)),'fotowoltaika: panele na połaciach skrzydła dachu, nie poza nim ('+ps.map(x=>x.side+' '+x.panels).join(', ')+')')}}
+  ok(ps.length===2&&ps.every(x=>x.panels>0&&Math.abs(x.L-(10+2*(pw.elevationSettings.gableOverhang??.4)))<.01&&x.rects.every(r=>r.x0>=0&&r.x1<=x.L&&r.y1<=x.Hs)),'fotowoltaika: panele na połaciach skrzydła dachu, nie poza nim ('+ps.map(x=>x.side+' '+x.panels).join(', ')+')');
+  // dach z uskokiem przy kalenicy: ta sama powierzchnia połaci, kalenica przesunięta, różnica wysokości = uskok; balkony bez dachu
+  const sw=JSON.parse(JSON.stringify(pw));sw.elevationSettings={...sw.elevationSettings,roofType:'stepped',roofStep:1,stepHigh:'west'};const w2=W.HouserModel.roofWings(sw)[0],qa=W.HouserQuantities.compute(pw),qb=W.HouserQuantities.compute(sw);
+  ok(Math.abs(w2.topA-w2.topB-1)<.01&&w2.r>w2.span/2&&w2.highDir==='west'&&Math.abs(qa.roofA-qb.roofA)<.01&&W.HouserModel.roofYAt([w2],w2.x0+w2.r-.01,5)-W.HouserModel.roofYAt([w2],w2.x0+w2.r+.01,5)>.95,'dach z uskokiem: wyższa połać zachodnia, uskok 1 m, ta sama powierzchnia dachu ('+Math.round(qb.roofA)+' m²)');
+  const PS=W.HouserPV.compute(sw).slopes.filter(x=>x.geo);ok(PS.length===2&&PS[0].Hs>PS[1].Hs&&PS.every(x=>x.rects.every(r=>r.y1<=x.Hs)),'dach z uskokiem: połać wyższa dłuższa – panele w jej granicach');
+  const bw=JSON.parse(JSON.stringify(pw)),cells=[];for(let y=0;y<Hd;y++)for(let x=0;x<Wd;x++)if(x*c<2||(x*c<4&&y*c>=7))cells.push([x,y]);bw.balconies=[{id:'b',cells}];
+  const yes=W.HouserModel.roofWings(bw),no=W.HouserModel.roofWings({...bw,elevationSettings:{...bw.elevationSettings,balconyRoof:'no'}});
+  ok(W.HouserModel.roofYAt(yes,3,8.5)!=null&&W.HouserModel.roofYAt(no,3,8.5)==null&&W.HouserModel.roofYAt(no,3,3)!=null&&W.HouserModel.roofYAt(no,1,3)==null&&W.HouserModel.roofYAt(yes,1,3)==null,'dach nad balkonami: „tak” przykrywa narożnik (loggia), „nie” – balkony otwarte, pas piętra z własnym dachem')}}
 
 // teren ze spadkiem (Działka) i fundamenty z piwnicą
 {const ld=f=>JSON.parse(fs.readFileSync(path.join(ROOT,'examples',f),'utf8')),SI=W.HouserSite,FD=W.HouserFoundation;

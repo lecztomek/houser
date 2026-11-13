@@ -9,6 +9,10 @@
 //   roofPitch     kąt nachylenia połaci [°]
 //   ridge         'north-south' | 'east-west' – kierunek kalenicy
 //   roofHeight    wyliczana wysokość dachu od okapu do kalenicy [m] (zapisywana dla zgodności)
+//   roofType      'gable' = dwuspadowy | 'stepped' = dwuspadowy z uskokiem przy kalenicy (pionowa ścianka)
+//   roofStep      wysokość uskoku [m]; stepHigh – kierunek świata, w który patrzy wyższa połać ('north'|'east'|'south'|'west')
+//   stepFinish    ścianka uskoku: 'wood' (drewniane deski pionowe) | 'plaster' (tynk)
+//   balconyRoof   'yes' = dach nad balkonami / wnękami piętra (loggie) | 'no' = balkony i wnęki piętra bez dachu
 (function(global){
   const DEF={groundHeight:2.8,upperType:'full',upperHeight:2.8,kneeWall:1.0,roofPitch:35,ridge:'east-west',eaveOverhang:.5,gableOverhang:.4,soffit:'wood'};
   const SOFFITS={wood:'drewniana',white:'biała',graphite:'grafitowa',none:'brak (widoczne krokwie)'};
@@ -33,6 +37,11 @@
       gableOverhang:clamp(num(e.gableOverhang,DEF.gableOverhang),0,1.5), // wysunięcie dachu przed ściany szczytowe [m]
       soffit:SOFFITS[e.soffit]?e.soffit:DEF.soffit,                    // podbitka
       roofShape:e.roofShape==='rect'?'rect':'auto',                   // dach dopasowany do obrysu (L, T…) albo jeden nad prostokątem siatki
+      roofType:e.roofType==='stepped'?'stepped':'gable',               // dwuspadowy / z uskokiem przy kalenicy
+      roofStep:clamp(num(e.roofStep,.8),.2,2.5),                        // wysokość uskoku [m]
+      stepHigh:['north','east','south','west'].includes(e.stepHigh)?e.stepHigh:'south', // wyższa połać patrzy na…
+      stepFinish:e.stepFinish==='plaster'?'plaster':'wood', // ścianka uskoku: deski pionowe / tynk
+      balconyRoof:e.balconyRoof==='no'?'no':'yes',                      // dach nad balkonami / wnękami piętra
     };
   }
 
@@ -46,7 +55,7 @@
   }
 
   // Ustawienia do zapisu: znormalizowane + wyliczone roofHeight dla starszych przeglądarek.
-  function toSaved(e,span){const g=geometry(e,span);return {groundHeight:g.groundHeight,upperType:g.upperType,upperHeight:g.upperHeight,kneeWall:g.kneeWall,roofPitch:g.roofPitch,ridge:g.ridge,roofHeight:g.roofHeight,eaveOverhang:g.eaveOverhang,gableOverhang:g.gableOverhang,soffit:g.soffit,roofShape:g.roofShape};}
+  function toSaved(e,span){const g=geometry(e,span);return {groundHeight:g.groundHeight,upperType:g.upperType,upperHeight:g.upperHeight,kneeWall:g.kneeWall,roofPitch:g.roofPitch,ridge:g.ridge,roofHeight:g.roofHeight,eaveOverhang:g.eaveOverhang,gableOverhang:g.gableOverhang,soffit:g.soffit,roofShape:g.roofShape,roofType:g.roofType,roofStep:g.roofStep,stepHigh:g.stepHigh,stepFinish:g.stepFinish,balconyRoof:g.balconyRoof};}
 
   // Czy połacie opadają w poprzek osi X siatki (kalenica biegnie wzdłuż osi Z / wierszy)?
   // Zależy od kierunku kalenicy i tego, jaki kierunek świata jest u góry siatki.
@@ -123,23 +132,35 @@
   // Część parterowa przy domu z piętrem (np. garaż) dostaje niższy dach z okapem na wysokości parteru.
   // elevationSettings.roofShape: 'auto' (dopasowany do obrysu) | 'rect' (jeden dach nad całym prostokątem siatki)
   // roofWings(project) -> [{x0,z0,x1,z1 (m), slopeX (połacie w poprzek osi X), span, eave, rise, top, level, main, l0,l1 (zasięg wzdłuż kalenicy z przedłużeniem), free0,free1 (wolne szczyty)}]
-  function roofWings(project){const g=project.grid||project.definitionSnapshot?.grid;if(!g)return [];const c=g.cellMeters,W=g.width,H=g.height,e=project.elevationSettings||{};
+  // uskok przy kalenicy (roofType 'stepped'): obie połacie mają ten sam kąt i okap, kalenica przesunięta o step/(2·tan) –
+  // wyższa połać kończy się wyżej o step, pomiędzy pionowa ścianka. w.r – położenie kalenicy od krawędzi A0 skrzydła,
+  // w.topA / w.topB – szczyt połaci od strony A0 / od strony A0+span.
+  const DIRS4=['north','east','south','west'],faceDir=(top,side)=>DIRS4[(Math.max(0,DIRS4.indexOf(top||'north'))+({top:0,right:1,bottom:2,left:3}[side]))%4];
+  function ridgeOf(w,n,top){const S=w.span,half=S/2,tan=w.rise/half;w.r=half;w.step=0;
+    if(n&&n.roofType==='stepped'&&w.main){const fa=faceDir(top,w.slopeX?'left':'top'),fb=faceDir(top,w.slopeX?'right':'bottom'),hiA=n.stepHigh===fb?false:true,dr=Math.min(half-.5,n.roofStep/(2*tan));
+      if(dr>0){w.r=hiA?half+dr:half-dr;w.step=2*dr*tan;w.highA=hiA;w.highDir=hiA?fa:fb}}
+    w.topA=w.eave+tan*w.r;w.topB=w.eave+tan*(S-w.r);w.top=Math.max(w.topA,w.topB);return w}
+  function roofWings(project){const e=project?.elevationSettings||{},n=normalize(e,9),top=project?.orientation?.top,ws=roofWings0(project);
+    for(const w of ws){if(w.r==null)ridgeOf(w,n,top)}if(n.roofType==='stepped'&&ws.length&&ws[0].legacy&&ws[0].step>0)ws[0].legacy=false; // dach z uskokiem rysują moduły skrzydeł
+    return ws}
+  function roofWings0(project){const g=project.grid||project.definitionSnapshot?.grid;if(!g)return [];const c=g.cellMeters,W=g.width,H=g.height,e=project.elevationSettings||{};
     const top=project.orientation?.top,mainSX=slopesAcrossX(e.ridge==='north-south'?'north-south':'east-west',top);
     const legacy=()=>{const span=mainSX?W*c:H*c,G=geometry(e,span),rr=roofRange(project);return [{x0:0,z0:0,x1:W*c,z1:H*c,slopeX:mainSX,span,eave:G.eave,rise:G.rise,top:G.eave+G.rise,level:'top',main:true,l0:rr.l0,l1:rr.l1,free0:true,free1:true,legacy:true}]};
     if(e.roofShape==='rect')return legacy();
     const [lo,up]=project.definitionSnapshot?.floorOrder||['ground','upper'],K={},st={};
     for(const f of [lo,up]){const v=project.state?.[f]||[];st[f]=Array.isArray(v[0])?v.flat():v;K[f]=Object.fromEntries((project.definitionSnapshot?.floors?.[f]?.rooms||[]).map(r=>[r.id,r.kind]))}
     const n0=normalize(e,9),storey=n0.upperType!=='none'&&st[up].some(v=>v&&K[up][v]!=='exteriorVoid');
-    const occ=(f,i)=>{const v=st[f][i];return !!v&&K[f][v]!=='exteriorVoid'},inHouse=(f,i)=>!!st[f][i]&&st[f][i]!=='poza_obrysem'; // wnęka / loggia (inna pustka niż „poza obrysem”) zostaje pod dachem
+    const noBal=n0.balconyRoof==='no',occ=(f,i)=>{const v=st[f][i];return !!v&&K[f][v]!=='exteriorVoid'},inHouse=(f,i)=>!noBal&&!!st[f][i]&&st[f][i]!=='poza_obrysem'; // wnęka / loggia (inna pustka niż „poza obrysem”) zostaje pod dachem – chyba że balkony i wnęki bez dachu
     // poziom dachu głównego: piętro (z wnękami) albo parter domu parterowego; niższy: parter bez piętra nad nim
-    const A=new Uint8Array(W*H),B=new Uint8Array(W*H);
-    for(let i=0;i<W*H;i++){if(storey){if(occ(up,i)||(inHouse(up,i)&&occ(lo,i)))A[i]=1;else if(occ(lo,i))B[i]=1}else if(occ(lo,i))A[i]=1}
-    const rectsOf=(M,allow)=>{let x0=W,y0=H,x1=-1,y1=-1,n=0;for(let i=0;i<W*H;i++)if(M[i]){const x=i%W,y=(i-x)/W;x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);n++}if(!n)return [];
+    const A=new Uint8Array(W*H),B=new Uint8Array(W*H),bal=new Uint8Array(W*H); // balkon (moduł Balkony): podłoga na stropie parteru – nigdy niski dach spadzisty
+    for(const b of Array.isArray(project.balconies)?project.balconies:[])for(const [x,y] of b.cells||[])if(x>=0&&y>=0&&x<W&&y<H)bal[y*W+x]=1;
+    for(let i=0;i<W*H;i++){if(storey){if(occ(up,i)||(inHouse(up,i)&&occ(lo,i)))A[i]=1;else if(occ(lo,i)&&!bal[i])B[i]=1}else if(occ(lo,i))A[i]=1}
+    const rectsOf=(M,allow,own)=>{let x0=W,y0=H,x1=-1,y1=-1,n=0;for(let i=0;i<W*H;i++)if(M[i]){const x=i%W,y=(i-x)/W;x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);n++}if(!n)return [];
       // wnęki i małe wcięcia (dotykają najwyżej jednego boku obrysu) wypełniamy – zostają pod dachem
       const F=M.slice(),seen=new Uint8Array(W*H);for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const i=y*W+x;if(F[i]||seen[i])continue;const comp=[],q=[i];seen[i]=1;let sides=new Set(),cx0=x,cx1=x,cy0=y,cy1=y;
         while(q.length){const j=q.pop(),a=j%W,b=(j-a)/W;comp.push(j);cx0=Math.min(cx0,a);cx1=Math.max(cx1,a);cy0=Math.min(cy0,b);cy1=Math.max(cy1,b);if(a===x0)sides.add('l');if(a===x1)sides.add('r');if(b===y0)sides.add('t');if(b===y1)sides.add('b');
           for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const na=a+dx,nb=b+dy;if(na<x0||nb<y0||na>x1||nb>y1)continue;const k=nb*W+na;if(!F[k]&&!seen[k]){seen[k]=1;q.push(k)}}}
-        const small=Math.min(cx1-cx0+1,cy1-cy0+1)*c<=2.5||comp.length*c*c<=6;if(sides.size<=1&&small)for(const j of comp)F[j]=1}
+        const small=Math.min(cx1-cx0+1,cy1-cy0+1)*c<=2.5||comp.length*c*c<=6,open=noBal&&storey&&comp.some(j=>!occ(up,j)&&occ(lo,j));if(sides.size<=1&&small&&!open)for(const j of comp)F[j]=1}
       // największe prostokąty po kolei (min. 2,5 m szerokości)
       const out=[],minC=Math.ceil(2.5/c-1e-9);for(let guard=0;guard<6;guard++){let best=null;const hgt=new Int32Array(W);
         for(let y=y0;y<=y1;y++){for(let x=x0;x<=x1;x++)hgt[x]=F[y*W+x]?hgt[x]+1:0;
@@ -155,11 +176,13 @@
             if(!touchR)continue;let extra=0,ok=true;
             for(let y=uy0;y<=uy1&&ok;y++)for(let x=ux0;x<=ux1;x++){if(inR(r,x,y))continue;const i=y*W+x;if(F[i]&&comp.includes(i))continue;if(out.some(o=>o!==r&&inR(o,x,y))||!(M[i]||allow?.(i))){ok=false;break}extra++}
             if(ok&&extra<=comp.length&&(!best||extra<best.extra))best={r,extra,ux0,ux1,uy0,uy1}}
-          if(best){Object.assign(best.r,{x0:best.ux0,x1:best.ux1,y0:best.uy0,y1:best.uy1});for(const j of comp)F[j]=0}}}
+          if(best){Object.assign(best.r,{x0:best.ux0,x1:best.ux1,y0:best.uy0,y1:best.uy1});for(const j of comp)F[j]=0}
+          else{let bx0=W,bx1=-1,by0=H,by1=-1;for(const j of comp){const a=j%W,b=(j-a)/W;bx0=Math.min(bx0,a);bx1=Math.max(bx1,a);by0=Math.min(by0,b);by1=Math.max(by1,b)} // nie da się przedłużyć (np. balkon obok bez dachu): własny mały dach
+            const ar=(bx1-bx0+1)*(by1-by0+1);if(own&&ar===comp.length&&Math.min(bx1-bx0+1,by1-by0+1)*c>=1-1e-9&&ar*c*c>=2){out.push({x0:bx0,x1:bx1,y0:by0,y1:by1,ar,sc:0});for(const j of comp)F[j]=0}}}}
       return out};
-    const underA=new Uint8Array(W*H),RA=rectsOf(A,i=>occ(lo,i)||occ(up,i));
+    const underA=new Uint8Array(W*H),RA=rectsOf(A,i=>noBal?occ(up,i):(occ(lo,i)||occ(up,i)),noBal);
     for(const r of RA)for(let y=r.y0;y<=r.y1;y++)for(let x=r.x0;x<=r.x1;x++){underA[y*W+x]=1;B[y*W+x]=0} // pod przedłużonym dachem głównym nie ma już niższego dachu
-    const RB=storey?rectsOf(B,i=>occ(lo,i)&&!occ(up,i)&&!underA[i]):[];if(!RA.length)return legacy();
+    const RB=storey?rectsOf(B,i=>occ(lo,i)&&!occ(up,i)&&!underA[i]&&!bal[i]):[];if(!RA.length)return legacy();
     if(RA.length===1&&!RB.length&&RA[0].x0===0&&RA[0].y0===0&&RA[0].x1===W-1&&RA[0].y1===H-1)return legacy();
     const tan=Math.tan(n0.roofPitch*Math.PI/180),eaveA=geometry(e,9).eave,eaveB=n0.groundHeight;
     const wings=[];const mk=(r,level,main)=>({x0:r.x0*c,z0:r.y0*c,x1:(r.x1+1)*c,z1:(r.y1+1)*c,level,main,cell:r});
@@ -175,17 +198,18 @@
         w.slopeX=t?((t==='z0'||t==='z1')!==(along>depth*2)):((w.x1-w.x0)<(w.z1-w.z0));w.joint=t}
       w.span=w.slopeX?w.x1-w.x0:w.z1-w.z0;w.eave=w.level==='top'?eaveA:eaveB;w.rise=tan*w.span/2;w.top=w.eave+w.rise;
       w.l0=w.slopeX?w.z0:w.x0;w.l1=w.slopeX?w.z1:w.x1;w.free0=true;w.free1=true}
+    for(const w of wings)ridgeOf(w,n0,top);
     // przedłużenie skrzydła w dach rodzica (ten sam poziom): do kalenicy rodzica, gdy ta biegnie wzdłuż styku
     for(const w of wings){const p=w.parent,t=w.joint;if(!p||!t)continue;
       const end=(t==='z0'||t==='x0')?0:1;if(end===0)w.free0=false;else w.free1=false;
       if(p.level!==w.level)continue;const perp=(t==='z0'||t==='z1')?w.slopeX:!w.slopeX;if(!perp){if(end===0)w.free0=true;else w.free1=true;continue}const pRidgeAlongJoint=(t==='z0'||t==='z1')?!p.slopeX:p.slopeX;if(!pRidgeAlongJoint)continue;
-      const pr=p.slopeX?(p.x0+p.x1)/2:(p.z0+p.z1)/2;if(end===0)w.l0=Math.min(w.l0,pr);else w.l1=Math.max(w.l1,pr)}
+      const pr=(p.slopeX?p.x0:p.z0)+p.r;if(end===0)w.l0=Math.min(w.l0,pr);else w.l1=Math.max(w.l1,pr)}
     // szczyt skrzydła przylegający do innego (niebędącego rodzicem) też nie jest wolny
     for(const w of wings)for(const o of wings){if(o===w)continue;const t=touch(w,o);if(!t)continue;if(w.slopeX&&t==='z0'||!w.slopeX&&t==='x0')w.free0=false;if(w.slopeX&&t==='z1'||!w.slopeX&&t==='x1')w.free1=false}
     return wings}
   // wysokość połaci nad punktem (m od terenu) – najwyższe skrzydło nad punktem; null = poza dachem
   function roofYAt(wings,x,z){let best=null;for(const w of wings){const a=w.slopeX?x:z,a0=w.slopeX?w.x0:w.z0,l=w.slopeX?z:x;if(a<a0-1e-6||a>a0+w.span+1e-6||l<w.l0-1e-6||l>w.l1+1e-6)continue;
-      const y=w.eave+Math.min(a-a0,a0+w.span-a)*Math.tan(Math.atan(w.rise/(w.span/2)));if(best==null||y>best)best=y}return best}
+      const r=w.r??w.span/2,y=w.eave+(a-a0<r?a-a0:a0+w.span-a)*(w.rise/(w.span/2));if(best==null||y>best)best=y}return best}
   // skrzydło, pod którym leży punkt (bez przedłużeń)
   function wingAt(wings,x,z){let best=null;for(const w of wings)if(x>=w.x0-1e-6&&x<=w.x1+1e-6&&z>=w.z0-1e-6&&z<=w.z1+1e-6&&(!best||w.top>best.top))best=w;return best}
   // komin: sąsiadujące kratki komina = jeden blok (przy siatce 0,25 m komin 0,5 × 0,5 m to 4 kratki, a nie 4 osobne słupki)

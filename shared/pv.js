@@ -61,19 +61,19 @@
     const slopes=[];
     // dach ze skrzydeł (obrys L, T, przedłużenia nad węższą częścią piętra): połacie każdego skrzydła osobno, w jego własnym prostokącie
     const wings=HouserModel.roofWings?HouserModel.roofWings(project):[],multi=wings.length>0&&!wings[0].legacy;
-    if(multi&&q.roofA>0)wings.forEach((w,i)=>{const ns=w.slopeX,half=w.span/2,tan=w.rise/half,slopeLenW=(half+eo)/cos,eaveYw=slopeLenW-eo/cos,A0=ns?w.x0:w.z0,ridge=A0+half;
+    if(multi&&q.roofA>0)wings.forEach((w,i)=>{const ns=w.slopeX,half=w.span/2,tan=w.rise/half,r=w.r??half,A0=ns?w.x0:w.z0,ridge=A0+r,run=f=>f===faces[0]?r:w.span-r,slopeLenOf=f=>(run(f)+eo)/cos,eaveOf=f=>run(f)/cos;
       const b0=(ns?w.z0:w.x0)-(w.free0?go:0),b1=(ns?w.z1:w.x1)+(w.free1?go:0),L=b1-b0,faces=ns?['left','right']:['top','bottom'],ob={[faces[0]]:[],[faces[1]]:[]},rw={[faces[0]]:0,[faces[1]]:0};
       const inW=(x,z)=>x>=w.x0-1e-6&&x<=w.x1+1e-6&&z>=w.z0-1e-6&&z<=w.z1+1e-6,faceOf=(x,z)=>(ns?x:z)<ridge?faces[0]:faces[1];
       for(const r of q.runs||[]){if(r.base!=='window'||r.info?.shape!=='roof')continue;const d=r.ra?-.25:.25,line=r.line*c,m=(r.from+(r.to+1))/2*c,x=r.o==='v'?line+d:m,z=r.o==='v'?m:line+d;if(!inW(x,z)||HouserModel.wingAt(wings,x,z)!==w)continue;
-        const f=faceOf(x,z),sill=Math.max(0,+r.info.sill||0),hh=Math.max(.4,+r.info.height||1.2),yb=Math.max(.2,eaveYw-sill);rw[f]++;ob[f].push({kind:'win',x0:r.from*c-b0,x1:(r.to+1)*c-b0,y0:Math.max(0,yb-hh),y1:yb})}
+        const f=faceOf(x,z),sill=Math.max(0,+r.info.sill||0),hh=Math.max(.4,+r.info.height||1.2),yb=Math.max(.2,eaveOf(f)-sill);rw[f]++;ob[f].push({kind:'win',x0:r.from*c-b0,x1:(r.to+1)*c-b0,y0:Math.max(0,yb-hh),y1:yb})}
       for(const k of HouserModel.chimneyBlocks(project)){const cx=(k.x0+k.x1)/2,cz=(k.z0+k.z1)/2;if(!inW(cx,cz))continue;const f=faceOf(cx,cz),a0=ns?k.x0:k.z0,a1=ns?k.x1:k.z1,d0=Math.max(0,Math.min(Math.abs(a0-ridge),Math.abs(a1-ridge))*((a0-ridge)*(a1-ridge)>0?1:0));
         ob[f].push({kind:'chimney',x0:(ns?k.z0:k.x0)-b0,x1:(ns?k.z1:k.x1)-b0,y0:d0/cos,y1:Math.max(Math.abs(a0-ridge),Math.abs(a1-ridge))/cos})}
       // skrzydło boczne wchodzi w tę połać (kosz) – tam paneli nie kładziemy
       for(const o of wings){if(o.parent!==w||o.level!==w.level||!o.joint)continue;const t=o.joint,f=t==='x1'?'left':t==='x0'?'right':t==='z1'?'top':'bottom';if(!ob[f])continue;
-        ob[f].push({kind:'wing',x0:(ns?o.z0:o.x0)-b0,x1:(ns?o.z1:o.x1)-b0,y0:0,y1:slopeLenW})}
-      for(const f of faces){const dir=side(f),dAz=Math.abs(((AZ[dir]-180)+540)%360-180),k=orientK(pitch,dAz),rects=layout(L,eaveYw,ob[f]);
+        ob[f].push({kind:'wing',x0:(ns?o.z0:o.x0)-b0,x1:(ns?o.z1:o.x1)-b0,y0:0,y1:slopeLenOf(f)})}
+      for(const f of faces){const dir=side(f),dAz=Math.abs(((AZ[dir]-180)+540)%360-180),k=orientK(pitch,dAz),slopeLenW=slopeLenOf(f),eaveYw=eaveOf(f),rects=layout(L,eaveYw,ob[f]);
         slopes.push({side:i?'w'+(i+1)+'-'+f:f,face:f,wing:i,dir,dirPL:DIR_PL[dir]+(wings.length>1?' – dach '+(i+1)+(w.level==='low'?' (niższy)':''):''),dAz,tilt:pitch,k,yield:BASE_YIELD*k,area:slopeLenW*L,maxPanels:rects.length,rects,obstacles:ob[f],L,Hs:slopeLenW,eaveY:eaveYw,roofWins:rw[f],panels:0,kWp:0,prod:0,
-          geo:{ns,A0,half,top:w.top,tan,base:b0,sg:f===faces[0]?-1:1}})}});
+          geo:{ns,ridge,top:f===faces[0]?(w.topA??w.top):(w.topB??w.top),tan,base:b0,sg:f===faces[0]?-1:1}})}});
     else if(q.roofA>0)for(const s of sides){const dir=side(s),dAz=Math.abs(((AZ[dir]-180)+540)%360-180),k=orientK(pitch,dAz);
       const gross=slopeLen*roofLen,rects=layout(roofLen,eaveY,obs[s]);
       slopes.push({side:s,dir,dirPL:DIR_PL[dir],dAz,tilt:pitch,k,yield:BASE_YIELD*k,area:gross,maxPanels:rects.length,rects,obstacles:obs[s],L:roofLen,Hs:slopeLen,eaveY,roofWins:rwin[s],panels:0,kWp:0,prod:0})}
