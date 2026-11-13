@@ -170,26 +170,39 @@ function renderPlan(){if(grid())scaleGrid();
   const svg=$('plan');svg.innerHTML='';const b=bounds(),g=grid(),Wc=b.x1-b.x0,Hc=b.y1-b.y0,A=analyse(),f=floors()[0];
   svg.setAttribute('viewBox',[b.x0*PX,b.y0*PX,Wc*PX,Hc*PX].join(' '));
   const main=document.querySelector('.main'),avail=Math.max(320,Math.min(main.clientWidth-70,(main.clientHeight-90)*Wc/Hc));svg.setAttribute('width',Math.round(avail));const k=Wc*PX/Math.round(avail);
-  $('planTitle').textContent='Obszar roboczy · kratka '+g.cellMeters+' m';$('planInfo').textContent=tool==='erase'?'Gumka':'Rysuj po liniach siatki';
+  $('planTitle').textContent='Obszar roboczy · rysowanie co '+String(STEP()*g.cellMeters).replace('.',',')+' m';$('planInfo').textContent=tool==='erase'?'Gumka':'Rysuj po liniach siatki';
   const P=v=>v*PX;
   el('rect',{x:P(b.x0),y:P(b.y0),width:Wc*PX,height:Hc*PX,fill:'#f8fafc'},svg);
   if(A.ok)for(const [x,y] of A.ins)el('rect',{x:P(x),y:P(y),width:PX+.5,height:PX+.5,fill:'#dbeafe'},svg);
   // obecny rzut parteru (podgląd)
   for(let y=0;y<g.height;y++)for(let x=0;x<g.width;x++){const id=cellAt(f,x,y);if(!id||id===OUT_ID)continue;const r=rooms(f).find(q=>q.id===id);el('rect',{x:P(x)+3,y:P(y)+3,width:PX-6,height:PX-6,rx:3,fill:r?.color||'#cbd5e1','fill-opacity':r?.kind==='exteriorVoid'?.25:.45},svg)}
-  for(let x=b.x0;x<=b.x1;x++)el('line',{x1:P(x),y1:P(b.y0),x2:P(x),y2:P(b.y1),stroke:'rgba(15,23,42,.1)','stroke-width':1},svg);
-  for(let y=b.y0;y<=b.y1;y++)el('line',{x1:P(b.x0),y1:P(y),x2:P(b.x1),y2:P(y),stroke:'rgba(15,23,42,.1)','stroke-width':1},svg);
+  {const st=STEP(),s0=v=>Math.ceil(v/st)*st; // linie siatki co 0,5 m – po nich rysujesz obrys
+  for(let x=s0(b.x0);x<=b.x1;x+=st)el('line',{x1:P(x),y1:P(b.y0),x2:P(x),y2:P(b.y1),stroke:'rgba(15,23,42,.13)','stroke-width':1},svg);
+  for(let y=s0(b.y0);y<=b.y1;y+=st)el('line',{x1:P(b.x0),y1:P(y),x2:P(b.x1),y2:P(y),stroke:'rgba(15,23,42,.13)','stroke-width':1},svg);}
   el('rect',{x:0,y:0,width:g.width*PX,height:g.height*PX,fill:'none',stroke:'#94a3b8','stroke-dasharray':'6 5','stroke-width':1.5},svg);
   for(const key of edges){const [o,xs,ys]=key.split(':'),x=+xs,y=+ys;el('line',o==='h'?{x1:P(x),y1:P(y),x2:P(x+1),y2:P(y)}:{x1:P(x),y1:P(y),x2:P(x),y2:P(y+1)},svg).setAttribute('style','stroke:#0f172a;stroke-width:'+(6)+';stroke-linecap:square')}
   el('text',{x:P(g.width/2),y:P(-M+.8),'text-anchor':'middle','font-size':12*k,fill:'#64748b'},svg,'przerywana ramka = obecna siatka projektu');
 }
 // najbliższa krawędź siatki pod kursorem
-function edgeAt(e){const svg=$('plan'),pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse()),x=p.x/PX,y=p.y/PX,b=bounds();
-  const fx=x-Math.floor(x),fy=y-Math.floor(y),dxl=Math.min(fx,1-fx),dyl=Math.min(fy,1-fy);if(Math.min(dxl,dyl)>.3)return null;
-  let key;if(dyl<dxl){const yy=Math.round(y),xx=Math.floor(x);if(xx<b.x0||xx>=b.x1||yy<b.y0||yy>b.y1)return null;key='h:'+xx+':'+yy}else{const xx=Math.round(x),yy=Math.floor(y);if(yy<b.y0||yy>=b.y1||xx<b.x0||xx>b.x1)return null;key='v:'+xx+':'+yy}return key}
-function paint(key){if(!key)return false;if(drag.erase){if(!edges.has(key))return false;edges.delete(key)}else{if(edges.has(key))return false;edges.add(key)}dirty=true;return true}
+// obrys rysujemy co 0,5 m (STEP kratek siatki domu), dom zostaje zapisany w kratkach 0,25 m
+const STEP=()=>Math.max(1,Math.round(.5/(+grid()?.cellMeters||.5)));
+function ptAt(e){const svg=$('plan'),pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());return {x:p.x/PX,y:p.y/PX}}
+// krawędzie siatki pod kursorem: odcinek 0,5 m (STEP kratek); o – wymuszona orientacja ('h' | 'v') przy przeciąganiu; k=1 – pojedyncza kratka (gumka)
+function edgeAt(e,o,k){k=k||STEP();const P=ptAt(e),x=P.x/k,y=P.y/k,b=bounds();
+  const fx=x-Math.floor(x),fy=y-Math.floor(y),dxl=Math.min(fx,1-fx),dyl=Math.min(fy,1-fy);
+  if(o==='h'?dyl>.35:o==='v'?dxl>.35:Math.min(dxl,dyl)>.3)return null;
+  const hor=o?o==='h':dyl<dxl,out=[];
+  if(hor){const yy=Math.round(y)*k,xx=Math.floor(x)*k;for(let i=0;i<k;i++){const X=xx+i;if(X>=b.x0&&X<b.x1&&yy>=b.y0&&yy<=b.y1)out.push('h:'+X+':'+yy)}}
+  else{const xx=Math.round(x)*k,yy=Math.floor(y)*k;for(let i=0;i<k;i++){const Y=yy+i;if(Y>=b.y0&&Y<b.y1&&xx>=b.x0&&xx<=b.x1)out.push('v:'+xx+':'+Y)}}
+  return out.length?out:null}
+function paint(keys){if(!keys)return false;let ch=false;for(const key of keys){if(drag.erase){if(edges.has(key)){edges.delete(key);ch=true}}else if(!edges.has(key)){edges.add(key);ch=true}}if(ch)dirty=true;return ch}
 document.addEventListener('contextmenu',e=>{if($('plan')?.contains(e.target))e.preventDefault()});
-document.addEventListener('pointerdown',e=>{const svg=$('plan');if(!project||!svg||!svg.contains(e.target))return;e.preventDefault();drag={erase:e.button===2||tool==='erase'};if(paint(edgeAt(e)))renderPlan()});
-document.addEventListener('pointermove',e=>{if(!drag)return;if(paint(edgeAt(e)))renderPlan()});
+document.addEventListener('pointerdown',e=>{const svg=$('plan');if(!project||!svg||!svg.contains(e.target))return;e.preventDefault();drag={erase:e.button===2||tool==='erase',last:ptAt(e)};
+  let ch=paint(edgeAt(e));if(drag.erase&&!ch)ch=paint(edgeAt(e,null,1)); // gumka: też pojedyncza kratka (starsze linie co 0,25 m)
+  if(ch)renderPlan()});
+// przeciąganie: linia idzie w kierunku ruchu myszy (poziomo albo pionowo) – bez przypadkowych kresek na rogach
+document.addEventListener('pointermove',e=>{if(!drag)return;const P=ptAt(e),k=STEP(),dx=(P.x-drag.last.x)/k,dy=(P.y-drag.last.y)/k;if(Math.max(Math.abs(dx),Math.abs(dy))<.3)return;
+  const o=Math.abs(dx)>=Math.abs(dy)?'h':'v';drag.last=P;let ch=paint(edgeAt(e,o));if(drag.erase&&!ch)ch=paint(edgeAt(e,o,1));if(ch)renderPlan()});
 document.addEventListener('pointerup',()=>{if(!drag)return;drag=null;renderAll()});
 window.addEventListener('resize',renderPlan);
 if(window.ResizeObserver)new ResizeObserver(()=>{if(!drag)renderPlan()}).observe(document.querySelector('.main'));
