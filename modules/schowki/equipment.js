@@ -22,16 +22,16 @@
   const ITEMS=[
     {id:'coats',name:'Kurtki i buty',g:'Przy wejściu',furn:['p_szafa','p_buty'],rooms:['dress','hall'],v:p=>.12*p,tip:'Szafa wnękowa i szafka na buty przy wejściu (Meblowanie).'},
     {id:'seasonal',name:'Odzież sezonowa (zimowa / letnia)',g:'Ubrania',furn:['b_szafa','g_szafa','o_szafa','p_szafa'],rooms:['dress','box','attic'],v:p=>.08*p},
-    {id:'linen',name:'Pościel i ręczniki na zmianę',g:'Ubrania',furn:['b_szafa','b_komoda','g_szafa','o_szafa','l_szafka'],rooms:['dress','box'],v:.2},
+    {id:'linen',name:'Pościel i ręczniki na zmianę',g:'Ubrania',furn:['b_szafa','b_komoda','g_szafa','o_szafa','l_szafka','l_niska'],rooms:['dress','box'],v:.2},
     {id:'vacuum',name:'Odkurzacz',g:'Sprzątanie',furn:['p_szafa','b_szafa','g_szafa','o_szafa','t_regal'],rooms:['box','tech','dress'],v:.15,tip:'Najwygodniej w schowku albo szafie przy holu.'},
     {id:'robot',name:'Robot sprzątający (stacja)',g:'Sprzątanie',rooms:['hall','box','tech','other','kitchen'],v:.05,def:false},
-    {id:'mop',name:'Mop, wiadro, chemia',g:'Sprzątanie',furn:['l_szafka','p_szafa','t_regal','k_zlew'],rooms:['box','tech','bath'],v:.12},
+    {id:'mop',name:'Mop, wiadro, chemia',g:'Sprzątanie',furn:['l_szafka','l_niska','p_szafa','t_regal','k_zlew'],rooms:['box','tech','bath'],v:.12},
     {id:'iron',name:'Deska do prasowania i żelazko',g:'Pranie',furn:['p_szafa','b_szafa','g_szafa','o_szafa','t_regal'],rooms:['tech','box','dress'],v:.08},
     {id:'rack',name:'Suszarka na pranie (rozkładana)',g:'Pranie',furn:['t_regal'],rooms:['tech','box','bath','dress'],v:.06},
     {id:'smallapp',name:'Małe AGD (ekspres, robot, toster)',g:'Kuchnia',furn:['k_dolne','k_wysokie','k_narozne','k_wyspa'],rooms:['pantry'],v:.25},
     {id:'food',name:'Zapasy jedzenia, przetwory',g:'Kuchnia',furn:['k_wysokie','k_dolne','k_narozne','k_wyspa'],rooms:['pantry'],v:p=>.15+.08*p},
     {id:'bins',name:'Kosze do segregacji (3–4 frakcje)',g:'Kuchnia',furn:['k_zlew','k_dolne','k_wyspa'],rooms:['pantry'],v:.12},
-    {id:'firstaid',name:'Apteczka i leki',g:'Inne',furn:['l_szafka','l_umywalka','k_wysokie','k_dolne'],rooms:['bath'],v:.02},
+    {id:'firstaid',name:'Apteczka i leki',g:'Inne',furn:['l_szafka','l_niska','l_umywalka','k_wysokie','k_dolne'],rooms:['bath'],v:.02},
     {id:'network',name:'Router / szafka teletechniczna',g:'Inne',furn:['t_regal','s_regal','g_regal'],rooms:['tech','box','hall'],v:.05},
     {id:'suitcases',name:'Walizki',g:'Sezonowe',furn:['b_szafa','p_szafa','g_szafa','o_szafa'],rooms:['box','dress','attic','garage'],v:.3},
     {id:'xmas',name:'Ozdoby świąteczne, rzeczy sezonowe',g:'Sezonowe',furn:['t_regal'],rooms:['box','attic','garage','tech'],v:.3},
@@ -44,7 +44,7 @@
   ];
   const GROUPS=[...new Set(ITEMS.map(i=>i.g))];
   // meble, w których coś się przechowuje (pojemność = objętość × współczynnik)
-  const STORE=/^(b_szafa|g_szafa|o_szafa|p_szafa|p_buty|b_komoda|b_nocna|l_szafka|l_umywalka|t_regal|s_regal|g_regal|s_rtv|k_dolne|k_narozne|k_zlew|k_wysokie|k_wyspa|b_toaletka)$/;
+  const STORE=/^(b_szafa|g_szafa|o_szafa|p_szafa|p_buty|b_komoda|b_nocna|l_szafka|l_niska|l_umywalka|t_regal|s_regal|g_regal|s_rtv|k_dolne|k_narozne|k_zlew|k_wysokie|k_wyspa|b_toaletka)$/;
   const WARD=/^(b_szafa|g_szafa|o_szafa|b_komoda)$/;
   // pojemność pomieszczeń bez mebli [m³ na m² podłogi] – regały / półki wzdłuż ścian
   const ROOMCAP={box:1,pantry:1,dress:1,tech:.5,garage:.35,hall:.12,bath:.15,kitchen:.05,other:.04,bed:.03,study:.03,attic:0};

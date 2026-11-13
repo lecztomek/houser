@@ -40,7 +40,9 @@
       ['l_umywalka','Umywalka z szafką',.8,.46,.85,'surface','counter','#f1f5f9'],
       ['l_wc','WC',.4,.65,.42,'other','solid','#f8fafc'],
       ['l_pralka','Pralka',.6,.6,.85,'storage','solid','#e5e7eb'],
-      ['l_szafka','Słupek łazienkowy',.4,.35,1.8,'storage','solid','#f1f5f9']]},
+      ['l_szafka','Słupek łazienkowy',.4,.35,1.8,'storage','solid','#f1f5f9'],
+      ['l_niska','Zabudowa niska (szafki z blatem)',1.2,.45,.85,'storage','counter','#f1f5f9'],
+      ['l_stelaz','Zabudowa stelaża WC (półka)',1.2,.22,1.1,'other','counter','#e5e7eb']]},
     gabinet:{name:'Gabinet / pokój',items:[
       ['g_biurko','Biurko',1.4,.7,.75,'surface','surface','#b08968'],
       ['g_biurko_l','Biurko narożne',1.6,1.2,.75,'surface','surface','#b08968'],

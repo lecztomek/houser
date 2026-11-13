@@ -20,7 +20,7 @@
   const WARD=new Set(['b_szafa','g_szafa','o_szafa','p_szafa']);
   const ITEM={b_szafa:['clothes',.75],g_szafa:['clothes',.75],o_szafa:['clothes',.75],p_szafa:['entry',.75],b_komoda:['clothes',.7],b_nocna:['clothes',.5],p_buty:['entry',.7],
     k_dolne:['kitchen',.55],k_narozne:['kitchen',.4],k_zlew:['kitchen',.3],k_wysokie:['kitchen',.5],k_wyspa:['kitchen',.55],
-    l_umywalka:['bath',.5],l_szafka:['bath',.7],t_regal:['utility',.6],s_regal:['other',.6],g_regal:['other',.6],s_rtv:['other',.5]};
+    l_umywalka:['bath',.5],l_szafka:['bath',.7],l_niska:['bath',.6],t_regal:['utility',.6],s_regal:['other',.6],g_regal:['other',.6],s_rtv:['other',.5]};
   const UPPER_M3=.35*.7*.75; // szafki wiszące nad dolnymi – na metr
   const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
   const WARD_M3=m=>m*.62*2.3*.75; // szafa 60 cm na metr bieżący
