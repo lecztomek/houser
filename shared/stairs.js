@@ -5,6 +5,7 @@
 //   rot    0|90|180|270 – obrót (0 = wejście na dole, wchodzimy „w górę” rzutu)
 //   width  szerokość biegu [m], risers – liczba podniesień, tread – głębokość stopnia [m], turn 'left'|'right'
 //   split  (L, U) ile stopni przed spocznikiem – gdzie jest skręt; brak = na środku
+//   under  'open' = puste pod spodem (ażurowe, same stopnie) | 'closed' = zabudowane do podłogi (pełna bryła); kręcone zawsze puste
 (function(global){
   const TYPES={straight:'Proste (jednobiegowe)',L:'L – ze spocznikiem 90°',U:'Dwubiegowe 180° (U)',spiral:'Kręcone'};
   const HEADROOM=2.0, SLAB=.25; // min. wysokość nad stopniem, grubość stropu

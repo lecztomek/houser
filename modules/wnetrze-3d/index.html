@@ -730,9 +730,21 @@ function addStairRail(sp,N,H){
 function addPrism(poly,y0,y1,color,opts){const n=poly.length;pushPoly(poly.map(([x,z])=>[x,y1,z]),color,opts);pushPoly(poly.slice().reverse().map(([x,z])=>[x,y0,z]),color,opts);for(let i=0;i<n;i++){const a=poly[i],b=poly[(i+1)%n];addQuad([a[0],y0,a[1]],[b[0],y0,b[1]],[b[0],y1,b[1]],[a[0],y1,a[1]],color,opts)}}
 function modelStairs(){return Array.isArray(project.stairs)?project.stairs.filter(s=>s&&HouserStairs.TYPES[s.type]):[]}
 function addStairsFromModel(){
-  if(!settings.showStairs)return;const c=grid().cellMeters,H=floorHeight('ground'),oak=codedOn()?SCENE_CODE.stairs[0]:'#b8895b',edge='#805d3d',thick=.06;
+  if(!settings.showStairs)return;const c=grid().cellMeters,H=floorHeight('ground'),cd=codedOn(),oak=cd?SCENE_CODE.stairs[0]:'#b8895b',edge='#805d3d',thick=.06;
   for(const s of modelStairs()){const g=HouserStairs.geometry(s,c,H);
-    for(const st of g.steps){const top=st.top*g.rise;addPrism(st.poly,Math.max(0,top-thick),top,oak,{stroke:edge,line:.55})}
+    const closed=s.under==='closed'&&s.type!=='spiral'; // zabudowane do podłogi: każdy stopień (i spocznik) to bryła od podłogi
+    for(const st of g.steps){const top=st.top*g.rise;if(closed){addPrism(st.poly,0,Math.max(0,top-thick),cd?oak:'#e7e2da',{stroke:cd?edge:'#c9c1b5',line:.4});addPrism(st.poly,Math.max(0,top-thick),top,oak,{stroke:edge,line:.55})}else addPrism(st.poly,Math.max(0,top-thick),top,oak,{stroke:edge,line:.55})}
+    // ażurowe (proste, L, U): boczne policzki – deska wzdłuż każdego boku biegu, schodkowo pod stopniami
+    if(!closed&&s.type!=='spiral'){const cen=p=>[p.reduce((a,q)=>a+q[0],0)/p.length,p.reduce((a,q)=>a+q[1],0)/p.length],S=g.steps;
+      for(let i=0;i<S.length;i++){const st=S[i],top=st.top*g.rise,c0=cen(st.poly),c1=cen((S[i+1]||S[i-1]).poly),dx=(S[i+1]?c1[0]-c0[0]:c0[0]-c1[0]),dz=(S[i+1]?c1[1]-c0[1]:c0[1]-c1[1]),dl=Math.hypot(dx,dz)||1;
+        const P=st.poly,ed=P.map((q,k)=>Math.hypot(P[(k+1)%P.length][0]-q[0],P[(k+1)%P.length][1]-q[1])),land=Math.min(...ed)>.45; // spocznik: rama dookoła
+        if(land){const sc=cd?oak:'#8a6440',so={stroke:cd?edge:'#5f4329',line:.4};for(let k=0;k<P.length;k++){const a=P[k],b=P[(k+1)%P.length];addQuad([a[0],top-.18,a[1]],[b[0],top-.18,b[1]],[b[0],top,b[1]],[a[0],top,a[1]],sc,so)}continue}
+        for(let k=0;k<P.length;k++){const a=P[k],b=P[(k+1)%P.length],ex=b[0]-a[0],ez=b[1]-a[1],el=Math.hypot(ex,ez)||1;if(Math.abs(ex*dx+ez*dz)/(el*dl)<.7)continue;
+          const nx=-ez/el*.035,nz=ex/el*.035,mx=(a[0]+b[0])/2-c0[0],mz=(a[1]+b[1])/2-c0[1],sg=(nx*mx+nz*mz)>0?1:-1,ox=sg*nx,oz=sg*nz; // na zewnątrz stopnia
+          const [p0,p1]=((a[0]-c0[0])*dx+(a[1]-c0[1])*dz)<((b[0]-c0[0])*dx+(b[1]-c0[1])*dz)?[a,b]:[b,a],yt=top+.03,y0=Math.max(0,top-g.rise-.22),y1=Math.max(0,top-.22),sc=cd?oak:'#8a6440',so={stroke:cd?edge:'#5f4329',line:.4};
+          // deska policzka: dolna krawędź ukośna (wzdłuż biegu), górna pod stopniem – kolejne stopnie składają się w ciągły policzek
+          for(const [qx,qz] of [[0,0],[ox,oz]])addQuad([p0[0]+qx,y0,p0[1]+qz],[p1[0]+qx,y1,p1[1]+qz],[p1[0]+qx,yt,p1[1]+qz],[p0[0]+qx,yt,p0[1]+qz],sc,so);
+          addQuad([p0[0],y0,p0[1]],[p0[0]+ox,y0,p0[1]+oz],[p1[0]+ox,y1,p1[1]+oz],[p1[0],y1,p1[1]],sc,so)}}}
     if(g.center){const r=g.pole,[cx,cz]=g.center;addBoxFaces(cx-r,0,cz-r,cx+r,H+.9,cz+r,'#374151',{stroke:'#1f2937'})}
   }
 }
