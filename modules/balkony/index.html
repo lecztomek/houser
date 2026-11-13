@@ -52,11 +52,13 @@ html,body{height:100%;margin:0}
 <script src="../../shared/openings.js"></script>
 <script src="../../shared/balconies.js"></script>
 <script>
-const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',B=HouserBalcony,PX=34,MARGIN=5;
+const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',B=HouserBalcony;let PX=34,MARGIN=5; // 2,5 m wokół domu – przeliczane przez scaleGrid()
 let project=null,brush='paint',painting=null;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
 const grid=()=>project?.grid||project?.definitionSnapshot?.grid;
+const scaleGrid=()=>{const c=+grid()?.cellMeters||.5;MARGIN=Math.max(2,Math.round(2.5/c));PX=Math.max(12,Math.round(34*c/.5))}; // margines i skala w metrach – tak samo przy siatce 0,5 m i 0,25 m
+
 const fl=()=>project?.definitionSnapshot?.floorOrder||['ground','upper'];
 const rooms=f=>project?.definitionSnapshot?.floors?.[f]?.rooms||[];
 function cellAt(f,x,y){const g=grid(),s=project?.state?.[f];if(!g||!s||x<0||y<0||x>=g.width||y>=g.height)return null;return (Array.isArray(s[0])?s[y]?.[x]:s[y*g.width+x])||null}
@@ -104,7 +106,7 @@ function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in
 function renderPlan(){const card=$('card'),main=document.querySelector('.main'),se=document.scrollingElement,keep={m:main?.scrollTop||0,ml:main?.scrollLeft||0,d:se?.scrollTop||0};
   if(card.offsetHeight)card.style.minHeight=card.offsetHeight+'px';
   try{renderPlanInner()}finally{card.style.minHeight='';if(main){main.scrollTop=keep.m;main.scrollLeft=keep.ml}if(se)se.scrollTop=keep.d}}
-function renderPlanInner(){
+function renderPlanInner(){if(grid())scaleGrid();
   const card=$('card');if(!project){card.innerHTML='<div class="empty">Brak projektu. Narysuj rzut w module <b>Układ pomieszczeń</b>.</div>';return}
   if(!hasUp()){card.innerHTML='<div class="empty">Dom nie ma piętra – ustaw piętro lub poddasze w module <b>Kondygnacje i dach</b>.</div>';return}
   // karta budowana raz – przy malowaniu podmieniamy tylko zawartość <svg> (ten sam element pod palcem/myszą: gest się nie urywa)

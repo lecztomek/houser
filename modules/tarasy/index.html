@@ -85,7 +85,7 @@ const TYPES={
   coveredTerrace:{name:'Zadaszony taras',fill:'#93c5fd',stroke:'#2563eb'},
   pergola:{name:'Pergola',fill:'#fde68a',stroke:'#a16207'}
 };
-const MARGIN=8, PX=34; // kratki wokół domu, px na kratkę
+let MARGIN=8, PX=34; // kratki wokół domu (4 m), px na kratkę – przeliczane przez scaleGrid()
 let project=null, source='', brush='terrace', painting=null;
 
 const grid=()=>project?.grid||project?.definitionSnapshot?.grid;
@@ -94,6 +94,8 @@ const groundFloor=()=>{const fo=project?.definitionSnapshot?.floorOrder;return A
 function cellAt(f,x,y){const g=grid(),s=project?.state?.[f];if(!g||!s||x<0||y<0||x>=g.width||y>=g.height)return null;return (Array.isArray(s[0])?s[y]?.[x]:s[y*g.width+x])||null}
 function list(){return Array.isArray(project?.outdoorStructures)?project.outdoorStructures:[]}
 const cellM=()=>grid().cellMeters;
+const scaleGrid=()=>{const c=+grid()?.cellMeters||.5;MARGIN=Math.max(2,Math.round(4/c));PX=Math.max(12,Math.round(34*c/.5))}; // margines i skala w metrach – tak samo przy siatce 0,5 m i 0,25 m
+
 
 function setProject(p,src){project=p&&(p.grid||p.definitionSnapshot?.grid)?p:null;source=src||'';if(project){project.outdoorStructures=HouserModel.outdoorFromMap(HouserModel.outdoorMap(list(),cellM()),cellM(),list());}renderAll()}
 function save(){if(!project)return;const out=JSON.parse(JSON.stringify(list()));if(!HouserStore.update(p=>{p.outdoorStructures=out;return p},'tarasy'))HouserStore.save(project,'tarasy')}
@@ -134,7 +136,7 @@ function settingsRow(it){const g=HouserModel.outdoorGeom(it,cellM(),(x,y)=>{cons
   return d}
 // ---------- rzut
 function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
-function renderPlan(){
+function renderPlan(){if(grid())scaleGrid();
   const card=$('card');
   if(!project){card.innerHTML='<div class="empty">Brak projektu.<br><br>Narysuj rzut w module <b>Układ pomieszczeń</b> – pojawi się tu automatycznie – albo wczytaj plik JSON z lewej.</div>';return}
   if(!$('plan'))card.innerHTML='<div class="planTitle"><div id="planTitle"></div><span id="planInfo"></span></div><svg id="plan"></svg>';
@@ -158,6 +160,10 @@ function renderPlan(){
   for(let y=0;y<=H;y++)for(let x=0;x<W;x++)edge('h:'+x+':'+y,isHouse(x,y-1),isHouse(x,y),x,y,x+1,y);
   for(let y=0;y<H;y++)for(let x=0;x<=W;x++)edge('v:'+x+':'+y,isHouse(x-1,y),isHouse(x,y),x,y,x,y+1);
   el('text',{x:P(W/2),y:P(H/2),'text-anchor':'middle','dominant-baseline':'middle','font-size':16*k,'font-weight':700,fill:'rgba(15,23,42,.35)','pointer-events':'none'},svg,'DOM');
+  // balkony piętra (moduł Balkony) – tylko zarys, żeby było widać, gdzie malować taras pod balkonem
+  for(const b of Array.isArray(project.balconies)?project.balconies:[]){const set=new Set((b.cells||[]).map(q=>q[0]+','+q[1])),hs=(x,y)=>set.has(x+','+y);let sx=0,sy=0,n=0;
+    for(const [x,y] of b.cells||[]){sx+=x;sy+=y;n++;for(const [dx,dy,x1,y1,x2,y2] of [[0,-1,x,y,x+1,y],[0,1,x,y+1,x+1,y+1],[-1,0,x,y,x,y+1],[1,0,x+1,y,x+1,y+1]])if(!hs(x+dx,y+dy))el('line',{x1:P(x1),y1:P(y1),x2:P(x2),y2:P(y2),stroke:'#7c3aed','stroke-width':2,'stroke-dasharray':'6 4','pointer-events':'none'},svg)}
+    if(n)el('text',{x:P(sx/n+.5),y:P(sy/n+.5),'text-anchor':'middle','dominant-baseline':'middle','font-size':11*k,'font-weight':700,fill:'#7c3aed','pointer-events':'none'},svg,'balkon (piętro)')}
   // kierunki świata
   const top=project.orientation?.top||'north',ORD=['north','east','south','west'],i=ORD.indexOf(top),PL={north:'N',east:'E',south:'S',west:'W'};
   const side={top:ORD[i],right:ORD[(i+1)%4],bottom:ORD[(i+2)%4],left:ORD[(i+3)%4]};

@@ -98,7 +98,7 @@ html,body{height:100%;margin:0}
 <script src="../../shared/heating.js"></script>
 <script src="../../shared/heating-system.js"></script>
 <script>
-const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',PX=40,HS=HouserHeatSys,MARGIN=3;
+const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',HS=HouserHeatSys;let PX=40,MARGIN=3; // 1,5 m wokół domu – przeliczane przez scaleGrid()
 const FLOOR_PL={ground:'Parter',upper:'Piętro / poddasze'};
 const DCOL={main:'#dc2626',extra:'#9a3412',out:'#475569',buffer:'#ea580c',dhw:'#2563eb',man:'#15803d'};
 const DSH=window.HouserI18n?.lang==='en'?{main:'S',extra:'S2',out:'OU',buffer:'B',dhw:'HW',man:'M'}:{main:'Ź',extra:'Ź2',out:'JZ',buffer:'B',dhw:'W',man:'R'};
@@ -108,6 +108,8 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const fmt=(v,d=1)=>(Math.round(v*10**d)/10**d).toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d});
 const zl=v=>(Math.round(v/100)*100).toLocaleString('pl-PL')+' zł';
 const grid=()=>project?.grid||project?.definitionSnapshot?.grid;
+const scaleGrid=()=>{const c=+grid()?.cellMeters||.5;MARGIN=Math.max(2,Math.round(1.5/c));PX=Math.max(14,Math.round(40*c/.5))}; // margines i skala w metrach – tak samo przy siatce 0,5 m i 0,25 m
+
 const floors=()=>{const fo=project?.definitionSnapshot?.floorOrder;return (Array.isArray(fo)&&fo.length?fo:['ground','upper']).filter(f=>(project?.definitionSnapshot?.floors?.[f]?.rooms||[]).length)};
 const roomDef=(f,id)=>(project?.definitionSnapshot?.floors?.[f]?.rooms||[]).find(r=>r.id===id);
 function cellAt(f,x,y){const g=grid(),s=project?.state?.[f];if(!g||!s||x<0||y<0||x>=g.width||y>=g.height)return null;return (Array.isArray(s[0])?s[y]?.[x]:s[y*g.width+x])||null}
@@ -150,7 +152,7 @@ function renderSide(){$("allFloor").hidden=$("allRad").hidden=!!R?.air;
       row.querySelector('select').onchange=e=>save(s=>{s.emitters[r.key]=e.target.value});L.appendChild(row)}}
 }
 function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
-function renderPlan(){
+function renderPlan(){if(grid())scaleGrid();
   const card=$('card');if(!project){card.innerHTML='<div class="empty">Brak projektu.</div>';return}
   const fl=floors();card.innerHTML='<div class="planTitle"><div class="row" id="tabs"></div><span>'+(tool?'kliknij na rzucie: '+esc(devLabel(tool)):'wybierz urządzenie po lewej, żeby je wstawić')+'</span></div><svg id="plan"></svg><div class="legend"><span><i style="background:repeating-linear-gradient(45deg,#fb923c 0 2px,#fff7ed 2px 6px)"></i>podłogówka</span><span><i style="background:#3b82f6"></i>grzejnik / drabinka</span>'+(R.air?'<span><i style="background:#ea580c;height:3px"></i>kanał ciepłego powietrza (DGP)</span>':'')+'<span><i style="background:#fecaca;border:1px solid #dc2626"></i>ogrzewanie nie wystarczy</span><span><i style="background:#374151"></i>komin</span></div>';
   for(const f of fl){const b=document.createElement('button');b.className='btn'+(f===floor?' active':'');b.textContent=FLOOR_PL[f]||f;b.onclick=()=>{floor=f;if(tool==='out'&&f!==fl[0])tool=null;renderAll()};$('tabs').appendChild(b)}

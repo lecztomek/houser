@@ -73,10 +73,12 @@ html,body{height:100%;margin:0}
 <script src="../../shared/project-store.js"></script>
 <script>
 const $=id=>document.getElementById(id), NS='http://www.w3.org/2000/svg';
-const M=6, PX=30, OUT_ID='poza_obrysem';
+let M=6, PX=30;const OUT_ID='poza_obrysem'; // margines 3 m wokół siatki – przeliczany przez scaleGrid()
 let project=null, source='', edges=new Set(), tool='draw', drag=null, dirty=false;
 
 const grid=()=>project?.grid||project?.definitionSnapshot?.grid;
+const scaleGrid=()=>{const c=+grid()?.cellMeters||.5;M=Math.max(2,Math.round(3/c));PX=Math.max(12,Math.round(30*c/.5))}; // margines i skala w metrach
+
 const floors=()=>{const fo=project?.definitionSnapshot?.floorOrder;return Array.isArray(fo)&&fo.length?fo:['ground','upper']};
 const rooms=f=>project?.definitionSnapshot?.floors?.[f]?.rooms||[];
 function cellAt(f,x,y){const g=grid(),s=project?.state?.[f];if(!g||!s||x<0||y<0||x>=g.width||y>=g.height)return null;return (Array.isArray(s[0])?s[y]?.[x]:s[y*g.width+x])||null}
@@ -84,7 +86,7 @@ const isOutCell=(f,x,y)=>cellAt(f,x,y)===OUT_ID;
 
 // Obszar roboczy: siatka projektu + M kratek z każdej strony. Krawędzie w układzie siatki projektu:
 // 'h:x:y' – pozioma nad kratką (x,y); 'v:x:y' – pionowa na lewo od kratki (x,y).
-function bounds(){const g=grid();return {x0:-M,y0:-M,x1:g.width+M,y1:g.height+M}}
+function bounds(){const g=grid();scaleGrid();return {x0:-M,y0:-M,x1:g.width+M,y1:g.height+M}}
 function initialEdges(){
   const g=grid(),e=new Set();
   if(Array.isArray(project.outline?.edges)&&project.outline.edges.length){for(const k of project.outline.edges)e.add(k);return e}
@@ -161,7 +163,7 @@ $('apply').onclick=apply;
 
 // ---------- rzut
 function el(tag,a,p,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;if(p)p.appendChild(e);return e}
-function renderPlan(){
+function renderPlan(){if(grid())scaleGrid();
   const card=$('card');
   if(!project){card.innerHTML='<div class="empty">Brak projektu.</div>';return}
   if(!$('plan'))card.innerHTML='<div class="planTitle"><div id="planTitle"></div><span id="planInfo"></span></div><svg id="plan"></svg>';
