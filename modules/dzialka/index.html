@@ -116,7 +116,7 @@ const NS='http://www.w3.org/2000/svg',C=HouserSite.C,S=20,SURF=HouserSite.SURF;
 const TREES={tree:{name:'Drzewo',r:2,fill:'#4d7c0f'},pine:{name:'Iglak',r:1.3,fill:'#166534'},shrub:{name:'Krzew',r:.6,fill:'#65a30d'}};
 const TOOLS={move:{name:'Przesuń dom / garaż',sw:'#fff'},...Object.fromEntries(Object.entries(SURF).map(([k,v])=>[k,{name:v.name.replace(' (kostka)',''),sw:v.color}])),grass:{name:'Trawa (gumka)',sw:'#bcd9a8'},
   tree:{name:'Drzewo',sw:TREES.tree.fill},pine:{name:'Iglak',sw:TREES.pine.fill},shrub:{name:'Krzew',sw:TREES.shrub.fill}};
-const HINT={move:'Przeciągnij dom albo garaż na planie (co 0,5 m).',grass:'Maluj, żeby przywrócić trawę.',tree:'Kliknij, żeby posadzić; kliknij drzewo, żeby je usunąć.',pine:'Kliknij, żeby posadzić; kliknij drzewo, żeby je usunąć.',shrub:'Kliknij, żeby posadzić; kliknij krzew, żeby go usunąć.'};
+const HINT={move:'Przeciągnij dom albo garaż na planie (co 0,5 m).',grass:'Maluj, żeby przywrócić trawę; kliknij drzewo albo krzew, żeby je usunąć.',tree:'Kliknij, żeby posadzić; kliknij drzewo, żeby je usunąć.',pine:'Kliknij, żeby posadzić; kliknij drzewo, żeby je usunąć.',shrub:'Kliknij, żeby posadzić; kliknij krzew, żeby go usunąć (albo prawy przycisk / gumka).'};
 let project=null,R=null,tool='move',drag=null;
 try{tool=localStorage.getItem('houser:dzialka:tool')||'move';if(!TOOLS[tool])tool='move'}catch(e){}
 
@@ -223,11 +223,16 @@ function paintAt(p){const s=R.set,P=R.plot,n=+$('brush').value||1,i0=Math.floor(
   if(ch)drag.changed=drag.dirty=true}
 function repaint(){if(!drag?.dirty)return;drag.dirty=false;$('plan').replaceWith(planSVG())}
 document.addEventListener('pointerdown',e=>{const svg=$('plan');if(!project||!R||!svg||!svg.contains(e.target))return;e.preventDefault();const p=pt(e),s=R.set;
+  // roślina pod kursorem (w obrębie narysowanego koła, małe krzewy z zapasem) – najbliższa środkiem
+  const nearPlant=()=>{let bi=-1,bd=Infinity;s.trees.forEach((t,i)=>{const d=Math.hypot(t.x-p.x,t.y-p.y);if(d<Math.max(.8,(TREES[t.k]||TREES.tree).r)&&d<bd){bd=d;bi=i}});return bi};
+  // usuwanie roślin: gumka (trawa), prawy przycisk przy każdym narzędziu albo kliknięcie rośliny narzędziem roślin
+  if(tool==='grass'||e.button===2){const k=nearPlant();if(k>=0){const trees=[...s.trees];trees.splice(k,1);saveSite({trees});return}if(e.button===2)return}
   if(tool==='move'){const g=R.garage;if(g&&p.x>=g.x&&p.x<=g.x+g.w&&p.y>=g.y&&p.y<=g.y+g.d){drag={what:'garage',p,ox:g.x,oy:g.y};return}
     const o=R.occ.get(Math.floor(p.x/C)+','+Math.floor(p.y/C));if(o==='house'||o?.startsWith('out:')){drag={what:'house',p,ox:s.hx,oy:s.hy};svg.style.cursor='grabbing'}return}
-  if(TREES[tool]){const T=TREES[tool],near=s.trees.findIndex(t=>Math.hypot(t.x-p.x,t.y-p.y)<Math.max(.6,(TREES[t.k]||TREES.tree).r*.7));
+  if(TREES[tool]){const near=nearPlant();
     const trees=[...s.trees];if(near>=0)trees.splice(near,1);else if(p.x>=0&&p.y>=0&&p.x<=s.w&&p.y<=s.d)trees.push({x:Math.round(p.x*4)/4,y:Math.round(p.y*4)/4,k:tool});else return;saveSite({trees});return}
   drag={what:'paint',changed:false,last:p};s.cells={...s.cells};paintAt(p);repaint()});
+document.addEventListener('contextmenu',e=>{const svg=$('plan');if(svg&&svg.contains(e.target))e.preventDefault()}); // prawy przycisk na planie = usuń roślinę
 document.addEventListener('pointermove',e=>{if(!drag)return;const p=pt(e);
   if(drag.what==='paint'){const a=drag.last||p,n=Math.ceil(Math.hypot(p.x-a.x,p.y-a.y)/(C/2));for(let t=1;t<=n;t++)paintAt({x:a.x+(p.x-a.x)*t/n,y:a.y+(p.y-a.y)*t/n});if(!n)paintAt(p);drag.last=p;repaint();return}
   const dx=Math.round((p.x-drag.p.x)/C)*C,dy=Math.round((p.y-drag.p.y)/C)*C;drag.dx=dx;drag.dy=dy;const g=$(drag.what==='house'?'gHouse':'gGar');if(g)g.setAttribute('transform','translate('+dx*S+' '+dy*S+')')});
