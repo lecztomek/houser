@@ -134,7 +134,7 @@
     // poziom dachu głównego: piętro (z wnękami) albo parter domu parterowego; niższy: parter bez piętra nad nim
     const A=new Uint8Array(W*H),B=new Uint8Array(W*H);
     for(let i=0;i<W*H;i++){if(storey){if(occ(up,i)||(inHouse(up,i)&&occ(lo,i)))A[i]=1;else if(occ(lo,i))B[i]=1}else if(occ(lo,i))A[i]=1}
-    const rectsOf=M=>{let x0=W,y0=H,x1=-1,y1=-1,n=0;for(let i=0;i<W*H;i++)if(M[i]){const x=i%W,y=(i-x)/W;x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);n++}if(!n)return [];
+    const rectsOf=(M,allow)=>{let x0=W,y0=H,x1=-1,y1=-1,n=0;for(let i=0;i<W*H;i++)if(M[i]){const x=i%W,y=(i-x)/W;x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);n++}if(!n)return [];
       // wnęki i małe wcięcia (dotykają najwyżej jednego boku obrysu) wypełniamy – zostają pod dachem
       const F=M.slice(),seen=new Uint8Array(W*H);for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const i=y*W+x;if(F[i]||seen[i])continue;const comp=[],q=[i];seen[i]=1;let sides=new Set(),cx0=x,cx1=x,cy0=y,cy1=y;
         while(q.length){const j=q.pop(),a=j%W,b=(j-a)/W;comp.push(j);cx0=Math.min(cx0,a);cx1=Math.max(cx1,a);cy0=Math.min(cy0,b);cy1=Math.max(cy1,b);if(a===x0)sides.add('l');if(a===x1)sides.add('r');if(b===y0)sides.add('t');if(b===y1)sides.add('b');
@@ -145,8 +145,21 @@
         for(let y=y0;y<=y1;y++){for(let x=x0;x<=x1;x++)hgt[x]=F[y*W+x]?hgt[x]+1:0;
           for(let x=x0;x<=x1;x++){if(!hgt[x])continue;let h=hgt[x];for(let x2=x;x2<=x1&&hgt[x2];x2++){h=Math.min(h,hgt[x2]);const w=x2-x+1,ar=w*h,sc=ar*Math.sqrt(Math.min(w,h)/Math.max(w,h));if(w>=minC&&h>=minC&&(!best||sc>best.sc))best={x0:x,x1:x2,y0:y-h+1,y1:y,ar,sc}}}}
         if(!best||best.ar*c*c<6)break;out.push(best);for(let y=best.y0;y<=best.y1;y++)for(let x=best.x0;x<=best.x1;x++)F[y*W+x]=0}
+      // reszta za wąska na własny dach (np. pas piętra 2 m przy bloku głównym): przedłużamy sąsiedni dach nad nią –
+      // prostokąt dachu rośnie do objęcia tej reszty, o ile dokłada najwyżej tyle samo innej powierzchni domu (np. narożnik balkonu nad parterem)
+      if(out.length){const inR=(r,x,y)=>x>=r.x0&&x<=r.x1&&y>=r.y0&&y<=r.y1,seen2=new Uint8Array(W*H);
+        for(let i0=0;i0<W*H;i0++){if(!F[i0]||seen2[i0])continue;const comp=[],q=[i0];seen2[i0]=1;
+          while(q.length){const j=q.pop(),a=j%W,b=(j-a)/W;comp.push(j);for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const na=a+dx,nb=b+dy;if(na<0||nb<0||na>=W||nb>=H)continue;const k=nb*W+na;if(F[k]&&!seen2[k]){seen2[k]=1;q.push(k)}}}
+          let best=null;for(const r of out){let ux0=r.x0,ux1=r.x1,uy0=r.y0,uy1=r.y1,touchR=false;for(const j of comp){const a=j%W,b=(j-a)/W;ux0=Math.min(ux0,a);ux1=Math.max(ux1,a);uy0=Math.min(uy0,b);uy1=Math.max(uy1,b);
+              if(!touchR)for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]])if(inR(r,a+dx,b+dy))touchR=true}
+            if(!touchR)continue;let extra=0,ok=true;
+            for(let y=uy0;y<=uy1&&ok;y++)for(let x=ux0;x<=ux1;x++){if(inR(r,x,y))continue;const i=y*W+x;if(F[i]&&comp.includes(i))continue;if(out.some(o=>o!==r&&inR(o,x,y))||!(M[i]||allow?.(i))){ok=false;break}extra++}
+            if(ok&&extra<=comp.length&&(!best||extra<best.extra))best={r,extra,ux0,ux1,uy0,uy1}}
+          if(best){Object.assign(best.r,{x0:best.ux0,x1:best.ux1,y0:best.uy0,y1:best.uy1});for(const j of comp)F[j]=0}}}
       return out};
-    const RA=rectsOf(A),RB=storey?rectsOf(B):[];if(!RA.length)return legacy();
+    const underA=new Uint8Array(W*H),RA=rectsOf(A,i=>occ(lo,i)||occ(up,i));
+    for(const r of RA)for(let y=r.y0;y<=r.y1;y++)for(let x=r.x0;x<=r.x1;x++){underA[y*W+x]=1;B[y*W+x]=0} // pod przedłużonym dachem głównym nie ma już niższego dachu
+    const RB=storey?rectsOf(B,i=>occ(lo,i)&&!occ(up,i)&&!underA[i]):[];if(!RA.length)return legacy();
     if(RA.length===1&&!RB.length&&RA[0].x0===0&&RA[0].y0===0&&RA[0].x1===W-1&&RA[0].y1===H-1)return legacy();
     const tan=Math.tan(n0.roofPitch*Math.PI/180),eaveA=geometry(e,9).eave,eaveB=n0.groundHeight;
     const wings=[];const mk=(r,level,main)=>({x0:r.x0*c,z0:r.y0*c,x1:(r.x1+1)*c,z1:(r.y1+1)*c,level,main,cell:r});

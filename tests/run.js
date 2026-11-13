@@ -275,7 +275,12 @@ const base=JSON.parse(fs.readFileSync(path.join(ROOT,'examples','uklad-domu-v7.j
  const w=W.HouserModel.roofWings(p),q=W.HouserQuantities.compute(p);ok(w.length===2&&!w[0].legacy&&w.every(x=>fin(x.top)&&x.top>x.eave)&&w.some(x=>!x.free0||!x.free1),'dach L: dwa skrzydła ze styku ('+w.map(x=>(x.x1-x.x0)+'×'+(x.z1-x.z0)).join(', ')+')');
  const p2=JSON.parse(JSON.stringify(p));p2.elevationSettings={...p2.elevationSettings,roofShape:'rect'};const q2=W.HouserQuantities.compute(p2);
  ok(W.HouserModel.roofWings(p2)[0].legacy&&q.roofA>20&&q.roofA<q2.roofA-5&&fin(q.gutter),'dach L: mniejsza połać niż jeden dach nad prostokątem ('+Math.round(q.roofA)+' < '+Math.round(q2.roofA)+' m²)');
- ok(W.HouserModel.roofYAt(w,w[0].x0+.1,w[0].z0+.1)!=null&&W.HouserModel.roofYAt(w,(g.width-.5)*g.cellMeters,.25)==null,'dach L: nad wyciętym narożnikiem nie ma dachu');}
+ ok(W.HouserModel.roofYAt(w,w[0].x0+.1,w[0].z0+.1)!=null&&W.HouserModel.roofYAt(w,(g.width-.5)*g.cellMeters,.25)==null,'dach L: nad wyciętym narożnikiem nie ma dachu');
+ // wąski pas piętra (2 m) przy bloku głównym: przedłużenie dachu głównego, nie płaska płyta; balkon nad parterem bez dachu
+ {const c=.25,Wd=48,Hd=40,gr=Array(Wd*Hd).fill('salon'),up=Array(Wd*Hd).fill(null);for(let y=0;y<Hd;y++)for(let x=0;x<Wd;x++){const xm=x*c,ym=y*c;up[y*Wd+x]=xm<2||(xm<4&&ym>=7)?'poza_obrysem':xm<4?'pokoj2':'sypialnia'}
+  const def={version:7,name:'T',grid:{width:Wd,height:Hd,cellMeters:c},floorOrder:['ground','upper'],floors:{ground:{name:'P',rooms:[{id:'salon',name:'Salon',kind:'room'}]},upper:{name:'U',rooms:[{id:'sypialnia',name:'S',kind:'room'},{id:'pokoj2',name:'P2',kind:'room'},{id:'poza_obrysem',name:'Poza',kind:'exteriorVoid'}]}}};
+  const pw={version:7,definitionSnapshot:def,grid:{...def.grid},state:{ground:gr,upper:up},openings:{ground:{},upper:{}},orientation:{top:'north'},elevationSettings:{upperType:'full',ridge:'north-south'}},ww=W.HouserModel.roofWings(pw);
+  ok(ww.length===1&&ww[0].x0===2&&ww[0].x1===12&&W.HouserModel.roofYAt(ww,3,3)!=null&&W.HouserModel.roofYAt(ww,1,3)==null,'dach: wąski pas piętra pod przedłużonym dachem głównym, balkon obok bez dachu ('+ww.map(x=>x.x0+'–'+x.x1+' × '+x.z0+'–'+x.z1).join(', ')+')')}}
 
 // teren ze spadkiem (Działka) i fundamenty z piwnicą
 {const ld=f=>JSON.parse(fs.readFileSync(path.join(ROOT,'examples',f),'utf8')),SI=W.HouserSite,FD=W.HouserFoundation;

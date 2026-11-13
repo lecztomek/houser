@@ -103,11 +103,13 @@ function buildWalls(){ const c=C(), e=elev(); const floorsToBuild=[['ground',0,e
 // Wnęki i nadwieszenia: podłoga wnęki na piętrze (strop parteru), sufit nad wnęką, spód piętra nad wnęką parteru,
 // balustrada na otwartych krawędziach wnęki (loggia).
 function isVoidCell(f,x,y){const id=stateGrid(f)[y]?.[x]||'';return !!id&&roomKind(f,id)==='exteriorVoid'}
+// sufit wnęki piętra tylko pod dachem głównym (loggia); balkon / taras poza dachem jest otwarty od góry
+function underTopRoof(x,z){ if(!multiRoof()) return true; const w=HouserModel.wingAt(wings(),x,z); return !!w&&w.level==='top'; }
 function buildSlabs(){ const c=C(),e=elev(),gh=e.groundHeight,full=e.upperType!=='attic';
   for(let y=0;y<H();y++)for(let x=0;x<W();x++){const g=floorCellOccupied('ground',x,y),u=floorCellOccupied('upper',x,y),x0=x*c,z0=y*c,x1=x0+c,z1=z0+c;
     if(g&&!u)addQuad([x0,gh,z1],[x1,gh,z1],[x1,gh,z0],[x0,gh,z0],'#b8ad9c',{stroke:'#b8ad9c'}); // podłoga wnęki / tarasu na stropie
     if(u&&!g)addQuad([x0,gh-.01,z0],[x1,gh-.01,z0],[x1,gh-.01,z1],[x0,gh-.01,z1],'#e7e2d9',{stroke:'#e7e2d9'}); // spód piętra nad wnęką parteru
-    if(full&&isVoidCell('upper',x,y)&&g)addQuad([x0,e.eave-.01,z0],[x1,e.eave-.01,z0],[x1,e.eave-.01,z1],[x0,e.eave-.01,z1],'#b9b2a7',{stroke:'#b9b2a7'}); // sufit wnęki (w cieniu)
+    if(full&&isVoidCell('upper',x,y)&&g&&underTopRoof(x0+c/2,z0+c/2))addQuad([x0,e.eave-.01,z0],[x1,e.eave-.01,z0],[x1,e.eave-.01,z1],[x0,e.eave-.01,z1],'#b9b2a7',{stroke:'#b9b2a7'}); // sufit wnęki (w cieniu)
   }
   // balustrada: krawędź wnęki na piętrze od strony, gdzie nie ma już budynku
   const rail=(ax,az,bx,bz)=>{const h=1.05,y=gh;addQuad([ax,y,az],[bx,y,bz],[bx,y+h,bz],[ax,y+h,az],'#9cc3dd',{stroke:'#6b7c8f',alpha:.35});
